@@ -1,0 +1,3 @@
+[submodule "coffea"]
+	path = coffea
+	url = https://github.com/CoffeaTeam/coffea.git
