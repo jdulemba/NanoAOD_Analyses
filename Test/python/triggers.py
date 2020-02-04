@@ -1,15 +1,23 @@
+import coffea.nanoaod.nanoevents
+import coffea.processor.dataframe
 from pdb import set_trace
 
-def mu_triggers(dataframe):
+def mu_triggers(df):
+    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+        trigger = (df['HLT']['IsoMu24']) | (df['HLT']['IsoTkMu24'])
+    elif isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        trigger = (df['HLT_IsoMu24'] > 0) | (df['HLT_IsoTkMu24'] > 0)
+    else:
+        raise ValueError("Only NanoEvents and LazyDataFrame formats supported right now")
 
-    IsoMu24 = dataframe['HLT_IsoMu24']
-    IsoTkMu24 = dataframe['HLT_IsoTkMu24']
-
-    trigger = (IsoMu24 > 0) | (IsoTkMu24 > 0)
-    
     return trigger
 
-def el_triggers(dataframe):
-    trigger = dataframe['HLT_Ele27_WPTight_Gsf']
+def el_triggers(df):
+    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+        trigger = (df['HLT']['Ele27_WPTight_Gsf'])
+    elif isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        trigger = df['HLT_Ele27_WPTight_Gsf']
+    else:
+        raise ValueError("Only NanoEvents and LazyDataFrame formats supported right now")
 
     return trigger
