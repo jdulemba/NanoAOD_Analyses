@@ -1,17 +1,17 @@
 #import matplotlib.pyplot as plt
 #plt.switch_backend('agg')
 from coffea import hist
-from coffea.analysis_objects import JaggedCandidateArray
+#from coffea.analysis_objects import JaggedCandidateArray
 import coffea.processor as processor
 import uproot
 from pdb import set_trace
 import os
 from argparse import ArgumentParser
-from python.IDMuon import process_muons as proc_mus
-from python.IDElectron import process_electrons as proc_els
-from python.IDJet import process_jets as proc_jets
-import python.triggers as triggers
-import python.ObjectSelection as objsel
+#from python.IDMuon import process_muons as proc_mus
+#from python.IDElectron import process_electrons as proc_els
+#from python.IDJet import process_jets as proc_jets
+#import python.triggers as triggers
+#import python.ObjectSelection as objsel
 
 
 parser = ArgumentParser()
@@ -43,14 +43,15 @@ class Test_Analyzer(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
-        mass_axis = hist.Bin("mass", r"$m(\mu)$ [GeV]", 100, 0, 5)
-        pt_axis = hist.Bin("pt", r"$p_{T}(\mu)$ [GeV]", 200, 0, 1000)
-        eta_axis = hist.Bin("eta", r"$\eta(\mu)$", 200, -5, 5)
-        phi_axis = hist.Bin("phi", r"$\phi(\mu)$", 160, -4, 4)
+        mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
+        pt_axis = hist.Bin("pt", "$p_{T}$ [GeV]", 200, 0, 1000)
+        eta_axis = hist.Bin("eta", r"$\eta$", 200, -5, 5)
+        phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
         
             ## make dictionary of hists
-        dirs = ['muons']
-        #dirs = ['muons', 'jets']
+        #dirs = ['muons']
+        #dirs = ['tight_muons', 'one_tight_mu']
+        dirs = ['muons', 'jets']
         #dirs = ['electrons']
         #dirs = ['muons', 'electrons']
         histo_dict = {}
@@ -70,42 +71,60 @@ class Test_Analyzer(processor.ProcessorABC):
     def process(self, df):
         output = self.accumulator.identity()
 
-        muons = proc_mus(df)
-        jets = proc_jets(df)
-        set_trace()
+        #set_trace()
+        #df['muons'] = proc_mus(df)
+        #df['jets'] = proc_jets(df)
         #electrons = proc_els(df)
 
-        #output['cutflow']['all events'] += muons.size + electrons.size
-            ## jets
-        output['cutflow']['all jets'] += jets.size
+        ## muons selection
+        output['cutflow']['all evts'] += df['Muon'].size
 
-        four_jets = (jets.counts == 4)
-        jets = jets[four_jets]
-        output['cutflow']['4 jets'] += jets.size
+            ## pass muon trigger
+        trig_muons = (df['HLT']['IsoMu24']) | (df['HLT']['IsoTkMu24'])
+        output['cutflow']['nEvts pass mu triggers'] += trig_muons.sum()
+        #trig_muons = triggers.mu_triggers(df)
+
+            ## tight muons
+        tight_muons = (df['Muon'].tightId)
+        output['cutflow']['n tight muons'] += tight_muons.any().sum()
+        #output = self.fill_hists(output, 'tight_muons', df['tight_muons'])        
+
+            ## single muon
+        single_muon = (df['Muon'].counts == 1)
+        output['cutflow']['1 muon'] += single_muon.sum()
+        #output = self.fill_hists(output, 'one_tight_mu', df['one_tight_mu'])        
+
+            ## single tight muon
+        one_tight_mu = (single_muon & tight_muons).any()
+        output['cutflow']['1 muon, tightID'] += one_tight_mu.sum()
+
+            ## pass all muon criteria
+        passing_mu = (one_tight_mu) & (trig_muons)
+        output['cutflow']['passing muon'] += passing_mu.sum()
+
+        ### jets selection
+            ## only 4 jets
+        four_jets = (df['Jet'].counts == 4)
+        output['cutflow']['4 jets'] += four_jets.sum()
 
             #btag reqs
-        deepcsvM_pass = jets.deepcsvM.sum() >= 2
-        jets = jets[deepcsvM_pass]
-        output['cutflow']['DeepCSVM btag pass'] += jets.size
+        deepcsvM_pass = (df['Jet']['btagDeepB'] > 0.6321).sum() >= 2
+        output['cutflow']['DeepCSV M btag pass'] += deepcsvM_pass.sum()
 
-            ## muons
-        output['cutflow']['all muons'] += muons.size
-        trig_muons = triggers.mu_triggers(df)
-        muons = muons[trig_muons]
-        output['cutflow']['mu trigger size'] += muons.size
+        #set_trace()
+        passing_jets = (four_jets) & (deepcsvM_pass)
+        output['cutflow']['pass btag + nJets'] += passing_jets.sum()
 
-        onemuon = (muons.counts == 1)
-        muons = muons[onemuon]
-        output['cutflow']['1 muon'] += onemuon.sum()
+        passing_evt = passing_jets & passing_mu
+        output['cutflow']['passing jet and mu'] += passing_evt.sum()
 
-        tight_mu = (muons.tightId > 0)
-        muons = muons[tight_mu]
-        output['cutflow']['mu tight id'] += tight_mu.any().sum()
+        sel_mus = df['Muon'][(passing_evt)]
+        sel_jets = df['Jet'][(passing_evt)]
+        ##other_muons = objsel.select_muons(df) ## same output as muon selection above but no cutflow atm
+        ##output = self.fill_hists(output, 'jets', jets)        
 
-        #other_muons = objsel.select_muons(df) ## same output as muon selection above but no cutflow atm
-        output = self.fill_hists(output, 'muons', muons)        
-        #output = self.fill_hists(output, 'jets', jets)        
-
+        output = self.fill_hists(output, 'muons', sel_mus)        
+        output = self.fill_hists(output, 'jets', sel_jets)        
         
         #    ## electrons
         #output['cutflow']['all electrons'] += electrons.size
@@ -144,7 +163,7 @@ output = processor.run_uproot_job(fileset,
     processor_instance=Test_Analyzer(),
     executor=processor.iterative_executor,
     #executor=processor.futures_executor,
-    executor_args={'workers': 4, 'flatten' : True},
+    executor_args={'workers': 4, 'flatten' : True, 'nano' : True},
     #chunksize=500000,
 )
 
