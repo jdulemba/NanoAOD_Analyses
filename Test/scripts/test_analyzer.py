@@ -75,14 +75,12 @@ class Test_Analyzer(processor.ProcessorABC):
         #df['jets'] = proc_jets(df)
         #electrons = proc_els(df)
 
-        ### muons selection
-        passing_mus, output = objsel.select_muons(df, output)
-
-        ### jets selection
-        passing_jets, output = objsel.select_jets(df, output)
-
         ### final event selection
-        passing_evt = passing_jets & passing_mus
+        passing_evt = objsel.select(df, leptype='Muon', accumulator=output)
+
+        #set_trace()
+
+        #passing_evt = passing_jets & passing_mus
         output['cutflow']['passing jet and mu'] += passing_evt.sum()
 
         #sel_mus = df['Muon'][(passing_evt)]
