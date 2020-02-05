@@ -1,5 +1,6 @@
 import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
+import awkward
 from pdb import set_trace
 
 btag_values = {
@@ -18,7 +19,7 @@ btag_values = {
 valid_taggers = ['DEEPCSV', 'DEEPJET']
 valid_WPs = ['LOOSE', 'MEDIUM', 'TIGHT']
 
-def add_btag_disc(df, btagger, tightb, looseb):
+def add_btag_disc(jets, btagger, tightb, looseb):
     if btagger not in valid_taggers:
         raise IOError("%s is not a supported b-tagger" % btagger)
     if tightb not in valid_WPs:
@@ -26,14 +27,16 @@ def add_btag_disc(df, btagger, tightb, looseb):
     if looseb not in valid_WPs:
         raise IOError("%s is not a valid working point" % looseb)
 
-    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+    if isinstance(jets, awkward.array.base.AwkwardArray):
         bdiscr = 'btagDeepB' if btagger == 'DEEPCSV' else 'btagDeepFlavB'
         wps = list(set([btagger+tightb, btagger+looseb]))
         for wp in wps:
-            df['Jet'][wp] = (df['Jet'][bdiscr] > btag_values[bdiscr][wp])
-        #set_trace()
+            jets[wp] = (jets[bdiscr] > btag_values[bdiscr][wp])
 
-    return df
+    else:
+        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
+
+    return jets
 
 
 def process_jets(df):
