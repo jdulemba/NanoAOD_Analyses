@@ -32,7 +32,94 @@ def process_electrons(dataframe):
         ecalgap = ecal_gap,
     )
 
-    #TIGHT_15_NoECAL_Gap = 
+
+    return electrons
+
+    ## various functions
+def init_electron_id_functs(electrons):
+    # makes etaSC
+    electrons['etaSC'] = electrons.deltaEtaSC + electrons.eta
+
+    # make IP cuts
+    ipcuts = ( (np.abs(electrons.etaSC) < 1.479) & (np.abs(electrons.dxy) < 0.05) & (np.abs(electrons.dz) < 0.10) ) | ( (np.abs(electrons.etaSC) >= 1.479) & (np.abs(electrons.dxy) < 0.10) & (np.abs(electrons.dz) < 0.20) )
+    electrons['IPCuts'] = ipcuts
+    
+    return electrons
+
+
+    ## Electron ID types
+#def fail(electrons):
+#    return electrons
+#
+#def veto_15(electrons):
+#
+#def loose_15(electrons):
+#
+#def medium_15(electrons):
+#
+#def tight_15(electrons):
+#
+def tight_15_NoECAL_Gap(electrons):
+    ID = (electrons.mvaFall17V2noIso_WP80)
+    Iso = (electrons.pfRelIso03_all < 0.15) #???
+    ecalgap = (np.abs(electrons.etaSC) <= 1.4442) | (np.abs(electrons.etaSC) >= 1.5660)
+    ipcuts = (electrons.IPCuts)
+
+    return (ID & Iso & ecalgap & ipcuts)
+
+def fakes(electrons):
+    ID = (electrons.mvaFall17V2noIso_WP80)
+    Iso = (electrons.pfRelIso03_all >= 0.15) #???
+    ecalgap = (np.abs(electrons.etaSC) <= 1.4442) | (np.abs(electrons.etaSC) >= 1.5660)
+    ipcuts = (electrons.IPCuts)
+
+    return (ID & Iso & ecalgap & ipcuts)
+
+
+def make_electron_ids(electrons):
+
+    el_types = {
+        #'VETOEL' : {
+        #    'id' : 'VETO_15',
+        #    'ptmin' : 20.,
+        #    'etascmax' : 2.5
+        #},
+        'LOOSEEL' : {
+            'id' : 'FAKES',
+            'ptmin' : 30.,
+            'etascmax' : 2.1
+        },
+        'TIGHTEL' : {
+            'id' : 'TIGHT_15_NoECAL_Gap',
+            'ptmin' : 30.,
+            'etascmax' : 2.1
+        }
+    }
+
+    id_names = {
+        #'FAIL' : fail,
+        #'VETO_15' : veto_15,
+        #'LOOSE_15' : loose_15,
+        #'MEDIUM_15' : medium_15,
+        #'TIGHT_15' : tight_15,
+        'TIGHT_15_NoECAL_Gap' : tight_15_NoECAL_Gap,
+        #'NOTVETO_15' : notveto_15,
+        'FAKES' : fakes
+    }
+
+    #if el_types['VETOEL']['id'] not in id_names.keys():
+    #    raise IOError("veto Electron ID name not valid")
+    if el_types['LOOSEEL']['id'] not in id_names.keys():
+        raise IOError("loose Electron ID name not valid")
+    if el_types['TIGHTEL']['id'] not in id_names.keys():
+        raise IOError("tight Electron ID name not valid")
+
+    #set_trace()
+    for elID in el_types.keys():
+        pt_cut = (electrons.pt >= el_types[elID]['ptmin'])
+        etaSC_cut = (np.abs(electrons.etaSC) <= el_types[elID]['etascmax'])
+        pass_id = id_names[el_types[elID]['id']](electrons)
+        electrons[elID] = (pass_id) & (pt_cut) & (etaSC_cut)
 
     return electrons
 
