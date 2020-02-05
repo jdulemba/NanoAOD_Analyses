@@ -21,71 +21,67 @@ from pdb import set_trace
 
 
     ## Muon ID types
-def fail(df):
-    return df
+def fail(muons):
+    return muons
 
-def loose_12(df):
-    eta_cut = (df['Muon'].eta <= 2.4)
-    ID = (df['Muon'].looseId)
-    Iso = (df['Muon'].tkRelIso < 0.10)
-
-    return (eta_cut & ID & Iso)
-
-def tight_12(df):
-    eta_cut = (df['Muon'].eta <= 2.4)
-    ID = (df['Muon'].tightId)
-    Iso = (df['Muon'].tkRelIso < 0.05)
-
-    return (eta_cut & ID & Iso)
-
-def loose_12Db(df):
-    eta_cut = (df['Muon'].eta <= 2.4)
-    ID = (df['Muon'].looseId)
-    Iso = (df['Muon'].pfRelIso04_all < 0.12)
-
-    return (eta_cut & ID & Iso)
-
-def tight_12Db(df):
-    eta_cut = (df['Muon'].eta <= 2.4)
-    ID = (df['Muon'].tightId)
-    Iso = (df['Muon'].pfRelIso04_all < 0.12)
-
-    return (eta_cut & ID & Iso)
-
-def loose_15(df):
-    ID = (df['Muon'].looseId)
-    Iso = Iso = (df['Muon'].tkRelIso < 0.10)
+def loose_12(muons):
+    ID  = (muons.looseId)
+    Iso = (muons.tkRelIso < 0.10)
 
     return (ID & Iso)
 
-def tight_15(df):
-    ID = (df['Muon'].tightId)
-    Iso = Iso = (df['Muon'].tkRelIso < 0.05)
+def tight_12(muons):
+    ID  = (muons.tightId)
+    Iso = (muons.tkRelIso < 0.05)
 
     return (ID & Iso)
 
-def loose_15Db(df):
-    ID = (df['Muon'].looseId)
-    Iso = Iso = (df['Muon'].pfRelIso04_all < 0.25)
+def loose_12Db(muons):
+    ID  = (muons.looseId)
+    Iso = (muons.pfRelIso04_all < 0.12)
 
     return (ID & Iso)
 
-def tight_15Db(df):
-    ID = (df['Muon'].tightId)
-    Iso = Iso = (df['Muon'].pfRelIso04_all < 0.15)
+def tight_12Db(muons):
+    ID  = (muons.tightId)
+    Iso = (muons.pfRelIso04_all < 0.12)
 
     return (ID & Iso)
 
-def tight_noIso(df):
-    return (df['Muon'].tightId)
-
-def antiloose_15Db(df):
-    ID = (df['Muon'].tightId)
-    Iso = (df['Muon'].pfRelIso04_all >= 0.15) & (df['Muon'].pfRelIso04_all < 0.43)
+def loose_15(muons):
+    ID  = (muons.looseId)
+    Iso = (muons.tkRelIso < 0.10)
 
     return (ID & Iso)
 
-def make_muon_ids(df):
+def tight_15(muons):
+    ID  = (muons.tightId)
+    Iso = (muons.tkRelIso < 0.05)
+
+    return (ID & Iso)
+
+def loose_15Db(muons):
+    ID  = (muons.looseId)
+    Iso = Iso = (muons.pfRelIso04_all < 0.25)
+
+    return (ID & Iso)
+
+def tight_15Db(muons):
+    ID  = (muons.tightId)
+    Iso = Iso = (muons.pfRelIso04_all < 0.15)
+
+    return (ID & Iso)
+
+def tight_noIso(muons):
+    return (muons.tightId)
+
+def antiloose_15Db(muons):
+    ID  = (muons.tightId)
+    Iso = (muons.pfRelIso04_all >= 0.15) & (muons.pfRelIso04_all < 0.43)
+
+    return (ID & Iso)
+
+def make_muon_ids(muons):
 
     mu_types = {
         'VETOMU' : {
@@ -106,17 +102,17 @@ def make_muon_ids(df):
     }
 
     id_names = {
-        'FAIL' : fail(df),
-        'LOOSE_12' : loose_12(df),
-        'TIGHT_12' : tight_12(df),
-        'LOOSE_12Db' : loose_12Db(df),
-        'TIGHT_12Db' : tight_12Db(df),
-        'LOOSE_15' : loose_15(df),
-        'TIGHT_15' : tight_15(df),
-        'LOOSE_15Db' : loose_15Db(df),
-        'TIGHT_15Db' : tight_15Db(df),
-        'TIGHT_NOISO' : tight_noIso(df),
-        'ANTILOOSE_15Db' : antiloose_15Db(df)
+        'FAIL' : fail,
+        'LOOSE_12' : loose_12,
+        'TIGHT_12' : tight_12,
+        'LOOSE_12Db' : loose_12Db,
+        'TIGHT_12Db' : tight_12Db,
+        'LOOSE_15' : loose_15,
+        'TIGHT_15' : tight_15,
+        'LOOSE_15Db' : loose_15Db,
+        'TIGHT_15Db' : tight_15Db,
+        'TIGHT_NOISO' : tight_noIso,
+        'ANTILOOSE_15Db' : antiloose_15Db
     }
 
     if mu_types['VETOMU']['id'] not in id_names.keys():
@@ -128,9 +124,9 @@ def make_muon_ids(df):
 
     #set_trace()
     for muID in mu_types.keys():
-        pt_cut = (df['Muon'].pt >= mu_types[muID]['ptmin'])
-        eta_cut = (np.abs(df['Muon'].eta) <= mu_types[muID]['etamax'])
-        pass_id = id_names[mu_types[muID]['id']]
-        df['Muon'][muID] = (pass_id) & (pt_cut) & (eta_cut)
+        pt_cut = (muons.pt >= mu_types[muID]['ptmin'])
+        eta_cut = (np.abs(muons.eta) <= mu_types[muID]['etamax'])
+        pass_id = id_names[mu_types[muID]['id']](muons)
+        muons[muID] = (pass_id) & (pt_cut) & (eta_cut)
 
-    return df
+    return muons
