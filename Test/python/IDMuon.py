@@ -1,22 +1,23 @@
-from coffea.analysis_objects import JaggedCandidateArray
+#from coffea.analysis_objects import JaggedCandidateArray
+import numpy as np
 from pdb import set_trace
 
 
-def process_muons(dataframe):
-    muons = JaggedCandidateArray.candidatesfromcounts(
-        dataframe['nMuon'],
-        pt=dataframe['Muon_pt'],
-        eta=dataframe['Muon_eta'],
-        phi=dataframe['Muon_phi'],
-        mass=dataframe['Muon_mass'],
-        charge=dataframe['Muon_charge'],
-        #softId=dataframe['Muon_softId'],
-        tightId=dataframe['Muon_tightId'],
-        #IsoMutrig=dataframe['HLT_IsoMu24'],
-        #IsoTkMutrig=dataframe['HLT_IsoTkMu24'],
-    )
-    return muons
-
+#def process_muons(dataframe):
+#    muons = JaggedCandidateArray.candidatesfromcounts(
+#        dataframe['nMuon'],
+#        pt=dataframe['Muon_pt'],
+#        eta=dataframe['Muon_eta'],
+#        phi=dataframe['Muon_phi'],
+#        mass=dataframe['Muon_mass'],
+#        charge=dataframe['Muon_charge'],
+#        #softId=dataframe['Muon_softId'],
+#        tightId=dataframe['Muon_tightId'],
+#        #IsoMutrig=dataframe['HLT_IsoMu24'],
+#        #IsoTkMutrig=dataframe['HLT_IsoTkMu24'],
+#    )
+#    return muons
+#
 
 
     ## Muon ID types
@@ -84,7 +85,25 @@ def antiloose_15Db(df):
 
     return (ID & Iso)
 
-def muon_id(df, tight_muID, loose_muID):
+def make_muon_ids(df):
+
+    mu_types = {
+        'VETOMU' : {
+            'id' : 'LOOSE_15Db',
+            'ptmin' : 10.,
+            'etamax' : 2.4
+        },
+        'LOOSEMU' : {
+            'id' : 'ANTILOOSE_15Db',
+            'ptmin' : 26.,
+            'etamax' : 2.4
+        },
+        'TIGHTMU' : {
+            'id' : 'TIGHT_15Db',
+            'ptmin' : 26.,
+            'etamax' : 2.4
+        }
+    }
 
     id_names = {
         'FAIL' : fail(df),
@@ -100,13 +119,18 @@ def muon_id(df, tight_muID, loose_muID):
         'ANTILOOSE_15Db' : antiloose_15Db(df)
     }
 
-    if tight_muID not in id_names.keys():
-        raise IOError("tight Muon ID name not valid")
-    if loose_muID not in id_names.keys():
+    if mu_types['VETOMU']['id'] not in id_names.keys():
+        raise IOError("veto Muon ID name not valid")
+    if mu_types['LOOSEMU']['id'] not in id_names.keys():
         raise IOError("loose Muon ID name not valid")
+    if mu_types['TIGHTMU']['id'] not in id_names.keys():
+        raise IOError("tight Muon ID name not valid")
 
-    unique_IDs = list(set([tight_muID, loose_muID]))
-    for muID in unique_IDs:
-        df['Muon'][muID] = id_names[muID]
+    #set_trace()
+    for muID in mu_types.keys():
+        pt_cut = (df['Muon'].pt >= mu_types[muID]['ptmin'])
+        eta_cut = (np.abs(df['Muon'].eta) <= mu_types[muID]['etamax'])
+        pass_id = id_names[mu_types[muID]['id']]
+        df['Muon'][muID] = (pass_id) & (pt_cut) & (eta_cut)
 
     return df
