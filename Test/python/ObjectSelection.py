@@ -1,16 +1,10 @@
 from pdb import set_trace
-import python.triggers as triggers
-import coffea.processor as processor
 import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
 
 def select_muons(df, accumulator=None):
     if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
         if accumulator: accumulator['cutflow']['before mu sel'] += df['Muon'].size
-
-            ## pass muon trigger
-        mu_trig_mask = triggers.mu_triggers(df)
-        if accumulator: accumulator['cutflow']['nEvts pass mu triggers'] += mu_trig_mask.sum()
 
             ## tight muons
         tight_muons_mask = (df['Muon'].tightId)
@@ -25,8 +19,7 @@ def select_muons(df, accumulator=None):
         if accumulator: accumulator['cutflow']['1 muon, tightID'] += one_mu_tight_mask.sum()
 
             ## pass all muon criteria
-        passing_mus = (one_mu_tight_mask) & (mu_trig_mask)
-        if accumulator: accumulator['cutflow']['passing muons'] += passing_mus.sum()
+        passing_mus = (one_mu_tight_mask)
 
     #elif isinstance(df, coffea.processor.dataframe.LazyDataFrame):
     #    from python.IDMuon import process_muons as proc_mus
@@ -96,10 +89,6 @@ def select_electrons(df, accumulator=None):
     if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
         if accumulator: accumulator['cutflow']['before el sel'] += df['Electron'].size
 
-            ## pass electron trigger
-        el_trig_mask = triggers.el_triggers(df)
-        if accumulator: accumulator['cutflow']['nEvts pass el triggers'] += el_trig_mask.sum()
-
         set_trace()
             ## tight electrons
         tight_electrons_mask = (df['Electron'].tightId)
@@ -126,3 +115,94 @@ def select_electrons(df, accumulator=None):
         return passing_els, accumulator
     else:
         return passing_els
+
+
+def get_triggers(df, leptype, accumulator=None):
+    ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
+    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+        if leptype == 'Muon':
+            trigger = (df['HLT']['IsoMu24']) | (df['HLT']['IsoTkMu24'])
+        elif leptype == 'Electron':
+            trigger = (df['HLT']['Ele27_WPTight_Gsf'])
+        else:
+            raise ValueError("Only events analyzing muons OR electrons supported right now")
+    
+    elif isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        if leptype == 'Muon':
+            trigger = (df['HLT_IsoMu24'] > 0) | (df['HLT_IsoTkMu24'] > 0)
+        elif leptype == 'Electron':
+            trigger = df['HLT_Ele27_WPTight_Gsf']
+        else:
+            raise ValueError("Only events analyzing muons OR electrons supported right now")
+
+    else:
+        raise ValueError("Only NanoEvents and LazyDataFrame formats supported right now")
+
+    if accumulator:
+        accumulator['cutflow']['nEvts pass %s triggers' % leptype] += trigger.sum()
+        return trigger, accumulator
+    else:
+        return trigger
+
+
+def get_filters(df, accumulator=None):
+    ## Supported filters found here: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
+    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+        pass_filters = (df['Flag']['goodVertices']) & (df['Flag']['globalSuperTightHalo2016Filter']) & (df['Flag']['HBHENoiseFilter']) & (df['Flag']['HBHENoiseIsoFilter']) & (df['Flag']['EcalDeadCellTriggerPrimitiveFilter']) & (df['Flag']['BadPFMuonFilter'])
+    #elif isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        #pass_filters = (df['Flag']['goodVertices']) & (df['Flag']['globalSuperTightHalo2016Filter']) & (df['Flag']['HBHENoiseFilter']) & (df['Flag']['HBHENoiseIsoFilter']) & (df['Flag']['EcalDeadCellTriggerPrimitiveFilter']) & (df['Flag']['BadPFMuonFilter'])
+    else:
+        raise ValueError("Only NanoEvents and LazyDataFrame formats supported right now")
+
+    if accumulator:
+        accumulator['cutflow']['pass filters'] += pass_filters.sum()
+        return pass_filters, accumulator
+    else:
+        return pass_filters
+
+
+def select(df, leptype, accumulator=None, shift=None):
+
+    #set_trace()
+    if leptype != 'Muon' and leptype != 'Electron':
+        raise IOError("Only events analyzing muons OR electrons supported right now")
+
+    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
+            ## get triggers
+        if accumulator:
+            pass_triggers, accumulator = get_triggers(df, leptype, accumulator)
+        else:
+            pass_triggers = get_triggers(df, leptype)
+
+            ## get filters
+        if accumulator:
+            pass_filters, accumulator = get_filters(df, accumulator)
+        else:
+            pass_filters = get_filters(df)
+
+        ### lepton selection
+        if leptype == 'Muon':
+            if accumulator:
+                passing_leps, accumulator = select_muons(df, accumulator)
+            else:
+                passing_leps = select_muons(df)
+
+        else:
+        #elif leptype == 'Electron':
+            if accumulator:
+                passing_leps, accumulator = select_electrons(df, accumulator)
+            else:
+                passing_leps = select_electrons(df)
+
+        if accumulator:
+            accumulator['cutflow']['passing %s' % leptype] += (pass_triggers & passing_leps).sum()
+
+        ### jets selection
+        if accumulator:
+            passing_jets, accumulator = select_jets(df, accumulator)
+        else:
+            passing_jets = select_jets(df)
+
+    passing_evts = passing_jets & passing_leps & pass_triggers & pass_filters
+
+    return passing_evts
