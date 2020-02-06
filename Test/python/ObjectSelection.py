@@ -6,10 +6,8 @@ import awkward
 def select_muons(muons, accumulator=None):
     import python.IDMuon as IDMuon
     
-    muons = IDMuon.make_muon_ids(muons)
-    #set_trace()
-
     if isinstance(muons, awkward.array.base.AwkwardArray):
+        muons = IDMuon.make_muon_ids(muons)
         if accumulator: accumulator['cutflow']['before mu sel'] += muons.size
 
             ## tight muons
@@ -39,27 +37,27 @@ def select_muons(muons, accumulator=None):
 def select_jets(jets, accumulator=None):
     import python.IDJet as IDJet
     
-    ## hardcoded for now
-    btagger = 'DEEPCSV'
-    btag_wps = ['MEDIUM', 'MEDIUM']
-    
-    #set_trace()
     if isinstance(jets, awkward.array.base.AwkwardArray):
-        jets = IDJet.add_btag_disc(jets, btagger=btagger, tightb=btag_wps[0], looseb=btag_wps[1])
+        jets = IDJet.build_jets(jets)
+
+            ## kinematic cuts (pt, leadpt, eta)
+        kin_cut_jets = jets.kin_cuts
+        if accumulator: accumulator['cutflow']['jets pass kin cuts'] += kin_cut_jets.sum().sum()
 
             ## only 4 jets
         four_jets = (jets.counts == 4)
-        if accumulator: accumulator['cutflow']['4 jets'] += four_jets.sum()
+        if accumulator: accumulator['cutflow']['nEvts with 4 jets'] += four_jets.sum()
 
             #btag reqs
+        btag_wps = [col for col in jets.columns if 'BTAG_' in col]
         if len(list(set(btag_wps))) == 1:
-            btag_pass = (jets[btagger+btag_wps[0]]).sum() >= 2
-            if accumulator: accumulator['cutflow']['>=2 jets pass %s' % btagger+btag_wps[0]] += btag_pass.sum()
+            btag_pass = (jets[btag_wps[0]]).sum() >= 2
+            if accumulator: accumulator['cutflow']['nEvts >=2 jets pass %s' % btag_wps[0]] += btag_pass.sum()
         else:
             raise IOError("Only 1 unique btag working point supported now")
 
-        passing_jets = (four_jets) & (btag_pass)
-        if accumulator: accumulator['cutflow']['pass btag + nJets'] += passing_jets.sum()
+        passing_jets = (four_jets & btag_pass & kin_cut_jets).any()
+        if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts'] += passing_jets.sum()
 
     else:
         raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
@@ -73,10 +71,8 @@ def select_jets(jets, accumulator=None):
 def select_electrons(electrons, accumulator=None):
     import python.IDElectron as IDElectron
 
-    electrons = IDElectron.make_etaSC(electrons)
-    electrons = IDElectron.make_electron_ids(electrons)
-
     if isinstance(electrons, awkward.array.base.AwkwardArray):
+        electrons = IDElectron.build_electrons(electrons)
         if accumulator: accumulator['cutflow']['before el sel'] += electrons.size
 
         #set_trace()
@@ -181,6 +177,7 @@ def select(df, leptype, accumulator=None, shift=None):
         else:
             passing_jets = select_jets(df['Jet'])
 
+    #set_trace()
     passing_evts = passing_jets & passing_leps & pass_triggers & pass_filters
 
     return passing_evts
