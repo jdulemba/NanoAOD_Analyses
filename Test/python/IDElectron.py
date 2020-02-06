@@ -1,6 +1,8 @@
 from coffea.analysis_objects import JaggedCandidateArray
 import numpy as np
 from pdb import set_trace
+import Utilities.prettyjson as prettyjson
+import os
 
 def process_electrons(dataframe):
 
@@ -36,7 +38,7 @@ def process_electrons(dataframe):
     return electrons
 
     ## various functions
-def init_electron_id_functs(electrons):
+def make_electron_id_functs(electrons):
     # makes etaSC
     electrons['etaSC'] = electrons.deltaEtaSC + electrons.eta
 
@@ -78,23 +80,7 @@ def fakes(electrons):
 
 def make_electron_ids(electrons):
 
-    el_types = {
-        #'VETOEL' : {
-        #    'id' : 'VETO_15',
-        #    'ptmin' : 20.,
-        #    'etascmax' : 2.5
-        #},
-        'LOOSEEL' : {
-            'id' : 'FAKES',
-            'ptmin' : 30.,
-            'etascmax' : 2.1
-        },
-        'TIGHTEL' : {
-            'id' : 'TIGHT_15_NoECAL_Gap',
-            'ptmin' : 30.,
-            'etascmax' : 2.1
-        }
-    }
+    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Electrons']
 
     id_names = {
         #'FAIL' : fail,
@@ -107,19 +93,25 @@ def make_electron_ids(electrons):
         'FAKES' : fakes
     }
 
-    #if el_types['VETOEL']['id'] not in id_names.keys():
+    #if el_pars['VETOEL']['id'] not in id_names.keys():
     #    raise IOError("veto Electron ID name not valid")
-    if el_types['LOOSEEL']['id'] not in id_names.keys():
+    if el_pars['LOOSEEL']['id'] not in id_names.keys():
         raise IOError("loose Electron ID name not valid")
-    if el_types['TIGHTEL']['id'] not in id_names.keys():
+    if el_pars['TIGHTEL']['id'] not in id_names.keys():
         raise IOError("tight Electron ID name not valid")
 
     #set_trace()
-    for elID in el_types.keys():
-        pt_cut = (electrons.pt >= el_types[elID]['ptmin'])
-        etaSC_cut = (np.abs(electrons.etaSC) <= el_types[elID]['etascmax'])
-        pass_id = id_names[el_types[elID]['id']](electrons)
+    for elID in el_pars.keys():
+        pt_cut = (electrons.pt >= el_pars[elID]['ptmin'])
+        etaSC_cut = (np.abs(electrons.etaSC) <= el_pars[elID]['etascmax'])
+        pass_id = id_names[el_pars[elID]['id']](electrons)
         electrons[elID] = (pass_id) & (pt_cut) & (etaSC_cut)
 
     return electrons
 
+
+def build_electrons(electrons):
+    electrons = make_electron_id_functs(electrons)
+    electrons = make_electron_ids(electrons)
+
+    return electrons
