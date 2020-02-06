@@ -2,6 +2,9 @@ import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
 import awkward
 from pdb import set_trace
+import Utilities.prettyjson as prettyjson
+import numpy as np
+import os
 
 btag_values = {
     'btagDeepB' : {
@@ -16,25 +19,48 @@ btag_values = {
     }
 }
 
+jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Jets']
+
 valid_taggers = ['DEEPCSV', 'DEEPJET']
 valid_WPs = ['LOOSE', 'MEDIUM', 'TIGHT']
 
-def add_btag_disc(jets, btagger, tightb, looseb):
-    if btagger not in valid_taggers:
-        raise IOError("%s is not a supported b-tagger" % btagger)
-    if tightb not in valid_WPs:
-        raise IOError("%s is not a valid working point" % tightb)
-    if looseb not in valid_WPs:
-        raise IOError("%s is not a valid working point" % looseb)
-
+def make_kin_cuts(jets):
     if isinstance(jets, awkward.array.base.AwkwardArray):
-        bdiscr = 'btagDeepB' if btagger == 'DEEPCSV' else 'btagDeepFlavB'
-        wps = list(set([btagger+tightb, btagger+looseb]))
-        for wp in wps:
-            jets[wp] = (jets[bdiscr] > btag_values[bdiscr][wp])
+        pt_cut = (jets.pt >= jet_pars['ptmin'])
+        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
+        eta_cut = (np.abs(jets.eta) <= jet_pars['etamax'])
+        jets['kin_cuts'] = (pt_cut) & (leadpt_cut) & (eta_cut)
 
     else:
         raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
+
+    return jets
+
+def add_btag_disc(jets):
+
+    if jet_pars['btagger'] not in valid_taggers:
+        raise IOError("%s is not a supported b-tagger" % jet_pars['btagger'])
+    if jet_pars['permutations']['tightb'] not in valid_WPs:
+        raise IOError("%s is not a valid working point" % jet_pars['permutations']['tightb'])
+    if jet_pars['permutations']['looseb'] not in valid_WPs:
+        raise IOError("%s is not a valid working point" % jet_pars['permutations']['looseb'])
+
+    #set_trace()
+    if isinstance(jets, awkward.array.base.AwkwardArray):
+        bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DEEPCSV' else 'btagDeepFlavB'
+        wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
+        for wp in wps:
+            jets['BTAG_%s' % wp] = (jets[bdiscr] > btag_values[bdiscr][wp])
+
+    else:
+        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
+
+    return jets
+
+
+def build_jets(jets):
+    jets = make_kin_cuts(jets)
+    jets = add_btag_disc(jets)
 
     return jets
 
