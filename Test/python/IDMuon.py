@@ -1,7 +1,8 @@
 #from coffea.analysis_objects import JaggedCandidateArray
 import numpy as np
 from pdb import set_trace
-
+import Utilities.prettyjson as prettyjson
+import os
 
 #def process_muons(dataframe):
 #    muons = JaggedCandidateArray.candidatesfromcounts(
@@ -83,23 +84,7 @@ def antiloose_15Db(muons):
 
 def make_muon_ids(muons):
 
-    mu_types = {
-        'VETOMU' : {
-            'id' : 'LOOSE_15Db',
-            'ptmin' : 10.,
-            'etamax' : 2.4
-        },
-        'LOOSEMU' : {
-            'id' : 'ANTILOOSE_15Db',
-            'ptmin' : 26.,
-            'etamax' : 2.4
-        },
-        'TIGHTMU' : {
-            'id' : 'TIGHT_15Db',
-            'ptmin' : 26.,
-            'etamax' : 2.4
-        }
-    }
+    mu_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Muons']
 
     id_names = {
         'FAIL' : fail,
@@ -115,18 +100,17 @@ def make_muon_ids(muons):
         'ANTILOOSE_15Db' : antiloose_15Db
     }
 
-    if mu_types['VETOMU']['id'] not in id_names.keys():
+    if mu_pars['VETOMU']['id'] not in id_names.keys():
         raise IOError("veto Muon ID name not valid")
-    if mu_types['LOOSEMU']['id'] not in id_names.keys():
+    if mu_pars['LOOSEMU']['id'] not in id_names.keys():
         raise IOError("loose Muon ID name not valid")
-    if mu_types['TIGHTMU']['id'] not in id_names.keys():
+    if mu_pars['TIGHTMU']['id'] not in id_names.keys():
         raise IOError("tight Muon ID name not valid")
 
-    #set_trace()
-    for muID in mu_types.keys():
-        pt_cut = (muons.pt >= mu_types[muID]['ptmin'])
-        eta_cut = (np.abs(muons.eta) <= mu_types[muID]['etamax'])
-        pass_id = id_names[mu_types[muID]['id']](muons)
+    for muID in mu_pars.keys():
+        pt_cut = (muons.pt >= mu_pars[muID]['ptmin'])
+        eta_cut = (np.abs(muons.eta) <= mu_pars[muID]['etamax'])
+        pass_id = id_names[mu_pars[muID]['id']](muons)
         muons[muID] = (pass_id) & (pt_cut) & (eta_cut)
 
     return muons
