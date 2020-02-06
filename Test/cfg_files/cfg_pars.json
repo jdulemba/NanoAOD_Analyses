@@ -1,0 +1,53 @@
+{
+    "Muons": {
+        "VETOMU": {
+            "id": "LOOSE_15Db",
+            "ptmin": 10.0,
+            "etamax": 2.4
+        },
+        "LOOSEMU" : {
+            "id": "ANTILOOSE_15Db",
+            "ptmin": 26.0,
+            "etamax": 2.4
+        },
+        "TIGHTMU" : {
+            "id": "TIGHT_15Db",
+            "ptmin": 26.0,
+            "etamax": 2.4
+        }
+    },
+    "Electrons": {
+        "LOOSEEL": {
+            "id": "FAKES",
+            "ptmin": 30.0,
+            "etascmax": 2.1
+        },
+        "TIGHTEL": {
+            "id": "TIGHT_15_NoECAL_Gap",
+            "ptmin": 30.0,
+            "etascmax": 2.1
+        }
+    },
+    "Jets": {
+        "n_min": 3,
+        "ptmin": 20.0,
+        "lead_ptmin": 50.0,
+        "etamax": 2.4,
+        "btagger": "DEEPCSV",
+        "applyJER": 1,
+        "permutations": {
+            "max_jets": 600,
+            "max_bjets": 0,
+            "hardb_pt": 20.0,
+            "softb_pt": 20.0,
+            "hardw_pt": 20.0,
+            "softw_pt": 20.0,
+            "tightb": "MEDIUM",
+            "looseb": "MEDIUM"
+        },
+        "best_permutation": {
+            "tightb": "MEDIUM",
+            "looseb": "MEDIUM"
+        }
+    }
+}
