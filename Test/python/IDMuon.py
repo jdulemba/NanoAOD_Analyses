@@ -1,24 +1,28 @@
-#from coffea.analysis_objects import JaggedCandidateArray
 import numpy as np
 from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
 
-#def process_muons(dataframe):
-#    muons = JaggedCandidateArray.candidatesfromcounts(
-#        dataframe['nMuon'],
-#        pt=dataframe['Muon_pt'],
-#        eta=dataframe['Muon_eta'],
-#        phi=dataframe['Muon_phi'],
-#        mass=dataframe['Muon_mass'],
-#        charge=dataframe['Muon_charge'],
-#        #softId=dataframe['Muon_softId'],
-#        tightId=dataframe['Muon_tightId'],
-#        #IsoMutrig=dataframe['HLT_IsoMu24'],
-#        #IsoTkMutrig=dataframe['HLT_IsoTkMu24'],
-#    )
-#    return muons
-#
+def process_muons(df):
+    from coffea.analysis_objects import JaggedCandidateArray
+    muons = JaggedCandidateArray.candidatesfromcounts(
+        df['nMuon'],
+        pt=df['Muon_pt'],
+        eta=df['Muon_eta'],
+        phi=df['Muon_phi'],
+        mass=df['Muon_mass'],
+        charge=df['Muon_charge'],
+        looseId=df['Muon_looseId'],
+        tightId=df['Muon_tightId'],
+        pfRelIso=df['Muon_pfRelIso04_all'],
+        tkRelIso=df['Muon_tkRelIso'],
+    )
+
+        ## add muon ID+Iso categories
+    muons = make_muon_ids(muons)
+
+    return muons
+
 
 
     ## Muon ID types
@@ -39,13 +43,13 @@ def tight_12(muons):
 
 def loose_12Db(muons):
     ID  = (muons.looseId)
-    Iso = (muons.pfRelIso04_all < 0.12)
+    Iso = (muons.pfRelIso < 0.12)
 
     return (ID & Iso)
 
 def tight_12Db(muons):
     ID  = (muons.tightId)
-    Iso = (muons.pfRelIso04_all < 0.12)
+    Iso = (muons.pfRelIso < 0.12)
 
     return (ID & Iso)
 
@@ -63,13 +67,13 @@ def tight_15(muons):
 
 def loose_15Db(muons):
     ID  = (muons.looseId)
-    Iso = Iso = (muons.pfRelIso04_all < 0.25)
+    Iso = Iso = (muons.pfRelIso < 0.25)
 
     return (ID & Iso)
 
 def tight_15Db(muons):
     ID  = (muons.tightId)
-    Iso = Iso = (muons.pfRelIso04_all < 0.15)
+    Iso = Iso = (muons.pfRelIso < 0.15)
 
     return (ID & Iso)
 
@@ -78,7 +82,7 @@ def tight_noIso(muons):
 
 def antiloose_15Db(muons):
     ID  = (muons.tightId)
-    Iso = (muons.pfRelIso04_all >= 0.15) & (muons.pfRelIso04_all < 0.43)
+    Iso = (muons.pfRelIso >= 0.15) & (muons.pfRelIso < 0.43)
 
     return (ID & Iso)
 
