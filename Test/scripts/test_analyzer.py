@@ -1,22 +1,18 @@
-#import matplotlib.pyplot as plt
-#plt.switch_backend('agg')
 from coffea import hist
-#from coffea.analysis_objects import JaggedCandidateArray
 import coffea.processor as processor
-import uproot
 from pdb import set_trace
 import os
 from argparse import ArgumentParser
-#from python.IDMuon import process_muons as proc_mus
-#from python.IDElectron import process_electrons as proc_els
-#from python.IDJet import process_jets as proc_jets
-#import python.triggers as triggers
 import python.ObjectSelection as objsel
-
+#import Utilities.maskedlazy as maskedlazy
+import coffea.processor.dataframe
+import itertools
 
 parser = ArgumentParser()
 parser.add_argument('sample', default='ttJets', help='Samples to run over')
 parser.add_argument('--nfiles', default=-1, type=int, help='Specify the first number of files in the txt to run over. -1 means all')
+parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
+
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -43,23 +39,32 @@ class Test_Analyzer(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
-        mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
-        pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        eta_axis = hist.Bin("eta", r"$\eta$", 200, -5, 5)
-        phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
-        
+        self.mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
+        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5, 5)
+        self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.njets_axis = hist.Bin("njets", "n_{jets}", 10, 0, 10)
+
+        self.lepton = {
+            'Muon': 'MU',
+            #'Electron' : 'EL'
+        }
+        self.leptypes = ['LOOSE', 'TIGHT']
+        #obj_dirs = [*self.lepton.keys()]+['Jets']
+        directories = itertools.product(self.leptypes, self.lepton.values())
+
+        #set_trace()        
             ## make dictionary of hists
-        #dirs = ['muons']
-        #dirs = ['tight_muons', 'one_tight_mu']
-        dirs = ['muons', 'jets']
-        #dirs = ['electrons']
-        #dirs = ['muons', 'electrons']
         histo_dict = {}
-        #for obj_dir in dirs:
-        #    histo_dict['%s_mass' % obj_dir] = hist.Hist("Counts", mass_axis)
-        #    histo_dict['%s_pt' % obj_dir] = hist.Hist("Counts", pt_axis)
-        #    histo_dict['%s_eta' % obj_dir] = hist.Hist("Counts", eta_axis)
-        #    histo_dict['%s_phi' % obj_dir] = hist.Hist("Counts", phi_axis)
+        for dirid in directories:
+            tdir = '%s%s' % dirid
+    
+                ## make jet hists
+            jet_hists = self.make_jet_hists('%s_Jets' % tdir)
+            histo_dict.update(jet_hists)
+                ## make lepton hists
+            lep_hists = self.make_lep_hists('%s_%s' % (tdir, [*self.lepton.keys()][0]))
+            histo_dict.update(lep_hists)
         histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
@@ -67,54 +72,72 @@ class Test_Analyzer(processor.ProcessorABC):
     @property
     def accumulator(self):
         return self._accumulator
+
+
+    def make_jet_hists(self, tdir):
+        histo_dict = {}
+        histo_dict['%s_pt' % tdir] = hist.Hist("Counts", self.pt_axis)
+        histo_dict['%s_eta' % tdir] = hist.Hist("Counts", self.eta_axis)
+        histo_dict['%s_phi' % tdir] = hist.Hist("Counts", self.phi_axis)
+        histo_dict['%s_njets' % tdir] = hist.Hist("Counts", self.njets_axis)
+
+        return histo_dict
+
     
+    def make_lep_hists(self, tdir):
+        histo_dict = {}
+        histo_dict['%s_pt' % tdir] = hist.Hist("Counts", self.pt_axis)
+        histo_dict['%s_eta' % tdir] = hist.Hist("Counts", self.eta_axis)
+        histo_dict['%s_phi' % tdir] = hist.Hist("Counts", self.phi_axis)
+
+        return histo_dict
+
     def process(self, df):
         output = self.accumulator.identity()
 
-        #df['muons'] = proc_mus(df)
-        #df['jets'] = proc_jets(df)
-        #electrons = proc_els(df)
+        #set_trace()
+        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+            raise IOError("This function only works for LazyDataFrame objects")
 
-        ### final event selection
-        passing_evt = objsel.select(df, leptype='Muon', accumulator=output)
+        lep_to_use = [*self.lepton.keys()][0]
+        passing_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
+        ##df = maskedlazy.MaskedLazyDataFrame()
+            
+        output['cutflow']['nEvts passing jet and %s' % lep_to_use] += passing_evts.sum()
+
+        sel_leps = df[lep_to_use][(passing_evts)]
+        sel_jets = df['Jet'][(passing_evts)]
+
+            ## only one lepton categorized as tight/loose
+        tight_leps = sel_leps['TIGHT%s' % self.lepton[lep_to_use]].flatten()
+        loose_leps = sel_leps['LOOSE%s' % self.lepton[lep_to_use]].flatten()
 
         #set_trace()
+            ## fill hists for tight leptons
+        output = self.fill_jet_hists(output, 'TIGHT%s_Jets' % self.lepton[lep_to_use], sel_jets[tight_leps])        
+        output = self.fill_lep_hists(output, 'TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[tight_leps])        
 
-        #passing_evt = passing_jets & passing_mus
-        output['cutflow']['passing jet and mu'] += passing_evt.sum()
-
-        #sel_mus = df['Muon'][(passing_evt)]
-        #sel_jets = df['Jet'][(passing_evt)]
-
-        #output = self.fill_hists(output, 'muons', sel_mus)        
-        #output = self.fill_hists(output, 'jets', sel_jets)        
-        
-        #    ## electrons
-        #output['cutflow']['all electrons'] += electrons.size
-        ##trigelectrons = (electrons.trig > 0)
-        ##electrons = electrons[trigelectrons]
-        ##output['cutflow']['el trigger'] += trigelectrons.any().sum()
-
-        #oneelectron = (electrons.counts == 1)
-        #electrons = electrons[oneelectron]
-        #output['cutflow']['1 electron'] += oneelectron.sum()
-
-        #tight_el = (electrons.cutBasedId == 4)
-        #electrons = electrons[tight_el]
-        #output['cutflow']['el tight id'] += tight_el.any().sum()
-
-        #ipcuts = (electrons.IPCuts > 0)
-        #output['cutflow']['e IP cuts'] += ipcuts.any().sum()
-
-        #output = self.fill_hists(output, 'electrons', electrons)        
+            ## fill hists for loose leptons
+        output = self.fill_jet_hists(output, 'LOOSE%s_Jets' % self.lepton[lep_to_use], sel_jets[loose_leps])        
+        output = self.fill_lep_hists(output, 'LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[loose_leps])        
 
         return output
 
-    def fill_hists(self, accumulator, hdir, obj):
-        accumulator['%s_mass' % hdir].fill(mass=obj.mass.flatten())
-        accumulator['%s_pt' % hdir].fill(pt=obj.pt.flatten())
-        accumulator['%s_eta' % hdir].fill(eta=obj.eta.flatten())
-        accumulator['%s_phi' % hdir].fill(phi=obj.phi.flatten())
+    def fill_jet_hists(self, accumulator, tdir, obj):
+        #accumulator['%s_mass' % tdir].fill(mass=obj.mass.flatten())
+        accumulator['%s_pt' % tdir].fill(pt=obj.pt.flatten())
+        accumulator['%s_eta' % tdir].fill(eta=obj.eta.flatten())
+        accumulator['%s_phi' % tdir].fill(phi=obj.phi.flatten())
+        accumulator['%s_njets' % tdir].fill(njets=obj.counts)
+
+        return accumulator        
+
+    def fill_lep_hists(self, accumulator, tdir, obj):
+        #set_trace()
+        #accumulator['%s_mass' % tdir].fill(mass=obj.mass.flatten())
+        accumulator['%s_pt' % tdir].fill(pt=obj.pt.flatten())
+        accumulator['%s_eta' % tdir].fill(eta=obj.eta.flatten())
+        accumulator['%s_phi' % tdir].fill(phi=obj.phi.flatten())
 
         return accumulator        
 
@@ -126,8 +149,8 @@ output = processor.run_uproot_job(fileset,
     processor_instance=Test_Analyzer(),
     executor=processor.iterative_executor,
     #executor=processor.futures_executor,
-    #executor_args={'workers': 4, 'flatten' : True},
-    executor_args={'workers': 4, 'flatten' : True, 'nano' : True},
+    executor_args={'workers': 4, 'flatten' : True},
+    #executor_args={'workers': 4, 'flatten' : True, 'nano' : True},
     #chunksize=500000,
 )
 
@@ -143,9 +166,12 @@ else:
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
+import uproot
 fout = uproot.recreate(rfname) if os.path.isfile(rfname) else uproot.create(rfname)
 histos = [key for key in output.keys() if key != 'cutflow']
 #set_trace()
 for histo in histos:
     fout[histo] = hist.export1d(output[histo])
 fout.close()
+
+print('%s has been written' % rfname)
