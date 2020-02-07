@@ -2,12 +2,14 @@ from pdb import set_trace
 import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
 import awkward
+import python.Filters_and_Triggers as Filters_and_Triggers
+import python.IDJet as IDJet
+import python.IDMuon as IDMuon
+import python.IDElectron as IDElectron
 
 def select_muons(muons, accumulator=None):
-    import python.IDMuon as IDMuon
     
     if isinstance(muons, awkward.array.base.AwkwardArray):
-        muons = IDMuon.make_muon_ids(muons)
         if accumulator: accumulator['cutflow']['before mu sel'] += muons.size
 
             ## tight muons
@@ -26,7 +28,7 @@ def select_muons(muons, accumulator=None):
         passing_mus = (one_mu_tight_mask)
 
     else:
-        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
+        raise ValueError("Only AwkwardArrays are supported")
 
     if accumulator:
         return passing_mus, accumulator
@@ -35,13 +37,11 @@ def select_muons(muons, accumulator=None):
 
 
 def select_jets(jets, accumulator=None):
-    import python.IDJet as IDJet
     
     if isinstance(jets, awkward.array.base.AwkwardArray):
-        jets = IDJet.build_jets(jets)
 
             ## kinematic cuts (pt, leadpt, eta)
-        kin_cut_jets = jets.kin_cuts
+        kin_cut_jets = jets.Kin_Cuts
         if accumulator: accumulator['cutflow']['jets pass kin cuts'] += kin_cut_jets.sum().sum()
 
             ## only 4 jets
@@ -60,7 +60,7 @@ def select_jets(jets, accumulator=None):
         if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts'] += passing_jets.sum()
 
     else:
-        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
+        raise ValueError("Only AwkwardArrays are supported")
 
     if accumulator:
         return passing_jets, accumulator
@@ -69,15 +69,14 @@ def select_jets(jets, accumulator=None):
 
 
 def select_electrons(electrons, accumulator=None):
-    import python.IDElectron as IDElectron
 
     if isinstance(electrons, awkward.array.base.AwkwardArray):
-        electrons = IDElectron.build_electrons(electrons)
+
         if accumulator: accumulator['cutflow']['before el sel'] += electrons.size
 
         #set_trace()
             ## tight electrons
-        tight_electrons_mask = (electrons.mvaFall17V2noIso_WP80)
+        tight_electrons_mask = (electrons.tightID)
         if accumulator: accumulator['cutflow']['n tight electrons'] += tight_electrons_mask.any().sum()
 
             ## single electron
@@ -100,84 +99,56 @@ def select_electrons(electrons, accumulator=None):
         return passing_els
 
 
-def get_triggers(triggers, leptype, accumulator=None):
-    ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
-    if isinstance(triggers, awkward.array.base.AwkwardArray):
-        if leptype == 'Muon':
-            trigger = (triggers.IsoMu24) | (triggers.IsoTkMu24)
-        elif leptype == 'Electron':
-            trigger = (triggers.Ele27_WPTight_Gsf)
-        else:
-            raise ValueError("Only events analyzing muons OR electrons supported right now")
-
-    else:
-        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
-
-    if accumulator:
-        accumulator['cutflow']['nEvts pass %s triggers' % leptype] += trigger.sum()
-        return trigger, accumulator
-    else:
-        return trigger
-
-
-def get_filters(filters, accumulator=None):
-    ## Supported filters found here: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
-    if isinstance(filters, awkward.array.base.AwkwardArray):
-        pass_filters = (filters.goodVertices) & (filters.globalSuperTightHalo2016Filter) & (filters.HBHENoiseFilter) & (filters.HBHENoiseIsoFilter) & (filters.EcalDeadCellTriggerPrimitiveFilter) & (filters.BadPFMuonFilter)
-
-    else:
-        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
-
-    if accumulator:
-        accumulator['cutflow']['pass filters'] += pass_filters.sum()
-        return pass_filters, accumulator
-    else:
-        return pass_filters
-
-
 def select(df, leptype, accumulator=None, shift=None):
 
     #set_trace()
     if leptype != 'Muon' and leptype != 'Electron':
         raise IOError("Only events analyzing muons OR electrons supported right now")
 
-    if isinstance(df, coffea.nanoaod.nanoevents.NanoEvents):
-            ## get triggers
+    if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        raise IOError("This function only works for LazyDataFrame objects")
+
+        ## get triggers
+    if accumulator:
+        pass_triggers, accumulator = Filters_and_Triggers.get_triggers(df, leptype, accumulator)
+    else:
+        pass_triggers = Filters_and_Triggers.get_triggers(df, leptype)
+
+        ## get filters
+    if accumulator:
+        pass_filters, accumulator = Filters_and_Triggers.get_filters(df, accumulator)
+    else:
+        pass_filters = Filters_and_Triggers.get_filters(df)
+    #set_trace()
+
+    ### lepton selection
+    if leptype == 'Muon':
+        df['Muon'] = IDMuon.process_muons(df)
         if accumulator:
-            pass_triggers, accumulator = get_triggers(df['HLT'], leptype, accumulator)
+            passing_leps, accumulator = select_muons(df['Muon'], accumulator)
         else:
-            pass_triggers = get_triggers(df['HLT'], leptype)
+            passing_leps = select_muons(df['Muon'])
 
-            ## get filters
+    else:
+    #elif leptype == 'Electron':
+        df['Electron'] = IDElectron.process_electrons(df)
         if accumulator:
-            pass_filters, accumulator = get_filters(df['Flag'], accumulator)
+            passing_leps, accumulator = select_electrons(df['Electron'], accumulator)
         else:
-            pass_filters = get_filters(df['Flag'])
-
-        ### lepton selection
-        if leptype == 'Muon':
-            if accumulator:
-                passing_leps, accumulator = select_muons(df['Muon'], accumulator)
-            else:
-                passing_leps = select_muons(df['Muon'])
-
-        else:
-        #elif leptype == 'Electron':
-            if accumulator:
-                passing_leps, accumulator = select_electrons(df['Electron'], accumulator)
-            else:
-                passing_leps = select_electrons(df['Electron'])
-
-        if accumulator:
-            accumulator['cutflow']['passing %s' % leptype] += (pass_triggers & passing_leps).sum()
-
-        ### jets selection
-        if accumulator:
-            passing_jets, accumulator = select_jets(df['Jet'], accumulator)
-        else:
-            passing_jets = select_jets(df['Jet'])
+            passing_leps = select_electrons(df['Electron'])
 
     #set_trace()
-    passing_evts = passing_jets & passing_leps & pass_triggers & pass_filters
+    if accumulator:
+        accumulator['cutflow']['passing %s' % leptype] += (pass_triggers & pass_filters & passing_leps).sum()
+
+    ### jets selection
+    df['Jet'] = IDJet.process_jets(df)
+    if accumulator:
+        passing_jets, accumulator = select_jets(df['Jet'], accumulator)
+    else:
+        passing_jets = select_jets(df['Jet'])
+
+    #set_trace()
+    passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
 
     return passing_evts
