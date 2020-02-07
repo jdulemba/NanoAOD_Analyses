@@ -44,6 +44,10 @@ def select_jets(jets, accumulator=None):
         kin_cut_jets = jets.Kin_Cuts
         if accumulator: accumulator['cutflow']['jets pass kin cuts'] += kin_cut_jets.sum().sum()
 
+            ## tightID
+        jet_tightID = (jets.Id >= 3) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
+        if accumulator: accumulator['cutflow']['jets tightID'] += jet_tightID.sum().sum()
+
             ## only 4 jets
         four_jets = (jets.counts == 4)
         if accumulator: accumulator['cutflow']['nEvts with 4 jets'] += four_jets.sum()
@@ -56,8 +60,8 @@ def select_jets(jets, accumulator=None):
         else:
             raise IOError("Only 1 unique btag working point supported now")
 
-        passing_jets = (four_jets & btag_pass & kin_cut_jets).any()
-        if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts'] += passing_jets.sum()
+        passing_jets = (four_jets & btag_pass & kin_cut_jets & jet_tightID).all()
+        if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts + tightID'] += passing_jets.sum()
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
