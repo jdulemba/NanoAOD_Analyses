@@ -6,6 +6,8 @@ import python.Filters_and_Triggers as Filters_and_Triggers
 import python.IDJet as IDJet
 import python.IDMuon as IDMuon
 import python.IDElectron as IDElectron
+import python.IDMet as IDMet
+
 
 def select_muons(muons, accumulator=None):
     
@@ -48,9 +50,10 @@ def select_jets(jets, accumulator=None):
         jet_tightID = (jets.Id >= 3) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
         if accumulator: accumulator['cutflow']['jets tightID'] += jet_tightID.sum().sum()
 
-            ## only 4 jets
-        four_jets = (jets.counts == 4)
-        if accumulator: accumulator['cutflow']['nEvts with 4 jets'] += four_jets.sum()
+            ## 3 or more jets
+        njets_cuts = (jets.counts == 4)
+        #njets_cuts = (jets.counts == 3)
+        if accumulator: accumulator['cutflow']['nEvts with 3+ jets'] += njets_cuts.sum()
 
             #btag reqs
         btag_wps = [col for col in jets.columns if 'BTAG_' in col]
@@ -60,7 +63,7 @@ def select_jets(jets, accumulator=None):
         else:
             raise IOError("Only 1 unique btag working point supported now")
 
-        passing_jets = (four_jets & btag_pass & kin_cut_jets & jet_tightID).all()
+        passing_jets = (njets_cuts & btag_pass & kin_cut_jets & jet_tightID).all()
         if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts + tightID'] += passing_jets.sum()
 
     else:
@@ -154,5 +157,8 @@ def select(df, leptype, accumulator=None, shift=None):
 
     #set_trace()
     passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
+
+        ## SetMET
+    df['MET'] = IDMet.SetMET(df)
 
     return passing_evts
