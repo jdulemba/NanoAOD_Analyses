@@ -1,3 +1,4 @@
 *.root
 *.png
 Test/TESTING
+*.py[cod]
