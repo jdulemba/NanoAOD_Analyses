@@ -9,7 +9,13 @@ single_el_trigger_paths = {}
 single_mu_trigger_paths = {}
 
 single_el_trigger_paths["2016"] = ["HLT_Ele27_WPTight_Gsf"]
+single_el_trigger_paths["2017"] = ["HLT_Ele27_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf"]
+single_el_trigger_paths["2018"] = ["HLT_Ele32_WPTight_Gsf"]
+
+
 single_mu_trigger_paths["2016"] = ["HLT_IsoMu24", "HLT_IsoTkMu24"]
+single_mu_trigger_paths["2017"] = ["HLT_IsoMu27"]
+single_mu_trigger_paths["2018"] = ["HLT_IsoMu24"]
 
 def get_triggers(df, leptype, accumulator=None):
     ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
@@ -41,6 +47,24 @@ met_filters["2016"] = [
     "Flag_HBHENoiseIsoFilter",
     "Flag_EcalDeadCellTriggerPrimitiveFilter",
     "Flag_BadPFMuonFilter"
+]
+met_filters["2017"] = [
+    "Flag_goodVertices",
+    "Flag_globalSuperTightHalo2016Filter",
+    "Flag_HBHENoiseFilter",
+    "Flag_HBHENoiseIsoFilter",
+    "Flag_EcalDeadCellTriggerPrimitiveFilter",
+    "Flag_BadPFMuonFilter",
+    "Flag_ecalBadCalibReducedMINIAODFilter"
+]
+met_filters["2018"] = [
+    "Flag_goodVertices",
+    "Flag_globalSuperTightHalo2016Filter",
+    "Flag_HBHENoiseFilter",
+    "Flag_HBHENoiseIsoFilter",
+    "Flag_EcalDeadCellTriggerPrimitiveFilter",
+    "Flag_BadPFMuonFilter",
+    "Flag_ecalBadCalibReducedMINIAODFilter"
 ]
 
 
