@@ -1,4 +1,3 @@
-#import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
 import awkward
 from pdb import set_trace
@@ -6,16 +5,42 @@ import Utilities.prettyjson as prettyjson
 import numpy as np
 import os
 
-btag_values = {
+year = "2016"
+btag_values = {}
+btag_values["2016"] = {
     'btagDeepB' : {
         'DEEPCSVLOOSE' : 0.2217,
-        'DEEPCSVMEDIUM' : 0.6321,
+        'DEEPCSVMEDIUM': 0.6321,
         'DEEPCSVTIGHT' : 0.8953,
     },
     'btagDeepFlavB' : {
         'DEEPJETLOOSE' : 0.0614,
-        'DEEPJETMEDIUM' : 0.3093,
+        'DEEPJETMEDIUM': 0.3093,
         'DEEPJETTIGHT' : 0.7221
+    }
+}
+btag_values["2017"] = {
+    'btagDeepB' : {
+        'DEEPCSVLOOSE' : 0.1522,
+        'DEEPCSVMEDIUM': 0.4941,
+        'DEEPCSVTIGHT' : 0.8001,
+    },
+    'btagDeepFlavB' : {
+        'DEEPJETLOOSE' : 0.0521,
+        'DEEPJETMEDIUM': 0.3033,
+        'DEEPJETTIGHT' : 0.7489
+    }
+}
+btag_values["2018"] = {
+    'btagDeepB' : {
+        'DEEPCSVLOOSE' : 0.1241,
+        'DEEPCSVMEDIUM': 0.4184,
+        'DEEPCSVTIGHT' : 0.7527,
+    },
+    'btagDeepFlavB' : {
+        'DEEPJETLOOSE' : 0.0494,
+        'DEEPJETMEDIUM': 0.2770,
+        'DEEPJETTIGHT' : 0.7264
     }
 }
 
@@ -60,7 +85,7 @@ def add_btag_wps(jets, btagger, wps=[]):
                 continue
             if wp not in valid_WPs:
                 raise IOError("%s is not a valid working point" % wp)
-            jets['BTAG_%s' % wp] = (jets[bdiscr] > btag_values[bdiscr][wp])
+            jets['BTAG_%s' % wp] = (jets[bdiscr] > btag_values[year][bdiscr][wp])
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
@@ -95,7 +120,7 @@ def process_jets(df):
     if len(wps) > 1:
         raise IOError("Only one btag wp supported right now")
     for wp in wps:
-        Jet['BTAG_%s' % wp] = (Jet[bdiscr] > btag_values[bdiscr][wp])
+        Jet['BTAG_%s' % wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
     
     return Jet
 
