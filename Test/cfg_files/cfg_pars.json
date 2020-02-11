@@ -49,5 +49,17 @@
             "tightb": "MEDIUM",
             "looseb": "MEDIUM"
         }
+    },
+    "ttsolver": {
+        "filename": "prob_htt_DeepJet_2016Legacy_j20l50MT40_1lep.root",
+        "dirname": "nosys",
+        "USEPTRATIOS": 0,
+        "USEWJETQGTAG": 0,
+        "USEBTAG": 0,
+        "USENS": 1,
+        "USEMASS": 1,
+        "USE3JMERGED": 1,
+        "USE3JLOST": 1
     }
+
 }
