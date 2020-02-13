@@ -1,17 +1,17 @@
 from coffea.lookup_tools.root_converters import convert_histo_root_file
 from coffea.lookup_tools.dense_lookup import dense_lookup
-import Utilities.prettyjson as prettyjson
 from pdb import set_trace
 import os
 import numpy as np
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())['leptonSFs']
 
     ## hardcoded right now for testing with 2016
-lep_info = {
+year = "2016"
+lep_info = {}
+lep_info["2016"] = {
     'Muons' : {
+        'filename': 'muon_2016Legacy_ID_ISO_oldTrg_SFs.root',
         'SFs' : {
             'trg' : {
                 'available' : 1,
@@ -33,6 +33,7 @@ lep_info = {
         'pt_as_x' : 0,
     },
     'Electrons' : {
+        'filename': 'electron_sf_2016Legacy_TightCutID_Preliminary.root',
         'SFs' : {
             'trg' : {
                 'available' : 1,
@@ -59,21 +60,21 @@ class LeptonSF(object):
     def __init__(self):
 
         self.lepSFs_ = {}
-        for lepton in lep_info.keys():
-            SFfile = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, cfg_pars[lepton]))
-            for sf_type in lep_info[lepton]['SFs'].keys():
-                if lep_info[lepton]['SFs'][sf_type]['available']:
+        for lepton in lep_info[year].keys():
+            SFfile = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, lep_info[year][lepton]['filename']))
+            for sf_type in lep_info[year][lepton]['SFs'].keys():
+                if lep_info[year][lepton]['SFs'][sf_type]['available']:
                     self.lepSFs_['%s_%s' % (lepton, sf_type)] = dense_lookup(*SFfile[(sf_type, 'dense_lookup')])
 
     def get_2d_weights_(self, lepton, sf_type, pt_array, eta_array, shift=None): ## pt and eta are numpy arrays
-        eta_array = np.abs(eta_array) if lep_info[lepton]['SFs'][sf_type]['abs_eta'] else eta_array
-        if lep_info[lepton]['pt_as_x']:
+        eta_array = np.abs(eta_array) if lep_info[year][lepton]['SFs'][sf_type]['abs_eta'] else eta_array
+        if lep_info[year][lepton]['pt_as_x']:
             xvar = pt_array
             yvar = eta_array
         else:
             xvar = eta_array
             yvar = pt_array
-        weights = self.lepSFs_['%s_%s' % (lepton, sf_type)](xvar, yvar)
+        #weights = self.lepSFs_['%s_%s' % (lepton, sf_type)](xvar, yvar)
         #print('%s %s SFs: ' % (lepton, sf_type), weights)
         #return weights
         return self.lepSFs_['%s_%s' % (lepton, sf_type)](xvar, yvar)
@@ -95,6 +96,7 @@ Mu [pt, eta, expected SF]  -> output is the same as expected
 rake 'test[bin/ttbar_post_alpha_reco.cc, ttJets$, cfg_files/htt_baseline_j20_l50_MT40.cfg, l 100]' in 9410
 Electron [pt, etaSC, expected SF] -> output is the same as expected
 '''
+
 #lepSF = LeptonSF()
 #
 #test_muons = np.array([

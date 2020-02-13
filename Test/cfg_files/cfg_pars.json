@@ -60,10 +60,5 @@
         "USEMASS": 1,
         "USE3JMERGED": 1,
         "USE3JLOST": 1
-    },
-    "leptonSFs": {
-        "Muons": "muon_2016Legacy_ID_ISO_oldTrg_SFs.root",
-        "Electrons": "electron_sf_2016Legacy_TightCutID_Preliminary.root"
     }
-
 }
