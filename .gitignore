@@ -2,3 +2,4 @@
 *.png
 Test/TESTING
 *.py[cod]
+Test/inputs/*Testing
