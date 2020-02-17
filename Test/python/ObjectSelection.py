@@ -51,20 +51,23 @@ def select_jets(jets, accumulator=None):
         if accumulator: accumulator['cutflow']['jets tightID'] += jet_tightID.sum().sum()
 
             ## 3 or more jets
-        njets_cuts = (jets.counts == 4)
-        #njets_cuts = (jets.counts == 3)
-        if accumulator: accumulator['cutflow']['nEvts with 3+ jets'] += njets_cuts.sum()
+        njet_restriction = 3
+        njets_cuts = (jets.counts >= njet_restriction)
+        #njets_cuts = (jets.counts == njet_restriction)
+        if accumulator: accumulator['cutflow']['nEvts with %s+ jets' % njet_restriction] += njets_cuts.sum()
 
-            #btag reqs
-        btag_wps = [col for col in jets.columns if 'BTAG_' in col]
-        if len(list(set(btag_wps))) == 1:
-            btag_pass = (jets[btag_wps[0]]).sum() >= 2
-            if accumulator: accumulator['cutflow']['nEvts >=2 jets pass %s' % btag_wps[0]] += btag_pass.sum()
-        else:
-            raise IOError("Only 1 unique btag working point supported now")
+#            #btag reqs
+#        btag_wps = [col for col in jets.columns if 'BTAG_' in col]
+#        if len(list(set(btag_wps))) == 1:
+#            btag_pass = (jets[btag_wps[0]]).sum() >= 2
+#            if accumulator: accumulator['cutflow']['nEvts >=2 jets pass %s' % btag_wps[0]] += btag_pass.sum()
+#        else:
+#            raise IOError("Only 1 unique btag working point supported now")
 
-        passing_jets = (njets_cuts & btag_pass & kin_cut_jets & jet_tightID).all()
-        if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts + tightID'] += passing_jets.sum()
+        passing_jets = (njets_cuts & kin_cut_jets & jet_tightID).all()
+        if accumulator: accumulator['cutflow']['nEvts pass nJets + kin cuts + tightID'] += passing_jets.sum()
+        #passing_jets = (njets_cuts & btag_pass & kin_cut_jets & jet_tightID).all()
+        #if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts + tightID'] += passing_jets.sum()
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
