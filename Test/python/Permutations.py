@@ -1,9 +1,7 @@
 from numba import njit
 import numpy as np
 from pdb import set_trace
-import python.TTBarSolver as ttsolver
-
-solver = ttsolver.TTBarSolver()
+import python.TTBarSolver as solver
 
 
 @njit()
@@ -13,7 +11,6 @@ def get_permutations_4j(njets_array, jets, leptons, met):
     stop = 0
     evt_idx = 0
 
-    #set_trace()
     for njets in njets_array:
         stop += njets
         for j0 in range(start, stop):
@@ -27,8 +24,6 @@ def get_permutations_4j(njets_array, jets, leptons, met):
             ## jet info will change for each value of j0 (4 separate for event with 4 jets)
             for j1 in range(start, stop):
                 if j1 == j0: continue
-                ## require btagging
-                if jets[j1, 4] < 0.5: continue
                 for j2 in range(start, stop):
                     if j2 == j0 or j2 == j1: continue
                     for j3 in range(j2+1, stop):
@@ -37,19 +32,18 @@ def get_permutations_4j(njets_array, jets, leptons, met):
                             ## advanced indexing doesn't work with numba at this point, can only add px, py, pz separately
                         mthad = np.sqrt( np.sum(jets[:, 3].take([j1, j2, j3]))**2 - (np.sum(jets[:, 0].take([j1, j2, j3]))**2 + np.sum(jets[:, 1].take([j1, j2, j3]))**2 + np.sum(jets[:, 2].take([j1, j2, j3]))**2) ) ## sqrt(E2-p2) of combined j1+j2+j3 4-vector
                         mwhad = np.sqrt( np.sum(jets[:, 3].take([j2, j3]))**2 - (np.sum(jets[:, 0].take([j2, j3]))**2 + np.sum(jets[:, 1].take([j2, j3]))**2 + np.sum(jets[:, 2].take([j2, j3]))**2) ) ## sqrt(E2-p2) of combined j2+j3 4-vector
+                        print('mthad = ', mthad, ', mwhad = ', mwhad)
                         #nschi = 400. # test value
                         #nudiscr, massdiscr, prob = solver.solve_4PJ(mthad, mwhad, nschi)
-                        print('mthad = ', mthad, ', mwhad = ', mwhad)
-                        #print('mthad = ', mthad, ', mwhad = ', mwhad, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
+                        #print('mthad = ', mthad, ', mwhad = ', mwhad, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
                         print(j0, j1, j2, j3)
 
         start += njets
         evt_idx += 1
         print()
-        #set_trace()
 
 @njit()
-def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False): # jets(px, py, pz, E), leptons(px, py, pz, E), met(px, py)
+def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False):
     'Inputs:\n\t1D array with number of jets per event\n\t2D array of jets (px, py, pz, E, btag pass)\n\t2D array of leptons (px, py, pz, E)\n\t2D array of MET (px, py)'
     start = 0
     stop = 0
@@ -79,12 +73,12 @@ def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False): # je
                         #set_trace()
                         maxmjet = max( np.sqrt(jets[j1, 3]**2 - np.sum(jets[j1, 0:3]**2)), np.sqrt(jets[j2, 3]**2 - np.sum(jets[j2, 0:3]**2)) ) ## get max mass between j1 and j2
                         #nudiscr, massdiscr, prob = solver.solve_3J_merged(maxmjet, mbpjet, nschi)
-                        #print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
+                        #print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
                         print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet)
                     else:
                         #nudiscr, massdiscr, prob = solver.solve_3J_lost(mbpjet, nschi)
+                        #print('m(b+j) = ', mbpjet, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
                         print('m(b+j) = ', mbpjet)
-                        #print('m(b+j) = ', mbpjet, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
                     print(j0, j1, j2)
 
         start += njets
