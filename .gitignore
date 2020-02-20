@@ -1,5 +1,5 @@
 *.root
 *.png
-Test/TESTING
+Analysis/TESTING
 *.py[cod]
-Test/inputs/*Testing
+Analysis/inputs/*Testing
