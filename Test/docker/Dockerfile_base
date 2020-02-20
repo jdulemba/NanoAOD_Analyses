@@ -1,0 +1,41 @@
+FROM ubuntu:latest
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get update
+RUN apt-get install -y libeigen3-dev
+
+# Install pip and python 3.6
+RUN apt-get install -y python3.6-dev 
+RUN apt-get install -y python3-pip
+
+# Make everything point to python3.6
+RUN ln -s /usr/bin/python3.6 /usr/bin/python
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
+
+RUN apt-get install -y vim emacs
+RUN apt-get install -y wget
+RUN apt-get install -y git
+
+#
+# ORDER MATTERS! FIRST PYTHON THEN BOOST
+# Otherwise everything messes up
+#
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir numpy scipy scikit-learn h5py uproot Pillow seaborn
+RUN pip install --no-cache-dir awkward uproot-methods numba
+
+# Install BOOST manually to avoid bringing in python2
+RUN cd /usr/src && \
+  wget --no-verbose https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz && \
+  tar -xzf  boost_1_72_0.tar.gz && \
+  rm boost_1_72_0.tar.gz && \
+  cd boost_1_72_0/ && \
+  ./bootstrap.sh --with-python=$(which python) && \
+  ./b2 install -j 4 && \
+  ldconfig && \
+  cd / && \
+  rm -rf usr/src/boost_1_72_0
+
+RUN apt-get install -y locales
+
