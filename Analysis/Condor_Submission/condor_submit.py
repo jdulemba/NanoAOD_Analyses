@@ -23,7 +23,7 @@ def zip_release(fname):
         raise IOError('%s already exists! Change name' % fname)
 
     #set_trace()
-    zip_cmd = "time tar --exclude-caches-all --exclude-vcs --exclude-from=../.gitignore -zcf {FNAME}.tar.gz -C {BASE} miniconda3 ".format(
+    zip_cmd = "time tar --exclude-caches-all --exclude-vcs --exclude-from=../.gitignore -zcf {FNAME}.tar.gz -C {BASE} NanoAOD_Analyses ".format(
     #zip_cmd = "time tar --exclude-caches-all --exclude-vcs --exclude-from=../.gitignore -zcf {FNAME}.tar.gz -C {BASE}/miniconda3 NanoAOD_Analyses ".format(
         FNAME=fname, BASE=noback_base_dir)
 
@@ -40,16 +40,20 @@ tar -zxf {TAR_FNAME}.tar.gz
 rm {TAR_FNAME}.tar.gz
 
 ls -lht
-export PATH="miniconda3/bin:$PATH"
 
-echo "cd $WORKINGDIR/miniconda3/NanoAOD_Analyses/Test"
-cd $WORKINGDIR/miniconda3/NanoAOD_Analyses/Test
+cd $WORKINGDIR/NanoAOD_Analyses
+source environment.sh
+echo $PYTHONPATH
+#export PATH="miniconda3/bin:$PATH"
+
+echo "cd $WORKINGDIR/NanoAOD_Analyses/Analysis"
+cd $WORKINGDIR/NanoAOD_Analyses/Analysis
 ls -lht
 
 echo "source environment.sh"
 source environment.sh
 
-python helloworld.py
+python testfile.py
 #EXE=$1
 #echo "Executing " $EXE
 #./runMadGraph.sh $EXE
