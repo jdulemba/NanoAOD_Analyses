@@ -1,7 +1,9 @@
-from numba import njit
+from numba import njit, objmode
+from numba.typed import List
 import numpy as np
 from pdb import set_trace
 import python.TTBarSolver as solver
+import compiled.pynusolver as pynusolver
 
 @njit()
 def get_permutations_4j(njets_array, jets, leptons, met):
@@ -10,14 +12,21 @@ def get_permutations_4j(njets_array, jets, leptons, met):
     stop = 0
     evt_idx = 0
 
+    best_perms = List()
+
     for njets in njets_array:
         stop += njets
+        ## first index is to save jet ordering, second is to save neutrino solution, and third is to save probabilities (Prob, Mass, Nu)
+        best_perm = np.array([0]*njets), np.zeros(4), np.array([np.inf, np.inf, np.inf]) # tuple of np arrays
+
         for j0 in range(start, stop):
             ## require btagging
             if jets[j0, 4] < 0.5: continue
 
-            ### run NS to get nschi2 to be used solver
-            #run_nu_solver(leptons[evt_idx], jets[j0], met[evt_idx]) ## passes all info for only one lepton (px, py, pz, E), one jet (px, py, pz, E), and met (px, py) from the event at a time
+            ## run NS to get nschi2 to be used solver
+            nu = np.zeros(4)
+            with objmode():
+                pynusolver.run_nu_solver(leptons[evt_idx], jets[j0], met[evt_idx], nu) # input order for nusolver is (lepton, jet, met, nu)
 
             ## lepton and met info won't change inside njets for loop
             ## jet info will change for each value of j0 (4 separate for event with 4 jets)
@@ -27,19 +36,24 @@ def get_permutations_4j(njets_array, jets, leptons, met):
                     if j2 == j0 or j2 == j1: continue
                     for j3 in range(j2+1, stop):
                         if j3 == j0 or j3 == j1: continue
-                        #set_trace()
                             ## advanced indexing doesn't work with numba at this point, can only add px, py, pz separately
                         mthad = np.sqrt( np.sum(jets[:, 3].take([j1, j2, j3]))**2 - (np.sum(jets[:, 0].take([j1, j2, j3]))**2 + np.sum(jets[:, 1].take([j1, j2, j3]))**2 + np.sum(jets[:, 2].take([j1, j2, j3]))**2) ) ## sqrt(E2-p2) of combined j1+j2+j3 4-vector
                         mwhad = np.sqrt( np.sum(jets[:, 3].take([j2, j3]))**2 - (np.sum(jets[:, 0].take([j2, j3]))**2 + np.sum(jets[:, 1].take([j2, j3]))**2 + np.sum(jets[:, 2].take([j2, j3]))**2) ) ## sqrt(E2-p2) of combined j2+j3 4-vector
-                        print('mthad = ', mthad, ', mwhad = ', mwhad)
-                        #nschi = 400. # test value
-                        #nudiscr, massdiscr, prob = solver.solve_4PJ(mthad, mwhad, nschi)
-                        #print('mthad = ', mthad, ', mwhad = ', mwhad, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
-                        print(j0, j1, j2, j3)
+                        nudiscr, massdiscr, prob = solver.solve_4PJ(mthad, mwhad, nu[3]) ## input order is (mthad, mwhad, nschi2 value)
+                        #print('mthad = ', mthad, ', mwhad = ', mwhad, ', nschi = ', nu[3], ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
+                        if prob < best_perm[2][0]: ## have to be careful with indexing!!
+                            best_perm = (
+                                np.array([j0-start, j1-start, j2-start, j3-start]),
+                                nu,
+                                np.array([prob, massdiscr, nudiscr])
+                            )
+
+        best_perms.append(best_perm)
 
         start += njets
         evt_idx += 1
-        print()
+        #print()
+    return best_perms
 
 @njit()
 def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False):
@@ -48,15 +62,21 @@ def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False):
     stop = 0
     evt_idx = 0
 
-    #set_trace()
+    best_perms = List()
+
     for njets in njets_array:
         stop += njets
+        ## first index is to save jet ordering, second is to save neutrino solution, and third is to save probabilities (Prob, Mass, Nu)
+        best_perm = np.array([0]*njets), np.zeros(4), np.array([np.inf, np.inf, np.inf]) # tuple of np arrays
+
         for j0 in range(start, stop):
             ## require btagging
             if jets[j0, 4] < 0.5: continue
 
             ## run NS to get nschi2 to be used solver
-            #run_nu_solver(leptons[evt_idx], jets[j0], met[evt_idx]) ## passes all info for only one lepton (px, py, pz, E), one jet (px, py, pz, E), and met (px, py) from the event at a time
+            nu = np.zeros(4)
+            with objmode():
+                pynusolver.run_nu_solver(leptons[evt_idx], jets[j0], met[evt_idx], nu) # input order for nusolver is (lepton, jet, met, nu)
 
             ## lepton and met info won't change inside njets for loop
             ## jet info will change for each value of j0 (3 separate for event with 3 jets)
@@ -64,26 +84,29 @@ def get_permutations_3j(njets_array, jets, leptons, met, use_merged=False):
                 if j1 == j0: continue
                 for j2 in range(j1+1, stop):
                     if j2 == j0: continue
-                    #set_trace()
                         ## advanced indexing doesn't work with numba at this point, can only add px, py, pz separately
                     mbpjet = np.sqrt( np.sum(jets[:, 3].take([j2, j1]))**2 - (np.sum(jets[:, 0].take([j2, j1]))**2 + np.sum(jets[:, 1].take([j2, j1]))**2 + np.sum(jets[:, 2].take([j2, j1]))**2) ) ## sqrt(E2-p2) of combined j1+j2 4-vector
-                    #nschi = 400. # test value
                     if use_merged:
-                        #set_trace()
                         maxmjet = max( np.sqrt(jets[j1, 3]**2 - np.sum(jets[j1, 0:3]**2)), np.sqrt(jets[j2, 3]**2 - np.sum(jets[j2, 0:3]**2)) ) ## get max mass between j1 and j2
-                        #nudiscr, massdiscr, prob = solver.solve_3J_merged(maxmjet, mbpjet, nschi)
-                        #print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
-                        print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet)
+                        nudiscr, massdiscr, prob = solver.solve_3J_merged(maxmjet, mbpjet, nu[3]) ## input order is (maxmjet, mbpjet, nschi2 value)
+                        #print('max(mjet) = ', maxmjet, ', m(b+j) = ', mbpjet, ', nschi = ', nu[3], ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
                     else:
-                        #nudiscr, massdiscr, prob = solver.solve_3J_lost(mbpjet, nschi)
-                        #print('m(b+j) = ', mbpjet, ', nschi = ', nschi, ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
-                        print('m(b+j) = ', mbpjet)
-                    print(j0, j1, j2)
+                        nudiscr, massdiscr, prob = solver.solve_3J_lost(mbpjet, nu[3]) ## input order is (mbpjet, nschi2 value)
+                        #print('m(b+j) = ', mbpjet, ', nschi = ', nu[3], ', Prob = ', prob, ', MassDiscr = ', massdiscr, ', NuDiscr = ', nudiscr)
+                    #print(j0, j1, j2)
+                    if prob < best_perm[2][0]: ## have to be careful with indexing!!
+                        best_perm = (
+                            np.array([j0-start, j1-start, j2-start]),
+                            nu,
+                            np.array([prob, massdiscr, nudiscr])
+                        )
+
+        best_perms.append(best_perm)
 
         start += njets
         evt_idx += 1
-        print()
-        #set_trace()
+        #print()
+    return best_perms
 
 #@njit()
 def make_permutations(jets, leptons, MET):
