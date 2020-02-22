@@ -3,7 +3,6 @@ import numpy as np
 from pdb import set_trace
 import python.TTBarSolver as solver
 
-
 @njit()
 def get_permutations_4j(njets_array, jets, leptons, met):
     'Inputs:\n\t1D array with number of jets per event\n\t2D array of jets (px, py, pz, E, btag pass)\n\t2D array of leptons (px, py, pz, E)\n\t2D array of MET (px, py)'
@@ -17,7 +16,7 @@ def get_permutations_4j(njets_array, jets, leptons, met):
             ## require btagging
             if jets[j0, 4] < 0.5: continue
 
-            ## run NS to get nschi2 to be used solver
+            ### run NS to get nschi2 to be used solver
             #run_nu_solver(leptons[evt_idx], jets[j0], met[evt_idx]) ## passes all info for only one lepton (px, py, pz, E), one jet (px, py, pz, E), and met (px, py) from the event at a time
 
             ## lepton and met info won't change inside njets for loop
