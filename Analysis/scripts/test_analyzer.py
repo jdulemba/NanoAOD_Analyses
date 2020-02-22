@@ -7,7 +7,7 @@ import python.ObjectSelection as objsel
 #import Utilities.maskedlazy as maskedlazy
 import coffea.processor.dataframe
 import itertools
-#import python.Permutations as Permutations
+import python.Permutations as Permutations
 #import python.MCWeights as MCWeights
 
 parser = ArgumentParser()
@@ -15,6 +15,7 @@ parser.add_argument('sample', default='ttJets', help='Samples to run over')
 parser.add_argument('--nfiles', default=-1, type=int, help='Specify the first number of files in the txt to run over. -1 means all')
 parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
+parser.add_argument('--routput', action='store_true', help='Output (1D) histograms to root file. Only valid during debugging.')
 
 args = parser.parse_args()
 
@@ -124,7 +125,7 @@ class Test_Analyzer(processor.ProcessorABC):
             ## get selected leptons, jets, and MET corresponding to passing events
         sel_leps = df[lep_to_use][(passing_evts)]
         sel_jets = df['Jet'][(passing_evts)]
-        #sel_met  = df['MET'][(passing_evts)]
+        sel_met  = df['MET'][(passing_evts)]
 
             ## only one lepton categorized as tight/loose
         tight_leps = sel_leps['TIGHT%s' % self.lepton[lep_to_use]].flatten()
@@ -132,7 +133,7 @@ class Test_Analyzer(processor.ProcessorABC):
 
         #set_trace()
         #pref_weights = MCWeights.prefire_weight(df, mask=passing_evts) ## get nominal prefire weight for passing events
-        #make_perms = Permutations.make_permutations(jets=sel_jets[tight_leps], leptons=sel_leps[tight_leps], MET=sel_met[tight_leps])
+        make_perms = Permutations.make_permutations(jets=sel_jets[tight_leps], leptons=sel_leps[tight_leps], MET=sel_met[tight_leps])
 
             ## fill hists for tight leptons
         output = self.fill_jet_hists(output, 'TIGHT%s_Jets' % self.lepton[lep_to_use], sel_jets[tight_leps])        
@@ -172,34 +173,45 @@ proc_executor = processor.iterative_executor if args.debug else processor.future
 output = processor.run_uproot_job(fileset,
     treename='Events',
     processor_instance=Test_Analyzer(),
-    #executor=processor.spark.spark_executor,
+    #executor=processor.spark_executor,
     #executor=processor.dask_executor,
-    #executor=processor.iterative_executor,
-    #executor=processor.futures_executor,
     executor=proc_executor,
     #executor_args={'workers': 1, 'flatten' : True},
     executor_args={'workers': 4, 'flatten' : True},
     #chunksize=500000,
 )
 
-print(output)
-
-    ## write hists to root file
+    ## save output to coffea pkl file
 if args.nfiles == -1:
     outdir = '/'.join([proj_dir, 'results', jobid])
-    rfname = '%s/%s.root' % (outdir, args.sample)
+    cfname = '%s/%s.coffea' % (outdir, args.sample)
 else:
     outdir = proj_dir
-    rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
+    cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-import uproot
-fout = uproot.recreate(rfname) if os.path.isfile(rfname) else uproot.create(rfname)
-histos = [key for key in output.keys() if key != 'cutflow']
-#set_trace()
-for histo in histos:
-    fout[histo] = hist.export1d(output[histo])
-fout.close()
+save(output, cfname)
 
-print('%s has been written' % rfname)
+if args.debug: print(output)
+
+if (args.debug and args.routput):
+        ## write hists to root file
+    if args.nfiles == -1:
+        outdir = '/'.join([proj_dir, 'results', jobid])
+        rfname = '%s/%s.root' % (outdir, args.sample)
+    else:
+        outdir = proj_dir
+        rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    
+    import uproot
+    fout = uproot.recreate(rfname) if os.path.isfile(rfname) else uproot.create(rfname)
+    histos = [key for key in output.keys() if key != 'cutflow']
+    #set_trace()
+    for histo in histos:
+        fout[histo] = hist.export1d(output[histo])
+    fout.close()
+    
+    print('%s has been written' % rfname)
