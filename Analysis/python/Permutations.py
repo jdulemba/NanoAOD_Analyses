@@ -93,8 +93,9 @@ def make_permutations(jets, leptons, MET):
     jpy = jets.p4.y.flatten()[0:nj[0]*5]
     jpz = jets.p4.z.flatten()[0:nj[0]*5]
     jE = jets.p4.energy.flatten()[0:nj[0]*5]
+    jBtag = jets.BTAG_DEEPCSVMEDIUM.flatten()[0:nj[0]*5]
     #set_trace()
-    jets_inputs = np.stack((jpx, jpy, jpz, jE), axis=1) # one row has (px, py, pyz, E)
+    jets_inputs = np.stack((jpx, jpy, jpz, jE, jBtag), axis=1) # one row has (px, py, pyz, E, btag Pass)
     #jets_inputs = np.stack((jets.p4.x.flatten(), jets.p4.y.flatten(), jets.p4.z.flatten(), jets.p4.energy.flatten()), axis=1) # one row has (px, py, pyz, E)
 
         ## make leptons matrix
