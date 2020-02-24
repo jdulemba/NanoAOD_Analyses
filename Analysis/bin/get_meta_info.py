@@ -49,6 +49,7 @@ class Meta_Analyzer(processor.ProcessorABC):
     def __init__(self):
 
         #    ## make binning for hists
+        self.evtIdx_axis = hist.Cat("evtIdx", "Event Index % 10")
         self.pu_axis = hist.Bin("pu", "nTrueInt", 200, 0, 200)
         self.mtt_axis = hist.Bin("mtt", "m_{tt}", 340, 300., 2000.)
         self.ctstar_axis = hist.Bin("ctstar", r"cos($\theta^{*}$)", 200, -1., 1.)
@@ -57,11 +58,13 @@ class Meta_Analyzer(processor.ProcessorABC):
             ## make dictionary of hists
         histo_dict = {}
         if isNominalTTbar:
-            histo_dict['mtt'] = hist.Hist("mtt", self.mtt_axis)
-            histo_dict['top_ctstar'] = hist.Hist("ctstar", self.ctstar_axis)
-            histo_dict['mtt_ctstar'] = hist.Hist("mtt_vs_ctstar", self.mtt_axis, self.ctstar_axis)
+            for idx in range(10):
+                histo_dict['mtt_idx%i' % idx] = hist.Hist("mtt_idx%i" % idx, self.evtIdx_axis, self.mtt_axis)
+                histo_dict['top_ctstar_idx%i' % idx] = hist.Hist("ctstar_idx%i" % idx, self.evtIdx_axis, self.ctstar_axis)
+                histo_dict['mtt_topctstar_idx%i' % idx] = hist.Hist("mtt_vs_ctstar_idx%i" % idx, self.mtt_axis, self.ctstar_axis)
+
         histo_dict['PUDistribution'] = hist.Hist("PUDistribution", self.pu_axis)
-        histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
+        histo_dict['MetaInfo'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
     
@@ -77,6 +80,7 @@ class Meta_Analyzer(processor.ProcessorABC):
             raise IOError("This function only works for LazyDataFrame objects")
 
 
+        events = df.event
         if isNominalTTbar:
             genParts = Partons.process_genParts(df)
 
@@ -85,19 +89,20 @@ class Meta_Analyzer(processor.ProcessorABC):
             tops = gps[(gps.pdgId == 6)]
             antitops = gps[(gps.pdgId == -6)]
 
-            #set_trace()
             mtt = (tops+antitops).p4.mass.flatten()
             top_ctstar, tbar_ctstar = ctstar(tops.p4, antitops.p4)
+            #set_trace()
 
-            output['mtt'].fill(mtt=mtt)
-            output['top_ctstar'].fill(ctstar=top_ctstar)
-            output['mtt_ctstar'].fill(mtt=mtt, ctstar=top_ctstar)
+            for idx in range(10):
+                output['mtt_idx%i' % idx].fill(evtIdx='Idx %% 10 == %s' % idx, mtt=mtt[(events % 10) == idx])
+                output['top_ctstar_idx%i' % idx].fill(evtIdx='Idx %% 10 == %s' % idx, ctstar=top_ctstar[(events % 10) == idx])
+                output['mtt_topctstar_idx%i' % idx].fill(mtt=mtt[(events % 10) == idx], ctstar=top_ctstar[(events % 10) == idx])
 
         #lumiBlocks = df.luminosityBlock
         #runs = df.run
-        #events = df.event
-        #genWeights = df.genWeight
-
+        #set_trace()
+        genWeights = df.genWeight
+        output['MetaInfo']['sumWeights'] += genWeights.sum()
         #nom_LHEweight = df.LHEWeight_originalXWGTUP
         #eff_lumi = expected_evts/xsection
 
@@ -132,7 +137,7 @@ if not os.path.isdir(outdir):
 
 save(output, cfname)
 
-#print(output)
+if args.debug: print(output)
 
 if (args.debug and args.routput):
         ## write hists to root file
