@@ -1,3 +1,5 @@
 #*.root
 *.png
 *.py[cod]
+Analysis/results
+Analysis/plots
