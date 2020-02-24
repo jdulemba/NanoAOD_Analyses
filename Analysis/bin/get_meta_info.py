@@ -12,7 +12,7 @@ from coffea.util import load, save
 
 parser = ArgumentParser()
 parser.add_argument('sample', default='ttJets', help='Samples to run over')
-parser.add_argument('--nfiles', default=-1, type=int, help='Specify the first number of files in the txt to run over. -1 means all')
+parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
 parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 parser.add_argument('--routput', action='store_true', help='Output (1D) histograms to root file. Only valid during debugging.')
@@ -30,15 +30,23 @@ isNominalTTbar = True if (args.sample == 'ttJets_PS' or args.sample == 'ttJets')
 
 sample = '/'.join([proj_dir, 'inputs', '%s_Testing' % args.year, '%s.txt' % args.sample])
 #sample = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % args.sample])
+
 if not os.path.isfile(sample):
     raise IOError("Sample file %s.txt not found" % args.sample)
 
 infiles = open(sample, 'r')
 input_files = [fname.strip('\n') for fname in infiles]
-if args.nfiles <= len(input_files):
-    input_files = input_files[0:args.nfiles]
+
+if ':' in args.frange:
+    file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
 else:
-    raise IOError("The number of root files available for the %s sample is %i. args.nfiles must be less than or equal to this." % (args.sample, len(input_files) ) )
+    file_start = 0
+    file_stop = len(input_files)-1 if (args.frange).lower() == 'all' else int(args.frange)
+
+if file_start >= 0 and file_stop <= len(input_files)-1:
+    input_files = input_files[file_start:file_stop]
+else:
+    raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (args.sample, len(input_files)-1 ) )
 
 fileset = {
     args.sample : input_files
@@ -125,39 +133,42 @@ output = processor.run_uproot_job(fileset,
     #chunksize=500000,
 )
 
+if args.debug: print(output)
+
+
     ## save output to coffea pkl file
-if args.nfiles == -1:
-    outdir = '/'.join([proj_dir, 'results', jobid])
+if (args.frange).lower() == 'all':
+    outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
     cfname = '%s/%s.coffea' % (outdir, args.sample)
+    if (args.debug and args.routput):
+        rfname = '%s/%s.root' % (outdir, args.sample)
 else:
-    outdir = proj_dir
-    cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+    if ':' in args.frange:
+        outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
+        cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        if (args.debug and args.routput):
+            rfname = '%s/%s_%sto%s.root' % (outdir, args.sample, file_start, file_stop)
+    else:
+        outdir = proj_dir
+        cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+        if (args.debug and args.routput):
+            rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 save(output, cfname)
-
-if args.debug: print(output)
+print('%s has been written' % cfname)
 
 if (args.debug and args.routput):
         ## write hists to root file
-    if args.nfiles == -1:
-        outdir = '/'.join([proj_dir, 'results', jobid])
-        rfname = '%s/%s.root' % (outdir, args.sample)
-    else:
-        outdir = proj_dir
-        rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
-    if not os.path.isdir(outdir):
-        os.makedirs(outdir)
-    
     import uproot
     fout = uproot.recreate(rfname) if os.path.isfile(rfname) else uproot.create(rfname)
-    histos = [key for key in output.keys() if key != 'cutflow']
+    histos = [key for key in output.keys() if key != 'MetaInfo']
     #set_trace()
     for histo in histos:
-        print(histo)
         if output[histo].dense_dim() == 1:
             fout[histo] = hist.export1d(output[histo])
+            print(histo, ' written to file')
         #elif output[histo].dense_dim() == 2:
         #    #continue
         #    fout[histo] = hist.export2d(output[histo])
