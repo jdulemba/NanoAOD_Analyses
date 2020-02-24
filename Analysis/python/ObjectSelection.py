@@ -152,11 +152,18 @@ def select(df, leptype, accumulator=None, shift=None):
         accumulator['cutflow']['passing %s' % leptype] += (pass_triggers & pass_filters & passing_leps).sum()
 
     ### jets selection
+        ## nominal jets
     df['Jet'] = IDJet.process_jets(df)
     if accumulator:
         passing_jets, accumulator = select_jets(df['Jet'], accumulator)
     else:
         passing_jets = select_jets(df['Jet'])
+        ## require clean jets
+    clean_jets_mask = (~df['Jet'].match(df[leptype], deltaRCut=0.4)).sum() >= 3
+    passing_jets = (passing_jets & clean_jets_mask)
+    if accumulator:
+        accumulator['cutflow']['clean jets'] += passing_jets.sum()
+
 
     #set_trace()
     passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
