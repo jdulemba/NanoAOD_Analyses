@@ -1,51 +1,24 @@
 ## for good colors search here http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=6
 
 styles = {
-#   'EWK' : {
-#      'legendstyle' : 'f',
-#      'drawstyle' : 'hist',
-#      'fillcolor' : 417,
-#      #'fillcolor' : ROOT.kGreen+1,
-#      'linecolor' : 'black',
-#            'linewidth' : 1,
-#      'name' : "EW",
-#      'fillstyle': 'solid',
-#      },
 #   '[WZ][WZ]' : {
 #      'legendstyle' : 'f',
 #      'drawstyle' : 'hist',
-#      'fillcolor' : '#9fcc18',
+#      'facecolor' : '#9fcc18',
 #      'linecolor' : 'black',
 #            'linewidth' : 1,
 #      'name' : "VV",
 #      #'name' : "diboson",
 #      'fillstyle': 'solid',
 #      },
-#   'WJets*' : {
-#      'legendstyle' : 'f',
-#      'drawstyle' : 'hist',
-#      'fillcolor' : '#144f13',
-#      'linecolor' : 'black',
-#      'name' : "W+jets",
-#      'fillstyle': 'solid',
-#      },
-#   'ZJets*' : {
-#      'legendstyle' : 'f',
-#      'drawstyle' : 'hist',
-#      'fillcolor' : '#18cc18',
-#      'linecolor' : 'black',
-#      'name' : "Z+jets",
-#      'fillstyle': 'solid',
-#      },
-#   'single*' : {
-#      'legendstyle' : 'f',
-#      'drawstyle' : 'hist',
-#      'fillcolor' : '#FFD700',
-#      'linecolor' : 'black',
-#            'linewidth' : 1,
-#      'name' : "single top",
-#      'fillstyle': 'solid',
-#      },
+    'ZJets*' : {
+        'facecolor' : '#984ea3', ## purple
+        'name' : "Z+jets",
+    },
+    'single*' : {
+        'facecolor' : '#4daf4a', ## green
+        'name' : "single top",
+    },
 #   'data*' : {
 #      'legendstyle' : 'p',
 #      'drawstyle' : 'E0 X0',
@@ -53,32 +26,38 @@ styles = {
 #      #'markersize'  : 2,
 #      'name' : "Observed",
 #    },
+   'WJets*' : {
+        'facecolor' : '#ff7f00', ## orange
+        'name' : "W+jets",
+    },
     'tt*' : {
-        #'legendstyle' : 'f',
-        #'drawstyle' : 'hist',
         'facecolor' : '#e41a1c', ## red
-        #'linewidth' : 1,
         'name' : "$t\\bart$",
-        #'fillstyle': 'solid',
     },
 #   'tt[WZ]*' : {
 #      'legendstyle' : 'f',
 #      'drawstyle' : 'hist',
-#      'fillcolor' : '#cc8d18',
-#      #'fillcolor' : ROOT.kOrange + 1,
+#      'facecolor' : '#cc8d18',
+#      #'facecolor' : ROOT.kOrange + 1,
 #      'linecolor' : 'black',
 #            'linewidth' : 1,
 #      'name' : "ttV",
 #      'fillstyle': 'solid',
 #      },
-#   'QCD*' : {
-#      'legendstyle' : 'f',
-#      'drawstyle' : 'hist',
-#      'fillcolor' : 'c',
-#      #'fillcolor' : ROOT.kGray,
-#      'linecolor' : 'black',
-#            'linewidth' : 1,
-#      'name' : "QCD",
-#      'fillstyle': 'solid',
-#      },
+    'QCD*' : {
+        'facecolor' : '#377eb8', ## blue
+        'name' : "QCD",
+    },
+    'EWK' : {
+        'facecolor' : '#ff7f00', ## orange
+        'name' : "EW",
+    },
+        ## default name for coffea statistical errors
+    'Sum unc.' : {
+        'facecolor' : 'none',
+        'linewidth' : 0,
+        'name' : 'Stat. Unc.',
+        'hatch' : '///',
+    }
+
 }
