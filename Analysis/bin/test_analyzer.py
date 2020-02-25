@@ -8,11 +8,15 @@ import python.ObjectSelection as objsel
 #import Utilities.maskedlazy as maskedlazy
 import coffea.processor.dataframe
 import itertools
+import Utilities.plot_tools as plt_tools
 #import python.Permutations as Permutations
 #import python.MCWeights as MCWeights
 
+proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
+analyzer = 'test_analyzer'
+
 parser = ArgumentParser()
-parser.add_argument('sample', default='ttJets', help='Samples to run over')
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
 parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
@@ -20,32 +24,48 @@ parser.add_argument('--routput', action='store_true', help='Output (1D) histogra
 
 args = parser.parse_args()
 
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-analyzer = 'test_analyzer'
 
-sample = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % args.sample])
-if not os.path.isfile(sample):
-    raise IOError("Sample file %s.txt not found" % args.sample)
+    ## get file that has names for all datasets to use
+fpath = '/'.join([proj_dir, 'inputs', jobid, '%s_inputs.txt' % analyzer])
+if not os.path.isfile(fpath):
+    raise IOError("File with samples %s_inputs.txt not found" % analyzer)
 
-infiles = open(sample, 'r')
-input_files = [fname.strip('\n') for fname in infiles]
+txt_file = open(fpath, 'r')
+samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
+if not samples:
+    raise IOError("No samples found as inputs")
 
-#set_trace()
-if ':' in args.frange:
-    file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
-else:
-    file_start = 0
-    file_stop = len(input_files)-1 if (args.frange).lower() == 'all' else int(args.frange)
+    ## add files to fileset
+fileset = {}
+for sample in samples:
+    spath = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % sample])
+    if not os.path.isfile(spath):
+        raise IOError("Sample file %s.txt not found" % sample)
+    
+    sfiles = open(spath, 'r')
+    files_to_use = [fname.strip('\n') for fname in sfiles]
+    
+    #set_trace()
+    if ':' in args.frange:
+        file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
+    else:
+        file_start = 0
+        file_stop = len(files_to_use)-1 if (args.frange).lower() == 'all' else int(args.frange)
+    
+    if file_start >= 0 and file_stop <= len(files_to_use)-1:
+        files_to_use = files_to_use[file_start:file_stop]
+    else:
+        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
 
-if file_start >= 0 and file_stop <= len(input_files)-1:
-    input_files = input_files[file_start:file_stop]
-else:
-    raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (args.sample, len(input_files)-1 ) )
+        ## replace sample name with group name ( [WZ]Jets -> EWK for instance)
+    group_name = plt_tools.get_group(sample)
+    if group_name in fileset.keys():
+        for fname in files_to_use:
+            fileset[group_name].append(fname)
+    else:
+        fileset[group_name] = files_to_use
 
-fileset = {
-    args.sample : input_files
-}
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Test_Analyzer(processor.ProcessorABC):
@@ -81,6 +101,7 @@ class Test_Analyzer(processor.ProcessorABC):
         histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
+        self.sample_name = ''
     
     @property
     def accumulator(self):
@@ -110,6 +131,8 @@ class Test_Analyzer(processor.ProcessorABC):
 
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
             raise IOError("This function only works for LazyDataFrame objects")
+        #set_trace()
+        self.sample_name = df.dataset
 
         lep_to_use = [*self.lepton.keys()][0]
         presel_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
@@ -165,18 +188,18 @@ class Test_Analyzer(processor.ProcessorABC):
         return output
 
     def fill_jet_hists(self, accumulator, tdir, obj):
-        accumulator['%s_pt' % tdir].fill(dataset=args.sample, pt=obj.pt.flatten())
-        accumulator['%s_eta' % tdir].fill(dataset=args.sample, eta=obj.eta.flatten())
-        accumulator['%s_phi' % tdir].fill(dataset=args.sample, phi=obj.phi.flatten())
-        accumulator['%s_njets' % tdir].fill(dataset=args.sample, njets=obj.counts)
+        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten())
+        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten())
+        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten())
+        accumulator['%s_njets' % tdir].fill(dataset=self.sample_name, njets=obj.counts)
 
         return accumulator        
 
     def fill_lep_hists(self, accumulator, tdir, obj):
         #set_trace()
-        accumulator['%s_pt' % tdir].fill(dataset=args.sample, pt=obj.pt.flatten())
-        accumulator['%s_eta' % tdir].fill(dataset=args.sample, eta=obj.eta.flatten())
-        accumulator['%s_phi' % tdir].fill(dataset=args.sample, phi=obj.phi.flatten())
+        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten())
+        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten())
+        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten())
 
         return accumulator        
 
@@ -192,7 +215,7 @@ output = processor.run_uproot_job(fileset,
     #executor=processor.spark_executor,
     #executor=processor.dask_executor,
     executor=proc_executor,
-    executor_args={'workers': 6, 'flatten' : True},
+    executor_args={'workers': 4, 'flatten' : True},
     #chunksize=500000,
 )
 
@@ -204,21 +227,24 @@ print(output['cutflow'])
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
-    cfname = '%s/%s.coffea' % (outdir, args.sample)
-    if (args.debug and args.routput):
-        rfname = '%s/%s.root' % (outdir, args.sample)
+    cfname = '%s/%s.coffea' % (outdir, 'test')
+    #cfname = '%s/%s.coffea' % (outdir, args.sample)
+    #if (args.debug and args.routput):
+    #    rfname = '%s/%s.root' % (outdir, args.sample)
 
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
-        cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
-        if (args.debug and args.routput):
-            rfname = '%s/%s_%sto%s.root' % (outdir, args.sample, file_start, file_stop)
+        cfname = '%s/%sto%s.coffea' % (outdir, file_start, file_stop)
+        #cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        #if (args.debug and args.routput):
+        #    rfname = '%s/%s_%sto%s.root' % (outdir, args.sample, file_start, file_stop)
     else:
         outdir = proj_dir
-        cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
-        if (args.debug and args.routput):
-            rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
+        cfname = '%s/%s.test.coffea' % (outdir, analyzer)
+        #cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+        #if (args.debug and args.routput):
+        #    rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
