@@ -68,6 +68,13 @@ for sample in samples:
 class Meta_Analyzer(processor.ProcessorABC):
     def __init__(self):
 
+        ## only get columns that are used
+        self._columns = [
+            'event', 'dataset', 'Pileup_nTrueInt',
+            'genWeight', 'nLHEPdfWeight', 'LHEPdfWeight',
+            'nGenPart', 'GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_mass', 'GenPart_genPartIdxMother', 'GenPart_pdgId'
+        ]
+
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.evtIdx_axis = hist.Cat("evtIdx", "Event Index % 10")
@@ -92,6 +99,9 @@ class Meta_Analyzer(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
+    @property
+    def columns(self):
+        return self._columns
 
     def process(self, df):
         output = self.accumulator.identity()
@@ -111,15 +121,16 @@ class Meta_Analyzer(processor.ProcessorABC):
         output[self.sample_name]['nWeightedEvts'] += (genWeights != 0).sum()
         output[self.sample_name]['sumGenWeights'] += genWeights.sum()
 
-            ## check if there's the same number of pdf weights in every event
-        if not np.equal(df.nLHEPdfWeight, df.nLHEPdfWeight[0]).all():
-            raise IOError("Events don't have the same number of LHE PDF weights!")
-        LHEpdfWeights = df.LHEPdfWeight
-            ## reshape because it's just a single fucking array instead of array of weights per event
-        LHEpdfWeights = LHEpdfWeights.reshape((df.nLHEPdfWeight[0], events.size))
-            ## get sum of each pdf weight over all events
-        sumLHEpdfWeights = LHEpdfWeights.sum(axis=1)
-        output[self.sample_name]['sumLHEpdfWeights'] += sumLHEpdfWeights
+        if 'LHEpdfWeight' in df.columns:
+                ## check if there's the same number of pdf weights in every event
+            if not np.equal(df.nLHEPdfWeight, df.nLHEPdfWeight[0]).all():
+                raise IOError("Events don't have the same number of LHE PDF weights!")
+            LHEpdfWeights = df.LHEPdfWeight
+                ## reshape because it's just a single fucking array instead of array of weights per event
+            LHEpdfWeights = LHEpdfWeights.reshape((df.nLHEPdfWeight[0], events.size))
+                ## get sum of each pdf weight over all events
+            sumLHEpdfWeights = LHEpdfWeights.sum(axis=1)
+            output[self.sample_name]['sumLHEpdfWeights'] += sumLHEpdfWeights
 
 
             ## create mtt vs cos theta* dists for nominal ttJets
