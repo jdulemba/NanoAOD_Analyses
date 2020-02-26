@@ -58,11 +58,31 @@ for hname in hists.keys():
             print('%s written' % figname)
             plt.close()
 
+            ## make plot for separate samples
+            for sample in histo.axes()[0]._sorted:
+                sample_histo = histo[sample]
+
+                fig = plt.figure()
+                ax = plot.plot1d(sample_histo)
+                if 'mtt' in hname:
+                    plt.xlabel(variables['mtt'])
+                elif 'ctstar' in hname:
+                    plt.xlabel(variables['ctstar'])
+                else:
+                    plt.xlabel('$%s$' % sample_histo.axes()[-1].label)
+                plt.ylabel('Events')
+                figname = '%s/%s_%s.png' % (outdir, sample, hname)
+                fig.savefig(figname)
+                print('%s written' % figname)
+                plt.close()
+
+
         elif histo.dense_dim() == 2:
             xvar, yvar = histo.axes()[-2].name, histo.axes()[-1].name
 
             ## make plots for different ttJets samples
             for sample in histo.axes()[0]._sorted:
+                if not (sample == 'ttJets' or sample == 'ttJets_PS'): continue
                 sample_histo = histo[sample].project(histo.axes()[1].name, xvar, yvar)
 
                     ## plot x projection
