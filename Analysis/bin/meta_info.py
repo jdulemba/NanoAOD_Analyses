@@ -14,6 +14,8 @@ import numpy as np
 
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
+parser.add_argument('--sample', type=str, help='Use specific sample')
+parser.add_argument('--fname', type=str, help='Specify output filename')
 parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -23,18 +25,27 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'meta_info'
 
-    ## get file that has names for all datasets to use
-fpath = '/'.join([proj_dir, 'inputs', jobid, '%s_inputs.txt' % analyzer])
-if not os.path.isfile(fpath):
-    raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    ## get samples to use
+indir = '/'.join([proj_dir, 'inputs', jobid])
+if args.sample:
+        ## sample specified
+    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
+        raise IOError("File with samples %s.txt not found" % args.sample)
 
-txt_file = open(fpath, 'r')
-samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-if not samples:
-    raise IOError("No samples found as inputs")
+    samples = [args.sample]
+    if args.fname:
+        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
 
-#if ('ttJets_PS' in samples and 'ttJets' in samples):
-#    raise IOError("ttJets_PS and ttJets samples can't be run at the same time because double counting for the mtt_cth distributions will occur.")
+else:
+        ## get file that has names for all datasets to use
+    fpath = '/'.join([indir, '%s_inputs.txt' % analyzer])
+    if not os.path.isfile(fpath):
+        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    
+    txt_file = open(fpath, 'r')
+    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
+    if not samples:
+        raise IOError("No samples found as inputs")
 
     ## add files to fileset
 fileset = {}
@@ -42,7 +53,7 @@ for sample in samples:
     if sample.startswith('data_Single'):
         raise IOError("Meta Info should only be run over simulation")
 
-    spath = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % sample])
+    spath = '/'.join([indir, '%s.txt' % sample])
     if not os.path.isfile(spath):
         raise IOError("Sample file %s.txt not found" % sample)
 
@@ -176,17 +187,30 @@ if args.debug: print(output)
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
-    cfname = '%s/%s.coffea' % (outdir, 'test')
-    #cfname = '%s/%s.coffea' % (outdir, args.sample)
+    if args.fname:
+        cfname = '%s/%s.coffea' % (outdir, args.fname)
+    elif args.sample:
+        cfname = '%s/%s.coffea' % (outdir, args.sample)
+    else:
+        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
+    #cfname = '%s/%s.coffea' % (outdir, args.fname if args.fname else 'test')
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
-        cfname = '%s/%sto%s.coffea' % (outdir, file_start, file_stop)
-        #cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        if args.fname:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
+        elif args.sample:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        else:
+            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
     else:
         outdir = proj_dir
-        cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-        #cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+        if args.fname:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
+        elif args.sample:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
+        else:
+            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
