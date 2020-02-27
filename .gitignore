@@ -3,3 +3,5 @@
 *.py[cod]
 Analysis/results
 Analysis/plots
+*.coffea
+*.json
