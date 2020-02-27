@@ -11,6 +11,7 @@ import Utilities.prettyjson as prettyjson
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
+parser.add_argument('--fname', type=str, help='Input filename.')
 parser.add_argument('--testing', action='store_true', help='Determines where input file is.')
 
 args = parser.parse_args()
@@ -19,11 +20,7 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'meta_info'
 
-if not args.testing:
-    raise IOError("only testing supported for plotting at the moment")
-
-fname = '%s/%s.test.coffea' % (proj_dir, analyzer) if args.testing else '%s/%s.coffea' % ('/'.join([proj_dir, 'results', jobid]), 'test')
-#fname = '%s/%s.test.%s.coffea' % (proj_dir, args.sample, analyzer) if args.testing else '%s/%s.coffea' % ('/'.join([proj_dir, 'results', jobid]), args.sample)
+fname = '%s/%s.test.coffea' % (proj_dir, analyzer) if args.testing else '%s/%s.coffea' % ('/'.join([proj_dir, 'results', jobid, analyzer]), args.fname)
 outdir = '/'.join([proj_dir, 'plots', jobid, analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', jobid, analyzer])
 
 if not os.path.isdir(outdir):
@@ -44,19 +41,19 @@ for hname in hists.keys():
         #set_trace()
 
         if histo.dense_dim() == 1:
-            fig = plt.figure()
-            ax = plot.plot1d(histo)
-            if 'mtt' in hname:
-                plt.xlabel(variables['mtt'])
-            elif 'ctstar' in hname:
-                plt.xlabel(variables['ctstar'])
-            else:
-                plt.xlabel('$%s$' % histo.axes()[-1].label)
-            plt.ylabel('Events')
-            figname = '%s/%s.png' % (outdir, hname)
-            fig.savefig(figname)
-            print('%s written' % figname)
-            plt.close()
+            #fig = plt.figure()
+            #ax = plot.plot1d(histo)
+            #if 'mtt' in hname:
+            #    plt.xlabel(variables['mtt'])
+            #elif 'ctstar' in hname:
+            #    plt.xlabel(variables['ctstar'])
+            #else:
+            #    plt.xlabel('$%s$' % histo.axes()[-1].label)
+            #plt.ylabel('Events')
+            #figname = '%s/%s.png' % (outdir, hname)
+            #fig.savefig(figname)
+            #print('%s written' % figname)
+            #plt.close()
 
             ## make plot for separate samples
             for sample in histo.axes()[0]._sorted:
@@ -116,7 +113,6 @@ for hname in hists.keys():
                 meta_dict[key] = val
             else:
                 meta_dict[key] = val.tolist()
-        set_trace()
         with open('%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, hname), 'w') as out:
             out.write(prettyjson.dumps(meta_dict))
             print('%s/inputs/%s/%s.meta.json written' % (proj_dir, jobid, hname))
