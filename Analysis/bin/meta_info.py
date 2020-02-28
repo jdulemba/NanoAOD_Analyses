@@ -58,20 +58,20 @@ for sample in samples:
         raise IOError("Sample file %s.txt not found" % sample)
 
     sfiles = open(spath, 'r')
-    files_to_use = [fname.strip('\n') for fname in sfiles]
+    files_to_use = [fname.strip('\n') for fname in sfiles if not fname.startswith('#')]
 
-    #set_trace()
     if ':' in args.frange:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
     else:
         file_start = 0
-        file_stop = len(files_to_use)-1 if (args.frange).lower() == 'all' else int(args.frange)
+        file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
 
-    if file_start >= 0 and file_stop <= len(files_to_use)-1:
+    if file_start >= 0 and file_stop <= len(files_to_use):
         files_to_use = files_to_use[file_start:file_stop]
     else:
         raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
 
+    #set_trace()
     fileset[sample] = files_to_use
 
 
@@ -193,7 +193,6 @@ if (args.frange).lower() == 'all':
         cfname = '%s/%s.coffea' % (outdir, args.sample)
     else:
         cfname = '%s/test_%s.coffea' % (outdir, analyzer)
-    #cfname = '%s/%s.coffea' % (outdir, args.fname if args.fname else 'test')
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
