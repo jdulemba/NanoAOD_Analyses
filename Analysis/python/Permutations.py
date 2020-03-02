@@ -97,7 +97,7 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False):
 
         start += njets
         if np.mod(evt_idx, 10) == 0:
-            print(evt_idx+1,'/', len(njets_array), 'events processed')
+            print('\t', evt_idx+1,'/',len(njets_array), 'events processed')
         evt_idx += 1
     print('Finished finding best perms')
     return best_perms_ordering, best_perms_nus, best_perms_probs
@@ -227,8 +227,6 @@ def find_best_permutations(jets, leptons, MET):
     bp_probs = np.asarray(bp_probs)
 
         ## only keep permutations with some sort of solution (prob != infinity)
-    #valid_jets = jets[0:25][(bp_probs[:,0] != np.inf)] ## 25 is only for testing!!
-    #valid_leptons = leptons[0:25][(bp_probs[:,0] != np.inf)] ## 25 is only for testing!!
     #set_trace()
     valid_jets = jets[np.arange(len(bp_nus))][(bp_probs[:,0] != np.inf)] 
     valid_leptons = leptons[np.arange(len(bp_nus))][(bp_probs[:,0] != np.inf)]
