@@ -7,9 +7,10 @@ from argparse import ArgumentParser
 import python.ObjectSelection as objsel
 #import Utilities.maskedlazy as maskedlazy
 import coffea.processor.dataframe
+from coffea.arrays import Initialize
 import itertools
 import Utilities.plot_tools as plt_tools
-#import python.Permutations as Permutations
+import python.Permutations as Permutations
 #import python.MCWeights as MCWeights
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -50,9 +51,9 @@ for sample in samples:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
     else:
         file_start = 0
-        file_stop = len(files_to_use)-1 if (args.frange).lower() == 'all' else int(args.frange)
+        file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
     
-    if file_start >= 0 and file_stop <= len(files_to_use)-1:
+    if file_start >= 0 and file_stop <= len(files_to_use):
         files_to_use = files_to_use[file_start:file_stop]
     else:
         raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
@@ -66,7 +67,6 @@ for sample in samples:
         fileset[group_name] = files_to_use
 
 
-
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Test_Analyzer(processor.ProcessorABC):
     def __init__(self):
@@ -77,6 +77,7 @@ class Test_Analyzer(processor.ProcessorABC):
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5, 5)
         self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 10, 0, 10)
 
         self.lepton = {
@@ -98,6 +99,9 @@ class Test_Analyzer(processor.ProcessorABC):
                 ## make lepton hists
             lep_hists = self.make_lep_hists('%s_%s' % (tdir, [*self.lepton.keys()][0]))
             histo_dict.update(lep_hists)        
+                ## make best perm hists
+            bp_hists = self.make_best_perm_hists(tdir)
+            histo_dict.update(bp_hists)
         histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
@@ -126,6 +130,31 @@ class Test_Analyzer(processor.ProcessorABC):
 
         return histo_dict
 
+    def make_best_perm_hists(self, tdir):
+        histo_dict = {}
+        histo_dict['%s_BLep_pt' % tdir]    = hist.Hist("Counts", self.dataset_axis, self.pt_axis)
+        histo_dict['%s_BLep_eta' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.eta_axis)
+        histo_dict['%s_BLep_phi' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.phi_axis)
+        histo_dict['%s_BLep_E' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.energy_axis)
+
+        histo_dict['%s_BHad_pt' % tdir]    = hist.Hist("Counts", self.dataset_axis, self.pt_axis)
+        histo_dict['%s_BHad_eta' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.eta_axis)
+        histo_dict['%s_BHad_phi' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.phi_axis)
+        histo_dict['%s_BHad_E' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.energy_axis)
+
+        histo_dict['%s_WJa_pt' % tdir]    = hist.Hist("Counts", self.dataset_axis, self.pt_axis)
+        histo_dict['%s_WJa_eta' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.eta_axis)
+        histo_dict['%s_WJa_phi' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.phi_axis)
+        histo_dict['%s_WJa_E' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.energy_axis)
+
+        histo_dict['%s_WJb_pt' % tdir]    = hist.Hist("Counts", self.dataset_axis, self.pt_axis)
+        histo_dict['%s_WJb_eta' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.eta_axis)
+        histo_dict['%s_WJb_phi' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.phi_axis)
+        histo_dict['%s_WJb_E' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.energy_axis)
+
+        histo_dict['%s_njets' % tdir] = hist.Hist("Counts", self.dataset_axis, self.njets_axis)
+
+        return histo_dict
     def process(self, df):
         output = self.accumulator.identity()
 
@@ -166,24 +195,31 @@ class Test_Analyzer(processor.ProcessorABC):
         loose_leps = sel_leps['LOOSE%s' % self.lepton[lep_to_use]].flatten()
 
         #pref_weights = MCWeights.prefire_weight(df, mask=passing_evts) ## get nominal prefire weight for passing events
-        #make_perms = Permutations.make_permutations(jets=clean_jets[tight_leps], leptons=sel_leps[tight_leps], MET=sel_met[tight_leps])
+
+            ## find best permutations and create bp column
+        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met)
         #set_trace()
 
             ## fill hists for tight leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)])
+        output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(tight_leps[0:best_perms.size] & three_jets_events[0:best_perms.size])])
+
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)])
+        output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(tight_leps[0:best_perms.size] & fourPlus_jets_events[0:best_perms.size])])
 
             ## fill hists for loose leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)])
+        output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(loose_leps[0:best_perms.size] & three_jets_events[0:best_perms.size])])
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)])
+        output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(loose_leps[0:best_perms.size] & fourPlus_jets_events[0:best_perms.size])])
 
         return output
 
@@ -196,10 +232,34 @@ class Test_Analyzer(processor.ProcessorABC):
         return accumulator        
 
     def fill_lep_hists(self, accumulator, tdir, obj):
-        #set_trace()
         accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten())
         accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten())
         accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten())
+
+        return accumulator        
+
+    def fill_best_perm_hists(self, accumulator, tdir, table):
+        accumulator['%s_BLep_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BLeps.pt.flatten())
+        accumulator['%s_BLep_eta' % tdir].fill(dataset=self.sample_name, eta = table.BLeps.eta.flatten())
+        accumulator['%s_BLep_phi' % tdir].fill(dataset=self.sample_name, phi = table.BLeps.phi.flatten())
+        accumulator['%s_BLep_E' % tdir].fill(dataset=self.sample_name,energy = table.BLeps.E.flatten())
+
+        accumulator['%s_BHad_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BHads.pt.flatten())
+        accumulator['%s_BHad_eta' % tdir].fill(dataset=self.sample_name, eta = table.BHads.eta.flatten())
+        accumulator['%s_BHad_phi' % tdir].fill(dataset=self.sample_name, phi = table.BHads.phi.flatten())
+        accumulator['%s_BHad_E' % tdir].fill(dataset=self.sample_name,energy = table.BHads.E.flatten())
+
+        accumulator['%s_WJa_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJas.pt.flatten())
+        accumulator['%s_WJa_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJas.eta.flatten())
+        accumulator['%s_WJa_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJas.phi.flatten())
+        accumulator['%s_WJa_E' % tdir].fill(dataset=self.sample_name,energy = table.WJas.E.flatten())
+
+        accumulator['%s_WJb_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJbs.pt.flatten())
+        accumulator['%s_WJb_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJbs.eta.flatten())
+        accumulator['%s_WJb_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJbs.phi.flatten())
+        accumulator['%s_WJb_E' % tdir].fill(dataset=self.sample_name,energy = table.WJbs.E.flatten())
+
+        accumulator['%s_njets' % tdir].fill(dataset=self.sample_name, njets=table.njets)
 
         return accumulator        
 
