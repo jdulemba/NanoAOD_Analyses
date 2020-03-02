@@ -103,16 +103,17 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False):
     return best_perms_ordering, best_perms_nus, best_perms_probs
 
 
-def make_perm_table(jets, leptons, nus, jets_orderings, probs):
+def make_perm_table(jets, leptons, nus, jets_orderings, probs, evt_weights):
     '''
     Inputs:
-        Jets, leptons, neutrinos, jet assignment object ordering, array of disrminiant probabilities (Total, mass discriminant, neutrino discrminant)
+        Jets, leptons, neutrinos, jet assignment object ordering, array of disrminiant probabilities (Total, mass discriminant, neutrino discrminant), and associated event weights
     Returns:
         awkward Table containing
             1: Jet objects (BLeps, BHads, WJas, WJbs)
             2: Leptons, Neutrinos
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
             4: Number of jets in events (njets)
+            5: Event weights (evt_wts)
     '''
     neutrinos = Initialize({
         'px' : nus[:, 0:1].flatten(),
@@ -168,22 +169,24 @@ def make_perm_table(jets, leptons, nus, jets_orderings, probs):
         MassDiscr=probs[:,1],
         NuDiscr=probs[:,2],
         njets=jets.counts,
+        evt_wts=evt_weights,
     )
     print('Table of permutation objects created')
     return perm_table
 
 
 #@njit()
-def find_best_permutations(jets, leptons, MET):
+def find_best_permutations(jets, leptons, MET, evt_weights):
     '''
     Inputs:
-        Jets, leptons, and MET
+        Jets, leptons, MET, and event weights
     Returns:
         awkward Table containing
             1: Jet objects (BLeps, BHads, WJas, WJbs)
             2: Leptons, Neutrinos
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
             4: Number of jets in events (njets)
+            5: Event weights (evt_wts)
     '''
     print('Making permutations')
         ## for testing
@@ -228,12 +231,13 @@ def find_best_permutations(jets, leptons, MET):
 
         ## only keep permutations with some sort of solution (prob != infinity)
     #set_trace()
-    valid_jets = jets[np.arange(len(bp_nus))][(bp_probs[:,0] != np.inf)] 
-    valid_leptons = leptons[np.arange(len(bp_nus))][(bp_probs[:,0] != np.inf)]
-    valid_nus = bp_nus[(bp_probs[:,0] != np.inf)] 
-    valid_ordering = bp_ordering[(bp_probs[:,0] != np.inf)] 
-    valid_probs = bp_probs[(bp_probs[:,0] != np.inf)] 
-    bp_table = make_perm_table(valid_jets, valid_leptons, valid_nus, valid_ordering, valid_probs)
+    mask = (bp_probs[:,0] != np.inf)
+    valid_jets = jets[np.arange(len(bp_nus))][(mask)] 
+    valid_leptons = leptons[np.arange(len(bp_nus))][(mask)]
+    valid_nus = bp_nus[(mask)] 
+    valid_ordering = bp_ordering[(mask)] 
+    valid_probs = bp_probs[(mask)] 
+    bp_table = make_perm_table(valid_jets, valid_leptons, valid_nus, valid_ordering, valid_probs, evt_weights[(mask)])
     #set_trace()
 
     return bp_table

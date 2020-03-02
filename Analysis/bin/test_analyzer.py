@@ -11,7 +11,8 @@ from coffea.arrays import Initialize
 import itertools
 import Utilities.plot_tools as plt_tools
 import python.Permutations as Permutations
-#import python.MCWeights as MCWeights
+import python.MCWeights as MCWeights
+import numpy as np
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -188,6 +189,9 @@ class Test_Analyzer(processor.ProcessorABC):
         passing_evts = (presel_evts & btag_pass)
         output['cutflow']['nEvts passing jet and %s selection' % lep_to_use] += passing_evts.sum()
 
+        evt_weights = MCWeights.evt_weight(df, mask=passing_evts)
+        #set_trace()
+
             ## get selected leptons, jets, and MET corresponding to passing events
         sel_leps = df[lep_to_use][(passing_evts)]
         sel_jets = df['Jet'][(passing_evts)]
@@ -204,75 +208,76 @@ class Test_Analyzer(processor.ProcessorABC):
         #pref_weights = MCWeights.prefire_weight(df, mask=passing_evts) ## get nominal prefire weight for passing events
 
             ## find best permutations and create bp column
-        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met)
+        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
         #set_trace()
 
             ## fill hists for tight leptons
                 ## 3 jets
-        output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)])
-        output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)])
+        output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
+        output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
         output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
 
                 ## 4+ jets
-        output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)])
-        output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)])
+        output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
+        output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
         output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
             ## fill hists for loose leptons
                 ## 3 jets
-        output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)])
-        output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)])
+        output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
+        output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
         output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
                 ## 4+ jets
-        output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)])
-        output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)])
+        output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
+        output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
         output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
         return output
 
-    def fill_jet_hists(self, accumulator, tdir, obj):
-        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten())
-        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten())
-        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten())
-        accumulator['%s_njets' % tdir].fill(dataset=self.sample_name, njets=obj.counts)
+    def fill_jet_hists(self, accumulator, tdir, obj, evt_weights):
+        #set_trace()
+        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['%s_njets' % tdir].fill(dataset=self.sample_name, njets=obj.counts, weight=evt_weights)
 
         return accumulator        
 
-    def fill_lep_hists(self, accumulator, tdir, obj):
-        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten())
-        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten())
-        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten())
+    def fill_lep_hists(self, accumulator, tdir, obj, evt_weights):
+        accumulator['%s_pt' % tdir].fill(dataset=self.sample_name, pt=obj.pt.flatten(), weight=evt_weights)
+        accumulator['%s_eta' % tdir].fill(dataset=self.sample_name, eta=obj.eta.flatten(), weight=evt_weights)
+        accumulator['%s_phi' % tdir].fill(dataset=self.sample_name, phi=obj.phi.flatten(), weight=evt_weights)
 
         return accumulator        
 
     def fill_best_perm_hists(self, accumulator, tdir, table):
         #set_trace()
-        accumulator['%s_BestPerm_njets' % tdir].fill(dataset=self.sample_name, njets=table.njets)
+        accumulator['%s_BestPerm_njets' % tdir].fill(dataset=self.sample_name, njets=table.njets, weight=table.evt_wts)
 
-        accumulator['%s_BestPerm_Prob' % tdir].fill(dataset=self.sample_name, discr=table.Prob)
-        accumulator['%s_BestPerm_MassDiscr' % tdir].fill(dataset=self.sample_name, discr=table.MassDiscr)
-        accumulator['%s_BestPerm_NuDiscr' % tdir].fill(dataset=self.sample_name, discr=table.NuDiscr)
+        accumulator['%s_BestPerm_Prob' % tdir].fill(dataset=self.sample_name, discr=table.Prob, weight=table.evt_wts)
+        accumulator['%s_BestPerm_MassDiscr' % tdir].fill(dataset=self.sample_name, discr=table.MassDiscr, weight=table.evt_wts)
+        accumulator['%s_BestPerm_NuDiscr' % tdir].fill(dataset=self.sample_name, discr=table.NuDiscr, weight=table.evt_wts)
 
-        accumulator['%s_BestPerm_BLep_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BLeps.pt.flatten())
-        accumulator['%s_BestPerm_BLep_eta' % tdir].fill(dataset=self.sample_name, eta = table.BLeps.eta.flatten())
-        accumulator['%s_BestPerm_BLep_phi' % tdir].fill(dataset=self.sample_name, phi = table.BLeps.phi.flatten())
-        accumulator['%s_BestPerm_BLep_E' % tdir].fill(dataset=self.sample_name,energy = table.BLeps.E.flatten())
+        accumulator['%s_BestPerm_BLep_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BLeps.pt.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BLep_eta' % tdir].fill(dataset=self.sample_name, eta = table.BLeps.eta.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BLep_phi' % tdir].fill(dataset=self.sample_name, phi = table.BLeps.phi.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BLep_E' % tdir].fill(dataset=self.sample_name,energy = table.BLeps.E.flatten(), weight=table.evt_wts)
 
-        accumulator['%s_BestPerm_BHad_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BHads.pt.flatten())
-        accumulator['%s_BestPerm_BHad_eta' % tdir].fill(dataset=self.sample_name, eta = table.BHads.eta.flatten())
-        accumulator['%s_BestPerm_BHad_phi' % tdir].fill(dataset=self.sample_name, phi = table.BHads.phi.flatten())
-        accumulator['%s_BestPerm_BHad_E' % tdir].fill(dataset=self.sample_name,energy = table.BHads.E.flatten())
+        accumulator['%s_BestPerm_BHad_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.BHads.pt.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BHad_eta' % tdir].fill(dataset=self.sample_name, eta = table.BHads.eta.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BHad_phi' % tdir].fill(dataset=self.sample_name, phi = table.BHads.phi.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_BHad_E' % tdir].fill(dataset=self.sample_name,energy = table.BHads.E.flatten(), weight=table.evt_wts)
 
-        accumulator['%s_BestPerm_WJa_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJas.pt.flatten())
-        accumulator['%s_BestPerm_WJa_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJas.eta.flatten())
-        accumulator['%s_BestPerm_WJa_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJas.phi.flatten())
-        accumulator['%s_BestPerm_WJa_E' % tdir].fill(dataset=self.sample_name,energy = table.WJas.E.flatten())
+        accumulator['%s_BestPerm_WJa_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJas.pt.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_WJa_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJas.eta.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_WJa_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJas.phi.flatten(), weight=table.evt_wts)
+        accumulator['%s_BestPerm_WJa_E' % tdir].fill(dataset=self.sample_name,energy = table.WJas.E.flatten(), weight=table.evt_wts)
 
         if '4PJets' in tdir:
-            accumulator['%s_BestPerm_WJb_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJbs.pt.flatten())
-            accumulator['%s_BestPerm_WJb_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJbs.eta.flatten())
-            accumulator['%s_BestPerm_WJb_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJbs.phi.flatten())
-            accumulator['%s_BestPerm_WJb_E' % tdir].fill(dataset=self.sample_name,energy = table.WJbs.E.flatten())
+            accumulator['%s_BestPerm_WJb_pt' % tdir].fill(dataset=self.sample_name,  pt  = table.WJbs.pt.flatten(), weight=table.evt_wts)
+            accumulator['%s_BestPerm_WJb_eta' % tdir].fill(dataset=self.sample_name, eta = table.WJbs.eta.flatten(), weight=table.evt_wts)
+            accumulator['%s_BestPerm_WJb_phi' % tdir].fill(dataset=self.sample_name, phi = table.WJbs.phi.flatten(), weight=table.evt_wts)
+            accumulator['%s_BestPerm_WJb_E' % tdir].fill(dataset=self.sample_name,energy = table.WJbs.E.flatten(), weight=table.evt_wts)
 
         return accumulator        
 
