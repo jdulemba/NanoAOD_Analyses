@@ -2,7 +2,7 @@ from pdb import set_trace
 import coffea.processor.dataframe
 import numpy as np
 
-def prefire_weight(df, shift=None, mask=None):
+def get_prefire_weights(df, shift=None, mask=None):
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
 
@@ -17,10 +17,10 @@ def prefire_weight(df, shift=None, mask=None):
     return weights
 
 
-def gen_weight(df, shift=None, mask=None):
+def get_gen_weights(df, shift=None, mask=None):
     'LHEScaleWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#LHE\nPSWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#PSWeight'
 
-    gen_weight = df.genWeight
+    gen_weight = df.genWeight[(mask)]
 
         ## LHEScale Weight Variations
     if shift == 'FACTOR_DW':
@@ -55,19 +55,15 @@ def gen_weight(df, shift=None, mask=None):
     return gen_weight*weight        
 
 
-def pu_weight(df, shift=None, mask=None):
+def get_pu_weights(df, shift=None, mask=None):
     'Pileup info defined here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#Pileup'
 
     weight = df['Pileup_nTrueInt']
 
     return weight
 
-'''
 
-
-def evt_weight(df, shift=None, mask=None):
-'''
-def toppt_weight(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
+def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
     if pt1.any() < 0. or pt2.any() < 0.:
         raise IOError("top pt inputs not valid")
 
@@ -88,3 +84,16 @@ def toppt_weight(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
 
     weight = exp(p0+p1*( (pt1+pt2)/2 ))
     return weight
+
+
+def evt_weight(df, shift=None, mask=None, use_weight=True):
+    #set_trace()
+    if use_weight:
+        gen_weights = get_gen_weights(df, shift, mask)
+    else:
+        gen_weights = np.ones(len(mask)) if mask else np.ones(df.size)
+
+    pref_weights = get_prefire_weights(df, shift, mask)
+    #pu_weights = get_pu_weights(df, shift, mask)
+    evt_weights = pref_weights*gen_weights#*pu_weight
+    return evt_weights
