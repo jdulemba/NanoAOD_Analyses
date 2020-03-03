@@ -110,6 +110,7 @@ def process_jets(df):
         btagDeepFlavB=df['Jet_btagDeepFlavB'],
         Id=df['Jet_jetId'],
         cleanmask=df['Jet_cleanmask'],
+        hadronFlav=df['Jet_hadronFlavour'],
     )
 
     #set_trace()
