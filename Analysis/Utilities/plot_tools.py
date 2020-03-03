@@ -20,7 +20,7 @@ def get_styles(sample, styles):
     if best_pattern:
         return styles[best_pattern]['facecolor'], styles[best_pattern]['name']
     else:
-        return None
+        return 'r', sample
 
 def get_group(sample, styles=dataset_groups):
     best_pattern = ''
