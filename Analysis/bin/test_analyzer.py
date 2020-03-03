@@ -11,6 +11,7 @@ from coffea.arrays import Initialize
 import itertools
 import Utilities.plot_tools as plt_tools
 import python.LeptonSF as lepSF
+import python.BTagScaleFactors as btagSF
 import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
@@ -81,8 +82,10 @@ for sample in samples:
     else:
         fileset[group_name] = files_to_use
 
-#set_trace()
 leptonSFs = lepSF.LeptonSF()
+#set_trace()
+threejets_btagSFs = btagSF.create_btag_sf_computer('3')
+fourPlusjets_btagSFs = btagSF.create_btag_sf_computer('4+')
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Test_Analyzer(processor.ProcessorABC):
@@ -229,12 +232,23 @@ class Test_Analyzer(processor.ProcessorABC):
         tight_leps = sel_leps['TIGHT%s' % self.lepton[lep_to_use]].flatten()
         loose_leps = sel_leps['LOOSE%s' % self.lepton[lep_to_use]].flatten()
 
-        #set_trace()
             ## apply lepton SFs to MC (only applicable to tight leptons)
         if not isData:
             lep_weights = leptonSFs.get_sf_(lepton='%ss' % lep_to_use, pt_array=sel_leps.pt.flatten(), eta_array=sel_leps.eta.flatten())
             lep_weights[~tight_leps] = 1.
             evt_weights *= lep_weights
+
+            ## apply btagging SFs to MC
+        if not isData:
+            btag_weights = np.ones(clean_jets.size)
+            #set_trace()
+                ## get per-jet weights for all systematic variations + central value
+            threeJ_wts = threejets_btagSFs.get_scale_factor(jets=clean_jets[three_jets_events], passing_cut=btag_wps[0])
+            fourPJ_wts = fourPlusjets_btagSFs.get_scale_factor(jets=clean_jets[fourPlus_jets_events], passing_cut=btag_wps[0])
+                ## calculate per-event SFs for central value
+            btag_weights[three_jets_events] = threeJ_wts['central'].prod()
+            btag_weights[fourPlus_jets_events] = fourPJ_wts['central'].prod()
+            evt_weights *= btag_weights
 
 
             ## find best permutations and create bp column
