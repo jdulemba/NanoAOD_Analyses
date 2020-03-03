@@ -32,12 +32,24 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 hists = load(fname)
+#set_trace()
 
 variables = {
     'pt' : '$p_{T}$',
     'eta' : '$\\eta$',
     'phi' : '$\\phi$',
+    'E' : 'E',
     'njets' : '$n_{jets}$',
+    'Prob' : '$\\lambda_{C}$',
+    'MassDiscr' : '$\\lambda_{M}$',
+    'NuDiscr' : '$\\lambda_{NS}$',
+}
+
+best_perm_vars = {
+    'BLep' : '$b_{l}$',
+    'BHad' : '$b_{h}$',
+    'WJa'  : '$leading W_{jet}$',
+    'WJb'  : '$subleading W_{jet}$',
 }
 
 jet_mults = {
@@ -55,7 +67,11 @@ lep_types = {
 objtypes = {
     'Jets' : 'jets',
     'Muon' : '$\\mu$',
-    'Electron' : '$e$'
+    'Electron' : '$e$',
+    'BLep' : '$b_{l}$',
+    'BHad' : '$b_{h}$',
+    'WJa'  : '$leading\ W_{jet}$',
+    'WJb'  : '$subleading\ W_{jet}$',
 }
 
     ## get plotting colors/settings
@@ -66,9 +82,17 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
 for hname in hists.keys():
     if hname == 'cutflow': continue
+    if 'BestPerm' not in hname: continue
     histo = hists[hname]
+    #set_trace()
 
-    jmult, lep_type, obj_type, kvar = hname.split('_')
+    if 'BestPerm' in hname:
+        if 'njets' in hname or 'Prob' in hname or 'Discr' in hname:
+            jmult, lep_type, perm_type, kvar = hname.split('_')
+        else:
+            jmult, lep_type, perm_type, obj_type, kvar = hname.split('_')
+    else:
+        jmult, lep_type, obj_type, kvar = hname.split('_')
 
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     fig.subplots_adjust(hspace=.07)
@@ -79,7 +103,12 @@ for hname in hists.keys():
             error_opts=stack_error_opts
         )
         if kvar in variables.keys():
-            xtitle = '%s(%s) [GeV]' % (variables[kvar], objtypes[obj_type]) if kvar == 'pt' else '%s(%s)' % (variables[kvar], objtypes[obj_type])
+            if kvar == 'njets' or kvar == 'Prob' or 'Discr' in kvar:
+                xtitle = variables[kvar]
+            elif kvar == 'pt' or kvar == 'E':
+                xtitle = '%s(%s) [GeV]' % (variables[kvar], objtypes[obj_type])
+            else:
+                xtitle = '%s(%s)' % (variables[kvar], objtypes[obj_type])
             plt.xlabel(xtitle)
         else:
             plt.xlabel('$%s$' % histo.axes()[-1].label)
@@ -106,7 +135,6 @@ for hname in hists.keys():
         verticalalignment='bottom', 
         transform=ax.transAxes
     )
-
 
     pltdir = outdir if args.testing else '/'.join([outdir, jmult, lep_type])
     if not os.path.isdir(pltdir):
