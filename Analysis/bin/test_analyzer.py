@@ -13,6 +13,7 @@ import Utilities.plot_tools as plt_tools
 import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
+import Utilities.prettyjson as prettyjson
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -20,9 +21,8 @@ analyzer = 'test_analyzer'
 
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
-parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
+parser.add_argument('--year', choices=['2016', '2017', '2018'], default='2016', help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-parser.add_argument('--routput', action='store_true', help='Output (1D) histograms to root file. Only valid during debugging.')
 
 args = parser.parse_args()
 
@@ -37,15 +37,28 @@ samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#
 if not samples:
     raise IOError("No samples found as inputs")
 
-    ## add files to fileset
+    ## load json files for data lumi and cross sections -- testing
+data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
+samples_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, args.year)).read())
+plt_weights = {}
+
+    ## add files to fileset and get plotting weights
 fileset = {}
 for sample in samples:
-    spath = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % sample])
-    if not os.path.isfile(spath):
+    txtpath = '/'.join([proj_dir, 'inputs', jobid, '%s.txt' % sample])
+    if not os.path.isfile(txtpath):
         raise IOError("Sample file %s.txt not found" % sample)
+
+    metafile = '%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)
+    if os.path.isfile(metafile):
+        nWeightedEvts = prettyjson.loads(open(metafile).read())["nWeightedEvts"]
+        tmp_sample_name = 'ttJets' if sample == 'TEST_ttJets' else sample ## for testing
+        xsec = [info['xsection'] for info in samples_file if info['name'] == tmp_sample_name ][0] ## for testing
+        #xsec = [info['xsection'] for info in samples_file if info['name'] == sample ][0]
+        plt_weights[sample] = data_lumi/(nWeightedEvts/xsec)
     
-    sfiles = open(spath, 'r')
-    files_to_use = [fname.strip('\n') for fname in sfiles]
+    txtfiles = open(txtpath, 'r')
+    files_to_use = [fname.strip('\n') for fname in txtfiles]
     
     #set_trace()
     if ':' in args.frange:
@@ -108,6 +121,7 @@ class Test_Analyzer(processor.ProcessorABC):
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
+        self.plt_weights = plt_weights
     
     @property
     def accumulator(self):
@@ -163,6 +177,8 @@ class Test_Analyzer(processor.ProcessorABC):
             histo_dict['%s_BestPerm_WJb_E' % tdir]   = hist.Hist("Counts", self.dataset_axis, self.energy_axis)
 
         return histo_dict
+
+
     def process(self, df):
         output = self.accumulator.identity()
 
@@ -190,7 +206,7 @@ class Test_Analyzer(processor.ProcessorABC):
         output['cutflow']['nEvts passing jet and %s selection' % lep_to_use] += passing_evts.sum()
 
         evt_weights = MCWeights.evt_weight(df, mask=passing_evts)
-        #set_trace()
+        evt_weights *= self.plt_weights[self.sample_name] # include plotting weight to event weights
 
             ## get selected leptons, jets, and MET corresponding to passing events
         sel_leps = df[lep_to_use][(passing_evts)]
@@ -302,6 +318,8 @@ output = processor.run_uproot_job(fileset,
     #chunksize=500000,
 )
 
+output['data_lumi'] = data_lumi
+
 #if args.debug:
 #    print(output)
 #set_trace()
@@ -312,36 +330,19 @@ if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
     cfname = '%s/%s.coffea' % (outdir, 'test')
     #cfname = '%s/%s.coffea' % (outdir, args.sample)
-    #if (args.debug and args.routput):
-    #    rfname = '%s/%s.root' % (outdir, args.sample)
 
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
         cfname = '%s/%sto%s.coffea' % (outdir, file_start, file_stop)
         #cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
-        #if (args.debug and args.routput):
-        #    rfname = '%s/%s_%sto%s.root' % (outdir, args.sample, file_start, file_stop)
     else:
         outdir = proj_dir
         cfname = '%s/%s.test.coffea' % (outdir, analyzer)
         #cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
-        #if (args.debug and args.routput):
-        #    rfname = '%s/%s.test.%s.root' % (outdir, args.sample, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 save(output, cfname)
 print('%s has been written' % cfname)
 
-if (args.debug and args.routput):
-        ## write hists to root file
-    import uproot
-    fout = uproot.recreate(rfname) if os.path.isfile(rfname) else uproot.create(rfname)
-    histos = [key for key in output.keys() if key != 'cutflow']
-    #set_trace()
-    for histo in histos:
-        fout[histo] = hist.export1d(output[histo])
-    fout.close()
-    
-    print('%s has been written' % rfname)
