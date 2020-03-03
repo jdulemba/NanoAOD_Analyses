@@ -65,6 +65,8 @@ class LeptonSF(object):
             for sf_type in lep_info[year][lepton]['SFs'].keys():
                 if lep_info[year][lepton]['SFs'][sf_type]['available']:
                     self.lepSFs_['%s_%s' % (lepton, sf_type)] = dense_lookup(*SFfile[(sf_type, 'dense_lookup')])
+        print('Lepton SF constructed')
+
 
     def get_2d_weights_(self, lepton, sf_type, pt_array, eta_array, shift=None): ## pt and eta are numpy arrays
         eta_array = np.abs(eta_array) if lep_info[year][lepton]['SFs'][sf_type]['abs_eta'] else eta_array
