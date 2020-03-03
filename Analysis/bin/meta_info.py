@@ -47,18 +47,24 @@ else:
     if not samples:
         raise IOError("No samples found as inputs")
 
-    ## add files to fileset
+
+    ## add files to fileset 
 fileset = {}
 for sample in samples:
     if sample.startswith('data_Single'):
         raise IOError("Meta Info should only be run over simulation")
 
-    spath = '/'.join([indir, '%s.txt' % sample])
-    if not os.path.isfile(spath):
+    metafile = '%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)
+    if os.path.isfile(metafile):
+        nWeightedEvts = prettyjson.loads(open('%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)).read())["nWeightedEvts"]
+        plt_weights[sample] = nWeightedEvts
+
+    txtpath = '/'.join([indir, '%s.txt' % sample])
+    if not os.path.isfile(txtpath):
         raise IOError("Sample file %s.txt not found" % sample)
 
-    sfiles = open(spath, 'r')
-    files_to_use = [fname.strip('\n') for fname in sfiles if not fname.startswith('#')]
+    txtfiles = open(txtpath, 'r')
+    files_to_use = [fname.strip('\n') for fname in txtfiles if not fname.startswith('#')]
 
     if ':' in args.frange:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
