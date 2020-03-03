@@ -32,6 +32,7 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 hists = load(fname)
+data_lumi = hists['data_lumi']
 #set_trace()
 
 variables = {
@@ -127,9 +128,16 @@ for hname in hists.keys():
     # call plt.legend() with the new values
     plt.legend(handles,labels)
 
-    #cms_blurb = plt.text(1., 1., r"1 fb$^{-1}$ (13 TeV %s)",
     cms_blurb = plt.text(
-        1., 1., r"CMS Preliminary %s,  %s (13 TeV %s)" % (jet_mults[jmult], lep_types[lep_type], args.year),
+        0., 1., r"CMS Preliminary",
+        fontsize=12, 
+        horizontalalignment='left', 
+        verticalalignment='bottom', 
+        transform=ax.transAxes,
+        style='italic'
+    )
+    lumi_blurb = plt.text(
+        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s + %s)" % (data_lumi, jet_mults[jmult], lep_types[lep_type]),
         fontsize=12, 
         horizontalalignment='right', 
         verticalalignment='bottom', 
