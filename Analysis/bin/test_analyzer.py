@@ -10,6 +10,7 @@ import coffea.processor.dataframe
 from coffea.arrays import Initialize
 import itertools
 import Utilities.plot_tools as plt_tools
+import python.LeptonSF as lepSF
 import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
@@ -80,6 +81,8 @@ for sample in samples:
     else:
         fileset[group_name] = files_to_use
 
+#set_trace()
+leptonSFs = lepSF.LeptonSF()
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Test_Analyzer(processor.ProcessorABC):
@@ -122,6 +125,10 @@ class Test_Analyzer(processor.ProcessorABC):
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.plt_weights = plt_weights
+
+        #    # get lepton SF info
+        #self.leptonSFs = leptonSFs
+
     
     @property
     def accumulator(self):
@@ -186,6 +193,7 @@ class Test_Analyzer(processor.ProcessorABC):
             raise IOError("This function only works for LazyDataFrame objects")
         #set_trace()
         self.sample_name = df.dataset
+        isData = self.sample_name.startswith('data')
 
         lep_to_use = [*self.lepton.keys()][0]
         presel_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
@@ -221,7 +229,13 @@ class Test_Analyzer(processor.ProcessorABC):
         tight_leps = sel_leps['TIGHT%s' % self.lepton[lep_to_use]].flatten()
         loose_leps = sel_leps['LOOSE%s' % self.lepton[lep_to_use]].flatten()
 
-        #pref_weights = MCWeights.prefire_weight(df, mask=passing_evts) ## get nominal prefire weight for passing events
+        #set_trace()
+            ## apply lepton SFs to MC (only applicable to tight leptons)
+        if not isData:
+            lep_weights = leptonSFs.get_sf_(lepton='%ss' % lep_to_use, pt_array=sel_leps.pt.flatten(), eta_array=sel_leps.eta.flatten())
+            lep_weights[~tight_leps] = 1.
+            evt_weights *= lep_weights
+
 
             ## find best permutations and create bp column
         best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
