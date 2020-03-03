@@ -178,7 +178,12 @@ output = processor.run_uproot_job(fileset,
     treename='Events',
     processor_instance=Meta_Analyzer(),
     executor=proc_executor,
-    executor_args={'workers': 4, 'flatten' : True},
+    executor_args={
+        'workers': 4,
+        'flatten' : True,
+        'compression' : 5,
+    },
+    chunksize=50000,
     #chunksize=500000,
 )
 
