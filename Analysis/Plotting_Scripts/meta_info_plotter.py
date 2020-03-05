@@ -41,9 +41,8 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 if args.save_pu:
-    import coffea.processor as processor
+    from coffea.lookup_tools.dense_lookup import dense_lookup
     pu_dists = {}
-    pu_dict = processor.dict_accumulator(pu_dists)
 
 for fname in fnames:
     if not os.path.isfile(fname):
@@ -59,7 +58,7 @@ for fname in fnames:
                 ## save pileup array to dict
             if hname == 'PUDistribution' and args.save_pu:
                 #set_trace()
-                pu_dict[histo.axes()[0]._sorted[0]] = histo
+                pu_dists[histo.axes()[0]._sorted[0]] = dense_lookup([val for val in histo.values().values()][0], histo.axes()[-1].edges())
     
             if histo.dense_dim() == 1:
                 ## make plot for separate samples
@@ -131,4 +130,5 @@ for fname in fnames:
 if args.save_pu:
     #set_trace()
     pu_name = '%s/Corrections/MC_PUDistributions.coffea' % proj_dir
-    save(pu_dict, pu_name)
+    save(pu_dists, pu_name)
+    print('\n', pu_name, 'written')
