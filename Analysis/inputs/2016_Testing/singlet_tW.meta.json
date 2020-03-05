@@ -1,5 +1,6 @@
 {
-    "nEvents": 7370034,
-    "nWeightedEvts": 7370034,
-    "sumGenWeights": 7370034.0
+    "nEvents": 7944854,
+    "nWeightedEvts": 7944854,
+    "sumGenWeights": 7944854.0,
+    "sumLHEpdfWeights": []
 }
