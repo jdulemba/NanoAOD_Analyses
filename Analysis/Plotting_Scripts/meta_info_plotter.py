@@ -14,6 +14,8 @@ parser = ArgumentParser()
 parser.add_argument('--sample', type=str, help='Input sample to use.')
 parser.add_argument('--testing', action='store_true', help='Determines where input file is.')
 parser.add_argument('--save_pu', action='store_true', help='Save PU distributions for each sample to a single file.')
+parser.add_argument('--check_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
+parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 
 args = parser.parse_args()
 
@@ -41,94 +43,170 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 if args.save_pu:
+    import numpy as np
+    from coffea.lookup_tools.root_converters import convert_histo_root_file
     from coffea.lookup_tools.dense_lookup import dense_lookup
-    pu_dists = {}
+    mc_pu_weights = {'2016' : {}}
+    data_pu_dists = {'2016' : {}}
+    #set_trace()
+    pu_path = '%s/inputs/data/Pileup' % proj_dir
+    data_pu_2016 = convert_histo_root_file('%s/2016_data.meta.pu.root' % pu_path)
+    cen_2016 = dense_lookup(*data_pu_2016[('pileup', 'dense_lookup')])
+    cen_2016._values = cen_2016._values/sum(cen_2016._values) # normalize values
+    data_pu_dists['2016']['central'] = cen_2016
+    data_pu_up_2016 = convert_histo_root_file('%s/2016_data.meta.pu_up.root' % pu_path)
+    up_2016 = dense_lookup(*data_pu_up_2016[('pileup', 'dense_lookup')])
+    up_2016._values = up_2016._values/sum(up_2016._values) # normalize values
+    data_pu_dists['2016']['up'] = up_2016
+    data_pu_dw_2016 = convert_histo_root_file('%s/2016_data.meta.pu_down.root' % pu_path)
+    dw_2016 = dense_lookup(*data_pu_dw_2016[('pileup', 'dense_lookup')])
+    dw_2016._values = dw_2016._values/sum(dw_2016._values) # normalize values
+    data_pu_dists['2016']['down'] = dw_2016
+    
+
+if args.check_lumi:
+    lumimask_check = {}
+    def as_range(iterable): # not sure how to do this part elegantly
+        l = list(iterable)
+        if len(l) > 1:
+            return [l[0], l[-1]]
+        else:
+            return [l[0], l[0]]
 
 for fname in fnames:
     if not os.path.isfile(fname):
         raise IOError("%s not found" % fname)
     hists = load(fname)
+
+    if 'data_SingleMuon' in fname:
+        if not args.check_lumi: continue
+        run_lumi_list = hists['%s_runs_to_lumis' % fname.split('/')[-1].split('.')[0]].value
+        lumi_map = {}
+        for run, lumis in run_lumi_list:
+            lumi_map.setdefault(run, []).append(lumis)
+
+        from itertools import groupby, count
+
+        #set_trace()
+            ## format lumi_map in same way as lumimask golden json
+        for run in lumi_map.keys():
+            lumis = sorted(list(set([item for sublist in lumi_map[run] for item in sublist])))
+            lumi_ranges = [as_range(g) for _, g in groupby(lumis, key=lambda n, c=count(): n-next(c))]
+            lumi_map[run] = lumi_ranges
+
+        lumimask_check.update(lumi_map)
+        #set_trace()
+        continue
     #set_trace()
-    
-    for hname in hists.keys():
-            ## plot histograms
-        if isinstance(hists[hname], coffea.hist.hist_tools.Hist):
-            histo = hists[hname]
 
-                ## save pileup array to dict
-            if hname == 'PUDistribution' and args.save_pu:
+    elif 'data_SingelElectron' in fname: continue
+
+    else: 
+        if args.check_lumi: continue   
+        for hname in hists.keys():
+                ## plot histograms
+            if isinstance(hists[hname], coffea.hist.hist_tools.Hist):
+                histo = hists[hname]
+    
+                    ## save pileup array to dict
+                if hname == 'PUDistribution' and args.save_pu:
+                    mc_vals = [val for val in histo.values().values()][0]
+                    mc_vals = mc_vals/sum(mc_vals)
+                    edges = histo.axes()[-1].edges()
+                    mc_pu_weights['2016'][histo.axes()[0]._sorted[0]] = {}
+                    for sys_var in ['central', 'up', 'down']:
+                        mc_weights = data_pu_dists['2016'][sys_var]._values/mc_vals
+                        mc_weights[mc_weights == np.inf] = np.nan
+                        mc_weights = np.nan_to_num(mc_weights)
+                        mc_pu_weights['2016'][histo.axes()[0]._sorted[0]][sys_var] = dense_lookup(mc_weights, edges)
+                    #set_trace()
+        
+                if histo.dense_dim() == 1:
+                    ## make plot for separate samples
+                    for sample in histo.axes()[0]._sorted:
+                        sample_histo = histo[sample]
+        
+                        fig = plt.figure()
+                        ax = plot.plot1d(sample_histo)
+                        if 'mtt' in hname:
+                            plt.xlabel(variables['mtt'])
+                        elif 'ctstar' in hname:
+                            plt.xlabel(variables['ctstar'])
+                        else:
+                            plt.xlabel('$%s$' % sample_histo.axes()[-1].label)
+                        plt.ylabel('Events')
+                        figname = '%s/%s_%s.png' % (outdir, sample, hname)
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
+        
+        
+                elif histo.dense_dim() == 2:
+                    xvar, yvar = histo.axes()[-2].name, histo.axes()[-1].name
+        
+                    ## make plots for different ttJets samples
+                    for sample in histo.axes()[0]._sorted:
+                        if not (sample == 'ttJets' or sample == 'ttJets_PS'): continue
+                        sample_histo = histo[sample].project(histo.axes()[1].name, xvar, yvar)
+    
+                        #set_trace()    
+                            ## plot x projection
+                        fig = plt.figure()
+                        x_proj_histo = sample_histo.sum(yvar)
+                        x_ax = plot.plot1d(x_proj_histo)
+                        x_ax.set_xlabel(variables[xvar])
+                        x_ax.set_ylabel('Events')
+                        xfigname = '%s/%s_%s.png' % (outdir, sample, xvar)
+                        fig.savefig(xfigname)
+                        print('%s written' % xfigname)
+                        plt.close()
+        
+                            ## plot y projection
+                        fig = plt.figure()
+                        y_proj_histo = sample_histo.sum(xvar)
+                        y_ax = plot.plot1d(y_proj_histo)
+                        y_ax.set_xlabel(variables[yvar])
+                        y_ax.set_ylabel('Events')
+                        yfigname = '%s/%s_%s.png' % (outdir, sample, yvar)
+                        fig.savefig(yfigname)
+                        print('%s written' % yfigname)
+                        plt.close()
+        
+                ## write other meta info to meta.json files
+            else:
+                if args.testing: continue
                 #set_trace()
-                pu_dists[histo.axes()[0]._sorted[0]] = dense_lookup([val for val in histo.values().values()][0], histo.axes()[-1].edges())
-    
-            if histo.dense_dim() == 1:
-                ## make plot for separate samples
-                for sample in histo.axes()[0]._sorted:
-                    sample_histo = histo[sample]
-    
-                    fig = plt.figure()
-                    ax = plot.plot1d(sample_histo)
-                    if 'mtt' in hname:
-                        plt.xlabel(variables['mtt'])
-                    elif 'ctstar' in hname:
-                        plt.xlabel(variables['ctstar'])
+                #if args.testing: set_trace()
+                meta_dict = {}
+                for key, val in hists[hname].items():
+                    if isinstance(val, (int, float, list)):
+                        meta_dict[key] = val
                     else:
-                        plt.xlabel('$%s$' % sample_histo.axes()[-1].label)
-                    plt.ylabel('Events')
-                    figname = '%s/%s_%s.png' % (outdir, sample, hname)
-                    fig.savefig(figname)
-                    print('%s written' % figname)
-                    plt.close()
-    
-    
-            elif histo.dense_dim() == 2:
-                xvar, yvar = histo.axes()[-2].name, histo.axes()[-1].name
-    
-                ## make plots for different ttJets samples
-                for sample in histo.axes()[0]._sorted:
-                    if not (sample == 'ttJets' or sample == 'ttJets_PS'): continue
-                    sample_histo = histo[sample].project(histo.axes()[1].name, xvar, yvar)
-
-                    #set_trace()    
-                        ## plot x projection
-                    fig = plt.figure()
-                    x_proj_histo = sample_histo.sum(yvar)
-                    x_ax = plot.plot1d(x_proj_histo)
-                    x_ax.set_xlabel(variables[xvar])
-                    x_ax.set_ylabel('Events')
-                    xfigname = '%s/%s_%s.png' % (outdir, sample, xvar)
-                    fig.savefig(xfigname)
-                    print('%s written' % xfigname)
-                    plt.close()
-    
-                        ## plot y projection
-                    fig = plt.figure()
-                    y_proj_histo = sample_histo.sum(xvar)
-                    y_ax = plot.plot1d(y_proj_histo)
-                    y_ax.set_xlabel(variables[yvar])
-                    y_ax.set_ylabel('Events')
-                    yfigname = '%s/%s_%s.png' % (outdir, sample, yvar)
-                    fig.savefig(yfigname)
-                    print('%s written' % yfigname)
-                    plt.close()
-    
-            ## write other meta info to meta.json files
-        else:
-            if args.testing: continue
-            #set_trace()
-            #if args.testing: set_trace()
-            meta_dict = {}
-            for key, val in hists[hname].items():
-                if isinstance(val, (int, float, list)):
-                    meta_dict[key] = val
-                else:
-                    meta_dict[key] = val.tolist()
-            with open('%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, hname), 'w') as out:
-                out.write(prettyjson.dumps(meta_dict))
-                print('%s/inputs/%s/%s.meta.json written' % (proj_dir, jobid, hname))
+                        meta_dict[key] = val.tolist()
+                with open('%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, hname), 'w') as out:
+                    out.write(prettyjson.dumps(meta_dict))
+                    print('%s/inputs/%s/%s.meta.json written' % (proj_dir, jobid, hname))
     
 
 if args.save_pu:
     #set_trace()
-    pu_name = '%s/Corrections/MC_PUDistributions.coffea' % proj_dir
-    save(pu_dists, pu_name)
+    pu_name = '%s/Corrections/MC_PU_Weights.coffea' % proj_dir
+    save(mc_pu_weights, pu_name)
     print('\n', pu_name, 'written')
+
+
+if args.check_lumi:
+    print('For 2016 single muon this works but must check for 2017 and 2018!')
+    golden_json_lumimask = eval(open('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year)).readlines()[0])
+    ## check if runs are at least the same
+    gj_runs = sorted(list(golden_json_lumimask.keys()))
+    data_runs = sorted(list(lumimask_check.keys()))
+    if data_runs != gj_runs:
+        print('The runs from the golden json are not the same as in data')
+    else:
+        not_same_runs = [run_num for run_num in gj_runs if lumimask_check[run_num] != golden_json_lumimask[run_num]]
+        gj_not_same = [(run_num, golden_json_lumimask[run_num]) for run_num in not_same_runs]
+        data_not_same = [(run_num, lumimask_check[run_num]) for run_num in not_same_runs]
+        print('Golden json differences:\n', gj_not_same) 
+        print('Data lumimap differences:\n', data_not_same) 
+
