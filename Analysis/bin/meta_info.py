@@ -7,7 +7,6 @@ import coffea.processor.dataframe
 import python.Partons as Partons
 from Utilities.make_variables import ctstar as ctstar
 from coffea.util import load, save
-import Utilities.plot_tools as plt_tools
 import numpy as np
 
 parser = ArgumentParser()
@@ -24,7 +23,7 @@ jobid = os.environ['jobid']
 analyzer = 'meta_info'
 
     ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', jobid])
+indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
 if args.sample:
         ## sample specified
     if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
@@ -230,7 +229,7 @@ if args.debug: print(output)
 
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
+    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
     if args.fname:
         cfname = '%s/%s.coffea' % (outdir, args.fname)
     elif args.sample:
@@ -239,7 +238,7 @@ if (args.frange).lower() == 'all':
         cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', jobid, analyzer])
+        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
         if args.fname:
             cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
         elif args.sample:
