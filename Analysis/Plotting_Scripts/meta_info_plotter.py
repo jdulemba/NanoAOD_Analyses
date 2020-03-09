@@ -11,11 +11,10 @@ import Utilities.prettyjson as prettyjson
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
+parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Input sample to use.')
 parser.add_argument('--testing', action='store_true', help='Determines where input file is.')
-parser.add_argument('--save_pu', action='store_true', help='Save PU distributions for each sample to a single file.')
 parser.add_argument('--check_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
-parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 
 args = parser.parse_args()
 
@@ -28,41 +27,20 @@ variables = {
     'ctstar' : 'cos($\\theta_{t}^{*}$)'
 }
 
-input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', jobid, analyzer])
+input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
 f_ext = '%s.test.coffea' % analyzer if args.testing else '.coffea'
-outdir = '/'.join([proj_dir, 'plots', jobid, analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', jobid, analyzer])
+outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 
 if args.testing:
     fnames = ['%s/%s_%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, f_ext)]
 else:
     fnames = ['%s/%s%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
 
+fnames = sorted(fnames)
 #set_trace()
 
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
-
-if args.save_pu:
-    import numpy as np
-    from coffea.lookup_tools.root_converters import convert_histo_root_file
-    from coffea.lookup_tools.dense_lookup import dense_lookup
-    mc_pu_weights = {'2016' : {}}
-    data_pu_dists = {'2016' : {}}
-    #set_trace()
-    pu_path = '%s/inputs/data/Pileup' % proj_dir
-    data_pu_2016 = convert_histo_root_file('%s/2016_data.meta.pu.root' % pu_path)
-    cen_2016 = dense_lookup(*data_pu_2016[('pileup', 'dense_lookup')])
-    cen_2016._values = cen_2016._values/sum(cen_2016._values) # normalize values
-    data_pu_dists['2016']['central'] = cen_2016
-    data_pu_up_2016 = convert_histo_root_file('%s/2016_data.meta.pu_up.root' % pu_path)
-    up_2016 = dense_lookup(*data_pu_up_2016[('pileup', 'dense_lookup')])
-    up_2016._values = up_2016._values/sum(up_2016._values) # normalize values
-    data_pu_dists['2016']['up'] = up_2016
-    data_pu_dw_2016 = convert_histo_root_file('%s/2016_data.meta.pu_down.root' % pu_path)
-    dw_2016 = dense_lookup(*data_pu_dw_2016[('pileup', 'dense_lookup')])
-    dw_2016._values = dw_2016._values/sum(dw_2016._values) # normalize values
-    data_pu_dists['2016']['down'] = dw_2016
-    
 
 if args.check_lumi:
     lumimask_check = {}
@@ -78,7 +56,9 @@ for fname in fnames:
         raise IOError("%s not found" % fname)
     hists = load(fname)
 
-    if 'data_SingleMuon' in fname:
+    #set_trace()
+    if 'data_Single' in fname:
+        print(fname.split('/')[-1].split('.')[0])
         if not args.check_lumi: continue
         run_lumi_list = hists['%s_runs_to_lumis' % fname.split('/')[-1].split('.')[0]].value
         lumi_map = {}
@@ -99,28 +79,14 @@ for fname in fnames:
         continue
     #set_trace()
 
-    elif 'data_SingelElectron' in fname: continue
-
     else: 
-        if args.check_lumi: continue   
+        if args.check_lumi: continue
         for hname in hists.keys():
+            if 'runs_to_lumis' in hname: continue
                 ## plot histograms
             if isinstance(hists[hname], coffea.hist.hist_tools.Hist):
                 histo = hists[hname]
     
-                    ## save pileup array to dict
-                if hname == 'PUDistribution' and args.save_pu:
-                    mc_vals = [val for val in histo.values().values()][0]
-                    mc_vals = mc_vals/sum(mc_vals)
-                    edges = histo.axes()[-1].edges()
-                    mc_pu_weights['2016'][histo.axes()[0]._sorted[0]] = {}
-                    for sys_var in ['central', 'up', 'down']:
-                        mc_weights = data_pu_dists['2016'][sys_var]._values/mc_vals
-                        mc_weights[mc_weights == np.inf] = np.nan
-                        mc_weights = np.nan_to_num(mc_weights)
-                        mc_pu_weights['2016'][histo.axes()[0]._sorted[0]][sys_var] = dense_lookup(mc_weights, edges)
-                    #set_trace()
-        
                 if histo.dense_dim() == 1:
                     ## make plot for separate samples
                     for sample in histo.axes()[0]._sorted:
@@ -183,20 +149,13 @@ for fname in fnames:
                         meta_dict[key] = val
                     else:
                         meta_dict[key] = val.tolist()
-                with open('%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, hname), 'w') as out:
+                with open('%s/inputs/%s/%s.meta.json' % (proj_dir, '%s_%s' % (args.year, jobid), hname), 'w') as out:
                     out.write(prettyjson.dumps(meta_dict))
-                    print('%s/inputs/%s/%s.meta.json written' % (proj_dir, jobid, hname))
+                    print('%s/inputs/%s/%s.meta.json written' % (proj_dir, '%s_%s' % (args.year, jobid), hname))
     
 
-if args.save_pu:
-    #set_trace()
-    pu_name = '%s/Corrections/MC_PU_Weights.coffea' % proj_dir
-    save(mc_pu_weights, pu_name)
-    print('\n', pu_name, 'written')
-
-
 if args.check_lumi:
-    print('For 2016 single muon this works but must check for 2017 and 2018!')
+    print('For 2016 this works but must check for 2017 and 2018!')
     golden_json_lumimask = eval(open('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year)).readlines()[0])
     ## check if runs are at least the same
     gj_runs = sorted(list(golden_json_lumimask.keys()))
