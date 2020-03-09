@@ -16,3 +16,10 @@ find latest pileup file at https://cms-service-dqm.web.cern.ch/cms-service-dqm/C
 Create pileup files for each year by running make_nanoAOD_data_pileup.sh from CMSSW_9_4_10/src/Analyses/URTTbar/data_scripts (as of March 6, 2020)
 
 ```
+
+```
+Lepton Scale Factors:
+
+Files used are from Otto. Which files to use are found in his cfg files (/uscms_data/d3/ohindric/RunAnalyzer/config_1[678].cfg)
+and the files are then copied from /uscms_data/d1/ohindric/RunAnalyzer/IN1[678]/INPUT/
+```
