@@ -12,9 +12,9 @@ import numpy as np
 
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
+parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--fname', type=str, help='Specify output filename')
-parser.add_argument('--year', choices=['2016', '2017', '2018'], default=2016, help='Specify which year to run over')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
@@ -48,8 +48,6 @@ else:
     ## add files to fileset
 fileset = {}
 for sample in samples:
-    #if sample.startswith('data_Single'):
-    #    raise IOError("Meta Info should only be run over simulation")
 
     spath = '/'.join([indir, '%s.txt' % sample])
     if not os.path.isfile(spath):
@@ -106,6 +104,10 @@ class Meta_Analyzer(processor.ProcessorABC):
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
+        if args.year == '2016':
+            self.Nominal_ttJets = ['ttJets_PS', 'ttJets']
+        else:
+            self.Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
     
     @property
     def accumulator(self):
@@ -159,7 +161,7 @@ class Meta_Analyzer(processor.ProcessorABC):
 
 
                 ## create mtt vs cos theta* dists for nominal ttJets
-            if (self.sample_name == 'ttJets_PS' or self.sample_name == 'ttJets'):
+            if self.sample_name in self.Nominal_ttJets:
                 genParts = Partons.process_genParts(df)
 
                     ## pick gen particles whose mother index == 0
