@@ -189,15 +189,16 @@ def find_best_permutations(jets, leptons, MET, evt_weights):
             5: Event weights (evt_wts)
     '''
     print('Making permutations')
-        ## for testing
-    ##set_trace()
+    btag_wp = [col for col in jets.columns if 'BTAG_' in col][0]
+       ## for testing
+    #set_trace()
     #nj = jets.counts[0:25]
     #    ## make jets matrix
     #jpx = jets.p4.x.flatten()[0:sum(nj)]
     #jpy = jets.p4.y.flatten()[0:sum(nj)]
     #jpz = jets.p4.z.flatten()[0:sum(nj)]
     #jE = jets.p4.energy.flatten()[0:sum(nj)]
-    #jBtag = jets.BTAG_DEEPCSVMEDIUM.flatten()[0:sum(nj)]
+    #jBtag = jets[btag_wp].flatten()[0:sum(nj)]
     ##set_trace()
     #jets_inputs = np.stack((jpx, jpy, jpz, jE, jBtag), axis=1) # one row has (px, py, pyz, E, btag Pass)
 
@@ -215,11 +216,11 @@ def find_best_permutations(jets, leptons, MET, evt_weights):
     #met_inputs = np.stack((met_px, met_py), axis=1) # one row has (px, py)
 
     ##bp = get_permutations(njets_array=nj, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)
-    #bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=nj, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)
-    ##set_trace()
+    ##bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=nj, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)
+    #set_trace()
         ##
 
-    jets_inputs = np.stack((jets.p4.x.flatten(), jets.p4.y.flatten(), jets.p4.z.flatten(), jets.p4.energy.flatten()), axis=1) # one row has (px, py, pyz, E)
+    jets_inputs = np.stack((jets.p4.x.flatten(), jets.p4.y.flatten(), jets.p4.z.flatten(), jets.p4.energy.flatten(), jets[btag_wp].flatten()), axis=1) # one row has (px, py, pyz, E)
     leptons_inputs = np.stack((leptons.p4.x.flatten(), leptons.p4.y.flatten(), leptons.p4.z.flatten(), leptons.p4.energy.flatten()), axis=1) # one row has (px, py, pyz, E)
     met_inputs = np.stack((MET.x, MET.y), axis=1) # one row has (px, py)
     bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=jets.counts, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)
