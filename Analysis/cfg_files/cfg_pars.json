@@ -33,7 +33,7 @@
         "ptmin": 20.0,
         "lead_ptmin": 50.0,
         "etamax": 2.4,
-        "btagger": "DEEPCSV",
+        "btagger": "DEEPJET",
         "applyJER": 1,
         "permutations": {
             "max_jets": 600,
@@ -60,5 +60,9 @@
         "USEMASS": 1,
         "USE3JMERGED": 1,
         "USE3JLOST": 1
+    },
+    "BTagging" : {
+        "csv_file": "DeepJet_2016LegacySF_V1.csv",
+        "eff_file": "htt_DeepJet_2016Legacy_j20l50MT40_1lep_DEEPJETMEDIUM_DEEPJETMEDIUM_3PJets_efficiencies.root"
     }
 }
