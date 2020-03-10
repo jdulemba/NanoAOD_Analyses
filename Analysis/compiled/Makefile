@@ -2,7 +2,7 @@
 PYTHON_INCLUDE = `python3-config --includes`
 PYTHON_LIB=`python3-config --libs`
 
-BOOST_LIB=-lboost_python36 -lboost_numpy36
+BOOST_LIB=-lboost_python37 -lboost_numpy37
 
 CPP_FILES := $(wildcard src/*.cpp)
 OBJ_FILES := $(addprefix libs/,$(notdir $(CPP_FILES:.cpp=.o)))
