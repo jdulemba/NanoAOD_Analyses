@@ -58,6 +58,8 @@ if args.njets == '4+' or args.njets == 'both':
     ## make list into numpy array
     bp_4j = np.asarray(bp_4j)
 
+    bp = Permutations.get_permutations(njets_array_4j, jets_4j, leps_4j, met_4j)
+    bp = np.asarray(bp)
     set_trace()
 
 
@@ -104,6 +106,8 @@ if args.njets == '3' or args.njets == 'both':
 
     bp_3j_lost = Permutations.get_permutations_3j(njets_array_3j, jets_3j, leps_3j, met_3j)
     bp_3j_lost = np.asarray(bp_3j_lost) ## make list into numpy array
+    bp = Permutations.get_permutations(njets_array_3j, jets_3j, leps_3j, met_3j)
+    bp = np.asarray(bp)
     set_trace()
 
     bp_3j_merged = Permutations.get_permutations_3j(njets_array_3j, jets_3j, leps_3j, met_3j, use_merged=True)

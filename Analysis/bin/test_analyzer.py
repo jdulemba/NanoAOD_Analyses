@@ -39,10 +39,10 @@ samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#
 if not samples:
     raise IOError("No samples found as inputs")
 
-    ## load json files for data lumi and cross sections -- testing
-data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
-samples_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, args.year)).read())
-plt_weights = {}
+#    ## load json files for data lumi and cross sections -- testing
+#data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
+#samples_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, args.year)).read())
+#plt_weights = {}
 
     ## add files to fileset and get plotting weights
 fileset = {}
@@ -51,13 +51,13 @@ for sample in samples:
     if not os.path.isfile(txtpath):
         raise IOError("Sample file %s.txt not found" % sample)
 
-    metafile = '%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)
-    if os.path.isfile(metafile):
-        nWeightedEvts = prettyjson.loads(open(metafile).read())["nWeightedEvts"]
-        tmp_sample_name = 'ttJets' if sample == 'TEST_ttJets' else sample ## for testing
-        xsec = [info['xsection'] for info in samples_file if info['name'] == tmp_sample_name ][0] ## for testing
-        #xsec = [info['xsection'] for info in samples_file if info['name'] == sample ][0]
-        plt_weights[sample] = data_lumi/(nWeightedEvts/xsec)
+    #metafile = '%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)
+    #if os.path.isfile(metafile):
+    #    nWeightedEvts = prettyjson.loads(open(metafile).read())["nWeightedEvts"]
+    #    tmp_sample_name = 'ttJets' if sample == 'TEST_ttJets' else sample ## for testing
+    #    xsec = [info['xsection'] for info in samples_file if info['name'] == tmp_sample_name ][0] ## for testing
+    #    #xsec = [info['xsection'] for info in samples_file if info['name'] == sample ][0]
+    #    plt_weights[sample] = data_lumi/(nWeightedEvts/xsec)
     
     txtfiles = open(txtpath, 'r')
     files_to_use = [fname.strip('\n') for fname in txtfiles]
@@ -127,7 +127,7 @@ class Test_Analyzer(processor.ProcessorABC):
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
-        self.plt_weights = plt_weights
+        #self.plt_weights = plt_weights
 
         #    # get lepton SF info
         #self.leptonSFs = leptonSFs
@@ -217,7 +217,7 @@ class Test_Analyzer(processor.ProcessorABC):
         output['cutflow']['nEvts passing jet and %s selection' % lep_to_use] += passing_evts.sum()
 
         evt_weights = MCWeights.evt_weight(df, mask=passing_evts)
-        evt_weights *= self.plt_weights[self.sample_name] # include plotting weight to event weights
+        #evt_weights *= self.plt_weights[self.sample_name] # include plotting weight to event weights
 
             ## get selected leptons, jets, and MET corresponding to passing events
         sel_leps = df[lep_to_use][(passing_evts)]
@@ -346,7 +346,7 @@ output = processor.run_uproot_job(fileset,
     #chunksize=500000,
 )
 
-output['data_lumi'] = data_lumi
+#output['data_lumi'] = data_lumi
 
 #if args.debug:
 #    print(output)
