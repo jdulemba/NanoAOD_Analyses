@@ -52,11 +52,10 @@ for lep in leptons.keys():
     for year, fname in leptons[lep]['fnames'].items():
         sf_file = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, fname))
         eta_binning = sf_file[(leptons[lep]['eta'], 'dense_lookup')][1]
-    
+
         for idx, pt_hist in enumerate(leptons[lep]['pt']):
             sf_output[year][lep]['%s:%s' % (eta_binning[idx], eta_binning[idx+1])] = dense_lookup(*sf_file[(pt_hist, 'dense_lookup')])
     
-#set_trace()
 lepSF_name = '%s/leptonSFs.coffea' % outdir
 save(sf_output, lepSF_name)    
 print('%s written' % lepSF_name)
