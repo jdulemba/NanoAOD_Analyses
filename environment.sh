@@ -1,6 +1,8 @@
 # Project-related environment variables
 NANODIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P)
 
+voms-proxy-init -voms cms --valid 168:00
+
 source /cvmfs/sft.cern.ch/lcg/views/dev3python3/Tue/x86_64-centos7-gcc8-opt/setup.sh
 export LIBRARY_PATH=$LD_LIBRARY_PATH
 
