@@ -194,11 +194,10 @@ if args.year == '2016':
 
 #set_trace()
 if args.group:
-    for group, samples in groups_dict.items():
-        for sample in samples:
-            run_cmd = "python bin/meta_info.py all {YEAR} --sample={SAMPLE}".format(YEAR=args.year, SAMPLE=sample)
-            print("Executing: %s" % run_cmd)
-            os.system(run_cmd)
+    for sample in groups_dict[args.group]:
+        run_cmd = "python bin/meta_info.py all {YEAR} --sample={SAMPLE}".format(YEAR=args.year, SAMPLE=sample)
+        print("Executing: %s" % run_cmd)
+        os.system(run_cmd)
 
 if args.sample:
     run_cmd = "python bin/meta_info.py all {YEAR} --sample={SAMPLE}".format(YEAR=args.year, SAMPLE=args.sample)
