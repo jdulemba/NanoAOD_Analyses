@@ -8,6 +8,7 @@ import python.Partons as Partons
 from Utilities.make_variables import ctstar as ctstar
 from coffea.util import load, save
 import numpy as np
+import coffea.lumi_tools.lumi_tools as lumi_tools
 
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
@@ -69,19 +70,13 @@ for sample in samples:
     #set_trace()
     fileset[sample] = files_to_use
 
-#set_trace()
-lumi_mask = eval(open('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year)).readlines()[0])
-
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
     def __init__(self, columns=[]):
-    #def __init__(self):
 
         #if args.debug: set_trace()
         ## only get columns that are used
         self._columns = columns
-
-        self.lumi_mask = lumi_mask
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
@@ -128,25 +123,19 @@ class Meta_Analyzer(processor.ProcessorABC):
 
         if self.sample_name.startswith('data_Single'):
             runs = df.run
-            runs_list = list(set(runs))
             lumis = df.luminosityBlock
-            lumi_map = {str(run):list(set(lumis[np.where(runs == run)])) for run in runs_list}
-            valid_lumi_map = {}
-            for run_list, lumi_list in lumi_map.items():
-                ## initialize list of lumiBlocks that are in lumimask
-                if run_list in self.lumi_mask.keys(): ## check if runs in file are in lumimask
-                        ## find lumis from file that are within the range of valid lumis from the lumimask
-                    valid_lumi_map[run_list] = sorted([lumi_from_df for lumi_from_df in lumi_list for lumi_min, lumi_max in self.lumi_mask[run_list] if lumi_from_df >= lumi_min and lumi_from_df <= lumi_max])
-                    
-            #set_trace()
-            valid_lumis = [item for sublist in list(valid_lumi_map.values()) for item in sublist]
-            evt_mask = np.isin(lumis, valid_lumis)
-            output['%s_runs_to_lumis' % self.sample_name].add(list(valid_lumi_map.items()))
+            Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year))
+            LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
-            output[self.sample_name]['nEvents'] += events[evt_mask].size
+            output[self.sample_name]['nEvents'] += events[LumiMask].size
+            output[self.sample_name]['nWeightedEvts'] += events[LumiMask].size
 
-            output[self.sample_name]['nWeightedEvts'] += events[evt_mask].size
+            if events[LumiMask].size > 0:
+                valid_runs_lumis = np.unique(np.stack((runs[LumiMask], lumis[LumiMask]), axis=1), axis=0) ## make 2D array of uniqe valid [[run, lumi], [run, lumi]...] pairs
+                    # make dictionary of valid runs: sorted list of unique lumisections for each valid run
+                lumi_map = {str(valid_run):sorted(list(set(valid_runs_lumis[:, 1][valid_runs_lumis[:, 0] == valid_run]))) for valid_run in list(set(valid_runs_lumis[:, 0]))}
 
+                output['%s_runs_to_lumis' % self.sample_name].add(list(lumi_map.items()))
 
         else:
 
@@ -157,7 +146,6 @@ class Meta_Analyzer(processor.ProcessorABC):
             genWeights = df.genWeight
             output[self.sample_name]['nWeightedEvts'] += (genWeights != 0).sum()
             output[self.sample_name]['sumGenWeights'] += genWeights.sum()
-
 
                 ## create mtt vs cos theta* dists for nominal ttJets
             if self.sample_name in self.Nominal_ttJets:
@@ -170,7 +158,6 @@ class Meta_Analyzer(processor.ProcessorABC):
 
                 mtt = (tops+antitops).p4.mass.flatten()
                 top_ctstar, tbar_ctstar = ctstar(tops.p4, antitops.p4)
-                #set_trace()
 
                 for idx in range(10):
                     output['mtt_topctstar'].fill(dataset=self.sample_name, evtIdx='%s' % idx, mtt=mtt[(events % 10) == idx], ctstar=top_ctstar[(events % 10) == idx])
@@ -179,14 +166,10 @@ class Meta_Analyzer(processor.ProcessorABC):
             if 'LHEPdfWeight' in df.columns:
                     ## check if there's the same number of pdf weights in every event
                 pdf_wt_list = list(set(df.nLHEPdfWeight))
-                #print(pdf_wt_list)
                 if len(pdf_wt_list) > 1:
                     print(pdf_wt_list)
                     return output
-                    #raise IOError("Events don't have the same number of LHE PDF weights!")
                 #set_trace()
-                #if not np.equal(df.nLHEPdfWeight, df.nLHEPdfWeight[0]).all():
-                #    raise IOError("Events don't have the same number of LHE PDF weights!")
                 LHEpdfWeights = df.LHEPdfWeight
                     ## reshape because it's just a single fucking array instead of array of weights per event
                 LHEpdfWeights = LHEpdfWeights.reshape((df.nLHEPdfWeight[0], events.size))
