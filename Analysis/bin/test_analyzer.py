@@ -12,7 +12,7 @@ import itertools
 import Utilities.plot_tools as plt_tools
 #import python.LeptonSF as lepSF
 #import python.BTagScaleFactors as btagSF
-#import python.Permutations as Permutations
+import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
@@ -252,29 +252,29 @@ class Test_Analyzer(processor.ProcessorABC):
 
 
             ## find best permutations and create bp column
-        #best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
+        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
         #set_trace()
 
             ## fill hists for tight leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
-        #output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
+        output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
 
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
-        #output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
+        output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
             ## fill hists for loose leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
-        #output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
+        output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
-        #output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
+        output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
         return output
 
