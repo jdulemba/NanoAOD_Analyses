@@ -72,7 +72,7 @@ def solve_4PJ(mthad, mwhad, nschi):
         elif np.sqrt(nschi) < NS_4PJ_right_binning[0]:
             bin_to_use = 0
         else:
-            bin_to_use = np.argwhere(NS_4PJ_right_binning > np.sqrt(nschi))[0][0] - 1 ## -1 since binning is edges, not center
+            bin_to_use = np.argmax(NS_4PJ_right_binning > np.sqrt(nschi)) - 1 ## -1 since binning is edges, not center
 
         nsdisval = NS_4PJ_right_values[bin_to_use]/np.sum(NS_4PJ_right_values) # normalizes dist based on integral
         if nsdisval > 1.0E-10:
@@ -86,7 +86,7 @@ def solve_4PJ(mthad, mwhad, nschi):
         elif mwhad < WTmass_right_binning[0][0]:
             xbin_to_use = 0
         else:
-            xbin_to_use = np.argwhere(WTmass_right_binning[0] > mwhad)[0][0] - 1
+            xbin_to_use = np.argmax(WTmass_right_binning[0] > mwhad) - 1
 
             ## find y binning to use for when mwhad is in under/overflow
         if mthad > WTmass_right_binning[1][-1]:
@@ -94,7 +94,7 @@ def solve_4PJ(mthad, mwhad, nschi):
         elif mthad < WTmass_right_binning[1][0]:
             ybin_to_use = 0
         else:
-            ybin_to_use = np.argwhere(WTmass_right_binning[1] > mthad)[0][0] - 1
+            ybin_to_use = np.argmax(WTmass_right_binning[1] > mthad) - 1
         
         massdisval = WTmass_right_values[xbin_to_use][ybin_to_use]/np.sum(WTmass_right_values) # normalizes dist based on integral
         if massdisval > 1.0E-10:
@@ -119,7 +119,7 @@ def solve_3J_lost(mbpjet, nschi):
         elif np.sqrt(nschi) < NS_3J_Lost_right_binning[0]:
             bin_to_use = 0
         else:
-            bin_to_use = np.argwhere(NS_3J_Lost_right_binning > np.sqrt(nschi))[0][0] - 1 ## -1 since binning is edges, not center
+            bin_to_use = np.argmax(NS_3J_Lost_right_binning > np.sqrt(nschi)) - 1 ## -1 since binning is edges, not center
 
         nsdisval = NS_3J_Lost_right_values[bin_to_use]/np.sum(NS_3J_Lost_right_values) # normalizes dist based on integral
         if nsdisval > 1.0E-10:
@@ -132,7 +132,7 @@ def solve_3J_lost(mbpjet, nschi):
         elif mbpjet < Mass_3J_Lost_right_binning[0]:
             bin_to_use = 0
         else:
-            bin_to_use = np.argwhere(Mass_3J_Lost_right_binning > mbpjet)[0][0] - 1 ## -1 since binning is edges, not center
+            bin_to_use = np.argmax(Mass_3J_Lost_right_binning > mbpjet) - 1 ## -1 since binning is edges, not center
 
         massdisval = Mass_3J_Lost_right_values[bin_to_use]/np.sum(Mass_3J_Lost_right_values) # normalizes dist based on integral
         if massdisval > 1.0E-10:
@@ -158,7 +158,7 @@ def solve_3J_merged(maxmjet, mbpjet, nschi):
         elif np.sqrt(nschi) < NS_3J_Merged_right_binning[0]:
             bin_to_use = 0
         else:
-            bin_to_use = np.argwhere(NS_3J_Merged_right_binning > np.sqrt(nschi))[0][0] - 1 ## -1 since binning is edges, not center
+            bin_to_use = np.argmax(NS_3J_Merged_right_binning > np.sqrt(nschi)) - 1 ## -1 since binning is edges, not center
 
         nsdisval = NS_3J_Merged_right_values[bin_to_use]/np.sum(NS_3J_Merged_right_values) # normalizes dist based on integral
         if nsdisval > 1.0E-10:
@@ -172,7 +172,7 @@ def solve_3J_merged(maxmjet, mbpjet, nschi):
         elif maxmjet < Mass_3J_Merged_right_binning[0][0]:
             xbin_to_use = 0
         else:
-            xbin_to_use = np.argwhere(Mass_3J_Merged_right_binning[0] > maxmjet)[0][0] - 1
+            xbin_to_use = np.argmax(Mass_3J_Merged_right_binning[0] > maxmjet) - 1
 
             ## find y binning to use for when maxmjet is in under/overflow
         if mbpjet > Mass_3J_Merged_right_binning[1][-1]:
@@ -180,7 +180,7 @@ def solve_3J_merged(maxmjet, mbpjet, nschi):
         elif mbpjet < Mass_3J_Merged_right_binning[1][0]:
             ybin_to_use = 0
         else:
-            ybin_to_use = np.argwhere(Mass_3J_Merged_right_binning[1] > mbpjet)[0][0] - 1
+            ybin_to_use = np.argmax(Mass_3J_Merged_right_binning[1] > mbpjet) - 1
         
         massdisval = Mass_3J_Merged_right_values[xbin_to_use][ybin_to_use]/np.sum(Mass_3J_Merged_right_values) # normalizes dist based on integral
         if massdisval > 1.0E-10:

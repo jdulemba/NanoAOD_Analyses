@@ -1,5 +1,4 @@
 from numba import njit, objmode
-from numba.typed import List
 import numpy as np
 from pdb import set_trace
 import python.TTBarSolver as solver
@@ -20,16 +19,16 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False):
             [1]: List of neutrino solutions
             [2]: List of probabilities (Total, mass discriminant, nu discriminant)
     '''
-    print('Finding best perms')
+    #print('Finding best perms')
     start = 0
     stop = 0
     evt_idx = 0
 
-    #best_perms = List()
-    best_perms_ordering = List()
-    best_perms_nus = List()
-    best_perms_probs = List()
+    best_perms_ordering = []
+    best_perms_nus = []
+    best_perms_probs = []
 
+    #set_trace()
     for njets in njets_array:
         #print('evt idx: ', evt_idx, ', njets: ', njets)
         stop += njets
@@ -91,6 +90,7 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False):
                                 best_perm_nu = nu
                                 best_perm_probs = np.array([prob, massdiscr, nudiscr])
 
+        #print('Ordering:', best_perm_ordering, ', nu:', best_perm_nu, ', probs:', best_perm_probs)
         best_perms_ordering.append(best_perm_ordering)
         best_perms_nus.append(best_perm_nu)
         best_perms_probs.append(best_perm_probs)
@@ -188,7 +188,7 @@ def find_best_permutations(jets, leptons, MET, evt_weights):
             4: Number of jets in events (njets)
             5: Event weights (evt_wts)
     '''
-    print('Making permutations')
+    #print('Making permutations')
     btag_wp = [col for col in jets.columns if 'BTAG_' in col][0]
        ## for testing
     #set_trace()

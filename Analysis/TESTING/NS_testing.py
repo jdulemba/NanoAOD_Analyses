@@ -1,4 +1,6 @@
 import numpy as np
+import python.TTBarSolver as solver
+from pdb import set_trace
 
 
 ## (px, py, pz, E)
@@ -76,3 +78,6 @@ test_nu = np.array([
         [67.6535, 261.779, 186.368, 328.388, 82069.6],
         [-68.584, 3.99945, -18.1728, 71.0634, 51.7799],
 ])
+
+nudiscr, massdiscr, prob = solver.solve_4PJ(165., 85., 2000.)
+set_trace()

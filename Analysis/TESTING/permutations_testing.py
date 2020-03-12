@@ -163,6 +163,6 @@ met_array = np.array([
     [-20.862375 , -29.982462 ]
 ])
 
-set_trace()
 bp_ordering, bp_nus, bp_probs = Permutations.get_permutations(njets_array=njets_array, jets=jets_array, leptons=leptons_array, met=met_array)
 
+#set_trace()
