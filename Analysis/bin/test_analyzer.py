@@ -12,7 +12,7 @@ import itertools
 import Utilities.plot_tools as plt_tools
 #import python.LeptonSF as lepSF
 #import python.BTagScaleFactors as btagSF
-#import python.Permutations as Permutations
+import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
@@ -24,20 +24,33 @@ analyzer = 'test_analyzer'
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('--sample', type=str, help='Use specific sample')
+parser.add_argument('--fname', type=str, help='Specify output filename')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
 
+    ## get samples to use
+indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
+if args.sample:
+        ## sample specified
+    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
+        raise IOError("File with samples %s.txt not found" % args.sample)
 
-    ## get file that has names for all datasets to use
-fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
-if not os.path.isfile(fpath):
-    raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    samples = [args.sample]
+    if args.fname:
+        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
 
-txt_file = open(fpath, 'r')
-samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-if not samples:
-    raise IOError("No samples found as inputs")
+else:
+        ## get file that has names for all datasets to use
+    fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
+    if not os.path.isfile(fpath):
+        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    
+    txt_file = open(fpath, 'r')
+    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
+    if not samples:
+        raise IOError("No samples found as inputs")
 
 #    ## load json files for data lumi and cross sections -- testing
 #data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
@@ -252,29 +265,29 @@ class Test_Analyzer(processor.ProcessorABC):
 
 
             ## find best permutations and create bp column
-        #best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
+        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
         #set_trace()
 
             ## fill hists for tight leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
-        #output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
+        output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
 
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
-        #output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
+        output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
             ## fill hists for loose leptons
                 ## 3 jets
         output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
         output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
-        #output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
+        output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
                 ## 4+ jets
         output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
         output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
-        #output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
+        output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
         return output
 
@@ -356,18 +369,29 @@ print(output['cutflow'])
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-    cfname = '%s/%s.coffea' % (outdir, 'test')
-    #cfname = '%s/%s.coffea' % (outdir, args.sample)
-
+    if args.fname:
+        cfname = '%s/%s.coffea' % (outdir, args.fname)
+    elif args.sample:
+        cfname = '%s/%s.coffea' % (outdir, args.sample)
+    else:
+        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-        cfname = '%s/%sto%s.coffea' % (outdir, file_start, file_stop)
-        #cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        if args.fname:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
+        elif args.sample:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        else:
+            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
     else:
         outdir = proj_dir
-        cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-        #cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+        if args.fname:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
+        elif args.sample:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
+        else:
+            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
