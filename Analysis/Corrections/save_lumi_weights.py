@@ -10,12 +10,21 @@ outdir = '%s/Corrections' % proj_dir
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-data_lumi =  prettyjson.loads(open('%s/inputs/data_lumis.json' % proj_dir).read()) # file with integrated luminosity for all three years
+data_lumi =  prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read()) # file with integrated luminosity for all three years
 
 lumi_weights = {
-    '2016' : {},
-    '2017' : {},
-    '2018' : {},
+    '2016' : {
+        'Electrons' : {},
+        'Muons' :{}
+    },
+    '2017' : {
+        'Electrons' : {},
+        'Muons' :{}
+    },
+    '2018' : {
+        'Electrons' : {},
+        'Muons' :{}
+    },
 }
 
 # for each year, read nWeightedEvts from all meta.json files
@@ -25,7 +34,8 @@ for year in ['2016', '2017', '2018']:
     for sample in samples:
         nWeightedEvts = prettyjson.loads(open('%s/inputs/%s_%s/%s.meta.json' % (proj_dir, year, jobid, sample)).read())["nWeightedEvts"]
         xsec = [info['xsection'] for info in xsec_file if info['name'] == sample ][0]
-        lumi_weights[year][sample] = data_lumi[year]/(nWeightedEvts/xsec)
+        for lep in ['Electrons', 'Muons']:
+            lumi_weights[year][lep][sample] = data_lumi[year][lep]/(nWeightedEvts/xsec)
 
     # save files
 mcweights_name = '%s/MC_LumiWeights.coffea' % outdir
