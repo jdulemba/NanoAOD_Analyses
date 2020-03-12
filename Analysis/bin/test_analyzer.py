@@ -24,20 +24,33 @@ analyzer = 'test_analyzer'
 parser = ArgumentParser()
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('--sample', type=str, help='Use specific sample')
+parser.add_argument('--fname', type=str, help='Specify output filename')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
 
+    ## get samples to use
+indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
+if args.sample:
+        ## sample specified
+    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
+        raise IOError("File with samples %s.txt not found" % args.sample)
 
-    ## get file that has names for all datasets to use
-fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
-if not os.path.isfile(fpath):
-    raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    samples = [args.sample]
+    if args.fname:
+        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
 
-txt_file = open(fpath, 'r')
-samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-if not samples:
-    raise IOError("No samples found as inputs")
+else:
+        ## get file that has names for all datasets to use
+    fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
+    if not os.path.isfile(fpath):
+        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
+    
+    txt_file = open(fpath, 'r')
+    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
+    if not samples:
+        raise IOError("No samples found as inputs")
 
 #    ## load json files for data lumi and cross sections -- testing
 #data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
@@ -356,18 +369,29 @@ print(output['cutflow'])
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-    cfname = '%s/%s.coffea' % (outdir, 'test')
-    #cfname = '%s/%s.coffea' % (outdir, args.sample)
-
+    if args.fname:
+        cfname = '%s/%s.coffea' % (outdir, args.fname)
+    elif args.sample:
+        cfname = '%s/%s.coffea' % (outdir, args.sample)
+    else:
+        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
         outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-        cfname = '%s/%sto%s.coffea' % (outdir, file_start, file_stop)
-        #cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        if args.fname:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
+        elif args.sample:
+            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
+        else:
+            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
     else:
         outdir = proj_dir
-        cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-        #cfname = '%s/%s.test.%s.coffea' % (outdir, args.sample, analyzer)
+        if args.fname:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
+        elif args.sample:
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
+        else:
+            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
