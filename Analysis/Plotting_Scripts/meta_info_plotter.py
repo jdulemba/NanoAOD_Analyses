@@ -14,7 +14,7 @@ parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Input sample to use.')
 parser.add_argument('--testing', action='store_true', help='Determines where input file is.')
-parser.add_argument('--check_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
+parser.add_argument('--dump_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
 
 args = parser.parse_args()
 
@@ -35,15 +35,15 @@ if args.testing:
     fnames = ['%s/%s_%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, f_ext)]
 else:
     fnames = ['%s/%s%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
-
 fnames = sorted(fnames)
 #set_trace()
 
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-if args.check_lumi:
-    lumimask_check = {}
+if args.dump_lumi:
+    el_lumimask_check = {}
+    mu_lumimask_check = {}
     def as_range(iterable): # not sure how to do this part elegantly
         l = list(iterable)
         if len(l) > 1:
@@ -59,7 +59,7 @@ for fname in fnames:
     #set_trace()
     if 'data_Single' in fname:
         print(fname.split('/')[-1].split('.')[0])
-        if not args.check_lumi: continue
+        if not args.dump_lumi: continue
         run_lumi_list = hists['%s_runs_to_lumis' % fname.split('/')[-1].split('.')[0]].value
         lumi_map = {}
         for run, lumis in run_lumi_list:
@@ -70,17 +70,17 @@ for fname in fnames:
         #set_trace()
             ## format lumi_map in same way as lumimask golden json
         for run in lumi_map.keys():
-            lumis = sorted(list(set([item for sublist in lumi_map[run] for item in sublist])))
+            lumis = sorted(list(set([int(item) for sublist in lumi_map[run] for item in sublist])))
             lumi_ranges = [as_range(g) for _, g in groupby(lumis, key=lambda n, c=count(): n-next(c))]
             lumi_map[run] = lumi_ranges
 
-        lumimask_check.update(lumi_map)
+        el_lumimask_check.update(lumi_map) if 'data_SingleElectron' in fname else mu_lumimask_check.update(lumi_map)
         #set_trace()
         continue
     #set_trace()
 
     else: 
-        if args.check_lumi: continue
+        if args.dump_lumi: continue
         for hname in hists.keys():
             if 'runs_to_lumis' in hname: continue
                 ## plot histograms
@@ -154,18 +154,25 @@ for fname in fnames:
                     print('%s/inputs/%s/%s.meta.json written' % (proj_dir, '%s_%s' % (args.year, jobid), hname))
     
 
-if args.check_lumi:
-    print('For 2016 this works but must check for 2017 and 2018!')
-    golden_json_lumimask = eval(open('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year)).readlines()[0])
-    ## check if runs are at least the same
-    gj_runs = sorted(list(golden_json_lumimask.keys()))
-    data_runs = sorted(list(lumimask_check.keys()))
-    if data_runs != gj_runs:
-        print('The runs from the golden json are not the same as in data')
-    else:
-        not_same_runs = [run_num for run_num in gj_runs if lumimask_check[run_num] != golden_json_lumimask[run_num]]
-        gj_not_same = [(run_num, golden_json_lumimask[run_num]) for run_num in not_same_runs]
-        data_not_same = [(run_num, lumimask_check[run_num]) for run_num in not_same_runs]
-        print('Golden json differences:\n', gj_not_same) 
-        print('Data lumimap differences:\n', data_not_same) 
+if args.dump_lumi:
+    el_lumi_map_dict = {}
+    for key, val in el_lumimask_check.items():
+        if isinstance(val, (int, float, list)):
+            el_lumi_map_dict[key] = val
+        else:
+            el_lumi_map_dict[key] = val.tolist()
+    with open('%s/inputs/%s_%s/data_SingleElectron_%s.run.json' % (proj_dir, args.year, jobid, args.year), 'w') as out:
+        out.write(prettyjson.dumps(el_lumi_map_dict))
+    print('data_SingleElectron_%s.run.json written' % args.year)
+
+    mu_lumi_map_dict = {}
+    for key, val in mu_lumimask_check.items():
+        if isinstance(val, (int, float, list)):
+            mu_lumi_map_dict[key] = val
+        else:
+            mu_lumi_map_dict[key] = val.tolist()
+    with open('%s/inputs/%s_%s/data_SingleMuon_%s.run.json' % (proj_dir, args.year, jobid, args.year), 'w') as out:
+        out.write(prettyjson.dumps(mu_lumi_map_dict))
+    print('data_SingleMuon_%s.run.json written' % args.year)
+
 
