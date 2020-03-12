@@ -5,3 +5,5 @@ Analysis/results
 Analysis/plots
 Analysis/*.coffea
 *.meta.json
+*.o
+*.so
