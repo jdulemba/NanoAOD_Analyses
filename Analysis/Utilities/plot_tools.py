@@ -1,6 +1,6 @@
 from pdb import set_trace
 import fnmatch
-
+import os
 
 dataset_groups = {
     'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
@@ -34,3 +34,16 @@ def get_group(sample, styles=dataset_groups):
         print("Pattern not found for %s" % sample)
         return sample
 
+def make_dataset_groups(year):
+    proj_dir = os.environ['PROJECT_DIR']
+    jobid = os.environ['jobid']
+    set_trace()
+
+hardcoded_groups = {
+    'EWK' : ['ttZll', 'WW', 'ZJets', 'WJets'],
+    'ttJets' : ['ttJets_PS'],
+    'singlet' : ['singlet_tchannel_PS'],
+    'QCD' : ['QCD_Mu_50to80', 'QCD_EM_120to170'],
+    'data' : ['data_SingleMuon_2016C', 'data_SingleMuon_2016D', 'data_SingleMuon_2016E']
+}
+#make_dataset_groups('2016')

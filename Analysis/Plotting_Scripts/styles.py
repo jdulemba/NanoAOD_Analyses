@@ -19,13 +19,12 @@ styles = {
         'facecolor' : '#4daf4a', ## green
         'name' : "single top",
     },
-#   'data*' : {
-#      'legendstyle' : 'p',
-#      'drawstyle' : 'E0 X0',
-#      'markerstyle' : 20,
-#      #'markersize'  : 2,
-#      'name' : "Observed",
-#    },
+   #'data*' : {
+   #   'legendstyle' : 'p',
+   #   'drawstyle' : 'E0 X0',
+   #   'markerstyle' : 20,
+   #   'name' : "Observed",
+   # },
    'WJets*' : {
         'facecolor' : '#ff7f00', ## orange
         'name' : "W+jets",
