@@ -67,7 +67,7 @@ def tight_15(muons):
 
 def loose_15Db(muons):
     ID  = (muons.looseId)
-    Iso = Iso = (muons.pfRelIso < 0.25)
+    Iso = (muons.pfRelIso < 0.25)
 
     return (ID & Iso)
 
