@@ -5,13 +5,12 @@ from pdb import set_trace
 import os
 from argparse import ArgumentParser
 import python.ObjectSelection as objsel
-#import Utilities.maskedlazy as maskedlazy
 import coffea.processor.dataframe
 from coffea.arrays import Initialize
 import itertools
 import Utilities.plot_tools as plt_tools
-#import python.LeptonSF as lepSF
-#import python.BTagScaleFactors as btagSF
+import python.LeptonSF as lepSF
+import python.BTagScaleFactors as btagSF
 import python.Permutations as Permutations
 import python.MCWeights as MCWeights
 import numpy as np
@@ -52,11 +51,6 @@ else:
     if not samples:
         raise IOError("No samples found as inputs")
 
-#    ## load json files for data lumi and cross sections -- testing
-#data_lumi =  prettyjson.loads(open('%s/inputs/lumis.json' % proj_dir).read())[args.year]
-#samples_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, args.year)).read())
-#plt_weights = {}
-
     ## add files to fileset and get plotting weights
 fileset = {}
 for sample in samples:
@@ -64,18 +58,9 @@ for sample in samples:
     if not os.path.isfile(txtpath):
         raise IOError("Sample file %s.txt not found" % sample)
 
-    #metafile = '%s/inputs/%s/%s.meta.json' % (proj_dir, jobid, sample)
-    #if os.path.isfile(metafile):
-    #    nWeightedEvts = prettyjson.loads(open(metafile).read())["nWeightedEvts"]
-    #    tmp_sample_name = 'ttJets' if sample == 'TEST_ttJets' else sample ## for testing
-    #    xsec = [info['xsection'] for info in samples_file if info['name'] == tmp_sample_name ][0] ## for testing
-    #    #xsec = [info['xsection'] for info in samples_file if info['name'] == sample ][0]
-    #    plt_weights[sample] = data_lumi/(nWeightedEvts/xsec)
-    
     txtfiles = open(txtpath, 'r')
     files_to_use = [fname.strip('\n') for fname in txtfiles]
     
-    #set_trace()
     if ':' in args.frange:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
     else:
@@ -87,18 +72,33 @@ for sample in samples:
     else:
         raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
 
-        ## replace sample name with group name ( [WZ]Jets -> EWK for instance)
-    group_name = plt_tools.get_group(sample)
-    if group_name in fileset.keys():
-        for fname in files_to_use:
-            fileset[group_name].append(fname)
-    else:
-        fileset[group_name] = files_to_use
+    #    ## replace sample name with group name ( [WZ]Jets -> EWK for instance)
+    #group_name = plt_tools.get_group(sample)
+    #if group_name in fileset.keys():
+    #    for fname in files_to_use:
+    #        fileset[group_name].append(fname)
+    #else:
+    #    fileset[group_name] = files_to_use
+    fileset[sample] = files_to_use
 
-#leptonSFs = lepSF.LeptonSF()
-##set_trace()
-#threejets_btagSFs = btagSF.create_btag_sf_computer('3')
-#fourPlusjets_btagSFs = btagSF.create_btag_sf_computer('4+')
+#set_trace()
+## load corrections for event weights
+pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
+lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+corrections = {
+    'Pileup' : pu_correction,
+    'Lumi' : lumi_correction,
+    'Prefire' : True,
+    'LeptonSF' : False,
+    'BTagSF' : False,
+}
+
+if corrections['LeptonSF'] == True:
+    leptonSFs = lepSF.LeptonSF()
+if corrections['BTagSF'] == True:
+    threejets_btagSFs = btagSF.create_btag_sf_computer('3')
+    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer('4+')
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Test_Analyzer(processor.ProcessorABC):
@@ -140,7 +140,7 @@ class Test_Analyzer(processor.ProcessorABC):
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
-        #self.plt_weights = plt_weights
+        self.corrections = corrections
 
         #    # get lepton SF info
         #self.leptonSFs = leptonSFs
@@ -207,15 +207,28 @@ class Test_Analyzer(processor.ProcessorABC):
 
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
             raise IOError("This function only works for LazyDataFrame objects")
-        #set_trace()
+
+        #if args.debug: set_trace()
         self.sample_name = df.dataset
+
+        #    ## initialize selections and regions
+        #selection = processor.PackedSelection()
+        #regions = {}
+        #regions['objsel'] = {'objselection'}
+        #regions['preselection'] = {'objselection', 'btag_pass'}
+        #regions['3Jets_signal'] = {'objselection', 'btag_pass', '3jets', 'tight_lep'}
+        #regions['4PJets_signal'] = {'objselection', 'btag_pass', '4pjets', 'tight_lep'}
+
         isData = self.sample_name.startswith('data')
 
         lep_to_use = [*self.lepton.keys()][0]
+
+            ## make event weights
+        evt_weights = processor.Weights(df.size, storeIndividual=True) if isData else MCWeights.test_get_weights(df, year=args.year, lepton='%ss' % lep_to_use, corrections=self.corrections)
+
         presel_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
-        ##df = maskedlazy.MaskedLazyDataFrame()
-            
         output['cutflow']['nEvts passing jet and %s preselection' % lep_to_use] += presel_evts.sum()
+        #selection.add('objselection', presel_evts)
 
             #btag reqs
         btag_wps = [col for col in df.Jet.columns if 'BTAG_' in col]
@@ -224,13 +237,11 @@ class Test_Analyzer(processor.ProcessorABC):
             if output: output['cutflow']['nEvts >=2 jets pass %s' % btag_wps[0]] += btag_pass.sum()
         else:
             raise IOError("Only 1 unique btag working point supported now")
+        #selection.add('btag_pass', btag_pass)
 
         #set_trace()
         passing_evts = (presel_evts & btag_pass)
         output['cutflow']['nEvts passing jet and %s selection' % lep_to_use] += passing_evts.sum()
-
-        evt_weights = MCWeights.evt_weight(df, mask=passing_evts)
-        #evt_weights *= self.plt_weights[self.sample_name] # include plotting weight to event weights
 
             ## get selected leptons, jets, and MET corresponding to passing events
         sel_leps = df[lep_to_use][(passing_evts)]
@@ -240,10 +251,14 @@ class Test_Analyzer(processor.ProcessorABC):
         clean_jets = sel_jets[~sel_jets.match(sel_leps, deltaRCut=0.4)] ## make sure no jets are within deltaR=0.4 of lepton
         three_jets_events = (clean_jets.counts == 3)
         fourPlus_jets_events = (clean_jets.counts > 3)
+        #selection.add('clean_jets', df['Jet'][~df['Jet'].match(df[lep_to_use], deltaRCut=0.4)])
+        #regions['selected_evts'] = {'objselection', 'btag_pass', 'clean_jets'}
+
 
             ## only one lepton categorized as tight/loose
         tight_leps = sel_leps['TIGHT%s' % self.lepton[lep_to_use]].flatten()
         loose_leps = sel_leps['LOOSE%s' % self.lepton[lep_to_use]].flatten()
+        #selection.add('tight_lep', df[lep_to_use]['TIGHT%s' % self.lepton[lep_to_use]].flatten())
 
         #    ## apply lepton SFs to MC (only applicable to tight leptons)
         #if not isData:
@@ -263,30 +278,32 @@ class Test_Analyzer(processor.ProcessorABC):
         #    btag_weights[fourPlus_jets_events] = fourPJ_wts['central'].prod()
         #    evt_weights *= btag_weights
 
+        if clean_jets.size == 0:
+            return output
 
             ## find best permutations and create bp column
-        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights)
+        best_perms = Permutations.find_best_permutations(jets=clean_jets, leptons=sel_leps, MET=sel_met, evt_weights=evt_weights.weight()[(passing_evts)])
         #set_trace()
 
             ## fill hists for tight leptons
                 ## 3 jets
-        output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
-        output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)], evt_weights[(tight_leps & three_jets_events)])
+        output = self.fill_jet_hists(output, '3Jets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & three_jets_events)], evt_weights.weight()[passing_evts][(tight_leps & three_jets_events)])
+        output = self.fill_lep_hists(output, '3Jets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & three_jets_events)], evt_weights.weight()[passing_evts][(tight_leps & three_jets_events)])
         output = self.fill_best_perm_hists(output, '3Jets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
 
                 ## 4+ jets
-        output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
-        output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)], evt_weights[(tight_leps & fourPlus_jets_events)])
+        output = self.fill_jet_hists(output, '4PJets_TIGHT%s_Jets' % self.lepton[lep_to_use], clean_jets[(tight_leps & fourPlus_jets_events)], evt_weights.weight()[passing_evts][(tight_leps & fourPlus_jets_events)])
+        output = self.fill_lep_hists(output, '4PJets_TIGHT%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(tight_leps & fourPlus_jets_events)], evt_weights.weight()[passing_evts][(tight_leps & fourPlus_jets_events)])
         output = self.fill_best_perm_hists(output, '4PJets_TIGHT%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['TIGHT%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
             ## fill hists for loose leptons
                 ## 3 jets
-        output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
-        output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)], evt_weights[(loose_leps & three_jets_events)])
+        output = self.fill_jet_hists(output, '3Jets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & three_jets_events)], evt_weights.weight()[passing_evts][(loose_leps & three_jets_events)])
+        output = self.fill_lep_hists(output, '3Jets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & three_jets_events)], evt_weights.weight()[passing_evts][(loose_leps & three_jets_events)])
         output = self.fill_best_perm_hists(output, '3Jets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets == 3)])
                 ## 4+ jets
-        output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
-        output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)], evt_weights[(loose_leps & fourPlus_jets_events)])
+        output = self.fill_jet_hists(output, '4PJets_LOOSE%s_Jets' % self.lepton[lep_to_use], clean_jets[(loose_leps & fourPlus_jets_events)], evt_weights.weight()[passing_evts][(loose_leps & fourPlus_jets_events)])
+        output = self.fill_lep_hists(output, '4PJets_LOOSE%s_%s' % (self.lepton[lep_to_use], lep_to_use), sel_leps[(loose_leps & fourPlus_jets_events)], evt_weights.weight()[passing_evts][(loose_leps & fourPlus_jets_events)])
         output = self.fill_best_perm_hists(output, '4PJets_LOOSE%s' % self.lepton[lep_to_use], best_perms[(best_perms.Leptons['LOOSE%s' % self.lepton[lep_to_use]].flatten()) & (best_perms.njets > 3)])
 
         return output
@@ -359,12 +376,11 @@ output = processor.run_uproot_job(fileset,
     #chunksize=500000,
 )
 
-#output['data_lumi'] = data_lumi
 
-#if args.debug:
-#    print(output)
+if args.debug:
+    print(output)
 #set_trace()
-print(output['cutflow'])
+#print(output['cutflow'])
 
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
