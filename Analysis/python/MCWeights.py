@@ -1,21 +1,43 @@
 from pdb import set_trace
 import coffea.processor.dataframe
 import numpy as np
+import coffea.processor as processor
 
-def get_prefire_weights(df, shift=None, mask=None):
-    if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-        raise IOError("This function only works for LazyDataFrame objects")
+def get_event_weights(df, year: str, lepton: str, corrections):
+    weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
 
-    #set_trace()
-    if shift == 'PREFIRE_UP':
-        weights = df['L1PreFiringWeight_Up'][(mask)]
-    elif shift == 'PREFIRE_DW':
-        weights = df['L1PreFiringWeight_Dn'][(mask)]
-    else:
-        weights = df['L1PreFiringWeight_Nom'][(mask)]
+        ## Prefire Corrections
+    if (year != '2018') and (corrections['Prefire'] == True):
+        weights.add('prefire_weight',
+            df['L1PreFiringWeight_Nom'],
+            df['L1PreFiringWeight_Up'],
+            df['L1PreFiringWeight_Dn']
+        )
 
-    return weights
+        ## only apply to MC
+    if not df.dataset.startswith('data_Single'):
+            ## Generator Weights    
+        weights.add('genweight', df.genWeight)
+    
+            ## Pileup Reweighting
+        if 'Pileup' in corrections.keys():
+            weights.add('pileup_weight',
+                corrections['Pileup'][year][df['dataset']]['central'](df['Pileup_nPU']),
+                corrections['Pileup'][year][df['dataset']]['up'](df['Pileup_nPU']),
+                corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nPU'])
+            )
+    
+            ## Luminosity Reweighting
+        if 'Lumi' in corrections.keys():
+            weights.add('lumi_weight',
+                corrections['Lumi'][year][lepton][df['dataset']]
+            )
+    
+    ## Need to add at some point
+            ## LHEScale Weight Variations
+            ## PS Weight variations
 
+    return weights    
 
 def get_gen_weights(df, shift=None, mask=None):
     'LHEScaleWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#LHE\nPSWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#PSWeight'
@@ -55,13 +77,6 @@ def get_gen_weights(df, shift=None, mask=None):
     return gen_weight*weight        
 
 
-def get_pu_weights(df, shift=None, mask=None):
-    'Pileup info defined here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#Pileup'
-
-    weight = df['Pileup_nTrueInt']
-
-    return weight
-
 
 def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
     if pt1.any() < 0. or pt2.any() < 0.:
@@ -85,15 +100,3 @@ def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
     weight = exp(p0+p1*( (pt1+pt2)/2 ))
     return weight
 
-
-def evt_weight(df, shift=None, mask=None, use_weight=True):
-    #set_trace()
-    if use_weight:
-        gen_weights = get_gen_weights(df, shift, mask)
-    else:
-        gen_weights = np.ones(len(mask)) if mask else np.ones(df.size)
-
-    pref_weights = get_prefire_weights(df, shift, mask)
-    #pu_weights = get_pu_weights(df, shift, mask)
-    evt_weights = pref_weights*gen_weights#*pu_weight
-    return evt_weights
