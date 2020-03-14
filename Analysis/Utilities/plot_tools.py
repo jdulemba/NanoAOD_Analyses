@@ -47,3 +47,21 @@ hardcoded_groups = {
     'data' : ['data_SingleMuon_2016C', 'data_SingleMuon_2016D', 'data_SingleMuon_2016E']
 }
 #make_dataset_groups('2016')
+
+
+def add_coffea_files(input_files):
+    from coffea.util import load
+    import collections
+    input_accs = [load(fname) for fname in input_files]
+
+    output_acc = collections.Counter()
+    for acc in input_accs:
+        output_acc.update(acc)
+
+    return output_acc
+
+def save_accumulator(accumulator, output_fname):
+    from coffea.util import save
+    save(accumulator, output_fname)
+    print('%s written' % output_fname)
+
