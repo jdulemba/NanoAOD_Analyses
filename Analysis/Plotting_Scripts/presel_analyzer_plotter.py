@@ -15,7 +15,9 @@ from coffea import hist
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
+parser.add_argument('--sample', type=str, help='Input sample to use.')
 parser.add_argument('--testing', action='store_true', help='Determines where input file is.')
+parser.add_argument('--use_combined', action='store_true', help='Used file that has multiple datasets.')
 
 args = parser.parse_args()
 
@@ -26,22 +28,26 @@ analyzer = 'presel_analyzer'
 if not args.testing:
     raise IOError("only testing supported for plotting at the moment")
 
-fname = '%s/%s.test.coffea' % (proj_dir, analyzer) if args.testing else '%s/%s.coffea' % ('/'.join([proj_dir, 'results', jobid]), 'test')
-#fname = '%s/%s.test.%s.coffea' % (proj_dir, args.sample, analyzer) if args.testing else '%s/%s.coffea' % ('/'.join([proj_dir, 'results', jobid]), args.sample)
-outdir = '/'.join([proj_dir, 'plots', jobid, analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', jobid, analyzer])
-
+input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+f_ext = '%s.test.coffea' % analyzer if args.testing else '.coffea'
+outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
+if args.testing:
+    if args.use_combined:
+        fnames = ['%s/%s' % (input_dir, f_ext)]
+    else:
+        fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname == '%s_%s' % (args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
+        fnames.remove('%s/%s' % (input_dir, f_ext))
+else:
+    fnames = ['%s/%s%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
+fnames = sorted(fnames)
+
+hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+
+
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-
-## make data and mc categories for data/MC plotting
-mc_samples = re.compile('(?!data*)')
-data_samples = re.compile('(data*)')
-
-
-hists = load(fname)
-#set_trace()
 
 variables = {
     'pt' : '$p_{T}$',
@@ -50,7 +56,6 @@ variables = {
     'energy' : 'E',
     'njets' : '$n_{jets}$',
 }
-
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -77,7 +82,6 @@ error_opts = {
     'linewidth': 0
 }
 data_err_opts = {
-    #'linestyle':'none',
     'marker': '.',
     'markersize': 10.,
     'color':'k',
@@ -85,16 +89,21 @@ data_err_opts = {
 }
 
 #set_trace()
+## make data and mc categories for data/MC plotting
+mc_samples = re.compile('(?!data*)')
+data_samples = re.compile('(data*)')
+
+## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
-for hname in hists.keys():
+for hname in hdict.keys():
     if hname == 'cutflow': continue
-    hists[hname] = hists[hname].group(process_cat, process, plt_tools.hardcoded_groups)
+    hdict[hname] = hdict[hname].group(process_cat, process, plt_tools.hardcoded_groups)
     
 
-for hname in hists.keys():
+for hname in hdict.keys():
     if hname == 'cutflow': continue
-    histo = hists[hname]
+    histo = hdict[hname]
     #set_trace()
 
     if histo.dense_dim() == 1:
