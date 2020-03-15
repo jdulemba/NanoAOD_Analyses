@@ -96,10 +96,10 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False):
         best_perms_probs.append(best_perm_probs)
 
         start += njets
-        if np.mod(evt_idx, 10) == 0:
-            print('\t', evt_idx+1,'/',len(njets_array), 'events processed')
+        #if np.mod(evt_idx, 10) == 0:
+        #    print('\t', evt_idx+1,'/',len(njets_array), 'events processed')
         evt_idx += 1
-    print('Finished finding best perms')
+    #print('Finished finding best perms')
     return best_perms_ordering, best_perms_nus, best_perms_probs
 
 
@@ -171,7 +171,7 @@ def make_perm_table(jets, leptons, nus, jets_orderings, probs, evt_weights):
         njets=jets.counts,
         evt_wts=evt_weights,
     )
-    print('Table of permutation objects created')
+    #print('Table of permutation objects created')
     return perm_table
 
 

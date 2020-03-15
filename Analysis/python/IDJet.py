@@ -110,10 +110,11 @@ def process_jets(df):
         btagDeepFlavB=df['Jet_btagDeepFlavB'],
         Id=df['Jet_jetId'],
         cleanmask=df['Jet_cleanmask'],
-        hadronFlav=df['Jet_hadronFlavour'],
     )
 
-    #set_trace()
+    if not df.dataset.startswith('data_Single'):
+        Jet['hadronFlav'] = df['Jet_hadronFlavour']
+
         ## add kinematic cuts
     Jet['Kin_Cuts'] = make_kin_cuts(Jet)
 

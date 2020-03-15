@@ -158,12 +158,12 @@ def select(df, leptype, accumulator=None, shift=None):
         passing_jets, accumulator = select_jets(df['Jet'], accumulator)
     else:
         passing_jets = select_jets(df['Jet'])
-        ## require clean jets
-    clean_jets_mask = (~df['Jet'].match(df[leptype], deltaRCut=0.4)).sum() >= 3
+        ## clean jets requirements
+    df['Jet'] = df['Jet'][(~df['Jet'].match(df[leptype], deltaRCut=0.4))] ## get only clean jets based on DeltaR(jet, lepton) = 0.4
+    clean_jets_mask = df['Jet'].counts >= 3 # require at least 3 clean jets per event
     passing_jets = (passing_jets & clean_jets_mask)
     if accumulator:
         accumulator['cutflow']['clean jets'] += passing_jets.sum()
-
 
     #set_trace()
     passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
