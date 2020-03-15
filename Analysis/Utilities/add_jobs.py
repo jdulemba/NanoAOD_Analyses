@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-from coffea.util import load, save
+import Utilities.plot_tools as plt_tools
 from pdb import set_trace
-import collections
-from argparse import ArgumentParser
 
+from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('output_fname', type=str, help='Name of output file with file extension.')
 parser.add_argument('input_files', type=str, help="Input files separated by ':'")
@@ -12,11 +11,7 @@ parser.add_argument('input_files', type=str, help="Input files separated by ':'"
 args = parser.parse_args()
 
 input_files = args.input_files.split(':')
-input_accs = [load(fname) for fname in input_files]
 
-output_acc = collections.Counter()
-for acc in input_accs:
-    output_acc.update(acc)
+output_acc = plt_tools.add_coffea_files(input_files)
+plt_tools.save_accumulator(output_acc, args.output_fname)
 
-save(output_acc, args.output_fname)
-print('%s written' % args.output_fname)
