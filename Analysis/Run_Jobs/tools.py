@@ -46,7 +46,10 @@ def get_file_range(lst, n):
 
 def get_file_splitting(sample):
     splittings = prettyjson.loads(open('%s/Run_Jobs/splittings.json' % os.environ['PROJECT_DIR']).read())
-    f_split = splittings[b'*']
+    if '*' in splittings.keys():
+        f_split = splittings['*']
+    elif b'*' in splittings.keys():
+        f_split = splittings[b'*']
     for pattern, splitting in splittings.items():
         if pattern == b'*': continue
         if fnmatch.fnmatch(sample, pattern):
