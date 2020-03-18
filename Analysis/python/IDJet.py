@@ -5,7 +5,6 @@ import Utilities.prettyjson as prettyjson
 import numpy as np
 import os
 
-year = "2016"
 btag_values = {}
 btag_values["2016"] = {
     'btagDeepB' : {
@@ -74,7 +73,7 @@ def make_kin_cuts(jets):
     return kin_cuts
 
 
-def add_btag_wps(jets, btagger, wps=[]):
+def add_btag_wps(jets, btagger, year, wps=[]):
     if btagger not in valid_taggers:
         raise IOError("%s is not a supported b-tagger" % btagger)
     bdiscr = 'btagDeepB' if btagger == 'DEEPCSV' else 'btagDeepFlavB'
@@ -93,7 +92,7 @@ def add_btag_wps(jets, btagger, wps=[]):
     return jets
 
 
-def process_jets(df):
+def process_jets(df, year):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
