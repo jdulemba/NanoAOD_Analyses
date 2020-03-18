@@ -25,6 +25,8 @@ def create_batch_job():
     batch_job="""#!/bin/bash
 
 export X509_USER_PROXY=$1
+#voms-proxy-info -all
+#voms-proxy-info -all -file $1
 
 echo "source {NANODIR}/environment.sh"
 source {NANODIR}/environment.sh
@@ -33,8 +35,8 @@ echo "source {PROJECTDIR}/environment.sh"
 source {PROJECTDIR}/environment.sh
 
 EXE="${{@:2}}"
-echo "Executing python {PROJECTDIR}/bin/{ANALYZER}.py " $EXE
-python {PROJECTDIR}/bin/{ANALYZER}.py $EXE
+echo "Executing python {PROJECTDIR}/Utilities/run_analyzer.py " $EXE
+python {PROJECTDIR}/Utilities/run_analyzer.py $EXE
 """.format(NANODIR=nano_dir, PROJECTDIR=proj_dir, ANALYZER=analyzer)
 
     return batch_job
@@ -57,9 +59,9 @@ def add_condor_jobs(idx, frange, sample):
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = $(Proxy_path) {FRANGE} {YEAR} {LEPTON} --sample={SAMPLE} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} {LEPTON} --sample={SAMPLE} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, FRANGE=frange, YEAR=args.year, LEPTON=args.lepton, SAMPLE=sample, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, LEPTON=args.lepton, SAMPLE=sample, BATCHDIR=batch_dir)
     return condorfile
 
     ## get samples to use
@@ -94,9 +96,11 @@ for sample in samples_to_use:
     condor_conf.close()
 
     #set_trace()
-    orig_dir = os.getcwd()
     # submit job
+    orig_dir = os.getcwd()
     print('\nSubmitting jobs for %s' % sample_name)
     os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
 
     os.system('cd ' + orig_dir)
+
+os.system('python %s/Utilities/track_jobs.py %s' % (proj_dir, jobdir))
