@@ -3,10 +3,10 @@
     "ttJets*" : 5,
     "tt[WZ]*" : 20,
     "QCD*" : 20,
-    "data*" : 10,
-    "single*" : 10,
+    "data*" : 5,
+    "single*" : 5,
     "[AH]toTTM*" : 10,
-    "WJets" : 10,
-    "ZJets" : 10,
+    "WJets" : 5,
+    "ZJets" : 5,
     "[WZ][WZ]" : 20
 }
