@@ -38,7 +38,7 @@ def select_muons(muons, accumulator=None):
         return passing_mus
 
 
-def select_jets(jets, accumulator=None):
+def select_jets(jets, year, accumulator=None):
     
     if isinstance(jets, awkward.array.base.AwkwardArray):
 
@@ -47,7 +47,13 @@ def select_jets(jets, accumulator=None):
         if accumulator: accumulator['cutflow']['jets pass kin cuts'] += kin_cut_jets.sum().sum()
 
             ## tightID
-        jet_tightID = (jets.Id >= 3) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
+        # check https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD for definitions
+        if year == '2016':
+            jetId = 3
+        else:
+            jetId = 2
+        jet_tightID = (jets.Id >= jetId) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
+        #jet_tightID = (jets.Id >= 3) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
         if accumulator: accumulator['cutflow']['jets tightID'] += jet_tightID.sum().sum()
 
             ## 3 or more jets
@@ -56,18 +62,8 @@ def select_jets(jets, accumulator=None):
         #njets_cuts = (jets.counts == njet_restriction)
         if accumulator: accumulator['cutflow']['nEvts with %s+ jets' % njet_restriction] += njets_cuts.sum()
 
-#            #btag reqs
-#        btag_wps = [col for col in jets.columns if 'BTAG_' in col]
-#        if len(list(set(btag_wps))) == 1:
-#            btag_pass = (jets[btag_wps[0]]).sum() >= 2
-#            if accumulator: accumulator['cutflow']['nEvts >=2 jets pass %s' % btag_wps[0]] += btag_pass.sum()
-#        else:
-#            raise IOError("Only 1 unique btag working point supported now")
-
         passing_jets = (njets_cuts & kin_cut_jets & jet_tightID).all()
         if accumulator: accumulator['cutflow']['nEvts pass nJets + kin cuts + tightID'] += passing_jets.sum()
-        #passing_jets = (njets_cuts & btag_pass & kin_cut_jets & jet_tightID).all()
-        #if accumulator: accumulator['cutflow']['nEvts pass btag + nJets + kin cuts + tightID'] += passing_jets.sum()
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
@@ -109,7 +105,7 @@ def select_electrons(electrons, accumulator=None):
         return passing_els
 
 
-def select(df, leptype, accumulator=None, shift=None):
+def select(df, leptype, year, accumulator=None, shift=None):
 
     #set_trace()
     if leptype != 'Muon' and leptype != 'Electron':
@@ -120,15 +116,15 @@ def select(df, leptype, accumulator=None, shift=None):
 
         ## get triggers
     if accumulator:
-        pass_triggers, accumulator = Filters_and_Triggers.get_triggers(df, leptype, accumulator)
+        pass_triggers, accumulator = Filters_and_Triggers.get_triggers(df=df, leptype=leptype, year=year, accumulator=accumulator)
     else:
-        pass_triggers = Filters_and_Triggers.get_triggers(df, leptype)
+        pass_triggers = Filters_and_Triggers.get_triggers(df=df, leptype=leptype, year=year)
 
         ## get filters
     if accumulator:
-        pass_filters, accumulator = Filters_and_Triggers.get_filters(df, accumulator)
+        pass_filters, accumulator = Filters_and_Triggers.get_filters(df=df, year=year, accumulator=accumulator)
     else:
-        pass_filters = Filters_and_Triggers.get_filters(df)
+        pass_filters = Filters_and_Triggers.get_filters(df=df, year=year)
     #set_trace()
 
     ### lepton selection
@@ -153,11 +149,11 @@ def select(df, leptype, accumulator=None, shift=None):
 
     ### jets selection
         ## nominal jets
-    df['Jet'] = IDJet.process_jets(df)
+    df['Jet'] = IDJet.process_jets(df, year)
     if accumulator:
-        passing_jets, accumulator = select_jets(df['Jet'], accumulator)
+        passing_jets, accumulator = select_jets(df['Jet'], year, accumulator)
     else:
-        passing_jets = select_jets(df['Jet'])
+        passing_jets = select_jets(df['Jet'], year)
         ## clean jets requirements
     df['Jet'] = df['Jet'][(~df['Jet'].match(df[leptype], deltaRCut=0.4))] ## get only clean jets based on DeltaR(jet, lepton) = 0.4
     clean_jets_mask = df['Jet'].counts >= 3 # require at least 3 clean jets per event

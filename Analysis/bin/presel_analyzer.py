@@ -33,7 +33,6 @@ args = parser.parse_args()
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
-print(fileset)
 #sys.exit()
 #set_trace()
 
@@ -131,7 +130,7 @@ class Presel_Analyzer(processor.ProcessorABC):
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
             raise IOError("This function only works for LazyDataFrame objects")
 
-        #if args.debug: set_trace()
+        if args.debug: set_trace()
         self.sample_name = df.dataset
         lep_to_use = args.lepton
         #lep_to_use = [*self.lepton.keys()][0]
@@ -159,7 +158,7 @@ class Presel_Analyzer(processor.ProcessorABC):
                 # data or MC distinction made internally
         evt_weights = MCWeights.get_event_weights(df, year=args.year, lepton='%ss' % lep_to_use, corrections=self.corrections)
 
-        objsel_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
+        objsel_evts = objsel.select(df, leptype=lep_to_use, year=args.year, accumulator=output)
         output['cutflow']['nEvts passing jet and %s objection' % lep_to_use] += objsel_evts.sum()
         selection.add('objselection', objsel_evts)
 
