@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 from coffea import hist
 from coffea.util import save, load
 import coffea.processor as processor
 from pdb import set_trace
-import os
+import os, sys
 import python.ObjectSelection as objsel
 import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
@@ -23,7 +25,7 @@ parser.add_argument('frange', type=str, help='Specify start:stop indices for fil
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
 parser.add_argument('--sample', type=str, help='Use specific sample')
-parser.add_argument('--fname', type=str, help='Specify output filename')
+parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
@@ -36,8 +38,8 @@ if args.sample:
         raise IOError("File with samples %s.txt not found" % args.sample)
 
     samples = [args.sample]
-    if args.fname:
-        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
+    if args.outfname:
+        print("  --- Sample name %s will be overridden by output fname %s ---  \n" % (args.sample, args.outfname))
 
 else:
         ## get file that has names for all datasets to use
@@ -59,27 +61,26 @@ for sample in samples:
 
     txtfiles = open(txtpath, 'r')
     files_to_use = [fname.strip('\n') for fname in txtfiles]
-    
+    file_inds = [idx for idx, val in enumerate(files_to_use)]
+
     if ':' in args.frange:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
     else:
         file_start = 0
         file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
     
-    if file_start >= 0 and file_stop <= len(files_to_use):
-        files_to_use = files_to_use[file_start:file_stop]
+    if file_start >= 0 and file_stop < len(files_to_use):
+        files_to_use = files_to_use[file_start:file_stop+1]
+        inds_to_use = file_inds[file_start:file_stop+1]
     else:
-        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
+        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than this." % (sample, len(files_to_use) ) )
 
-    #    ## replace sample name with group name ( [WZ]Jets -> EWK for instance)
-    #group_name = plt_tools.get_group(sample)
-    #if group_name in fileset.keys():
-    #    for fname in files_to_use:
-    #        fileset[group_name].append(fname)
-    #else:
-    #    fileset[group_name] = files_to_use
+    print(inds_to_use)
+    #set_trace()
     fileset[sample] = files_to_use
 
+print(fileset)
+#sys.exit()
 #set_trace()
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
@@ -289,26 +290,26 @@ if args.debug:
 
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-    if args.fname:
-        cfname = '%s/%s.coffea' % (outdir, args.fname)
+    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+    if args.outfname:
+        cfname = args.outfname
     elif args.sample:
         cfname = '%s/%s.coffea' % (outdir, args.sample)
     else:
         cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-        if args.fname:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
+        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+        if args.outfname:
+            cfname = args.outfname
         elif args.sample:
             cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
         else:
             cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
     else:
         outdir = proj_dir
-        if args.fname:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
+        if args.outfname:
+            cfname = args.outfname
         elif args.sample:
             cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
         else:

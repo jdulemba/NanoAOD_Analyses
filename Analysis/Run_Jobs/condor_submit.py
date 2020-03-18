@@ -10,6 +10,7 @@ parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('jobdir', help='Directory name to be created in nobackup area.')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
+parser.add_argument('proxy_file', help='name of x509 file in afs private space to use')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 args = parser.parse_args()
 
@@ -18,9 +19,12 @@ jobid = os.environ['jobid']
 nano_dir = os.environ['NANODIR']
 jobdir = args.jobdir
 analyzer=args.analyzer
+proxy_path = '/afs/cern.ch/work/j/jdulemba/private/%s' % args.proxy_file
 
 def create_batch_job():
     batch_job="""#!/bin/bash
+
+export X509_USER_PROXY=$1
 
 echo "source {NANODIR}/environment.sh"
 source {NANODIR}/environment.sh
@@ -28,9 +32,9 @@ source {NANODIR}/environment.sh
 echo "source {PROJECTDIR}/environment.sh"
 source {PROJECTDIR}/environment.sh
 
-EXE="$@"
+EXE="${{@:2}}"
 echo "Executing python {PROJECTDIR}/bin/{ANALYZER}.py " $EXE
-python {PROJECTDIR}/bin/presel_analyzer.py $EXE
+python {PROJECTDIR}/bin/{ANALYZER}.py $EXE
 """.format(NANODIR=nano_dir, PROJECTDIR=proj_dir, ANALYZER=analyzer)
 
     return batch_job
@@ -42,8 +46,9 @@ WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
 +MaxRuntime = 21600
 requirements = (OpSysAndVer =?= "CentOS7")
+Proxy_path = {PROXYPATH}
 
-""".format(BATCHDIR=batch_dir)
+""".format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
 
     return condorfile
 
@@ -52,9 +57,9 @@ def add_condor_jobs(idx, frange, sample):
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = {FRANGE} {YEAR} {LEPTON} --sample={SAMPLE}
+Arguments = $(Proxy_path) {FRANGE} {YEAR} {LEPTON} --sample={SAMPLE} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, FRANGE=frange, YEAR=args.year, LEPTON=args.lepton, SAMPLE=sample)
+""".format(IDX=idx, FRANGE=frange, YEAR=args.year, LEPTON=args.lepton, SAMPLE=sample, BATCHDIR=batch_dir)
     return condorfile
 
     ## get samples to use
@@ -87,3 +92,11 @@ for sample in samples_to_use:
     condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
     condor_conf.write(condor_cmd)
     condor_conf.close()
+
+    #set_trace()
+    orig_dir = os.getcwd()
+    # submit job
+    print('\nSubmitting jobs for %s' % sample_name)
+    os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
+
+    os.system('cd ' + orig_dir)
