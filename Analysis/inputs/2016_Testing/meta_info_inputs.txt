@@ -1,6 +1,0 @@
-ttJets_PS
-ttJets
-#WJets
-#singlet_tchannel
-#ZJets
-#QCD_Mu_50to80
