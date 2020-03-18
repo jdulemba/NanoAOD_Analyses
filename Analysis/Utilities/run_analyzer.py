@@ -24,12 +24,12 @@ analyzer=args.analyzer
     ## get samples to use
 indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
-samples_to_use = [sample.split('/')[-1] for sample in samples_to_use if not (sample.split('/')[-1].startswith('data') and args.lepton not in sample.split('/')[-1])] # get rid of data samples that don't correspond to lepton chosen
+samples_to_use = [sample for sample in samples_to_use if not (sample.split('/')[-1].startswith('data') and args.lepton not in sample.split('/')[-1])] # get rid of data samples that don't correspond to lepton chosen
 
 fileset = {}
 for sample in samples_to_use:
     if not os.path.isfile(sample):
-        raise IOError("Sample file %s.txt not found" % sample)
+        raise IOError("Sample file %s not found" % sample)
 
     sample_name = sample.split('/')[-1].split('.')[0]
     sfiles = open(sample, 'r')
@@ -41,7 +41,7 @@ for sample in samples_to_use:
         file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
     else:
         file_start = 0
-        file_stop = len(valid_files) if (args.frange).lower() == 'all' else int(args.frange)
+        file_stop = len(valid_files)-1 if (args.frange).lower() == 'all' else int(args.frange)-1
 
     if file_start >= 0 and file_stop < len(valid_files):
         valid_files = valid_files[file_start:file_stop+1]
