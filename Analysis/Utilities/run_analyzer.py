@@ -23,7 +23,8 @@ analyzer=args.analyzer
 
     ## get samples to use
 indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
-samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='%s_inputs.txt' % analyzer)
+samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
+samples_to_use = [sample.split('/')[-1] for sample in samples_to_use if not (sample.split('/')[-1].startswith('data') and args.lepton not in sample.split('/')[-1])] # get rid of data samples that don't correspond to lepton chosen
 
 fileset = {}
 for sample in samples_to_use:
