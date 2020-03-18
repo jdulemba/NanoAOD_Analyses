@@ -21,67 +21,22 @@ analyzer = 'presel_analyzer'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
+parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
-parser.add_argument('--sample', type=str, help='Use specific sample')
-parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
+parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
 
-    ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
-if args.sample:
-        ## sample specified
-    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
-        raise IOError("File with samples %s.txt not found" % args.sample)
-
-    samples = [args.sample]
-    if args.outfname:
-        print("  --- Sample name %s will be overridden by output fname %s ---  \n" % (args.sample, args.outfname))
-
-else:
-        ## get file that has names for all datasets to use
-    fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
-    if not os.path.isfile(fpath):
-        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
-    
-    txt_file = open(fpath, 'r')
-    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-    if not samples:
-        raise IOError("No samples found as inputs")
-
-    ## add files to fileset and get plotting weights
-fileset = {}
-for sample in samples:
-    txtpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s.txt' % sample])
-    if not os.path.isfile(txtpath):
-        raise IOError("Sample file %s.txt not found" % sample)
-
-    txtfiles = open(txtpath, 'r')
-    files_to_use = [fname.strip('\n') for fname in txtfiles]
-    file_inds = [idx for idx, val in enumerate(files_to_use)]
-
-    if ':' in args.frange:
-        file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
-    else:
-        file_start = 0
-        file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
-    
-    if file_start >= 0 and file_stop < len(files_to_use):
-        files_to_use = files_to_use[file_start:file_stop+1]
-        inds_to_use = file_inds[file_start:file_stop+1]
-    else:
-        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than this." % (sample, len(files_to_use) ) )
-
-    print(inds_to_use)
-    #set_trace()
-    fileset[sample] = files_to_use
+# convert input string of fileset dictionary to actual dictionary
+fdict = (args.fset).replace("\'", "\"")
+fileset = prettyjson.loads(fdict)
 
 print(fileset)
 #sys.exit()
 #set_trace()
+
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
 lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
@@ -288,35 +243,5 @@ if args.debug:
 #set_trace()
 #print(output['cutflow'])
 
-    ## save output to coffea pkl file
-if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
-    if args.outfname:
-        cfname = args.outfname
-    elif args.sample:
-        cfname = '%s/%s.coffea' % (outdir, args.sample)
-    else:
-        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
-else:
-    if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
-        if args.outfname:
-            cfname = args.outfname
-        elif args.sample:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
-        else:
-            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
-    else:
-        outdir = proj_dir
-        if args.outfname:
-            cfname = args.outfname
-        elif args.sample:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
-        else:
-            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
-save(output, cfname)
-print('%s has been written' % cfname)
-
+save(output, args.outfname)
+print('%s has been written' % args.outfname)
