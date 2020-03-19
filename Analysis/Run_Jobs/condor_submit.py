@@ -46,10 +46,9 @@ def base_condor_jdl():
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-+MaxRuntime = 21600
+#+MaxRuntime = 21600
 requirements = (OpSysAndVer =?= "CentOS7")
 Proxy_path = {PROXYPATH}
-
 """.format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
 
     return condorfile
