@@ -10,16 +10,103 @@ args = parser.parse_args()
 proj_dir = os.environ['PROJECT_DIR']
 user = os.environ['USER']
 
+## once jobs are finished, merge all output coffea files for each sample into one
+jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else '%s/%s' % (proj_dir, args.jobdir)
+if not os.path.isdir(jobdir):
+    raise IOError('Directory: %s does not exist' % jobdir)
+samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % (jobdir, dirname))]
+
+def check_correctness(jobdir, dump_rescue = False):
+    isCorrect = True
+    sample = jobdir.split('/')[-1]
+    #set_trace()
+    if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, sample)):  ## TOT output file already created
+        #print('%s/%s_TOT.coffea already exists' % (jobdir, sample))
+        return isCorrect
+    jdl = open('%s/condor.jdl' % jobdir).read()
+    blocks = jdl.split('\n\n')
+    header = blocks[0]
+    block_map = {}
+    for block in blocks[1:]:
+            ## save output filename to check if it exists
+        fname = block.split('Arguments = ')[1].split(' ')[-1].split('=')[-1].split('\n')[0]
+        block_map[fname] = block
+
+    npass = 0
+    fails = []
+    for fname, arguments in block_map.items():
+        if not os.path.isfile(fname):
+            fails.append(fname)
+        else:
+            npass += 1
+
+    print('''Run Summary for %s:
+Successful jobs: %d
+Failed jobs: %d
+''' % (sample, npass, len(fails)))
+    
+    #set_trace()
+    if fails:
+        isCorrect = False
+        if dump_rescue:
+            print('dumping rescue job')
+            with open('%s/condor.rescue.jdl' % jobdir, 'w') as rescue:
+                rescue.write(header)
+                rescue.write('\n\n')
+                rescue.write(
+                    '\n\n'.join([block_map[key] for key in fails])
+                    )
+
+    return isCorrect
+
+tot_files = {}
+def merge_files(jobdir, samples):
+    #set_trace()
+    for sample in samples:
+        merged_fname = '%s/%s/%s_TOT.coffea' % (jobdir, sample, sample)
+        output_files = ['%s/%s/%s' % (jobdir, sample, fname) for fname in os.listdir('%s/%s' % (jobdir, sample)) if fname.endswith('.coffea')]
+            # don't re-merge files if this has already been done
+        if merged_fname in output_files:
+            tot_files[sample] = merged_fname
+            print('%s already exists' % merged_fname)
+            continue
+        else:
+            if len(output_files) > 1:
+                ## merge files
+                output_acc = plot_tools.add_coffea_files(output_files)
+                plot_tools.save_accumulator(output_acc, merged_fname)
+            else:
+                ## rename file 
+                os.system('mv %s %s' % (output_files[0], merged_fname))
+                print('%s written' % merged_fname)
+            tot_files[sample] = merged_fname
+
 #set_trace()
 escape = False
 start = time.time()
+elapsed = 0
 totjobs = -1
+finished_samples = []
 
 while not escape:
-    stdout= subprocess.Popen("condor_q $USER", stdout=subprocess.PIPE, shell=True).stdout.read()
+    stdout= subprocess.Popen("condor_q $USER -nobatch", stdout=subprocess.PIPE, shell=True).stdout.read()
+    njobs = 0
     #set_trace()
-    njobs = int(stdout.split(b'Total for query:')[-1].split(b'jobs;')[0])
+    for sample in samples:
+        #if iterations != 1:
+        if sample in finished_samples: continue
+            ## checks how many lines correspond to jobdir/sample 
+        sample_njobs = len([line for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line])
+        if sample_njobs == 0:
+            finished_samples.append(sample)
+            #isCorrect = check_correctness('%s/%s' % (jobdir, sample))
+            #if isCorrect:
+            #    completed_samples.append(sample)
+            #failed_samples.append(sample) if isCorrect == False else completed_samples.append(sample)
+        else:
+            njobs += sample_njobs
 
+    #set_trace()
     eta = 'UNKNOWN'
     if totjobs != -1:
         elapsed = time.time() - start
@@ -33,34 +120,33 @@ while not escape:
         totjobs = njobs
 
     if njobs == 0:
-        print('Jobs completed: runtime = %i' % elapsed)
-        escape = True
+            ## check if all jobs have run correctly
+        failed_samples = []
+        finished_samples = []
+        #set_trace()
+        for sample in samples:
+            isCorrect = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+            if isCorrect == False: 
+                failed_samples.append(sample)
+                os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
+            else:
+                finished_samples.append(sample)
+        #set_trace()
+        if finished_samples:
+            merge_files(jobdir, finished_samples)
+        if len(failed_samples) == 0:
+            print('All jobs completed: runtime = %i' % elapsed)
+            escape = True
+        else:
+            time.sleep(30)
 
     else:
         print("%i jobs are still running, checking again in 30 seconds. ETA: %s" % (njobs, eta))
         time.sleep(30)
 
-
-## once jobs are finished, merge all output coffea files for each sample into one
-jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else '%s/%s' % (proj_dir, args.jobdir)
-if not os.path.isdir(jobdir):
-    raise IOError('Directory: %s does not exist' % jobdir)
-
 set_trace()
-samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % (jobdir, dirname))]
-
-tot_files = []
-for sample in samples:
-    output_files = ['%s/%s/%s' % (jobdir, sample, fname) for fname in os.listdir('%s/%s' % (jobdir, sample)) if fname.endswith('.coffea')]
-    if len(output_files) > 1:
-        ## merge files
-        output_acc = plot_tools.add_coffea_files(output_files)
-        plot_tools.save_accumulator(output_acc, '%s/%s/%s_TOT.coffea' % (jobdir, sample, sample))
-    else:
-        ## mv file to
-        os.system('mv %s %s/%s/%s_TOT.coffea' % (output_files[0], jobdir, sample, sample))
-    tot_files.append('%s/%s/%s_TOT.coffea' % (jobdir, sample, sample))
 
 ## merge all TOT files from each sample into one
-tot_acc = plot_tools.add_coffea_files(tot_files)
-plot_tools.save_accumulator(tot_acc, '%s/total_output.coffea' % jobdir)
+if list(set(tot_files.keys())) == list(set(samples)):
+    tot_acc = plot_tools.add_coffea_files(tot_files)
+    plot_tools.save_accumulator(tot_acc, '%s/total_output.coffea' % jobdir)
