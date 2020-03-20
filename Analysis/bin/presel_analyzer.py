@@ -38,10 +38,10 @@ fileset = prettyjson.loads(fdict)
 
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
-lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+#lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
 corrections = {
     'Pileup' : pu_correction,
-    'Lumi' : lumi_correction,
+    #'Lumi' : lumi_correction,
     'Prefire' : True,
     'LeptonSF' : False,
     'BTagSF' : False,
