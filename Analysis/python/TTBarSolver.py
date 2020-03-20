@@ -15,7 +15,7 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())['ttsolver']
 
-year = '2016'
+#year = '2016'
 filename = cfg_pars['filename']
 dirname = cfg_pars['dirname']
 probs = convert_histo_root_file('%s/inputs/%s_%s/INPUTS/%s' % (proj_dir, year, jobid, filename))
