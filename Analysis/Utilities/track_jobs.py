@@ -14,6 +14,11 @@ user = os.environ['USER']
 jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else '%s/%s' % (proj_dir, args.jobdir)
 if not os.path.isdir(jobdir):
     raise IOError('Directory: %s does not exist' % jobdir)
+
+if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, args.jobdir)):
+    print('Combined output file %s/%s_TOT.coffea already exists' % (jobdir, args.jobdir))
+    import sys; sys.exit()
+
 samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % (jobdir, dirname))]
 
 def check_correctness(jobdir, dump_rescue = False):
@@ -45,7 +50,6 @@ Successful jobs: %d
 Failed jobs: %d
 ''' % (sample, npass, len(fails)))
     
-    #set_trace()
     if fails:
         isCorrect = False
         if dump_rescue:
@@ -91,22 +95,15 @@ finished_samples = []
 while not escape:
     stdout= subprocess.Popen("condor_q $USER -nobatch", stdout=subprocess.PIPE, shell=True).stdout.read()
     njobs = 0
-    #set_trace()
     for sample in samples:
-        #if iterations != 1:
         if sample in finished_samples: continue
             ## checks how many lines correspond to jobdir/sample 
         sample_njobs = len([line for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line])
         if sample_njobs == 0:
             finished_samples.append(sample)
-            #isCorrect = check_correctness('%s/%s' % (jobdir, sample))
-            #if isCorrect:
-            #    completed_samples.append(sample)
-            #failed_samples.append(sample) if isCorrect == False else completed_samples.append(sample)
         else:
             njobs += sample_njobs
 
-    #set_trace()
     eta = 'UNKNOWN'
     if totjobs != -1:
         elapsed = time.time() - start
@@ -122,8 +119,7 @@ while not escape:
     if njobs == 0:
             ## check if all jobs have run correctly
         failed_samples = []
-        finished_samples = []
-        #set_trace()
+        finished_samples = [] # reinitialize finished_samples to check if they're actually finished
         for sample in samples:
             isCorrect = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
             if isCorrect == False: 
@@ -131,7 +127,6 @@ while not escape:
                 os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
             else:
                 finished_samples.append(sample)
-        #set_trace()
         if finished_samples:
             merge_files(jobdir, finished_samples)
         if len(failed_samples) == 0:
@@ -144,9 +139,8 @@ while not escape:
         print("%i jobs are still running, checking again in 30 seconds. ETA: %s" % (njobs, eta))
         time.sleep(30)
 
-set_trace()
-
 ## merge all TOT files from each sample into one
 if list(set(tot_files.keys())) == list(set(samples)):
-    tot_acc = plot_tools.add_coffea_files(tot_files)
-    plot_tools.save_accumulator(tot_acc, '%s/total_output.coffea' % jobdir)
+    tot_acc = plot_tools.add_coffea_files(list(tot_files.values()))
+    plot_tools.save_accumulator(tot_acc, '%s/%s_TOT.coffea' % (jobdir, args.jobdir))
+
