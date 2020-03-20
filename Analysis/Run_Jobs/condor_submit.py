@@ -12,6 +12,7 @@ parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify whic
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
 parser.add_argument('proxy_file', help='name of x509 file in afs private space to use')
 parser.add_argument('--sample', type=str, help='Use specific sample')
+parser.add_argument('--submit', action='store_true', help='Submit jobs')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -97,10 +98,11 @@ for sample in samples_to_use:
 
     #set_trace()
     # submit job
-    orig_dir = os.getcwd()
-    print('\nSubmitting jobs for %s' % sample_name)
-    os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
-
-    os.system('cd ' + orig_dir)
+    if args.submit:
+        orig_dir = os.getcwd()
+        print('\nSubmitting jobs for %s' % sample_name)
+        os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
+    
+        os.system('cd ' + orig_dir)
 
 os.system('python %s/Utilities/track_jobs.py %s' % (proj_dir, jobdir))
