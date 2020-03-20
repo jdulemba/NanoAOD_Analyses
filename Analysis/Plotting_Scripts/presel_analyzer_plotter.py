@@ -27,7 +27,7 @@ jobid = os.environ['jobid']
 analyzer = 'presel_analyzer'
 
 input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
-f_ext = '%s.test.coffea' % analyzer if args.testing else '.coffea'
+f_ext = '%s.test.coffea' % analyzer if args.testing else 'TOT.coffea'
 outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
@@ -44,8 +44,6 @@ fnames = sorted(fnames)
 
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
-
-data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -91,7 +89,14 @@ data_err_opts = {
     'elinewidth': 1,
 }
 
-#set_trace()
+    ## get data lumi and scale MC by lumi
+data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
+lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+for hname in hdict.keys():
+    if hname == 'cutflow': continue
+    hdict[hname].scale(lumi_correction[args.year]['%ss' % args.lepton], axis='dataset')
+
+
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile('(?!data*)')
 data_samples = re.compile('(data*)')
@@ -99,11 +104,13 @@ data_samples = re.compile('(data*)')
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
+process_groups = plt_tools.make_dataset_groups(args.lepton, args.year)
 for hname in hdict.keys():
     if hname == 'cutflow': continue
-    hdict[hname] = hdict[hname].group(process_cat, process, plt_tools.hardcoded_groups)
+    hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
     
 
+    ## make plots
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     histo = hdict[hname]
@@ -151,8 +158,7 @@ for hname in hdict.keys():
                     facecolor, legname = plt_tools.get_styles(sample, hstyles)
                     handles[idx].set_facecolor(facecolor)
                     labels[idx] = legname
-                # call plt.legend() with the new values
-                #set_trace()
+                # call ax.legend() with the new values
                 ax.legend(handles,labels)
 
                     ## plot data/MC ratio
