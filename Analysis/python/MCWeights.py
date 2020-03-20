@@ -16,8 +16,11 @@ def get_event_weights(df, year: str, lepton: str, corrections):
 
         ## only apply to MC
     if not df.dataset.startswith('data_Single'):
-            ## Generator Weights    
-        weights.add('genweight', df.genWeight)
+            ## Generator Weights (normalize them)
+        genWeights = np.ones(df.genWeight.size)
+        genWeights[df.genWeight < 0] = -1.
+        genWeights[df.genWeight == 0] = 0.
+        weights.add('genweight', genWeights)
     
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
