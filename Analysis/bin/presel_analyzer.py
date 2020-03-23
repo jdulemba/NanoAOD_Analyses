@@ -8,7 +8,6 @@ import os, sys
 import python.ObjectSelection as objsel
 import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
-import python.LeptonSF as lepSF
 import python.BTagScaleFactors as btagSF
 import python.MCWeights as MCWeights
 import numpy as np
@@ -39,16 +38,15 @@ fileset = prettyjson.loads(fdict)
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
 #lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
 corrections = {
     'Pileup' : pu_correction,
     #'Lumi' : lumi_correction,
     'Prefire' : True,
-    'LeptonSF' : False,
+    'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
 }
 
-if corrections['LeptonSF'] == True:
-    leptonSFs = lepSF.LeptonSF()
 if corrections['BTagSF'] == True:
     threejets_btagSFs = btagSF.create_btag_sf_computer('3')
     fourPlusjets_btagSFs = btagSF.create_btag_sf_computer('4+')
@@ -92,9 +90,6 @@ class Presel_Analyzer(processor.ProcessorABC):
         self.sample_name = ''
         self.corrections = corrections
 
-        #    # get lepton SF info
-        #self.leptonSFs = leptonSFs
-
     
     @property
     def accumulator(self):
@@ -130,7 +125,7 @@ class Presel_Analyzer(processor.ProcessorABC):
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
             raise IOError("This function only works for LazyDataFrame objects")
 
-        if args.debug: set_trace()
+        #if args.debug: set_trace()
         self.sample_name = df.dataset
         lep_to_use = args.lepton
         #lep_to_use = [*self.lepton.keys()][0]
@@ -139,8 +134,8 @@ class Presel_Analyzer(processor.ProcessorABC):
         selection = processor.PackedSelection()
         regions = {}
         #regions['objsel'] = {'objselection'}
-        regions['3Jets'] = {'objselection', '3jets'}
-        regions['4PJets'] = {'objselection', '4pjets'}
+        regions['3Jets'] = {'objselection', 'jets_3',}
+        regions['4PJets'] = {'objselection', 'jets_4+'}
 
         isData = self.sample_name.startswith('data_Single')
         if isData:
@@ -163,23 +158,26 @@ class Presel_Analyzer(processor.ProcessorABC):
         selection.add('objselection', objsel_evts)
 
         
-        selection.add('3jets', df['Jet'].counts == 3)
-        selection.add('4pjets', df['Jet'].counts > 3)
+        selection.add('jets_3', df['Jet'].counts == 3)
+        selection.add('jets_4+', df['Jet'].counts > 3)
+        selection.add('tight_lep', df[lep_to_use]['TIGHTMU' if lep_to_use == 'Muon' else 'TIGHTEL'].sum() == 1) # one lepton passing TIGHT criteria
+        selection.add('loose_lep', df[lep_to_use]['LOOSEMU' if lep_to_use == 'Muon' else 'TIGHTEL'].sum() == 1) # one lepton passing LOOSE criteria
+
 
         #set_trace()
         ## fill hists for each region
         for region in regions.keys():
             #set_trace()
             cut = selection.all(*regions[region])
+                ## apply lepton SFs to MC (only applicable to tight leptons)
+            if not isData:
+                if 'LeptonSF' in corrections.keys():
+                    tight_lep_cut = (cut & selection.require(tight_lep=True)) # find events that pass cuts from current region and that are tight leptons
+                    evt_weights._weights['leptonSF'][tight_lep_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='%ss' % lep_to_use, corrections=lepSF_correction,
+                        pt=df[lep_to_use][tight_lep_cut].pt.flatten(), eta=df[lep_to_use][tight_lep_cut].eta.flatten() if lep_to_use == 'Muon' else df[lep_to_use][tight_lep_cut].etaSC.flatten())
             output = self.fill_jet_hists(output, region, df['Jet'][cut], evt_weights.weight()[cut])
             output = self.fill_lep_hists(output, region, df[lep_to_use][cut], evt_weights.weight()[cut])
 
-
-        ##    ## apply lepton SFs to MC (only applicable to tight leptons)
-        ##if not isData:
-        ##    lep_weights = leptonSFs.get_sf_(lepton='%ss' % lep_to_use, pt_array=sel_leps.pt.flatten(), eta_array=sel_leps.eta.flatten())
-        ##    lep_weights[~tight_leps] = 1.
-        ##    evt_weights *= lep_weights
 
         ##    ## apply btagging SFs to MC
         ##if not isData:
