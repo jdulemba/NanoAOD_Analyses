@@ -16,7 +16,7 @@ def process_electrons(df):
         dz=df['Electron_dz'],
         tightID=df['Electron_mvaFall17V2noIso_WP80'],
         deltaEtaSC=df['Electron_deltaEtaSC'],
-        pfRelIsoAll=df['Electron_pfRelIso03_all']
+        pfRelIso=df['Electron_pfRelIso03_all']
     )
 
         # makes etaSC
@@ -45,7 +45,7 @@ def process_electrons(df):
 #
 def tight_15_NoECAL_Gap(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIsoAll < 0.15) #???
+    Iso = (electrons.pfRelIso < 0.15) #???
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
@@ -53,7 +53,7 @@ def tight_15_NoECAL_Gap(electrons):
 
 def fakes(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIsoAll >= 0.15) #???
+    Iso = (electrons.pfRelIso >= 0.15) #???
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
