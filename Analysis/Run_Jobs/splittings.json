@@ -2,7 +2,7 @@
     "*" : 10,
     "ttJets*" : 5,
     "tt[WZ]*" : 20,
-    "QCD*" : 20,
+    "QCD*" : 10,
     "data*" : 5,
     "single*" : 5,
     "[AH]toTTM*" : 10,
