@@ -35,16 +35,34 @@ leptons = {
 
 sf_output = {
     '2016' : {
-        'Electrons' : {},
-        'Muons' : {},
+        'Electrons' : {
+            'Central' : {},
+            'Error' : {},
+        },
+        'Muons' : {
+            'Central' : {},
+            'Error' : {},
+        },
     },
     '2017' : {
-        'Electrons' : {},
-        'Muons' : {},
+        'Electrons' : {
+            'Central' : {},
+            'Error' : {},
+        },
+        'Muons' : {
+            'Central' : {},
+            'Error' : {},
+        },
     },
     '2018' : {
-        'Electrons' : {},
-        'Muons' : {},
+        'Electrons' : {
+            'Central' : {},
+            'Error' : {},
+        },
+        'Muons' : {
+            'Central' : {},
+            'Error' : {},
+        },
     },
 }
 
@@ -53,9 +71,12 @@ for lep in leptons.keys():
         sf_file = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, fname))
         eta_binning = sf_file[(leptons[lep]['eta'], 'dense_lookup')][1]
 
+        #set_trace()
+        sf_output[year][lep]['eta_ranges'] = [(eta_binning[idx], eta_binning[idx+1]) for idx in range(len(eta_binning)-1)]
         for idx, pt_hist in enumerate(leptons[lep]['pt']):
-            sf_output[year][lep]['%s:%s' % (eta_binning[idx], eta_binning[idx+1])] = dense_lookup(*sf_file[(pt_hist, 'dense_lookup')])
-    
+            sf_output[year][lep]['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(pt_hist, 'dense_lookup')])
+            sf_output[year][lep]['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % pt_hist, 'dense_lookup')])
+
 lepSF_name = '%s/leptonSFs.coffea' % outdir
 save(sf_output, lepSF_name)    
 print('%s written' % lepSF_name)
