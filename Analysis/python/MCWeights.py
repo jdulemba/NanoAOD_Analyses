@@ -21,6 +21,15 @@ def get_event_weights(df, year: str, lepton: str, corrections):
         genWeights[df.genWeight < 0] = -1.
         genWeights[df.genWeight == 0] = 0.
         weights.add('genweight', genWeights)
+
+            ## Initialize Lepton Scale Factors
+        if 'LeptonSF' in corrections.keys():
+            weights.add('leptonSF',
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                shift=True # makes up/down variations relative to nominal
+            )
     
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
@@ -103,3 +112,18 @@ def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
     weight = exp(p0+p1*( (pt1+pt2)/2 ))
     return weight
 
+
+def get_lepton_sf(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.ndarray, shift='Central'):
+    if not (shift == 'Central' or shift == 'Error'):
+        raise ValueError('Shift value %s not defined' % shift)
+    sf_dict = corrections[year][lepton]
+    eta_ranges = sf_dict['eta_ranges']
+    lepSFs = np.ones(pt.size)
+
+    for idx, eta_range in enumerate(eta_ranges):
+        mask = (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
+        if not mask.any(): continue # no values fall within eta range
+        sf_hist = sf_dict[shift]['eta_bin%i' % idx]
+        lepSFs[mask] = sf_hist(pt[mask])
+
+    return lepSFs
