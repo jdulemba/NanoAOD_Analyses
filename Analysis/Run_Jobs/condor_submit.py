@@ -47,7 +47,7 @@ def base_condor_jdl():
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-#+MaxRuntime = 21600
++MaxRuntime = 36000
 requirements = (OpSysAndVer =?= "CentOS7")
 Proxy_path = {PROXYPATH}
 """.format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
@@ -102,7 +102,6 @@ for sample in samples_to_use:
         orig_dir = os.getcwd()
         print('\nSubmitting jobs for %s' % sample_name)
         os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
-    
         os.system('cd ' + orig_dir)
 
-os.system('python %s/Utilities/track_jobs.py %s' % (proj_dir, jobdir))
+#os.system('python %s/Utilities/track_jobs.py %s' % (proj_dir, jobdir))
