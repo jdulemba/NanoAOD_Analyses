@@ -114,9 +114,6 @@ def process_jets(df, year):
     if not df.dataset.startswith('data_Single'):
         Jet['hadronFlav'] = df['Jet_hadronFlavour']
 
-        ## add kinematic cuts
-    Jet['Kin_Cuts'] = make_kin_cuts(Jet)
-
         ## add btag wps
     if len(wps) > 1:
         raise IOError("Only one btag wp supported right now")
