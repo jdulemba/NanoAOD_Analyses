@@ -60,17 +60,25 @@ wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars
 
 
 
-def make_kin_cuts(jets):
+def make_pt_eta_cuts(jets):
     if isinstance(jets, awkward.array.base.AwkwardArray):
         pt_cut = (jets.pt >= jet_pars['ptmin'])
-        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
         eta_cut = (np.abs(jets.eta) <= jet_pars['etamax'])
-        kin_cuts = (pt_cut) & (leadpt_cut) & (eta_cut)
+        kin_cuts = (pt_cut & eta_cut)
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
 
     return kin_cuts
+
+def make_leadjet_pt_cut(jets):
+    if isinstance(jets, awkward.array.base.AwkwardArray):
+        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
+
+    else:
+        raise ValueError("Only AwkwardArrays are supported")
+
+    return leadpt_cut
 
 
 def add_btag_wps(jets, btagger, year, wps=[]):
