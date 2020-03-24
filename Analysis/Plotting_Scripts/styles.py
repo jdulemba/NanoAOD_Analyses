@@ -16,7 +16,7 @@ styles = {
         'name' : "Z+jets",
     },
     'single*' : {
-        'facecolor' : '#4daf4a', ## green
+        'facecolor' : '#ff7f00', ## orange
         'name' : "single top",
     },
    #'data*' : {
@@ -48,7 +48,7 @@ styles = {
         'name' : "QCD",
     },
     'EWK' : {
-        'facecolor' : '#ff7f00', ## orange
+        'facecolor' : '#4daf4a', ## green
         'name' : "EW",
     },
         ## default name for coffea statistical errors
@@ -57,6 +57,12 @@ styles = {
         'linewidth' : 0,
         'name' : 'Stat. Unc.',
         'hatch' : '///',
+    },
+    'data_err_opts' : {
+        'marker': '.',
+        'markersize': 10.,
+        'color':'k',
+        'elinewidth': 1,
     }
 
 }
