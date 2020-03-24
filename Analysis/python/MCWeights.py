@@ -39,11 +39,6 @@ def get_event_weights(df, year: str, lepton: str, corrections):
                 corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nPU'])
             )
     
-            ## Luminosity Reweighting
-        if 'Lumi' in corrections.keys():
-            weights.add('lumi_weight',
-                corrections['Lumi'][year][lepton][df['dataset']]
-            )
     
     ## Need to add at some point
             ## LHEScale Weight Variations
