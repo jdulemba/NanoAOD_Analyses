@@ -59,13 +59,17 @@ objtypes = {
 }
 
 variables = {
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.)),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 4, (-2.5, 2.5)),
+    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.)),
+    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.)),
     'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.)),
-    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.5, 2.5)),
+    'Jets_eta' : ('$\\eta$(jets)', 4, (-2.5, 2.5)),
     'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.)),
     'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.)),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15)),
     'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.)),
-    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.5, 2.5)),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 4, (-2.5, 2.5)),
     'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.)),
     'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.)),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.)),
@@ -75,19 +79,6 @@ variables = {
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
 stack_error_opts = {'edgecolor':(0,0,0,.5)}
-error_opts = {
-    'label':'Stat. Unc.',
-    'hatch':'///',
-    'facecolor':'none',
-    'edgecolor':(0,0,0,.5),
-    'linewidth': 0
-}
-data_err_opts = {
-    'marker': '.',
-    'markersize': 10.,
-    'color':'k',
-    'elinewidth': 1,
-}
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
@@ -105,6 +96,7 @@ data_samples = re.compile('(data*)')
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 process_groups = plt_tools.make_dataset_groups(args.lepton, args.year)
+#set_trace()
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
@@ -144,7 +136,8 @@ for hname in hdict.keys():
                     overlay=hslice.axes()[0].name,
                     ax=ax,
                     clear=False,
-                    error_opts=data_err_opts
+                    error_opts=hstyles['data_err_opts']
+                    #error_opts=data_err_opts
                 )
                 ax.autoscale(axis='x', tight=True)
                 ax.set_ylim(0, None)
@@ -159,18 +152,20 @@ for hname in hdict.keys():
                     handles[idx].set_facecolor(facecolor)
                     labels[idx] = legname
                 # call ax.legend() with the new values
-                ax.legend(handles,labels)
+                ax.legend(handles,labels, loc='upper right')
+                #set_trace()
 
                     ## plot data/MC ratio
                 plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
                     ax=rax,
-                    error_opts=data_err_opts, 
+                    error_opts=hstyles['data_err_opts'], 
+                    #error_opts=data_err_opts, 
                     denom_fill_opts={},
                     guide_opts={},
                     unc='num'
                 )
                 rax.set_ylabel('data/MC')
-                rax.set_ylim(0,2)
+                rax.set_ylim(0.5, 1.5)
                 rax.set_xlim(x_lims)
 
 
@@ -197,7 +192,7 @@ for hname in hdict.keys():
                     os.makedirs(pltdir)
                 figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
 
-                #set_trace()
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
+                #set_trace()
