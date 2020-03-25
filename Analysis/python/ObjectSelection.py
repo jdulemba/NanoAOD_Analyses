@@ -161,7 +161,7 @@ def select(df, leptype, year, accumulator=None, shift=None):
         new_jets, passing_jets = select_jets(df['Jet'], year)
     
         ## substitute jets for ones that pass requirements from select_jets
-    df['Jet'] = new_jets
+    df['Jet_%s' % leptype] = new_jets
 
     #set_trace()
     passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
