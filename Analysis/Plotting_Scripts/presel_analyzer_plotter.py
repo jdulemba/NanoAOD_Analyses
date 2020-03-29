@@ -43,6 +43,7 @@ else:
 fnames = sorted(fnames)
 
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+#set_trace()
 
 
 jet_mults = {
@@ -102,6 +103,29 @@ for hname in hdict.keys():
     hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
     
 
+
+def get_samples_yield_and_frac(histo, lep):
+    '''
+    Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
+    Returns: list of tuples containing sample name, yield, and fraction
+    '''
+    yields = histo.integrate('njets').sum().values()
+    proc_yields_list = [(''.join(process), proc_yields) for process, proc_yields in yields.items()]
+    mc_yield = sum([process[1] for process in proc_yields_list if not (process[0] == 'data')])
+    data_yield = sum([process[1] for process in proc_yields_list if (process[0] == 'data')])
+
+    rows = [("Lumi: %s fb^-1" % format(data_lumi_year['%ss' % lep]/1000., '.1f'), "Sample", "Yield", "Frac")]
+    rows += [("", process, format(proc_yield, '.1f'), format((proc_yield/mc_yield)*100, '.1f')) for process, proc_yield in proc_yields_list if not process == 'data']
+    rows += [("", "SIM", format(mc_yield, '.1f'), '100.0')]
+    rows += [("", "", "", "")]
+    rows += [("", "data", format(data_yield, '.1f'), "")]
+    rows += [("", "", "", "")]
+    rows += [("", "data/SIM", "", format(data_yield/mc_yield, '.3f'))]
+        
+    return rows
+
+
+
     ## make plots
 for hname in hdict.keys():
     if hname == 'cutflow': continue
@@ -114,9 +138,16 @@ for hname in hdict.keys():
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
         for jmult in histo.axes()[1]._sorted:
             for lep in histo.axes()[2]._sorted:
+                pltdir = outdir if args.testing else '/'.join([outdir, jmult, lep])
+                if not os.path.isdir(pltdir):
+                    os.makedirs(pltdir)
                 fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                 fig.subplots_adjust(hspace=.07)
                 hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
+
+                if hname == 'Jets_njets':
+                    yields = get_samples_yield_and_frac(hslice, lep)
+                    plt_tools.print_table(yields, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, lep), print_output=True)
 
                 if rebinning != 1:
                     xaxis_name = hslice.dense_axes()[0].name
@@ -187,11 +218,7 @@ for hname in hdict.keys():
                     transform=ax.transAxes
                 )
 
-                pltdir = outdir if args.testing else '/'.join([outdir, jmult, lep])
-                if not os.path.isdir(pltdir):
-                    os.makedirs(pltdir)
                 figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
-
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
