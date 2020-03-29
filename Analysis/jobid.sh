@@ -1,4 +1,3 @@
-#export jobid=2016_Testing
-#export jobid=2017_Testing
-#export jobid=2018_Testing
-export jobid=Testing
+#export jobid=NanoAODv6
+#export jobid=Testing
+export jobid=jpt30_ljpt0_leppt30
