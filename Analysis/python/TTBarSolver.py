@@ -13,7 +13,7 @@ from numba import njit
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())['ttsolver']
+cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['ttsolver']
 
 #year = '2016'
 filename = cfg_pars['filename']

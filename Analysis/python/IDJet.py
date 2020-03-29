@@ -44,7 +44,7 @@ btag_values["2018"] = {
     }
 }
 
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Jets']
+jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DEEPCSV', 'DEEPJET']
 valid_WPs = ['LOOSE', 'MEDIUM', 'TIGHT']

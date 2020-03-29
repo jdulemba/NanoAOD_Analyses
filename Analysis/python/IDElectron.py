@@ -62,7 +62,7 @@ def fakes(electrons):
 
 def make_electron_ids(electrons):
 
-    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Electrons']
+    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Electrons']
 
     id_names = {
         #'FAIL' : fail,
