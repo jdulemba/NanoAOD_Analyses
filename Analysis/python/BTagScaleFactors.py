@@ -157,7 +157,7 @@ def create_btag_sf_computer(year, njets):
     Returns:
         Object that computes btag scale factors
     '''
-    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())
+    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
     
     btag_wps = cfg_file['Jets']
     btagger = 'DeepJet' if btag_wps['btagger'] == 'DEEPJET' else 'DeepCSV' ## name in csv file

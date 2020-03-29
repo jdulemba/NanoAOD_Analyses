@@ -88,7 +88,7 @@ def antiloose_15Db(muons):
 
 def make_muon_ids(muons):
 
-    mu_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Muons']
+    mu_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Muons']
 
     id_names = {
         'FAIL' : fail,

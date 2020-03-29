@@ -51,7 +51,7 @@ if corrections['BTagSF'] == True:
     threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
     fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
 
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Jets']
+jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
 wps_to_use = list(set([jet_pars['permutations']['tightb'], jet_pars['permutations']['looseb']]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
