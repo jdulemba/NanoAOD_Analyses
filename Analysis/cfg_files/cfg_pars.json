@@ -62,7 +62,35 @@
         "USE3JLOST": 1
     },
     "BTagging" : {
-        "csv_file": "DeepJet_2016LegacySF_V1.csv",
-        "eff_file": "htt_DeepJet_2016Legacy_j20l50MT40_1lep_DEEPJETMEDIUM_DEEPJETMEDIUM_3PJets_efficiencies.root"
+        "2016": {
+            "DeepJet": {
+                "csv_file": "DeepJet_2016LegacySF_V1.csv",
+                "eff_file": "htt_DeepJet_2016Legacy_j20l50MT40_1lep_DEEPJETMEDIUM_DEEPJETMEDIUM_3PJets_efficiencies.root"
+            },
+            "DeepCSV": {
+                "csv_file": "DeepCSV_2016LegacySF_V1.csv",
+                "eff_file": ""
+            }
+        },
+        "2017": {
+            "DeepJet": {
+                "csv_file": "DeepJet_2017SF_V4_B_F.csv",
+                "eff_file": ""
+            },
+            "DeepCSV": {
+                "csv_file": "DeepCSV_2017SF_V5_B_F.csv",
+                "eff_file": ""
+            }
+        },
+        "2018": {
+            "DeepJet": {
+                "csv_file": "DeepJet_2018SF_V1.csv",
+                "eff_file": ""
+            },
+            "DeepCSV": {
+                "csv_file": "DeepCSV_2018SF_V1.csv",
+                "eff_file": ""
+            }
+        }
     }
 }
