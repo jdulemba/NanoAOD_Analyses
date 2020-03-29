@@ -3,7 +3,7 @@ import coffea.processor.dataframe
 import numpy as np
 import coffea.processor as processor
 
-def get_event_weights(df, year: str, lepton: str, corrections):
+def get_event_weights(df, year: str, corrections):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
 
         ## Prefire Corrections
@@ -24,7 +24,13 @@ def get_event_weights(df, year: str, lepton: str, corrections):
 
             ## Initialize Lepton Scale Factors
         if 'LeptonSF' in corrections.keys():
-            weights.add('leptonSF',
+            weights.add('Muon_SF',
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                shift=True # makes up/down variations relative to nominal
+            )
+            weights.add('Electron_SF',
                 np.ones(df.genWeight.size),
                 np.ones(df.genWeight.size),
                 np.ones(df.genWeight.size),
