@@ -116,6 +116,7 @@ while not escape:
     else:
         totjobs = njobs
 
+    #set_trace()
     if njobs == 0:
             ## check if all jobs have run correctly
         failed_samples = []

@@ -11,7 +11,6 @@ parser = ArgumentParser('submit analyzer to the batch queues')
 parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files, inclusive. 0:1 means valid files in indices 0 and 1 will be used')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
@@ -24,7 +23,6 @@ analyzer=args.analyzer
     ## get samples to use
 indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
-samples_to_use = [sample for sample in samples_to_use if not (sample.split('/')[-1].startswith('data') and args.lepton not in sample.split('/')[-1])] # get rid of data samples that don't correspond to lepton chosen
 
 fileset = {}
 for sample in samples_to_use:
@@ -49,14 +47,14 @@ for sample in samples_to_use:
     else:
         raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than this." % (sample, len(valid_files) ) )
 
-    print(inds_to_use)
+    #print(inds_to_use)
     fileset[sample_name] = valid_files
 
 print(fileset)
 
     ## save output to coffea pkl file
 if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
     if args.outfname:
         cfname = args.outfname
     elif args.sample:
@@ -65,7 +63,7 @@ if (args.frange).lower() == 'all':
         cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
         if args.outfname:
             cfname = args.outfname
         elif args.sample:
@@ -89,12 +87,11 @@ opts = ""
 if args.debug: opts += " --debug"
 
 
-run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {LEPTON} {OUTFNAME} {OPTS}""".format(
+run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
         PROJDIR=proj_dir,
         ANALYZER=analyzer,
         FSET=fileset,
         YEAR=args.year,
-        LEPTON=args.lepton,
         OUTFNAME=cfname,
         OPTS=opts
 )
