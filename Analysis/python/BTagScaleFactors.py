@@ -148,25 +148,7 @@ class BTagSF(object):
                 for key, i in p_data.items()}
 
 
-year = '2016'
-btag_files = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())['BTagging']
-csv_path = '/'.join([proj_dir, 'inputs', 'data', btag_files['csv_file']])
-eff_path = '/'.join([proj_dir, 'inputs', '%s_%s' % (year, jobid), 'INPUTS', btag_files['eff_file']])
-if not os.path.isfile(csv_path):
-    raise IOError('BTagging csv file %s not found.' % csv_path)
-if not os.path.isfile(eff_path):
-    raise IOError('BTagging efficiencies file %s not found.' % eff_path)
-
-btag_wps = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())['Jets']
-btagger = 'DeepJet' if btag_wps['btagger'] == 'DEEPJET' else 'DeepCSV' ## name in csv file
-wps = list(set([btag_wps['permutations']['tightb'], btag_wps['permutations']['looseb']]))
-if len(wps) > 1:
-    raise IOError("Only single working point supported right now.")
-wp = wps[0].lower().capitalize()
-pattern_wp = (btagger+wp).upper()
-
-
-def create_btag_sf_computer(njets):
+def create_btag_sf_computer(year, njets):
     '''
     Method to create object that computes btag scale factors for a single jet multiplicity.
 
@@ -175,6 +157,24 @@ def create_btag_sf_computer(njets):
     Returns:
         Object that computes btag scale factors
     '''
+    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % proj_dir).read())
+    
+    btag_wps = cfg_file['Jets']
+    btagger = 'DeepJet' if btag_wps['btagger'] == 'DEEPJET' else 'DeepCSV' ## name in csv file
+    wps = list(set([btag_wps['permutations']['tightb'], btag_wps['permutations']['looseb']]))
+    if len(wps) > 1:
+        raise IOError("Only single working point supported right now.")
+    wp = wps[0].lower().capitalize()
+    pattern_wp = (btagger+wp).upper()
+    
+    btag_files = cfg_file['BTagging'][year][btagger]
+    csv_path = '/'.join([proj_dir, 'inputs', 'data', btag_files['csv_file']])
+    eff_path = '/'.join([proj_dir, 'inputs', '%s_%s' % (year, jobid), 'INPUTS', btag_files['eff_file']])
+    if not os.path.isfile(csv_path):
+        raise IOError('BTagging csv file %s not found.' % csv_path)
+    if not os.path.isfile(eff_path):
+        raise IOError('BTagging efficiencies file %s not found.' % eff_path)
+
     if not (njets == '3' or njets == '4+'):
         raise IOError("Number of jets can only be 3 or 4+")
 
