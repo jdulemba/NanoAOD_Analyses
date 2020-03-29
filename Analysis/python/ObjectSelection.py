@@ -46,17 +46,21 @@ def select_jets(jets, year, accumulator=None):
         pass_pt_eta_cuts = IDJet.make_pt_eta_cuts(jets)
         if accumulator: accumulator['cutflow']['jets pass pT and eta cuts'] += pass_pt_eta_cuts.sum().sum()
 
+        #    ## HEM issue
+        #if year == '2018':
+        #    hem_region = IDJet.HEM_15_16_issue(jets)
+
             ## tightID
         # check https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD for definitions
         if year == '2016':
-            jetId = 3
+            jetId = 7 # pass loose, tight, tightLepVeto ID
         else:
-            jetId = 2
-        jet_tightID = (jets.Id >= jetId) # 3 for passing loose+tight for 2016, other years are different https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD
-        if accumulator: accumulator['cutflow']['jets tightID'] += jet_tightID.sum().sum()
+            jetId = 4 # pass tight and tightLepVeto ID
+        jet_ID = (jets.Id >= jetId)
+        if accumulator: accumulator['cutflow']['jets pass ID'] += jet_ID.sum().sum()
 
             ## remove jets that don't pass tightID and pt/eta cuts
-        jets = jets[(jet_tightID & pass_pt_eta_cuts)]
+        jets = jets[(jet_ID & pass_pt_eta_cuts)]
 
             ## leading jet pt cut
         leadpt_cut = IDJet.make_leadjet_pt_cut(jets)
