@@ -9,8 +9,6 @@ parser = ArgumentParser('submit analyzer to the batch queues')
 parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('jobdir', help='Directory name to be created in nobackup area.')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
-parser.add_argument('proxy_file', help='name of x509 file in afs private space to use')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
 args = parser.parse_args()
@@ -20,7 +18,7 @@ jobid = os.environ['jobid']
 nano_dir = os.environ['NANODIR']
 jobdir = args.jobdir
 analyzer=args.analyzer
-proxy_path = '/afs/cern.ch/work/j/jdulemba/private/%s' % args.proxy_file
+proxy_path = '/afs/cern.ch/work/j/jdulemba/private/x509up_u81826'
 
 def create_batch_job():
     batch_job="""#!/bin/bash
@@ -36,8 +34,8 @@ echo "source {PROJECTDIR}/environment.sh"
 source {PROJECTDIR}/environment.sh
 
 EXE="${{@:2}}"
-echo "Executing python {PROJECTDIR}/Utilities/run_analyzer.py " $EXE
-python {PROJECTDIR}/Utilities/run_analyzer.py $EXE
+echo "Executing python {PROJECTDIR}/Run_Jobs/run_analyzer.py " $EXE
+python {PROJECTDIR}/Run_Jobs/run_analyzer.py $EXE
 """.format(NANODIR=nano_dir, PROJECTDIR=proj_dir, ANALYZER=analyzer)
 
     return batch_job
@@ -59,15 +57,14 @@ def add_condor_jobs(idx, frange, sample):
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} {LEPTON} --sample={SAMPLE} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, LEPTON=args.lepton, SAMPLE=sample, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SAMPLE=sample, BATCHDIR=batch_dir)
     return condorfile
 
     ## get samples to use
 indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
-samples_to_use = [sample for sample in samples_to_use if not (sample.split('/')[-1].startswith('data') and args.lepton not in sample.split('/')[-1])] # get rid of data samples that don't correspond to lepton chosen
 for sample in samples_to_use:
     if not os.path.isfile(sample):
         raise IOError("Sample file %s.txt not found" % sample)
@@ -104,4 +101,4 @@ for sample in samples_to_use:
         os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
         os.system('cd ' + orig_dir)
 
-#os.system('python %s/Utilities/track_jobs.py %s' % (proj_dir, jobdir))
+#os.system('python %s/Run_Jobs/track_jobs.py %s' % (proj_dir, jobdir))
