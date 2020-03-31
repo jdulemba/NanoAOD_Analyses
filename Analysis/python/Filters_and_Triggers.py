@@ -17,12 +17,12 @@ def get_triggers(df, leptype, year, accumulator=None):
     ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
 
     if leptype == 'Muon':
-        triggers = [df[i] for i in single_mu_trigger_paths[year]]
-        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)        
+        triggers = [df[i] for i in single_mu_trigger_paths[year] if i in df.columns]
+        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
 
     elif leptype == 'Electron':
-        triggers = [df[i] for i in single_el_trigger_paths[year]]
-        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)        
+        triggers = [df[i] for i in single_el_trigger_paths[year] if i in df.columns]
+        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
 
     else:
         raise ValueError("Only events analyzing muons OR electrons supported right now")
