@@ -17,7 +17,7 @@ import fnmatch
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'both_leps_analyzer'
+analyzer = 'htt_flav_effs'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -58,7 +58,7 @@ if not( len(wps_to_use) == 1):
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
-class Both_Leps_Analyzer(processor.ProcessorABC):
+class Htt_Flav_Effs(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
@@ -68,7 +68,7 @@ class Both_Leps_Analyzer(processor.ProcessorABC):
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.hflav_axis = hist.Cat("hFlav", "Hadron Flavour")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -3, 3)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -231,7 +231,7 @@ proc_executor = processor.iterative_executor if args.debug else processor.future
 
 output = processor.run_uproot_job(fileset,
     treename='Events',
-    processor_instance=Both_Leps_Analyzer(),
+    processor_instance=Htt_Flav_Effs(),
     executor=proc_executor,
     executor_args={
         'workers': 8,
