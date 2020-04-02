@@ -75,9 +75,9 @@ else:
         if args.outfname:
             cfname = args.outfname
         elif args.sample:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
+            cfname = '%s/%s_%s_%s.test.coffea' % (outdir, args.sample, args.year, analyzer)
         else:
-            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
+            cfname = '%s/%s_%s.test.coffea' % (outdir, args.year, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
