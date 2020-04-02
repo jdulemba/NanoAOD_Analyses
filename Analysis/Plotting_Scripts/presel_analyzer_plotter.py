@@ -26,7 +26,8 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'presel_analyzer'
 
-input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+#input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
 f_ext = '%s.test.coffea' % analyzer if args.testing else 'TOT.coffea'
 outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 if not os.path.isdir(outdir):
@@ -42,9 +43,8 @@ else:
     fnames = ['%s/%s%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
 fnames = sorted(fnames)
 
-hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 #set_trace()
-
+hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -83,7 +83,7 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction[args.year]['%ss' % args.lepton], axis='dataset')
@@ -136,9 +136,9 @@ for hname in hdict.keys():
 
     if histo.dense_dim() == 1:
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
-        for jmult in histo.axes()[1]._sorted:
-            for lep in histo.axes()[2]._sorted:
-                pltdir = outdir if args.testing else '/'.join([outdir, jmult, lep])
+        for lep in [args.lepton]:
+            for jmult in histo.axis('jmult')._sorted:
+                pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult])
                 if not os.path.isdir(pltdir):
                     os.makedirs(pltdir)
                 fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
