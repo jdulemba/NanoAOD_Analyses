@@ -17,6 +17,11 @@
         }
     },
     "Electrons": {
+        "VETOEL": {
+            "id": "VETO_15",
+            "ptmin": 20.0,
+            "etascmax": 2.5
+        },
         "LOOSEEL": {
             "id": "FAKES",
             "ptmin": 30.0,
