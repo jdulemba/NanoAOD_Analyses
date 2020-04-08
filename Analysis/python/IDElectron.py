@@ -33,11 +33,16 @@ def process_electrons(df):
 
 
     ## Electron ID types
+'''
+* Isolation values are initially taken from the EXO-19-016 paper (Section 4.1)
+'''
+
 #def fail(electrons):
 #    return electrons
 #
 def veto_15(electrons):
     ID = (electrons.vetoID)
+    Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
     return ID
 
 #def loose_15(electrons):
@@ -48,7 +53,7 @@ def veto_15(electrons):
 #
 def tight_15_NoECAL_Gap(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIso < 0.15) #???
+    Iso = (electrons.pfRelIso < 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
@@ -56,7 +61,7 @@ def tight_15_NoECAL_Gap(electrons):
 
 def fakes(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIso >= 0.15) #???
+    Iso = (electrons.pfRelIso >= 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
