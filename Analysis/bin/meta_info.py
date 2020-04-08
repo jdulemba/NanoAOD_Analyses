@@ -4,7 +4,7 @@ from pdb import set_trace
 import os
 from argparse import ArgumentParser
 import coffea.processor.dataframe
-import python.Partons as Partons
+import python.GenObjects as GenObjects
 from Utilities.make_variables import ctstar as ctstar
 from coffea.util import load, save
 import numpy as np
@@ -149,7 +149,7 @@ class Meta_Analyzer(processor.ProcessorABC):
 
                 ## create mtt vs cos theta* dists for nominal ttJets
             if self.sample_name in self.Nominal_ttJets:
-                genParts = Partons.process_genParts(df)
+                genParts = GenObjects.process_genParts(df)
 
                     ## pick gen particles whose mother index == 0
                 gps = genParts[(genParts.momIdx == 0)]
