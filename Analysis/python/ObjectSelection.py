@@ -1,5 +1,4 @@
 from pdb import set_trace
-import coffea.nanoaod.nanoevents
 import coffea.processor.dataframe
 import awkward
 import python.Filters_and_Triggers as Filters_and_Triggers
@@ -7,41 +6,12 @@ import python.IDJet as IDJet
 import python.IDMuon as IDMuon
 import python.IDElectron as IDElectron
 import python.IDMet as IDMet
+import numpy as np
+import coffea.processor as processor
 
-
-def select_muons(muons, accumulator=None):
-    
-    if isinstance(muons, awkward.array.base.AwkwardArray):
-        if accumulator: accumulator['cutflow']['before mu sel'] += muons.size
-
-            ## tight muons
-        tight_muons_mask = (muons.tightId)
-        if accumulator: accumulator['cutflow']['n tight muons'] += tight_muons_mask.any().sum()
-
-            ## single muon
-        single_muon_mask = (muons.counts == 1)
-        if accumulator: accumulator['cutflow']['1 muon'] += single_muon_mask.sum()
-
-            ## single tight muon
-        one_mu_tight_mask = (single_muon_mask & tight_muons_mask).any()
-        if accumulator: accumulator['cutflow']['1 muon, tightID'] += one_mu_tight_mask.sum()
-
-            ## pass all muon criteria
-        passing_mus = (one_mu_tight_mask)
-
-    else:
-        raise ValueError("Only AwkwardArrays are supported")
-
-    if accumulator:
-        return passing_mus, accumulator
-    else:
-        return passing_mus
-
-
-def select_jets(jets, year, accumulator=None):
+def select_jets(jets, muons, electrons, year, accumulator=None):
     
     if isinstance(jets, awkward.array.base.AwkwardArray):
-
             ## pt and eta cuts
         pass_pt_eta_cuts = IDJet.make_pt_eta_cuts(jets)
         if accumulator: accumulator['cutflow']['jets pass pT and eta cuts'] += pass_pt_eta_cuts.sum().sum()
@@ -59,8 +29,22 @@ def select_jets(jets, year, accumulator=None):
         jet_ID = (jets.Id >= jetId)
         if accumulator: accumulator['cutflow']['jets pass ID'] += jet_ID.sum().sum()
 
-            ## remove jets that don't pass tightID and pt/eta cuts
+            ## remove jets that don't pass ID and pt/eta cuts
         jets = jets[(jet_ID & pass_pt_eta_cuts)]
+
+        #set_trace()
+            ## clean jets wrt loose+tight el and mu
+        clean_j_tightMu = ~(jets.match(muons[muons['TIGHTMU'] == True], deltaRCut=0.4))
+        clean_j_looseMu = ~(jets.match(muons[muons['LOOSEMU'] == True], deltaRCut=0.4))
+        clean_j_tightEl = ~(jets.match(electrons[electrons['TIGHTEL'] == True], deltaRCut=0.4))
+        clean_j_looseEl = ~(jets.match(electrons[electrons['LOOSEEL'] == True], deltaRCut=0.4))
+        #clean_jets = (clean_j_looseEl & clean_j_tightEl & clean_j_looseMu & clean_j_tightMu)
+        #jets = jets[clean_jets]
+
+            ## clean jets wrt veto el and mu
+        clean_j_vetoMu = ~(jets.match(muons[muons['VETOMU'] == True], deltaRCut=0.4))
+        clean_j_vetoEl = ~(jets.match(electrons[electrons['VETOEL'] == True], deltaRCut=0.4))
+        jets = jets[(clean_j_looseEl & clean_j_tightEl & clean_j_looseMu & clean_j_tightMu) & (clean_j_vetoMu & clean_j_vetoEl)]
 
             ## leading jet pt cut
         leadpt_cut = IDJet.make_leadjet_pt_cut(jets)
@@ -83,94 +67,59 @@ def select_jets(jets, year, accumulator=None):
         return jets, passing_jets
 
 
-def select_electrons(electrons, accumulator=None):
-
-    if isinstance(electrons, awkward.array.base.AwkwardArray):
-
-        if accumulator: accumulator['cutflow']['before el sel'] += electrons.size
-
-        #set_trace()
-            ## tight electrons
-        tight_electrons_mask = (electrons.tightID)
-        if accumulator: accumulator['cutflow']['n tight electrons'] += tight_electrons_mask.any().sum()
-
-            ## single electron
-        single_electron_mask = (electrons.counts == 1)
-        if accumulator: accumulator['cutflow']['1 electron'] += single_electron_mask.sum()
-
-            ## single tight electron
-        one_el_tight_mask = (single_electron_mask & tight_electrons_mask).any()
-        if accumulator: accumulator['cutflow']['1 electron, tightID'] += one_el_tight_mask.sum()
-
-            ## pass all electron criteria
-        passing_els = (one_el_tight_mask)
-
-    else:
-        raise ValueError("Only AwkwardArrays from NanoEvents are supported right now")
-
-    if accumulator:
-        return passing_els, accumulator
-    else:
-        return passing_els
-
-
-def select(df, leptype, year, accumulator=None, shift=None):
-
-    #set_trace()
-    if leptype != 'Muon' and leptype != 'Electron':
-        raise IOError("Only events analyzing muons OR electrons supported right now")
+def select(df, year, corrections, accumulator=None, shift=None):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
+    evt_sel = processor.PackedSelection()
 
-        ## get triggers
-    if accumulator:
-        pass_triggers, accumulator = Filters_and_Triggers.get_triggers(df=df, leptype=leptype, year=year, accumulator=accumulator)
-    else:
-        pass_triggers = Filters_and_Triggers.get_triggers(df=df, leptype=leptype, year=year)
+    ### trigger selection
+    evt_sel.add('mu_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Muon', year=year))
+    evt_sel.add('el_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Electron', year=year))
 
-        ## get filters
-    if accumulator:
-        pass_filters, accumulator = Filters_and_Triggers.get_filters(df=df, year=year, accumulator=accumulator)
-    else:
-        pass_filters = Filters_and_Triggers.get_filters(df=df, year=year)
-    #set_trace()
+    ### filter selection
+    evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(df=df, year=year))
 
     ### lepton selection
-    if leptype == 'Muon':
-        df['Muon'] = IDMuon.process_muons(df)
-        if accumulator:
-            passing_leps, accumulator = select_muons(df['Muon'], accumulator)
-        else:
-            passing_leps = select_muons(df['Muon'])
+    df['Muon'] = IDMuon.process_muons(df)
+    df['Electron'] = IDElectron.process_electrons(df)
+    evt_sel.add('single_lep', np.logical_xor(( (df['Muon']['TIGHTMU'].sum() + df['Muon']['LOOSEMU'].sum()) == 1 ), ( (df['Electron']['TIGHTEL'].sum() + df['Electron']['LOOSEEL'].sum()) == 1 ))) # only single LOOSE or TIGHT el or mu (not counting vetos)
+    evt_sel.add('single_looseMu', df['Muon']['LOOSEMU'].sum() == 1)
+    evt_sel.add('single_tightMu', df['Muon']['TIGHTMU'].sum() == 1)
+    evt_sel.add('single_looseEl', df['Electron']['LOOSEEL'].sum() == 1)
+    evt_sel.add('single_tightEl', df['Electron']['TIGHTEL'].sum() == 1)
+    evt_sel.add('zero_vetoMu', df['Muon']['VETOMU'].sum() == 0)
+    evt_sel.add('zero_vetoEl', df['Electron']['VETOEL'].sum() == 0)
+    evt_sel.add('tightMu_pass_vetoMu', (((df['Muon']['TIGHTMU']*1 + df['Muon']['VETOMU']*1) > 0).sum() == 1)) # only veto mu (if it exists) is tight
+    evt_sel.add('looseMu_pass_vetoMu', (((df['Muon']['LOOSEMU']*1 + df['Muon']['VETOMU']*1) > 0).sum() == 1)) # only veto mu (if it exists) is loose
+    evt_sel.add('tightEl_pass_vetoEl', (((df['Electron']['TIGHTEL']*1 + df['Electron']['VETOEL']*1) > 0).sum() == 1)) # only veto el (if it exists) is tight
+    evt_sel.add('looseEl_pass_vetoEl', (((df['Electron']['LOOSEEL']*1 + df['Electron']['VETOEL']*1) > 0).sum() == 1)) # only veto el (if it exists) is loose
 
-    else:
-    #elif leptype == 'Electron':
-        df['Electron'] = IDElectron.process_electrons(df)
-        if accumulator:
-            passing_leps, accumulator = select_electrons(df['Electron'], accumulator)
-        else:
-            passing_leps = select_electrons(df['Electron'])
+        # leptons pass loose/tight requirements and triggers
+    evt_sel.add('tightMu_pass', evt_sel.require(single_lep=True, single_tightMu=True, zero_vetoEl=True, tightMu_pass_vetoMu=True, mu_triggers=True))
+    evt_sel.add('looseMu_pass', evt_sel.require(single_lep=True, single_looseMu=True, zero_vetoEl=True, looseMu_pass_vetoMu=True, mu_triggers=True))
+    evt_sel.add('tightEl_pass', evt_sel.require(single_lep=True, single_tightEl=True, zero_vetoMu=True, tightEl_pass_vetoEl=True, el_triggers=True))
+    evt_sel.add('looseEl_pass', evt_sel.require(single_lep=True, single_looseEl=True, zero_vetoMu=True, looseEl_pass_vetoEl=True, el_triggers=True))
 
-    if accumulator:
-        accumulator['cutflow']['passing %s' % leptype] += (pass_triggers & pass_filters & passing_leps).sum()
+    evt_sel.add('passing_mu', evt_sel.require(tightMu_pass=True) | evt_sel.require(looseMu_pass=True))
+    evt_sel.add('passing_el', evt_sel.require(tightEl_pass=True) | evt_sel.require(looseEl_pass=True))
+    evt_sel.add('passing_lep', evt_sel.require(passing_mu=True) | evt_sel.require(passing_el=True))
+
+    evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
 
     ### jets selection
-    df['Jet'] = IDJet.process_jets(df, year) # initialize jets
-        ## clean jets 
-    df['Jet'] = df['Jet'][(~df['Jet'].match(df[leptype], deltaRCut=0.4))] ## get only clean jets based on DeltaR(jet, lepton) = 0.4
+    df['Jet'] = IDJet.process_jets(df, year, corrections['JetCor']) # initialize jets
     if accumulator:
-        new_jets, passing_jets, accumulator = select_jets(df['Jet'], year, accumulator)
+        new_jets, passing_jets, accumulator = select_jets(df['Jet'], df['Muon'], df['Electron'], year, accumulator)
     else:
-        new_jets, passing_jets = select_jets(df['Jet'], year)
+        new_jets, passing_jets = select_jets(df['Jet'], df['Muon'], df['Electron'], year)
     
         ## substitute jets for ones that pass requirements from select_jets
-    df['Jet_%s' % leptype] = new_jets
-
-    #set_trace()
-    passing_evts = pass_triggers & pass_filters & passing_jets & passing_leps
+    df['Jet'] = new_jets
 
         ## SetMET
     df['MET'] = IDMet.SetMET(df)
+
+    passing_evts = evt_sel.require(lep_and_filter_pass=True) & passing_jets
 
     return passing_evts
