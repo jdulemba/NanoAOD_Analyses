@@ -4,7 +4,6 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import numpy as np
 import os
-#import itertools
 
 btag_values = {}
 btag_values["2016"] = {
@@ -89,7 +88,22 @@ def HEM_15_16_issue(jets):
     return hem_region
 
 
-def process_jets(df, year):
+def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
+    '''
+    requirements defined here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution#Smearing_procedures
+    Procedure based off this: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_25/PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L59-L87
+    '''
+        # At each jet 1 location is the index of the genJet that it matched best with
+        # <<<<important>>>> selves without a match will get a -1 to preserve counts structure
+    matched_genJet_inds = jets.argmatch(genjets, deltaRCut=dr_max/2, deltaPtCut=(pt_max_factor*jets.JER))
+        # initialize ptGenJet to zeros, must use jets not genjets for shape!
+    ptGenJet = jets.pt.zeros_like()
+        # set ptGenJet for jets that have corresponding genjet matches
+    ptGenJet[(matched_genJet_inds != -1)] = genjets[matched_genJet_inds[(matched_genJet_inds != -1)]].pt
+    jets['ptGenJet'] =  ptGenJet
+
+
+def process_jets(df, year, corrections=None):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
@@ -105,11 +119,36 @@ def process_jets(df, year):
         btagDeepB=df['Jet_btagDeepB'],
         btagDeepFlavB=df['Jet_btagDeepFlavB'],
         Id=df['Jet_jetId'],
-        cleanmask=df['Jet_cleanmask'],
+        #cleanmask=df['Jet_cleanmask'],
+        #bRegCorr=df['Jet_bRegCorr'],
+        #bRegRes=df['Jet_bRegRes'],
+        area=df['Jet_area'],
+        rawFactor=df['Jet_rawFactor'],
     )
+
+    Jet['rho'] = Jet.pt.ones_like()*df['fixedGridRhoFastjetAll']
+    Jet['ptRaw'] = Jet.pt*(1.-Jet['rawFactor'])
+    Jet['massRaw'] = Jet.mass*(1.-Jet['rawFactor'])
 
     if not df.dataset.startswith('data_Single'):
         Jet['hadronFlav'] = df['Jet_hadronFlavour']
+            ## apply JER
+        if (jet_pars['applyJER'] == 1) and corrections is not None:
+                ## create gen jets for matching
+            import python.GenObjects as GenObjects
+            df['genJets'] = GenObjects.process_genJets(df)
+
+            #JEC = corrections['JEC']
+            #JECUnc = corrections['JECUnc']
+            #JERsf = corrections['JERsf']
+            #jersf = JERsf.getScaleFactor(JetEta=Jet.eta)
+            JER = corrections['JER']
+            Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
+                # match jets to genJets to get ptGenJet
+            get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
+            Jet_transformer = corrections['JT']
+            #set_trace()
+            Jet_transformer.transform(Jet)
 
         ## add btag wps
     for bdiscr in btag_values[year].keys():
