@@ -6,16 +6,16 @@ import coffea.processor as processor
 def get_event_weights(df, year: str, corrections):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
 
-        ## Prefire Corrections
-    if (year != '2018') and (corrections['Prefire'] == True):
-        weights.add('prefire_weight',
-            df['L1PreFiringWeight_Nom'],
-            df['L1PreFiringWeight_Up'],
-            df['L1PreFiringWeight_Dn']
-        )
-
         ## only apply to MC
     if not df.dataset.startswith('data_Single'):
+            ## Prefire Corrections
+        if (year != '2018') and (corrections['Prefire'] == True):
+            weights.add('prefire_weight',
+                df['L1PreFiringWeight_Nom'],
+                df['L1PreFiringWeight_Up'],
+                df['L1PreFiringWeight_Dn']
+            )
+
             ## Generator Weights (normalize them)
         genWeights = np.ones(df.genWeight.size)
         genWeights[df.genWeight < 0] = -1.
