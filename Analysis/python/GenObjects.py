@@ -27,3 +27,18 @@ def process_lheParts(df):
     )
 
     return lheParts
+
+def process_genJets(df):
+    from coffea.analysis_objects import JaggedCandidateArray
+
+    genJets = JaggedCandidateArray.candidatesfromcounts(
+        df.nGenJet,
+        pt=df.GenJet_pt,
+        eta=df.GenJet_eta,
+        phi=df.GenJet_phi,
+        mass=df.GenJet_mass,
+        pFlav=df.GenJet_partonFlavour,
+        hFlav=df.GenJet_hadronFlavour,
+    )
+
+    return genJets
