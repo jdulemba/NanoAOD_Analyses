@@ -5,7 +5,7 @@ from coffea.util import save, load
 import coffea.processor as processor
 from pdb import set_trace
 import os, sys
-import python.New_ObjSel as objsel
+import python.ObjectSelection as objsel
 import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
 import python.BTagScaleFactors as btagSF
@@ -34,11 +34,14 @@ fileset = prettyjson.loads(fdict)
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
+jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
+    #'JetCor' : None,
+    'JetCor' : jet_corrections,
 }
 
 if corrections['BTagSF'] == True:
@@ -137,7 +140,7 @@ class new_presel_analyzer(processor.ProcessorABC):
         }
 
             ## object selection
-        objsel_evts = objsel.select(df, year=args.year, accumulator=output)
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
         output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
         selection.add('jets_3', df['Jet'].counts == 3)
         selection.add('jets_4+', df['Jet'].counts > 3)
