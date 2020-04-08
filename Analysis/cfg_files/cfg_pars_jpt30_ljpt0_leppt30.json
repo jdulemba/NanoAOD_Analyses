@@ -3,7 +3,7 @@
         "VETOMU": {
             "id": "LOOSE_15Db",
             "ptmin": 20.0,
-            "etamax": 2.4
+            "etamax": 2.5
         },
         "LOOSEMU" : {
             "id": "ANTILOOSE_15Db",
@@ -20,17 +20,17 @@
         "VETOEL": {
             "id": "VETO_15",
             "ptmin": 20.0,
-            "etascmax": 2.4
+            "etascmax": 2.5
         },
         "LOOSEEL": {
             "id": "FAKES",
             "ptmin": 30.0,
-            "etascmax": 2.1
+            "etascmax": 2.5
         },
         "TIGHTEL": {
             "id": "TIGHT_15_NoECAL_Gap",
             "ptmin": 30.0,
-            "etascmax": 2.1
+            "etascmax": 2.5
         }
     },
     "Jets": {
