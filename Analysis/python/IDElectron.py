@@ -3,7 +3,7 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
 
-def process_electrons(df):
+def process_electrons(df, year):
     from coffea.analysis_objects import JaggedCandidateArray
     electrons = JaggedCandidateArray.candidatesfromcounts(
         df['nElectron'],
@@ -15,7 +15,8 @@ def process_electrons(df):
         dxy=df['Electron_dxy'],
         dz=df['Electron_dz'],
         tightID=df['Electron_mvaFall17V2noIso_WP80'],
-        vetoID=df['Electron_mvaFall17V2noIso_WPL'],
+        vetoID=df['Electron_mvaFall17V2Iso_WPL'],
+        #vetoID=df['Electron_mvaFall17V2noIso_WPL'],
         deltaEtaSC=df['Electron_deltaEtaSC'],
         pfRelIso=df['Electron_pfRelIso03_all']
     )
@@ -27,7 +28,7 @@ def process_electrons(df):
     electrons['IPCuts'] = ((np.abs(electrons.etaSC) < 1.479) & (np.abs(electrons.dxy) < 0.05) & (np.abs(electrons.dz) < 0.10)) | ((np.abs(electrons.etaSC) >= 1.479) & (np.abs(electrons.dxy) < 0.10) & (np.abs(electrons.dz) < 0.20))
 
         ## make electron ID/Iso categories
-    electrons = make_electron_ids(electrons)
+    electrons = make_electron_ids(electrons, year)
 
     return electrons
 
@@ -42,7 +43,7 @@ def process_electrons(df):
 #
 def veto_15(electrons):
     ID = (electrons.vetoID)
-    Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
+    #Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
     return ID
 
 #def loose_15(electrons):
@@ -68,9 +69,9 @@ def fakes(electrons):
     return (ID & Iso & ecalgap & ipcuts)
 
 
-def make_electron_ids(electrons):
+def make_electron_ids(electrons, year):
 
-    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Electrons']
+    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Electrons'][year]
 
     id_names = {
         #'FAIL' : fail,

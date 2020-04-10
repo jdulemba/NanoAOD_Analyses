@@ -3,7 +3,7 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
 
-def process_muons(df):
+def process_muons(df, year):
     from coffea.analysis_objects import JaggedCandidateArray
     muons = JaggedCandidateArray.candidatesfromcounts(
         df['nMuon'],
@@ -19,7 +19,7 @@ def process_muons(df):
     )
 
         ## add muon ID+Iso categories
-    muons = make_muon_ids(muons)
+    muons = make_muon_ids(muons, year)
 
     return muons
 
@@ -86,9 +86,9 @@ def antiloose_15Db(muons):
 
     return (ID & Iso)
 
-def make_muon_ids(muons):
+def make_muon_ids(muons, year):
 
-    mu_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Muons']
+    mu_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Muons'][year]
 
     id_names = {
         'FAIL' : fail,

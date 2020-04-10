@@ -1,36 +1,108 @@
 {
     "Muons": {
-        "VETOMU": {
-            "id": "LOOSE_15Db",
-            "ptmin": 20.0,
-            "etamax": 2.5
+        "2016":{
+            "VETOMU": {
+                "id": "LOOSE_15Db",
+                "ptmin": 20.0,
+                "etamax": 2.4
+            },
+            "LOOSEMU" : {
+                "id": "ANTILOOSE_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            },
+            "TIGHTMU" : {
+                "id": "TIGHT_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            }
         },
-        "LOOSEMU" : {
-            "id": "ANTILOOSE_15Db",
-            "ptmin": 30.0,
-            "etamax": 2.4
+        "2017":{
+            "VETOMU": {
+                "id": "LOOSE_15Db",
+                "ptmin": 20.0,
+                "etamax": 2.4
+            },
+            "LOOSEMU" : {
+                "id": "ANTILOOSE_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            },
+            "TIGHTMU" : {
+                "id": "TIGHT_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            }
         },
-        "TIGHTMU" : {
-            "id": "TIGHT_15Db",
-            "ptmin": 30.0,
-            "etamax": 2.4
+        "2018":{
+            "VETOMU": {
+                "id": "LOOSE_15Db",
+                "ptmin": 20.0,
+                "etamax": 2.4
+            },
+            "LOOSEMU" : {
+                "id": "ANTILOOSE_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            },
+            "TIGHTMU" : {
+                "id": "TIGHT_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            }
         }
     },
     "Electrons": {
-        "VETOEL": {
-            "id": "VETO_15",
-            "ptmin": 20.0,
-            "etascmax": 2.5
+        "2016": {
+            "VETOEL": {
+                "id": "VETO_15",
+                "ptmin": 20.0,
+                "etascmax": 2.5
+            },
+            "LOOSEEL": {
+                "id": "FAKES",
+                "ptmin": 30.0,
+                "etascmax": 2.5
+            },
+            "TIGHTEL": {
+                "id": "TIGHT_15_NoECAL_Gap",
+                "ptmin": 30.0,
+                "etascmax": 2.5
+            }
         },
-        "LOOSEEL": {
-            "id": "FAKES",
-            "ptmin": 30.0,
-            "etascmax": 2.5
+        "2017": {
+            "VETOEL": {
+                "id": "VETO_15",
+                "ptmin": 20.0,
+                "etascmax": 2.5
+            },
+            "LOOSEEL": {
+                "id": "FAKES",
+                "ptmin": 30.0,
+                "etascmax": 2.5
+            },
+            "TIGHTEL": {
+                "id": "TIGHT_15_NoECAL_Gap",
+                "ptmin": 30.0,
+                "etascmax": 2.5
+            }
         },
-        "TIGHTEL": {
-            "id": "TIGHT_15_NoECAL_Gap",
-            "ptmin": 30.0,
-            "etascmax": 2.5
+        "2018": {
+            "VETOEL": {
+                "id": "VETO_15",
+                "ptmin": 20.0,
+                "etascmax": 2.5
+            },
+            "LOOSEEL": {
+                "id": "FAKES",
+                "ptmin": 34.0,
+                "etascmax": 2.5
+            },
+            "TIGHTEL": {
+                "id": "TIGHT_15_NoECAL_Gap",
+                "ptmin": 34.0,
+                "etascmax": 2.5
+            }
         }
     },
     "Jets": {
