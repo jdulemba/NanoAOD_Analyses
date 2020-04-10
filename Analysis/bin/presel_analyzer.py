@@ -16,7 +16,7 @@ import coffea.lumi_tools.lumi_tools as lumi_tools
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'presel_analyzer'
+analyzer = 'new_presel_analyzer'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -34,11 +34,14 @@ fileset = prettyjson.loads(fdict)
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
+jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
+    #'JetCor' : None,
+    'JetCor' : jet_corrections,
 }
 
 if corrections['BTagSF'] == True:
@@ -47,19 +50,19 @@ if corrections['BTagSF'] == True:
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
-class Presel_Analyzer(processor.ProcessorABC):
+class new_presel_analyzer(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
-        self.mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
+        #self.mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5, 5)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
         self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
         self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
-        self.njets_axis = hist.Bin("njets", "n_{jets}", 15, 0, 15)
+        self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
 
             ## make dictionary of hists
@@ -127,14 +130,21 @@ class Presel_Analyzer(processor.ProcessorABC):
         selection = processor.PackedSelection()
         regions = {
             'Muon' : {
-                '3Jets'  : {'objselection_mu', 'mu_jets_3', 'loose_or_tight_mu'},
-                '4PJets' : {'objselection_mu', 'mu_jets_4+', 'loose_or_tight_mu'},
+                '3Jets'  : {'objselection', 'jets_3', 'loose_or_tight_MU'},
+                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_MU'},
             },
             'Electron' : {
-                '3Jets'  : {'objselection_el', 'el_jets_3', 'loose_or_tight_el'},
-                '4PJets' : {'objselection_el', 'el_jets_4+', 'loose_or_tight_el'},
+                '3Jets'  : {'objselection', 'jets_3', 'loose_or_tight_EL'},
+                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_EL'},
             },
         }
+
+            ## object selection
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
+        output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
+        selection.add('jets_3', df['Jet'].counts == 3)
+        selection.add('jets_4+', df['Jet'].counts > 3)
+        selection.add('objselection', objsel_evts)
 
         isData = self.sample_name.startswith('data_Single')
         if isData:
@@ -150,61 +160,42 @@ class Presel_Analyzer(processor.ProcessorABC):
             if isSM_Data:
                 del regions['Electron']
                         ## muons
-                objsel_evts_mu = objsel.select(df, leptype='Muon', year=args.year, accumulator=output)
-                output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts_mu.sum()
-                selection.add('mu_jets_3', df['Jet_Muon'].counts == 3)
-                selection.add('mu_jets_4+', df['Jet_Muon'].counts > 3)
-                selection.add('objselection_mu', objsel_evts_mu)
-                selection.add('tight_mu', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-                #selection.add('loose_mu', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
-                selection.add('loose_or_tight_mu', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+                selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+                #selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+                selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
             if isSE_Data:
                 del regions['Muon']
                         ## electrons
-                objsel_evts_el = objsel.select(df, leptype='Electron', year=args.year, accumulator=output)
-                output['cutflow']['nEvts passing jet and electron obj selection'] += objsel_evts_el.sum()
-                selection.add('el_jets_3', df['Jet_Electron'].counts == 3)
-                selection.add('el_jets_4+', df['Jet_Electron'].counts > 3)
-                selection.add('objselection_el', objsel_evts_el)
-                selection.add('tight_el', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-                #selection.add('loose_el', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
-                selection.add('loose_or_tight_el', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
+                selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+                #selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+                selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
             for lepton in regions.keys():
                 for jmult in regions[lepton].keys():
                     regions[lepton][jmult].update({'lumimask'})
 
         if not isData:
-                ## object selection
-            objsel_evts_mu = objsel.select(df, leptype='Muon', year=args.year, accumulator=output)
-            output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts_mu.sum()
-            objsel_evts_el = objsel.select(df, leptype='Electron', year=args.year, accumulator=output)
-            output['cutflow']['nEvts passing jet and electron obj selection'] += objsel_evts_el.sum()
-
                 ## add different selections
                     ## muons
-            selection.add('mu_jets_3', df['Jet_Muon'].counts == 3)
-            selection.add('mu_jets_4+', df['Jet_Muon'].counts > 3)
-            selection.add('objselection_mu', objsel_evts_mu)
-            selection.add('tight_mu', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-            #selection.add('loose_mu', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
-            selection.add('loose_or_tight_mu', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+            selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+            #selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+            selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
                     ## electrons
-            selection.add('el_jets_3', df['Jet_Electron'].counts == 3)
-            selection.add('el_jets_4+', df['Jet_Electron'].counts > 3)
-            selection.add('objselection_el', objsel_evts_el)
-            selection.add('tight_el', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-            #selection.add('loose_el', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
-            selection.add('loose_or_tight_el', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
+            selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+            #selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+            selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
-            ## apply lepton SFs to MC (only applicable to tight leptons)
+            #set_trace()
+            ### apply lepton SFs to MC (only applicable to tight leptons)
             if 'LeptonSF' in corrections.keys():
-                tight_mu_cut = selection.require(objselection_mu=True, tight_mu=True) # find events passing muon object selection with one tight muon
+                tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
+                tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
                 evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
-                    pt=df['Muon'][tight_mu_cut].pt.flatten(), eta=df['Muon'][tight_mu_cut].eta.flatten())
-                tight_el_cut = selection.require(objselection_el=True, tight_el=True) # find events passing electron object selection with one tight electron
+                    pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
+                tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
+                tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
                 evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
-                    pt=df['Electron'][tight_el_cut].pt.flatten(), eta=df['Electron'][tight_el_cut].etaSC.flatten())
+                    pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
 
         #set_trace()
         ## fill hists for each region
@@ -213,13 +204,23 @@ class Presel_Analyzer(processor.ProcessorABC):
                 cut = selection.all(*regions[lepton][jmult])
                 #set_trace()
 
+                leptype = 'MU' if lepton == 'Muon' else 'EL'
+                if 'loose_or_tight_%s' % leptype in regions[lepton][jmult]:
+                    lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype] == True) | (df[lepton][cut]['LOOSE%s' % leptype] == True))
+                elif 'tight_%s' % leptype in regions[lepton][jmult]:
+                    lep_mask = (df[lepton][cut]['TIGHT%s' % leptype] == True)
+                elif 'loose_%s' % leptype in regions[lepton][jmult]:
+                    lep_mask = (df[lepton][cut]['LOOSE%s' % leptype] == True)
+                else:
+                    raise ValueError("Not sure what lepton type to choose for event")
+
                 evt_weights_to_use = evt_weights.weight()
                 if not isData:
                     ## apply lepton SFs to MC (only applicable to tight leptons)
                     if 'LeptonSF' in corrections.keys():
                         evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet_%s' % lepton][cut], evt_weights=evt_weights_to_use[cut])
-                output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut],            evt_weights=evt_weights_to_use[cut])
+                output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
+                output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut][lep_mask],evt_weights=evt_weights_to_use[cut])
 
 
             ##    ## apply btagging SFs to MC
@@ -268,7 +269,7 @@ proc_executor = processor.iterative_executor if args.debug else processor.future
 
 output = processor.run_uproot_job(fileset,
     treename='Events',
-    processor_instance=Presel_Analyzer(),
+    processor_instance=new_presel_analyzer(),
     executor=proc_executor,
     executor_args={
         'workers': 8,
