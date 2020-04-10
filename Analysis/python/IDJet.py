@@ -93,13 +93,16 @@ def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
     requirements defined here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution#Smearing_procedures
     Procedure based off this: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_25/PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L59-L87
     '''
+    #set_trace()
         # At each jet 1 location is the index of the genJet that it matched best with
         # <<<<important>>>> selves without a match will get a -1 to preserve counts structure
     matched_genJet_inds = jets.argmatch(genjets, deltaRCut=dr_max/2, deltaPtCut=(pt_max_factor*jets.JER))
         # initialize ptGenJet to zeros, must use jets not genjets for shape!
     ptGenJet = jets.pt.zeros_like()
+        # find negation of events in which njets > 0 but ngenjets == 0 (results in empty sections of jagged arrays)
+    valid_inds = ~((jets.counts > 0)  & (genjets.counts == 0))
         # set ptGenJet for jets that have corresponding genjet matches
-    ptGenJet[(matched_genJet_inds != -1)] = genjets[matched_genJet_inds[(matched_genJet_inds != -1)]].pt
+    ptGenJet[valid_inds][matched_genJet_inds[valid_inds] != -1] = genjets[valid_inds][matched_genJet_inds[valid_inds][matched_genJet_inds[valid_inds] != -1]].pt
     jets['ptGenJet'] =  ptGenJet
 
 
@@ -142,13 +145,14 @@ def process_jets(df, year, corrections=None):
             #JECUnc = corrections['JECUnc']
             #JERsf = corrections['JERsf']
             #jersf = JERsf.getScaleFactor(JetEta=Jet.eta)
-            JER = corrections['JER']
+            JER = corrections['MC']['JER']
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
                 # match jets to genJets to get ptGenJet
             get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
-            Jet_transformer = corrections['JT']
+            Jet_transformer = corrections['MC']['JT']
             #set_trace()
-            Jet_transformer.transform(Jet)
+            Jet_transformer.transform(Jet, met=df['MET'])
+            #Jet_transformer.transform(Jet)
 
         ## add btag wps
     for bdiscr in btag_values[year].keys():
