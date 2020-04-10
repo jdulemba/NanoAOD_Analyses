@@ -32,15 +32,11 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
             ## remove jets that don't pass ID and pt/eta cuts
         jets = jets[(jet_ID & pass_pt_eta_cuts)]
 
-        #set_trace()
             ## clean jets wrt loose+tight el and mu
         clean_j_tightMu = ~(jets.match(muons[muons['TIGHTMU'] == True], deltaRCut=0.4))
         clean_j_looseMu = ~(jets.match(muons[muons['LOOSEMU'] == True], deltaRCut=0.4))
         clean_j_tightEl = ~(jets.match(electrons[electrons['TIGHTEL'] == True], deltaRCut=0.4))
         clean_j_looseEl = ~(jets.match(electrons[electrons['LOOSEEL'] == True], deltaRCut=0.4))
-        #clean_jets = (clean_j_looseEl & clean_j_tightEl & clean_j_looseMu & clean_j_tightMu)
-        #jets = jets[clean_jets]
-
             ## clean jets wrt veto el and mu
         clean_j_vetoMu = ~(jets.match(muons[muons['VETOMU'] == True], deltaRCut=0.4))
         clean_j_vetoEl = ~(jets.match(electrons[electrons['VETOEL'] == True], deltaRCut=0.4))
@@ -81,8 +77,8 @@ def select(df, year, corrections, accumulator=None, shift=None):
     evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(df=df, year=year))
 
     ### lepton selection
-    df['Muon'] = IDMuon.process_muons(df)
-    df['Electron'] = IDElectron.process_electrons(df)
+    df['Muon'] = IDMuon.process_muons(df, year)
+    df['Electron'] = IDElectron.process_electrons(df, year)
     evt_sel.add('single_lep', np.logical_xor(( (df['Muon']['TIGHTMU'].sum() + df['Muon']['LOOSEMU'].sum()) == 1 ), ( (df['Electron']['TIGHTEL'].sum() + df['Electron']['LOOSEEL'].sum()) == 1 ))) # only single LOOSE or TIGHT el or mu (not counting vetos)
     evt_sel.add('single_looseMu', df['Muon']['LOOSEMU'].sum() == 1)
     evt_sel.add('single_tightMu', df['Muon']['TIGHTMU'].sum() == 1)
@@ -107,6 +103,9 @@ def select(df, year, corrections, accumulator=None, shift=None):
 
     evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
 
+        ## SetMET
+    df['MET'] = IDMet.process_met(df)
+
     ### jets selection
     df['Jet'] = IDJet.process_jets(df, year, corrections['JetCor']) # initialize jets
     if accumulator:
@@ -116,9 +115,6 @@ def select(df, year, corrections, accumulator=None, shift=None):
     
         ## substitute jets for ones that pass requirements from select_jets
     df['Jet'] = new_jets
-
-        ## SetMET
-    df['MET'] = IDMet.SetMET(df)
 
     passing_evts = evt_sel.require(lep_and_filter_pass=True) & passing_jets
 
