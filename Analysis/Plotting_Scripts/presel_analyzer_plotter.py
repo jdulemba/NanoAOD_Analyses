@@ -103,7 +103,6 @@ for hname in hdict.keys():
     hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
     
 
-
 def get_samples_yield_and_frac(histo, lep):
     '''
     Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
@@ -122,7 +121,11 @@ def get_samples_yield_and_frac(histo, lep):
     rows += [("", "", "", "")]
     rows += [("", "data/SIM", "", format(data_yield/mc_yield, '.3f'))]
         
-    return rows
+    yields_dict = {process:round(proc_yield, 2) for process, proc_yield in proc_yields_list}
+    yields_dict.update({'SIM': round(mc_yield, 2)})
+    yields_dict.update({'data/SIM': round(data_yield/mc_yield, 3)})
+
+    return rows, yields_dict
 
 
 
@@ -146,8 +149,11 @@ for hname in hdict.keys():
                 hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
 
                 if hname == 'Jets_njets':
-                    yields = get_samples_yield_and_frac(hslice, lep)
-                    plt_tools.print_table(yields, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, lep), print_output=True)
+                    print(jmult)
+                    yields_txt, yields_json = get_samples_yield_and_frac(hslice, lep)
+                    plt_tools.print_table(yields_txt, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, lep), print_output=True)
+                    with open('%s/%s_%s_yields_and_fracs.json' % (pltdir, jmult, lep), 'w') as out:
+                        out.write(prettyjson.dumps(yields_json))
 
                 if rebinning != 1:
                     xaxis_name = hslice.dense_axes()[0].name
@@ -163,6 +169,7 @@ for hname in hdict.keys():
                     fill_opts=stack_fill_opts,
                     error_opts=stack_error_opts
                 )
+                #set_trace()
                 plot.plot1d(hslice[data_samples],
                     overlay=hslice.axes()[0].name,
                     ax=ax,
