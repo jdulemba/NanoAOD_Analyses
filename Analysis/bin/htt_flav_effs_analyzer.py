@@ -8,7 +8,6 @@ import os, sys
 import python.ObjectSelection as objsel
 import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
-import python.BTagScaleFactors as btagSF
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
@@ -40,16 +39,13 @@ for fname in fileset.keys():
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
+jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
-    'BTagSF' : False,
+    'JetCor' : jet_corrections,
 }
-
-if corrections['BTagSF'] == True:
-    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
 
 jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
 wps_to_use = list(set([jet_pars['permutations']['tightb'], jet_pars['permutations']['looseb']]))
@@ -90,11 +86,11 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
     def make_jet_hists(self):
         histo_dict = {}
-        histo_dict['Jets_pt_all']     = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
-        histo_dict['Jets_eta_all']    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
+        #histo_dict['Jets_pt_all']     = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
+        #histo_dict['Jets_eta_all']    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
         histo_dict['Jets_pt_eta_all'] = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
-        histo_dict['Jets_pt_pass']    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
-        histo_dict['Jets_eta_pass']   = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
+        #histo_dict['Jets_pt_pass']    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
+        #histo_dict['Jets_eta_pass']   = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
         histo_dict['Jets_pt_eta_pass']= hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
 
         return histo_dict
@@ -120,73 +116,67 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         regions = {
             'Muon' : {
                 '3Jets'  : {
-                    'bjet' : {'objselection_mu', 'mu_jets_3', 'loose_or_tight_mu', 'mu_jets_bjet'},
-                    'cjet' : {'objselection_mu', 'mu_jets_3', 'loose_or_tight_mu', 'mu_jets_cjet'},
-                    'ljet' : {'objselection_mu', 'mu_jets_3', 'loose_or_tight_mu', 'mu_jets_ljet'},
+                    'bjet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_bjet'},
+                    'cjet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_cjet'},
+                    'ljet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_ljet'},
                 },
             },
             'Electron' : {
                 '3Jets'  : {
-                    'bjet' : {'objselection_el', 'el_jets_3', 'loose_or_tight_el', 'el_jets_bjet'},
-                    'cjet' : {'objselection_el', 'el_jets_3', 'loose_or_tight_el', 'el_jets_cjet'},
-                    'ljet' : {'objselection_el', 'el_jets_3', 'loose_or_tight_el', 'el_jets_ljet'},
+                    'bjet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_bjet'},
+                    'cjet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_cjet'},
+                    'ljet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_ljet'},
                 },
             },
         }
 
             ## object selection
-        objsel_evts_mu = objsel.select(df, leptype='Muon', year=args.year, accumulator=output)
-        output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts_mu.sum()
-        objsel_evts_el = objsel.select(df, leptype='Electron', year=args.year, accumulator=output)
-        output['cutflow']['nEvts passing jet and electron obj selection'] += objsel_evts_el.sum()
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
+        output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts.sum()
+        selection.add('objselection', objsel_evts)
 
-            ## add different selections
-                ## muons
-        selection.add('objselection_mu', objsel_evts_mu)
-        selection.add('mu_jets_3', df['Jet_Muon'].counts == 3)
+        ## add different selections
+        selection.add('jets_3', df['Jet'].counts == 3)
             ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
-        selection.add('mu_jets_bjet', (df['Jet_Muon']['hadronFlav'] == 5).sum() > 0) # jets come from bjets (hadronFlav == 5)
-        selection.add('mu_jets_cjet', (df['Jet_Muon']['hadronFlav'] == 4).sum() > 0) # jets come from bjets (hadronFlav == 4)
-        selection.add('mu_jets_ljet', (df['Jet_Muon']['hadronFlav'] == 0).sum() > 0) # jets come from light jets (hadronFlav == 0)
-        selection.add('tight_mu', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-        selection.add('loose_or_tight_mu', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+        selection.add('jets_bjet', (df['Jet']['hadronFlav'] == 5).sum() > 0) # jets come from bjets (hadronFlav == 5)
+        selection.add('jets_cjet', (df['Jet']['hadronFlav'] == 4).sum() > 0) # jets come from bjets (hadronFlav == 4)
+        selection.add('jets_ljet', (df['Jet']['hadronFlav'] == 0).sum() > 0) # jets come from light jets (hadronFlav == 0)
+                ## muons
+        selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+        selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
 
                 ## electrons
-        selection.add('objselection_el', objsel_evts_el)
-        selection.add('el_jets_3', df['Jet_Electron'].counts == 3)
-        selection.add('el_jets_bjet', (df['Jet_Electron']['hadronFlav'] == 5).sum() > 0) # jets come from bjets (hadronFlav == 5)
-        selection.add('el_jets_cjet', (df['Jet_Electron']['hadronFlav'] == 4).sum() > 0) # jets come from bjets (hadronFlav == 4)
-        selection.add('el_jets_ljet', (df['Jet_Electron']['hadronFlav'] == 0).sum() > 0) # jets come from light jets (hadronFlav == 0)
-        selection.add('tight_el', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-        selection.add('loose_or_tight_el', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
+        selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+        selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
         ## apply lepton SFs to MC (only applicable to tight leptons)
         if 'LeptonSF' in corrections.keys():
-            tight_mu_cut = selection.require(objselection_mu=True, tight_mu=True) # find events passing muon object selection with one tight muon
+            tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
+            tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
             evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
-                pt=df['Muon'][tight_mu_cut].pt.flatten(), eta=df['Muon'][tight_mu_cut].eta.flatten())
-            tight_el_cut = selection.require(objselection_el=True, tight_el=True) # find events passing electron object selection with one tight electron
+                pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
+            tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
+            tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
             evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
-                pt=df['Electron'][tight_el_cut].pt.flatten(), eta=df['Electron'][tight_el_cut].etaSC.flatten())
+                pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
 
         if isTTbar:
             ## add 4+ jets categories for ttbar events
+            selection.add('jets_4+', df['Jet'].counts > 3)
             regions['Muon'].update({
                 '4PJets' : {
-                    'bjet' : {'objselection_mu', 'mu_jets_4+', 'loose_or_tight_mu', 'mu_jets_bjet'},
-                    'cjet' : {'objselection_mu', 'mu_jets_4+', 'loose_or_tight_mu', 'mu_jets_cjet'},
-                    'ljet' : {'objselection_mu', 'mu_jets_4+', 'loose_or_tight_mu', 'mu_jets_ljet'},
+                    'bjet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_bjet'},
+                    'cjet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_cjet'},
+                    'ljet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_ljet'},
                 }
             })
             regions['Electron'].update({
                 '4PJets' : {
-                    'bjet' : {'objselection_el', 'el_jets_4+', 'loose_or_tight_el', 'el_jets_bjet'},
-                    'cjet' : {'objselection_el', 'el_jets_4+', 'loose_or_tight_el', 'el_jets_cjet'},
-                    'ljet' : {'objselection_el', 'el_jets_4+', 'loose_or_tight_el', 'el_jets_ljet'},
+                    'bjet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_bjet'},
+                    'cjet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_cjet'},
+                    'ljet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_ljet'},
                 }
             })
-            selection.add('mu_jets_4+', df['Jet_Muon'].counts > 3)
-            selection.add('el_jets_4+', df['Jet_Electron'].counts > 3)
 
 
         btag_wps = [wp for wp in df['Jet'].columns if wps_to_use[0] in wp]
@@ -197,30 +187,30 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 for jmult in regions[lepton].keys():
                     for hflav in regions[lepton][jmult].keys():
                         cut = selection.all(*regions[lepton][jmult][hflav])
-                        #set_trace()
-    
+ 
                         evt_weights_to_use = evt_weights.weight()
                         ## apply lepton SFs to MC (only applicable to tight leptons)
                         if 'LeptonSF' in corrections.keys():
                             evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                        output = self.fill_jet_hists_all( accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet_%s' % lepton][cut], evt_weights=evt_weights_to_use[cut])
-                        output = self.fill_jet_hists_pass(accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet_%s' % lepton][cut][(df['Jet_%s' % lepton][cut][btag_wp])], evt_weights=evt_weights_to_use[cut])
+                        #set_trace()
+                        output = self.fill_jet_hists_all( accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
+                        output = self.fill_jet_hists_pass(accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut][(df['Jet'][cut][btag_wp])], evt_weights=evt_weights_to_use[cut])
 
         return output
 
 
     def fill_jet_hists_all(self, accumulator, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        accumulator['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        #accumulator['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #accumulator['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        accumulator['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
         return accumulator        
 
     def fill_jet_hists_pass(self, accumulator, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        accumulator['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        #accumulator['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #accumulator['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        accumulator['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
         return accumulator        
 
 
