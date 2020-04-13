@@ -5,7 +5,7 @@ from pdb import set_trace
 
 single_el_trigger_paths = {}
 single_el_trigger_paths["2016"] = ["HLT_Ele27_WPTight_Gsf"]
-single_el_trigger_paths["2017"] = ["HLT_Ele27_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf"]
+single_el_trigger_paths["2017"] = ["HLT_Ele27_WPTight_Gsf"]#, "HLT_Ele32_WPTight_Gsf"]
 single_el_trigger_paths["2018"] = ["HLT_Ele32_WPTight_Gsf"]
 
 single_mu_trigger_paths = {}
