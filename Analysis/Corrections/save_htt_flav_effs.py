@@ -9,7 +9,7 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'htt_flav_effs_analyzer'
 
-jobid = 'Testing' ## only temporary!!
+jobid = os.environ['jobid']
 outdir = '%s/Corrections/%s' % (proj_dir, jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
@@ -57,10 +57,13 @@ flav_to_name = {'bjet' : 'bottom', 'cjet' : 'charm', 'ljet' : 'light'}
 hname = 'Jets_pt_eta'
 lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
 
-pt_bins_3j = np.array([20., 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
-eta_bins_3j = np.array([-2.5, -1.8, -1.2, -0.6, 0.0, 0.6, 1.2, 1.8, 2.5])
-pt_3j = hist.Bin('pt', 'pt', pt_bins_3j)
-eta_3j = hist.Bin('eta', 'eta', eta_bins_3j)
+pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
+eta_binning = np.array([-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5])
+#eta_binning = np.array([-2.5, -2., -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5])
+pt_bins = hist.Bin('pt', 'pt', pt_binning)
+eta_bins = hist.Bin('eta', 'eta', eta_binning)
+
+working_points = []
 
 for year in ['2016', '2017', '2018']:
     input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
@@ -68,56 +71,52 @@ for year in ['2016', '2017', '2018']:
     if len(fnames) > 1:
         raise ValueError("Only one TOT file should be used")
     hdict = load(fnames[0])
-    h_pass = hdict['%s_pass' % hname]
-    h_all = hdict['%s_all' % hname]
+    hpass = hdict['%s_pass' % hname]
+    hall = hdict['%s_all' % hname]
 
-    if not h_pass.compatible(h_all):
+    if not hpass.compatible(hall):
         raise ValueError("Passing and All hists don't have the same binning!")
 
         ## rescale hist by lumi for muons and electrons separately and then combine
-    h_pass_mu = h_pass[:, :, :, 'Muon', :].integrate('leptype')
-    h_pass_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
-    h_pass_el = h_pass[:, :, :, 'Electron', :].integrate('leptype')
-    h_pass_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
-    h_pass_lep = h_pass_mu+h_pass_el
+    hpass_mu = hpass[:, :, :, 'Muon', :].integrate('leptype')
+    hpass_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
+    hpass_el = hpass[:, :, :, 'Electron', :].integrate('leptype')
+    hpass_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
+    hpass_lep = hpass_mu+hpass_el
 
-    h_all_mu = h_all[:, :, :, 'Muon', :].integrate('leptype')
-    h_all_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
-    h_all_el = h_all[:, :, :, 'Electron', :].integrate('leptype')
-    h_all_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
-    h_all_lep = h_all_mu+h_all_el
+    hall_mu = hall[:, :, :, 'Muon', :].integrate('leptype')
+    hall_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
+    hall_el = hall[:, :, :, 'Electron', :].integrate('leptype')
+    hall_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
+    hall_lep = hall_mu+hall_el
 
-    for wp in h_pass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
-        for flav in h_pass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
-            for jmult in h_pass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
-                set_trace()
+    for wp in hpass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
+        for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
+            for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
+                #set_trace()
                     # get passing and all hists for 3 and 4+ jets separately, only as a function of pT and eta
-                h_pass = h_pass_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
-                h_pass = h_pass.rebin('pt', pt_3j).rebin('eta', 10)
-                #h_pass = h_pass.rebin('pt', pt_3j).rebin('eta', eta_3j)
-                h_all = h_all_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
-                h_all = h_all.rebin('pt', pt_3j).rebin('eta', 10)
-                #h_all = h_all.rebin('pt', pt_3j).rebin('eta', eta_3j)
+                h_pass = hpass_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
+                h_pass = h_pass.rebin('pt', pt_bins).rebin('eta', eta_bins)
+                h_all = hall_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
+                h_all = h_all.rebin('pt', pt_bins).rebin('eta', eta_bins)
 
                 edges = (h_pass.axis('pt').edges(), h_pass.axis('eta').edges())
                 pass_lookup = dense_lookup(*(h_pass.values().values()), edges)
                     ## check that number of entries in passing bins > 20.
                 if min([min(val) for val in pass_lookup._values]) < 20.:
-                    raise ValueError("bin for hist %s, %s, %s has bin entries < 20: %s" % (wp, flav, jmult, [min(val) for val in pass_lookup._values]))
+                    print("bin for hist %s, %s, %s has bin entries < 20: %s" % (wp, flav, jmult, [min(val) for val in pass_lookup._values]))
+                    #raise ValueError("bin for hist %s, %s, %s has bin entries < 20: %s" % (wp, flav, jmult, [min(val) for val in pass_lookup._values]))
 
                 all_lookup = dense_lookup(*(h_all.values().values()), edges)
                 eff_lookup = dense_lookup(pass_lookup._values/all_lookup._values, edges)
 
                 tagger = 'DEEPCSV' if wp.startswith('DEEPCSV') else 'DEEPJET'
+                working_points.append(wp.split(tagger)[-1])
                 flav_effs[year][tagger][flav_to_name[flav]].update({jmult : eff_lookup})
    
-        
+wp_name = list(set(working_points))[0]
     # save files
-mcweights_name = '%s/MC_PU_Weights.coffea' % outdir
-save(mc_pu_weights, mcweights_name)
-print('\n', mcweights_name, 'written')
-
-data_pu_name = '%s/data_PU_dists.coffea' % outdir
-save(data_pu_dists, data_pu_name)
-print('\n', data_pu_name, 'written')
+flav_effs_name = '%s/htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (outdir, wp_name, jobid)
+save(flav_effs, flav_effs_name)
+print('\n', flav_effs_name, 'written')
 
