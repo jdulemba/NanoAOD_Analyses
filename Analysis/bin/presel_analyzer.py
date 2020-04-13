@@ -16,7 +16,7 @@ import coffea.lumi_tools.lumi_tools as lumi_tools
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'new_presel_analyzer'
+analyzer = 'presel_analyzer'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -50,14 +50,13 @@ if corrections['BTagSF'] == True:
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
-class new_presel_analyzer(processor.ProcessorABC):
+class presel_analyzer(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
-        #self.mass_axis = hist.Bin("mass", "m [GeV]", 100, 0, 5)
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
         self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
@@ -269,7 +268,7 @@ proc_executor = processor.iterative_executor if args.debug else processor.future
 
 output = processor.run_uproot_job(fileset,
     treename='Events',
-    processor_instance=new_presel_analyzer(),
+    processor_instance=presel_analyzer(),
     executor=proc_executor,
     executor_args={
         'workers': 8,
