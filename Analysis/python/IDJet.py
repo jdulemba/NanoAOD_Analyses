@@ -143,13 +143,15 @@ def process_jets(df, year, corrections=None):
 
             #JEC = corrections['JEC']
             #JECUnc = corrections['JECUnc']
-            #JERsf = corrections['JERsf']
-            #jersf = JERsf.getScaleFactor(JetEta=Jet.eta)
+            JERsf = corrections['MC']['JERsf']
+            #set_trace()
+            Jet['JERsf'] = JERsf.getScaleFactor(JetEta=Jet.eta, JetPt=Jet.pt) if year == '2018' else JERsf.getScaleFactor(JetEta=Jet.eta)
             JER = corrections['MC']['JER']
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
                 # match jets to genJets to get ptGenJet
             get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
             Jet_transformer = corrections['MC']['JT']
+            Jet['pt_beforeJER'] = Jet.pt
             #set_trace()
             Jet_transformer.transform(Jet, met=df['MET'])
             #Jet_transformer.transform(Jet)
