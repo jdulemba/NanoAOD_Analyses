@@ -63,6 +63,10 @@ class presel_analyzer(processor.ProcessorABC):
         self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
+        self.pt_resolution_axis = hist.Bin("pt_reso", "p_{T} resolution [GeV]", 200, -100., 100.)
+        self.cjer_axis = hist.Bin("cjer", "C_{JER}", 200, -5., 5.)
+        self.jer_axis = hist.Bin("jer", "JER", 200, 0., 2.)
+        self.jersf_axis = hist.Bin("jersf", "SF_{JER}", 200, 0., 2.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -78,6 +82,7 @@ class presel_analyzer(processor.ProcessorABC):
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.corrections = corrections
+        self.isData = True
 
     
     @property
@@ -96,6 +101,14 @@ class presel_analyzer(processor.ProcessorABC):
         histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
         histo_dict['Jets_LeadJet_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
         histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
+        histo_dict['Jets_pt_GenReco_resolution_beforeJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
+        histo_dict['Jets_pt_GenReco_resolution_afterJER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
+        histo_dict['Jets_pt_BeforeJER_AfterJER_resolution'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
+        histo_dict['Jets_Cjer'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
+        histo_dict['Jets_ptGenJet'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
+        histo_dict['Jets_JER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.jer_axis)
+        histo_dict['Jets_JERsf'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.jersf_axis)
+        histo_dict['Jets_pt_beforeJER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
 
         return histo_dict
 
@@ -145,8 +158,8 @@ class presel_analyzer(processor.ProcessorABC):
         selection.add('jets_4+', df['Jet'].counts > 3)
         selection.add('objselection', objsel_evts)
 
-        isData = self.sample_name.startswith('data_Single')
-        if isData:
+        self.isData = self.sample_name.startswith('data_Single')
+        if self.isData:
             isSE_Data = self.sample_name.startswith('data_SingleElectron')
             isSM_Data = self.sample_name.startswith('data_SingleMuon')
             runs = df.run
@@ -173,7 +186,7 @@ class presel_analyzer(processor.ProcessorABC):
                 for jmult in regions[lepton].keys():
                     regions[lepton][jmult].update({'lumimask'})
 
-        if not isData:
+        if not self.isData:
                 ## add different selections
                     ## muons
             selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
@@ -203,23 +216,24 @@ class presel_analyzer(processor.ProcessorABC):
                 cut = selection.all(*regions[lepton][jmult])
                 #set_trace()
 
-                leptype = 'MU' if lepton == 'Muon' else 'EL'
-                if 'loose_or_tight_%s' % leptype in regions[lepton][jmult]:
-                    lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype] == True) | (df[lepton][cut]['LOOSE%s' % leptype] == True))
-                elif 'tight_%s' % leptype in regions[lepton][jmult]:
-                    lep_mask = (df[lepton][cut]['TIGHT%s' % leptype] == True)
-                elif 'loose_%s' % leptype in regions[lepton][jmult]:
-                    lep_mask = (df[lepton][cut]['LOOSE%s' % leptype] == True)
-                else:
-                    raise ValueError("Not sure what lepton type to choose for event")
+                if cut.sum() > 0:
+                    leptype = 'MU' if lepton == 'Muon' else 'EL'
+                    if 'loose_or_tight_%s' % leptype in regions[lepton][jmult]:
+                        lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype] == True) | (df[lepton][cut]['LOOSE%s' % leptype] == True))
+                    elif 'tight_%s' % leptype in regions[lepton][jmult]:
+                        lep_mask = (df[lepton][cut]['TIGHT%s' % leptype] == True)
+                    elif 'loose_%s' % leptype in regions[lepton][jmult]:
+                        lep_mask = (df[lepton][cut]['LOOSE%s' % leptype] == True)
+                    else:
+                        raise ValueError("Not sure what lepton type to choose for event")
 
-                evt_weights_to_use = evt_weights.weight()
-                if not isData:
-                    ## apply lepton SFs to MC (only applicable to tight leptons)
-                    if 'LeptonSF' in corrections.keys():
-                        evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
-                output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut][lep_mask],evt_weights=evt_weights_to_use[cut])
+                    evt_weights_to_use = evt_weights.weight()
+                    if not self.isData:
+                        ## apply lepton SFs to MC (only applicable to tight leptons)
+                        if 'LeptonSF' in corrections.keys():
+                            evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
+                    output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut][lep_mask],evt_weights=evt_weights_to_use[cut])
 
 
             ##    ## apply btagging SFs to MC
@@ -238,15 +252,25 @@ class presel_analyzer(processor.ProcessorABC):
 
     def fill_jet_hists(self, accumulator, jetmult, leptype, obj, evt_weights):
         #set_trace()
-        accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
         accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, njets=obj.counts, weight=evt_weights)
         accumulator['Jets_LeadJet_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.max(), weight=evt_weights)
         accumulator['Jets_LeadJet_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta[:, 0], weight=evt_weights)
         accumulator['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi[:, 0], weight=evt_weights)
         accumulator['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E[:, 0], weight=evt_weights)
+        if not self.isData:
+            #set_trace()
+            accumulator['Jets_pt_BeforeJER_AfterJER_resolution'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.pt_beforeJER.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_Cjer'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, cjer=(obj.pt.flatten()/obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_GenReco_resolution_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_GenReco_resolution_afterJER'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_ptGenJet'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.ptGenJet.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_JER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, jer=obj.JER.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_JERsf'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, jersf=(obj.JERsf[:, :, 0]).flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt_beforeJER.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
 
         return accumulator        
 
