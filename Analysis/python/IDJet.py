@@ -141,8 +141,8 @@ def process_jets(df, year, corrections=None):
             import python.GenObjects as GenObjects
             df['genJets'] = GenObjects.process_genJets(df)
 
-            #JEC = corrections['JEC']
-            #JECUnc = corrections['JECUnc']
+            #JEC = corrections['MC']['JEC']
+            #JECUnc = correctionsi['MC']['JECUnc']
             JERsf = corrections['MC']['JERsf']
             #set_trace()
             Jet['JERsf'] = JERsf.getScaleFactor(JetEta=Jet.eta, JetPt=Jet.pt) if year == '2018' else JERsf.getScaleFactor(JetEta=Jet.eta)
