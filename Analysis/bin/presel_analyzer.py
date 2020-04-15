@@ -105,6 +105,8 @@ class presel_analyzer(processor.ProcessorABC):
         histo_dict['Jets_pt_GenReco_resolution_afterJER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
         histo_dict['Jets_pt_BeforeJER_AfterJER_resolution'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
         histo_dict['Jets_Cjer'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
+        histo_dict['Jets_Cjer_ScalingMethod'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
+        histo_dict['Jets_Cjer_StochasticMethod'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
         histo_dict['Jets_ptGenJet'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
         histo_dict['Jets_JER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.jer_axis)
         histo_dict['Jets_JERsf'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.jersf_axis)
@@ -117,6 +119,7 @@ class presel_analyzer(processor.ProcessorABC):
         histo_dict = {}
         histo_dict['Lep_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
         histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
+        histo_dict['Lep_etaSC']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
         histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
         histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
         histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepIso_axis)
@@ -126,6 +129,7 @@ class presel_analyzer(processor.ProcessorABC):
 
 
     def process(self, df):
+        np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
@@ -265,6 +269,8 @@ class presel_analyzer(processor.ProcessorABC):
             #set_trace()
             accumulator['Jets_pt_BeforeJER_AfterJER_resolution'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.pt_beforeJER.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_Cjer'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, cjer=(obj.pt.flatten()/obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_Cjer_ScalingMethod'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, cjer=(obj[obj.ptGenJet > 0].pt.flatten()/obj[obj.ptGenJet > 0].pt_beforeJER.flatten()), weight=(obj[obj.ptGenJet > 0].pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_Cjer_StochasticMethod'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, cjer=(obj[obj.ptGenJet == 0].pt.flatten()/obj[obj.ptGenJet == 0].pt_beforeJER.flatten()), weight=(obj[obj.ptGenJet == 0].pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_pt_GenReco_resolution_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_pt_GenReco_resolution_afterJER'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_ptGenJet'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.ptGenJet.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
@@ -278,6 +284,7 @@ class presel_analyzer(processor.ProcessorABC):
         #set_trace()
         accumulator['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=evt_weights)
         accumulator['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=evt_weights)
+        if leptype == 'Electron': accumulator['Lep_etaSC'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.etaSC.flatten(), weight=evt_weights)
         accumulator['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=evt_weights)
         accumulator['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=evt_weights)
         accumulator['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=obj.pfRelIso.flatten(), weight=evt_weights)
