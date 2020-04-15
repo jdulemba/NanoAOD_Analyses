@@ -60,21 +60,33 @@ objtypes = {
 }
 
 variables = {
-    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.)),
-    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 4, (-2.5, 2.5)),
-    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.)),
-    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.)),
-    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.)),
-    'Jets_eta' : ('$\\eta$(jets)', 4, (-2.5, 2.5)),
-    'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.)),
-    'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.)),
-    'Jets_njets' : ('$n_{jets}$', 1, (0, 15)),
-    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.)),
-    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 4, (-2.5, 2.5)),
-    'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.)),
-    'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.)),
-    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.)),
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
+    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.), True),
+    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.), True),
+    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
+    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
+    'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.), True),
+    'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.), True),
+    'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
+    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
+    'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
+    'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
+    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
+    'Jets_Cjer' : ('$C_{JER}$(jets) ', 2, (0., 2.5), False),
+    'Jets_Cjer_ScalingMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
+    'Jets_Cjer_StochasticMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
+    'Jets_ptGenJet' : ('$p_{T}$(gen jets) [GeV]', 2, (0., 300.), False),
+    'Jets_JER' : ('JER (jets) ', 2, (0., 0.5), False),
+    'Jets_JERsf' : ('$SF_{JER}$(jets) ', 2, (1., 1.5), False),
+    'Jets_pt_beforeJER' : ('$p_{T}$(jets) Before JER Corr. [GeV]', 2, (0., 300.), False),
+    'Jets_pt_GenReco_resolution_beforeJER' : ('$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
+    'Jets_pt_GenReco_resolution_afterJER' : ('$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
+    'Jets_pt_BeforeJER_AfterJER_resolution' : ('$p_{T}$(jets) (Reco Before JER Corr. - Reco After) [GeV]', 2, (-50., 50.), False),
 }
+if args.lepton == 'Electron':
+    variables.update({'Lep_etaSC' : ('$\\eta_{SC}$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True)})
 
     ## get plotting colors/settings
 hstyles = styles.styles
@@ -131,11 +143,12 @@ def get_samples_yield_and_frac(histo, lep):
 
     ## make plots
 for hname in hdict.keys():
-    if hname == 'cutflow': continue
+    if hname not in variables.keys(): continue#set_trae()
+    #if hname == 'cutflow': continue
     histo = hdict[hname]
     #set_trace()
 
-    xtitle, rebinning, x_lims = variables[hname]
+    xtitle, rebinning, x_lims, withData = variables[hname]
 
     if histo.dense_dim() == 1:
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
@@ -144,10 +157,16 @@ for hname in hdict.keys():
                 pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult])
                 if not os.path.isdir(pltdir):
                     os.makedirs(pltdir)
-                fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                fig.subplots_adjust(hspace=.07)
+
+                if withData:
+                    fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                    fig.subplots_adjust(hspace=.07)
+                else:
+                    fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                    fig.subplots_adjust(hspace=.07)
                 hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
 
+                #if 'Lep_eta' in hname: set_trace()
                 if hname == 'Jets_njets':
                     print(jmult)
                     yields_txt, yields_json = get_samples_yield_and_frac(hslice, lep)
@@ -170,13 +189,13 @@ for hname in hdict.keys():
                     error_opts=stack_error_opts
                 )
                 #set_trace()
-                plot.plot1d(hslice[data_samples],
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    error_opts=hstyles['data_err_opts']
-                    #error_opts=data_err_opts
-                )
+                if withData:
+                    plot.plot1d(hslice[data_samples],
+                        overlay=hslice.axes()[0].name,
+                        ax=ax,
+                        clear=False,
+                        error_opts=hstyles['data_err_opts']
+                    )
                 ax.autoscale(axis='x', tight=True)
                 ax.set_ylim(0, None)
                 ax.set_xlabel(None)
@@ -193,18 +212,19 @@ for hname in hdict.keys():
                 ax.legend(handles,labels, loc='upper right')
                 #set_trace()
 
-                    ## plot data/MC ratio
-                plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
-                    ax=rax,
-                    error_opts=hstyles['data_err_opts'], 
-                    #error_opts=data_err_opts, 
-                    denom_fill_opts={},
-                    guide_opts={},
-                    unc='num'
-                )
-                rax.set_ylabel('data/MC')
-                rax.set_ylim(0.5, 1.5)
-                rax.set_xlim(x_lims)
+                if withData:
+                        ## plot data/MC ratio
+                    plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
+                        ax=rax,
+                        error_opts=hstyles['data_err_opts'], 
+                        #error_opts=data_err_opts, 
+                        denom_fill_opts={},
+                        guide_opts={},
+                        unc='num'
+                    )
+                    rax.set_ylabel('data/MC')
+                    rax.set_ylim(0.5, 1.5)
+                    rax.set_xlim(x_lims)
 
 
                     ## set axes labels and titles
