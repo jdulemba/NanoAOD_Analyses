@@ -39,6 +39,17 @@ def get_styles(sample, styles):
     else:
         return 'r', sample
 
+def get_label(sample, styles):
+    best_pattern = ''
+    for pattern, style_dict in styles.items():
+        if fnmatch.fnmatch(sample, pattern):
+            if len(pattern) > len(best_pattern):
+                best_pattern = pattern
+    if best_pattern:
+        return styles[best_pattern]['name']
+    else:
+        return sample
+
 def get_group(sample, styles=dataset_groups):
     best_pattern = ''
     for group_name, patterns in styles.items():
