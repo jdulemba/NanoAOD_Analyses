@@ -138,8 +138,8 @@ def process_jets(df, year, corrections=None):
             ## apply JER
         if (jet_pars['applyJER'] == 1) and corrections is not None:
                 ## create gen jets for matching
-            import python.GenObjects as GenObjects
-            df['genJets'] = GenObjects.process_genJets(df)
+            import python.GenParticleSelector as genpsel
+            df['genJets'] = genpsel.process_genJets(df)
 
             #JEC = corrections['MC']['JEC']
             #JECUnc = correctionsi['MC']['JECUnc']
