@@ -67,6 +67,7 @@ class presel_analyzer(processor.ProcessorABC):
         self.cjer_axis = hist.Bin("cjer", "C_{JER}", 200, -5., 5.)
         self.jer_axis = hist.Bin("jer", "JER", 200, 0., 2.)
         self.jersf_axis = hist.Bin("jersf", "SF_{JER}", 200, 0., 2.)
+        self.reco_over_gen_axis = hist.Bin("rog", "Reco/Gen -1", 200, -10., 10.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -103,7 +104,11 @@ class presel_analyzer(processor.ProcessorABC):
         histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
         histo_dict['Jets_pt_GenReco_resolution_beforeJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
         histo_dict['Jets_pt_GenReco_resolution_afterJER'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
+        histo_dict['Jets_pt_GenReco_resolution_vs_genPt_beforeJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis, self.pt_resolution_axis)
+        histo_dict['Jets_pt_GenReco_resolution_vs_genPt_afterJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis, self.pt_resolution_axis)
         histo_dict['Jets_pt_BeforeJER_AfterJER_resolution'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_resolution_axis)
+        histo_dict['Jets_pt_RecoOverGen_beforeJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.reco_over_gen_axis)
+        histo_dict['Jets_pt_RecoOverGen_afterJER']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.reco_over_gen_axis)
         histo_dict['Jets_Cjer'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
         histo_dict['Jets_Cjer_ScalingMethod'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
         histo_dict['Jets_Cjer_StochasticMethod'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.cjer_axis)
@@ -273,6 +278,11 @@ class presel_analyzer(processor.ProcessorABC):
             accumulator['Jets_Cjer_StochasticMethod'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, cjer=(obj[obj.ptGenJet == 0].pt.flatten()/obj[obj.ptGenJet == 0].pt_beforeJER.flatten()), weight=(obj[obj.ptGenJet == 0].pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_pt_GenReco_resolution_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_pt_GenReco_resolution_afterJER'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt_reso=(obj.ptGenJet.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_GenReco_resolution_vs_genPt_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.ptGenJet.flatten(), pt_reso=(obj.ptGenJet.flatten() - obj.pt_beforeJER.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_GenReco_resolution_vs_genPt_afterJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.ptGenJet.flatten(), pt_reso=(obj.ptGenJet.flatten() - obj.pt.flatten()), weight=(obj.pt.ones_like()*evt_weights).flatten())
+            #set_trace()
+            accumulator['Jets_pt_RecoOverGen_beforeJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, rog=(obj.pt_beforeJER.flatten()/obj.ptGenJet.flatten()) -1., weight=(obj.pt.ones_like()*evt_weights).flatten())
+            accumulator['Jets_pt_RecoOverGen_afterJER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, rog=(obj.pt.flatten()/obj.ptGenJet.flatten()) -1., weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_ptGenJet'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.ptGenJet.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_JER'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, jer=obj.JER.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
             accumulator['Jets_JERsf'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, jersf=(obj.JERsf[:, :, 0]).flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
