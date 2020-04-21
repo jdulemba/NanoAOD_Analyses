@@ -60,33 +60,41 @@ objtypes = {
 }
 
 variables = {
-    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
-    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
-    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.), True),
-    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.), True),
-    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
-    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
-    'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.), True),
-    'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.), True),
-    'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
-    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
-    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
-    'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
-    'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
-    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
-    'Jets_Cjer' : ('$C_{JER}$(jets) ', 2, (0., 2.5), False),
-    'Jets_Cjer_ScalingMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
-    'Jets_Cjer_StochasticMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
-    'Jets_ptGenJet' : ('$p_{T}$(gen jets) [GeV]', 2, (0., 300.), False),
-    'Jets_JER' : ('JER (jets) ', 2, (0., 0.5), False),
-    'Jets_JERsf' : ('$SF_{JER}$(jets) ', 2, (1., 1.5), False),
-    'Jets_pt_beforeJER' : ('$p_{T}$(jets) Before JER Corr. [GeV]', 2, (0., 300.), False),
-    'Jets_pt_GenReco_resolution_beforeJER' : ('$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
-    'Jets_pt_GenReco_resolution_afterJER' : ('$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
-    'Jets_pt_BeforeJER_AfterJER_resolution' : ('$p_{T}$(jets) (Reco Before JER Corr. - Reco After) [GeV]', 2, (-50., 50.), False),
+    #'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
+    #'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
+    #'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.), True),
+    #'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.), True),
+    #'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
+    #'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
+    #'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.), True),
+    #'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.), True),
+    #'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
+    #'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
+    #'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
+    #'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
+    #'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
+    #'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
+    #'Jets_Cjer' : ('$C_{JER}$(jets) ', 2, (0., 2.5), False),
+    #'Jets_Cjer_ScalingMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
+    #'Jets_Cjer_StochasticMethod' : ('$C_{JER}$(jets) Stochastic Method', 2, (0., 2.5), False),
+    #'Jets_ptGenJet' : ('$p_{T}$(gen jets) [GeV]', 2, (0., 300.), False),
+    #'Jets_JER' : ('JER (jets) ', 2, (0., 0.5), False),
+    #'Jets_JERsf' : ('$SF_{JER}$(jets) ', 2, (1., 1.5), False),
+    #'Jets_pt_beforeJER' : ('$p_{T}$(jets) Before JER Corr. [GeV]', 2, (0., 300.), False),
+    #'Jets_pt_GenReco_resolution_beforeJER' : ('$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
+    #'Jets_pt_GenReco_resolution_afterJER' : ('$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
+    #'Jets_pt_BeforeJER_AfterJER_resolution' : ('$p_{T}$(jets) (Reco Before JER Corr. - Reco After) [GeV]', 2, (-50., 50.), False),
+    #'Jets_pt_RecoOverGen_beforeJER' : ('Reco/Gen - 1 Before JER Corr. ($p_{T}$)', 1, (-1., 2.), False),
+    #'Jets_pt_RecoOverGen_afterJER' : ('Reco/Gen - 1 After JER Corr. ($p_{T}$)', 1, (-1., 2.), False),
 }
 if args.lepton == 'Electron':
     variables.update({'Lep_etaSC' : ('$\\eta_{SC}$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True)})
+
+variables_2d = {
+    'Jets_pt_GenReco_resolution_vs_genPt_beforeJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
+    'Jets_pt_GenReco_resolution_vs_genPt_afterJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
+}
+
 
     ## get plotting colors/settings
 hstyles = styles.styles
@@ -143,14 +151,14 @@ def get_samples_yield_and_frac(histo, lep):
 
     ## make plots
 for hname in hdict.keys():
-    if hname not in variables.keys(): continue#set_trae()
+    if (hname not in variables.keys()) and (hname not in variables_2d.keys()): continue
     #if hname == 'cutflow': continue
     histo = hdict[hname]
     #set_trace()
 
-    xtitle, rebinning, x_lims, withData = variables[hname]
-
     if histo.dense_dim() == 1:
+        xtitle, rebinning, x_lims, withData = variables[hname]
+
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
         for lep in [args.lepton]:
             for jmult in histo.axis('jmult')._sorted:
@@ -250,3 +258,169 @@ for hname in hdict.keys():
                 print('%s written' % figname)
                 plt.close()
                 #set_trace()
+
+    elif histo.dense_dim() == 2:
+        xtitle, ytitle, x_rebinning, x_lims, y_rebinning, y_lims, withData = variables_2d[hname]
+
+        ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
+        for lep in [args.lepton]:
+            for jmult in histo.axis('jmult')._sorted:
+                pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult])
+                if not os.path.isdir(pltdir):
+                    os.makedirs(pltdir)
+
+                hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
+
+                if x_rebinning != 1:
+                    xaxis_name = hslice.dense_axes()[0].name
+                    hslice = hslice.rebin(xaxis_name, x_rebinning)
+                if y_rebinning != 1:
+                    yaxis_name = hslice.dense_axes()[1].name
+                    hslice = hslice.rebin(yaxis_name, y_rebinning)
+
+                    # make 1D projections along y axis
+                bin_slices = [(x, x+10) for x in range(0, 100, 10)] # [(0, 10), (10, 20)..]
+                for bin_xmin, bin_xmax in bin_slices:
+                    if withData:
+                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+                    else:
+                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+
+                    #set_trace()
+                    y_slice = hslice[:, bin_xmin:bin_xmax, :].integrate(hslice.dense_axes()[0].name)
+                        ## plot MC and data
+                    plot.plot1d(y_slice[mc_samples],
+                        overlay=y_slice.axes()[0].name,
+                        ax=ax,
+                        clear=False,
+                        stack=True,
+                        line_opts=None,
+                        fill_opts=stack_fill_opts,
+                        error_opts=stack_error_opts
+                    )
+                    if withData:
+                        plot.plot1d(y_slice[data_samples],
+                            overlay=y_slice.axes()[0].name,
+                            ax=ax,
+                            clear=False,
+                            error_opts=hstyles['data_err_opts']
+                        )
+                    ax.autoscale(axis='x', tight=True)
+                    ax.set_ylim(0, None)
+                    ax.set_xlabel(None)
+                    ax.set_xlim(y_lims)
+
+                        ## set legend and corresponding colors
+                    handles, labels = ax.get_legend_handles_labels()
+                    for idx, sample in enumerate(labels):
+                        if sample == 'data' or sample == 'Observed': continue
+                        facecolor, legname = plt_tools.get_styles(sample, hstyles)
+                        handles[idx].set_facecolor(facecolor)
+                        labels[idx] = legname
+                    # call ax.legend() with the new values
+                    ax.legend(handles,labels, loc='upper right')
+                    #set_trace()
+
+                    if withData:
+                            ## plot data/MC ratio
+                        plot.plotratio(y_slice[data_samples].sum(y_slice.axes()[0].name), y_slice[mc_samples].sum(y_slice.axes()[0].name), 
+                            ax=rax,
+                            error_opts=hstyles['data_err_opts'], 
+                            #error_opts=data_err_opts, 
+                            denom_fill_opts={},
+                            guide_opts={},
+                            unc='num'
+                        )
+                        rax.set_ylabel('data/MC')
+                        rax.set_ylim(0.5, 1.5)
+                        rax.set_xlim(x_lims)
+
+                        # add x axis range for projection
+                    ax.text(
+                        0.02, 0.95, "%.1f $\leq$ %s $\leq$ %.1f" % (bin_xmin, xtitle, bin_xmax),
+                        fontsize=8, 
+                        horizontalalignment='left', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes
+                    )
+
+                        ## set axes labels and titles
+                    plt.xlabel(ytitle)
+                    cms_blurb = plt.text(
+                        0., 1., r"CMS Preliminary",
+                        fontsize=12, 
+                        horizontalalignment='left', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes,
+                        style='italic'
+                    )
+                    lumi_blurb = plt.text(
+                        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                        fontsize=12, 
+                        horizontalalignment='right', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes
+                    )
+
+                    #figname = 'test.png'
+                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
+                    fig.savefig(figname)
+                    print('%s written' % figname)
+                    plt.close()
+                    #set_trace()
+
+
+                    # make 2D plots for each topology
+                for top in hslice.sparse_axes()[0]._sorted:
+                    if not withData and top == 'data': continue
+
+                    if withData:
+                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+                    else:
+                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+
+                    htop = hslice[top].integrate('process')
+                    top_label = plt_tools.get_label(top, hstyles)
+                    htop.label = '%s %s' % (top_label, htop.label)
+                        ## plot MC and data
+                    #set_trace()
+                    plot.plot2d(htop,
+                        xaxis=htop.axes()[0].name,
+                        ax=ax,
+                        patch_opts={'cmap' : 'OrRd'},
+                        clear=True,
+                    )
+                    ax.autoscale(axis='x', tight=True)
+                    ax.set_ylim(y_lims)
+                    ax.set_xlim(x_lims)
+
+
+                        ## set axes labels and titles
+                    plt.xlabel(xtitle)
+                    plt.ylabel(ytitle)
+                    cms_blurb = plt.text(
+                        0., 1., r"CMS Preliminary",
+                        fontsize=12, 
+                        horizontalalignment='left', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes,
+                        style='italic'
+                    )
+                    lumi_blurb = plt.text(
+                        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                        fontsize=12, 
+                        horizontalalignment='right', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes
+                    )
+
+                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, top]))
+                    fig.savefig(figname)
+                    print('%s written' % figname)
+                    plt.close()
+                    #set_trace()
+
