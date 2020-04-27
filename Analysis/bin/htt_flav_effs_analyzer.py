@@ -64,7 +64,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.hflav_axis = hist.Cat("hFlav", "Hadron Flavour")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 120, -3, 3)
 
             ## make dictionary of hists
         histo_dict = {}
