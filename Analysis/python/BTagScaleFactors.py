@@ -3,14 +3,30 @@ import numpy as np
 from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
 from collections import defaultdict
 nested_dict = lambda: defaultdict(nested_dict)
-from coffea.lookup_tools.root_converters import convert_histo_root_file
-from coffea.lookup_tools.dense_lookup import dense_lookup
+#from coffea.lookup_tools.root_converters import convert_histo_root_file
+#from coffea.lookup_tools.dense_lookup import dense_lookup
 from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
+from coffea.util import load
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+
+btag_csvFiles = {
+    '2016' : {
+        'DeepJet' : 'DeepJet_2016LegacySF_V1.csv',
+        'DeepCSV' : 'DeepCSV_2016LegacySF_V1.csv',
+    },
+    '2017' : {
+        'DeepJet' : 'DeepJet_2017SF_V4_B_F.csv',
+        'DeepCSV' : 'DeepCSV_2017SF_V5_B_F.csv',
+    },
+    '2018' : {
+        'DeepJet' : 'DeepJet_2018SF_V1.csv',
+        'DeepCSV' : 'DeepCSV_2018SF_V1.csv',
+    },
+}
 
 wp_lookup = [
     'Loose',
@@ -54,7 +70,7 @@ def recursive_compile(sf_dict):
 
 from copy import deepcopy
 class BTagSF(object):
-    def __init__(self, csv = None, wp_key = None, eff_file = None, pattern = None):
+    def __init__(self, csv = None, wp_key = None, effs = None):
         '''SF computation according to method 1a of 
         https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
         Inputs: csv, wp_key, eff_file, pattern
@@ -78,11 +94,10 @@ class BTagSF(object):
             'udsg_down' : ('UDSG_down', 'C_central', 'B_central'),
             }
 
-        effs = convert_histo_root_file(eff_file)
         self.eff_ = {
-            'B'    : dense_lookup(*effs[(pattern.format('bottom'), 'dense_lookup')]),
-            'C'    : dense_lookup(*effs[(pattern.format('charm' ), 'dense_lookup')]),
-            'UDSG' : dense_lookup(*effs[(pattern.format('light' ), 'dense_lookup')]),
+            'B'    : effs['bottom'],
+            'C'    : effs['charm' ],
+            'UDSG' : effs['light' ],
         }
 
     def match_flav_(self, light, charm, bottom, flav):
@@ -160,16 +175,15 @@ def create_btag_sf_computer(year, njets):
     cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
     
     btag_wps = cfg_file['Jets']
-    btagger = 'DeepJet' if btag_wps['btagger'] == 'DEEPJET' else 'DeepCSV' ## name in csv file
+    btagger = btag_wps['btagger'] ## name in csv file
     wps = list(set([btag_wps['permutations']['tightb'], btag_wps['permutations']['looseb']]))
     if len(wps) > 1:
         raise IOError("Only single working point supported right now.")
-    wp = wps[0].lower().capitalize()
-    pattern_wp = (btagger+wp).upper()
-    
-    btag_files = cfg_file['BTagging'][year][btagger]
-    csv_path = '/'.join([proj_dir, 'inputs', 'data', btag_files['csv_file']])
-    eff_path = '/'.join([proj_dir, 'inputs', '%s_%s' % (year, jobid), 'INPUTS', btag_files['eff_file']])
+    wp = wps[0]
+
+    #set_trace()    
+    csv_path = '/'.join([proj_dir, 'inputs', 'data', btag_csvFiles[year][btagger]])
+    eff_path = '/'.join([proj_dir, 'Corrections', jobid, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp.upper(), jobid)])
     if not os.path.isfile(csv_path):
         raise IOError('BTagging csv file %s not found.' % csv_path)
     if not os.path.isfile(eff_path):
@@ -179,11 +193,11 @@ def create_btag_sf_computer(year, njets):
         raise IOError("Number of jets can only be 3 or 4+")
 
     njets_cat = '3Jets' if njets == '3' else '4PJets'
+    eff_dict = load(eff_path)[year][btagger][njets_cat]
     sf_computer = BTagSF(
         csv = csv_path,
         wp_key = (btagger, 'used', wp),
-        eff_file = eff_path,
-        pattern = '{0}/%s_eff_%s' %  (pattern_wp, njets_cat)
+        effs = eff_dict
     )
 
     print('BTag SF constructed for %s jets' % njets)
