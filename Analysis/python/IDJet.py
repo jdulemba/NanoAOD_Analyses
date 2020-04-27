@@ -8,45 +8,45 @@ import os
 btag_values = {}
 btag_values["2016"] = {
     'btagDeepB' : {
-        'DEEPCSVLOOSE' : 0.2217,
-        'DEEPCSVMEDIUM': 0.6321,
-        'DEEPCSVTIGHT' : 0.8953,
+        'DeepCSVLoose' : 0.2217,
+        'DeepCSVMedium': 0.6321,
+        'DeepCSVTight' : 0.8953,
     },
     'btagDeepFlavB' : {
-        'DEEPJETLOOSE' : 0.0614,
-        'DEEPJETMEDIUM': 0.3093,
-        'DEEPJETTIGHT' : 0.7221
+        'DeepJetLoose' : 0.0614,
+        'DeepJetMedium': 0.3093,
+        'DeepJetTight' : 0.7221
     }
 }
 btag_values["2017"] = {
     'btagDeepB' : {
-        'DEEPCSVLOOSE' : 0.1522,
-        'DEEPCSVMEDIUM': 0.4941,
-        'DEEPCSVTIGHT' : 0.8001,
+        'DeepCSVLoose' : 0.1522,
+        'DeepCSVMedium': 0.4941,
+        'DeepCSVTight' : 0.8001,
     },
     'btagDeepFlavB' : {
-        'DEEPJETLOOSE' : 0.0521,
-        'DEEPJETMEDIUM': 0.3033,
-        'DEEPJETTIGHT' : 0.7489
+        'DeepJetLoose' : 0.0521,
+        'DeepJetMedium': 0.3033,
+        'DeepJetTight' : 0.7489
     }
 }
 btag_values["2018"] = {
     'btagDeepB' : {
-        'DEEPCSVLOOSE' : 0.1241,
-        'DEEPCSVMEDIUM': 0.4184,
-        'DEEPCSVTIGHT' : 0.7527,
+        'DeepCSVLoose' : 0.1241,
+        'DeepCSVMedium': 0.4184,
+        'DeepCSVTight' : 0.7527,
     },
     'btagDeepFlavB' : {
-        'DEEPJETLOOSE' : 0.0494,
-        'DEEPJETMEDIUM': 0.2770,
-        'DEEPJETTIGHT' : 0.7264
+        'DeepJetLoose' : 0.0494,
+        'DeepJetMedium': 0.2770,
+        'DeepJetTight' : 0.7264
     }
 }
 
 jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
-valid_taggers = ['DEEPCSV', 'DEEPJET']
-valid_WPs = ['LOOSE', 'MEDIUM', 'TIGHT']
+valid_taggers = ['DeepCSV', 'DeepJet']
+valid_WPs = ['Loose', 'Medium', 'Tight']
 
 if jet_pars['btagger'] not in valid_taggers:
     raise IOError("%s is not a supported b-tagger" % jet_pars['btagger'])
@@ -55,7 +55,7 @@ if jet_pars['permutations']['tightb'] not in valid_WPs:
 if jet_pars['permutations']['looseb'] not in valid_WPs:
     raise IOError("%s is not a valid working point" % jet_pars['permutations']['looseb'])
 
-#bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DEEPCSV' else 'btagDeepFlavB'
+#bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DeepCSV' else 'btagDeepFlavB'
 #wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
 #wps = [''.join(wp) for wp in itertools.product(valid_taggers, valid_WPs)]
 
