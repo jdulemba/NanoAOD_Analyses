@@ -208,15 +208,14 @@ class htt_simple(processor.ProcessorABC):
                     pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
 
                 ## apply btagging SFs to MC
-            if 'BTagSF' in corrections.keys():
-                if corrections['BTagSF'] == True:
-                    #set_trace()
-                    threeJets_cut = selection.require(objselection=True, jets_3=True)
-                    threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=wps_to_use[0])
-                    evt_weights._weights['Btag_SF'][threeJets_cut] = threeJets_btagwts['central'].prod()
-                    fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
-                    fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=wps_to_use[0])
-                    evt_weights._weights['Btag_SF'][fourplusJets_cut] = fourplusJets_btagwts['central'].prod()
+            if corrections['BTagSF'] == True:
+                #set_trace()
+                threeJets_cut = selection.require(objselection=True, jets_3=True)
+                threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=wps_to_use[0])
+                evt_weights._weights['Btag_SF'][threeJets_cut] = threeJets_btagwts['central'].prod()
+                fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
+                fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=wps_to_use[0])
+                evt_weights._weights['Btag_SF'][fourplusJets_cut] = fourplusJets_btagwts['central'].prod()
 
 
         #set_trace()
