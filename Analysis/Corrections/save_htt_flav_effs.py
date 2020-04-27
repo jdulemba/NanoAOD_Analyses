@@ -16,39 +16,33 @@ if not os.path.isdir(outdir):
 
 flav_effs = {
     '2016' : {
-        'DEEPJET' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepJet' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
-        'DEEPCSV' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepCSV' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
     },
     '2017' : {
-        'DEEPJET' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepJet' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
-        'DEEPCSV' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepCSV' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
     },
     '2018' : {
-        'DEEPJET' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepJet' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
-        'DEEPCSV' : {
-            'bottom' : {},
-            'charm' : {},
-            'light' : {},
+        'DeepCSV' : {
+            '3Jets' : {},
+            '4PJets' : {},
         },
     },
 }
@@ -91,8 +85,8 @@ for year in ['2016', '2017', '2018']:
     hall_lep = hall_mu+hall_el
 
     for wp in hpass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
-        for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
-            for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
+        for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
+            for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
                 #set_trace()
                     # get passing and all hists for 3 and 4+ jets separately, only as a function of pT and eta
                 h_pass = hpass_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
@@ -110,9 +104,9 @@ for year in ['2016', '2017', '2018']:
                 all_lookup = dense_lookup(*(h_all.values().values()), edges)
                 eff_lookup = dense_lookup(pass_lookup._values/all_lookup._values, edges)
 
-                tagger = 'DEEPCSV' if wp.startswith('DEEPCSV') else 'DEEPJET'
+                tagger = 'DeepCSV' if wp.startswith('DEEPCSV') else 'DeepJet'
                 working_points.append(wp.split(tagger)[-1])
-                flav_effs[year][tagger][flav_to_name[flav]].update({jmult : eff_lookup})
+                flav_effs[year][tagger][jmult].update({flav_to_name[flav] : eff_lookup})
    
 wp_name = list(set(working_points))[0]
     # save files
