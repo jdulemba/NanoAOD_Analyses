@@ -45,7 +45,14 @@ def get_event_weights(df, year: str, corrections):
                 corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nPU'])
             )
     
-    
+            ## BTag SFs
+        if corrections['BTagSF'] == True:
+            weights.add('Btag_SF',
+                np.ones(df.genWeight.size),
+                #np.ones(df.genWeight.size),
+                #np.ones(df.genWeight.size),
+                #shift=True # makes up/down variations relative to nominal
+            )
     ## Need to add at some point
             ## LHEScale Weight Variations
             ## PS Weight variations
