@@ -139,7 +139,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         selection.add('jets_3', df['Jet'].counts == 3)
             ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
         selection.add('jets_bjet', (df['Jet']['hadronFlav'] == 5).sum() > 0) # jets come from bjets (hadronFlav == 5)
-        selection.add('jets_cjet', (df['Jet']['hadronFlav'] == 4).sum() > 0) # jets come from bjets (hadronFlav == 4)
+        selection.add('jets_cjet', (df['Jet']['hadronFlav'] == 4).sum() > 0) # jets come from cjets (hadronFlav == 4)
         selection.add('jets_ljet', (df['Jet']['hadronFlav'] == 0).sum() > 0) # jets come from light jets (hadronFlav == 0)
                 ## muons
         selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
