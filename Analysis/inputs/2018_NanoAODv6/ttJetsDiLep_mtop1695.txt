@@ -1,5 +1,5 @@
-root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/60000/7C62B45E-699E-9C45-B6A9-5DC09ACDE7C8.root
-root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/9C213EBE-9D61-7746-BA14-D5B2F73B37F8.root
-root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/08D130DC-6C70-0B46-A633-2970E55D90F7.root
-root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/60000/098C149D-5C5E-FF4E-8309-A876422896F7.root
-root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/9B712B42-A754-9149-A319-092BED75998F.root
+root://xrootd-cms.infn.it//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/60000/7C62B45E-699E-9C45-B6A9-5DC09ACDE7C8.root
+root://xrootd-cms.infn.it//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/9C213EBE-9D61-7746-BA14-D5B2F73B37F8.root
+root://xrootd-cms.infn.it//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/08D130DC-6C70-0B46-A633-2970E55D90F7.root
+root://xrootd-cms.infn.it//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/60000/098C149D-5C5E-FF4E-8309-A876422896F7.root
+root://xrootd-cms.infn.it//store/mc/RunIIAutumn18NanoAODv6/TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/40000/9B712B42-A754-9149-A319-092BED75998F.root
