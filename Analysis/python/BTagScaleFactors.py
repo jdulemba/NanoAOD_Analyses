@@ -3,8 +3,6 @@ import numpy as np
 from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
 from collections import defaultdict
 nested_dict = lambda: defaultdict(nested_dict)
-#from coffea.lookup_tools.root_converters import convert_histo_root_file
-#from coffea.lookup_tools.dense_lookup import dense_lookup
 from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
@@ -15,16 +13,16 @@ jobid = os.environ['jobid']
 
 btag_csvFiles = {
     '2016' : {
-        'DeepJet' : 'DeepJet_2016LegacySF_V1.csv',
-        'DeepCSV' : 'DeepCSV_2016LegacySF_V1.csv',
+        'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
+        'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
     },
     '2017' : {
-        'DeepJet' : 'DeepJet_2017SF_V4_B_F.csv',
-        'DeepCSV' : 'DeepCSV_2017SF_V5_B_F.csv',
+        'DeepJet' : 'DeepJet_2017SF_V4_B_F_used.csv',
+        'DeepCSV' : 'DeepCSV_2017SF_V5_B_F_used.csv',
     },
     '2018' : {
-        'DeepJet' : 'DeepJet_2018SF_V1.csv',
-        'DeepCSV' : 'DeepCSV_2018SF_V1.csv',
+        'DeepJet' : 'DeepJet_2018SF_V1_used.csv',
+        'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
     },
 }
 
@@ -76,8 +74,7 @@ class BTagSF(object):
         Inputs: csv, wp_key, eff_file, pattern
         csv: path to a b-tagging CSV file
         wp_key: a tuple of three elements containing (Algo name, SF method, WP name) 
-        eff_file: root file containing the efficiency histograms
-        pattern: formattable string that accepts one parameter for flavour definition'''
+        effs: dictionary containing the efficiencies for each flavour as dense_lookups'''
         parsed_csv = reshuffle_sf_dict(
             convert_btag_csv_file(csv)
             )
@@ -143,8 +140,8 @@ class BTagSF(object):
             # populate cache if needed
             for i in range(3):
                 flavour_sf_cache[lcb[i]] = flavour_sf_cache.get(
-                    # for some reason there is an additional dimension
-                    lcb[i], self.sf_[lcb[i]](pt, eta, pass_wp) 
+                    # for some reason there is an additional dimension, pass_wp has no effect
+                    lcb[i], self.sf_[lcb[i]](eta, pt, pass_wp) 
                 )
             scale_factors[key] = eff * self.match_flav_(
                 flavour_sf_cache[lcb[0]],
@@ -162,46 +159,6 @@ class BTagSF(object):
         return {key : awkward.JaggedArray.fromcounts(jets.pt.counts, i/p_mc)
                 for key, i in p_data.items()}
 
-
-def create_btag_sf_computer(year, njets):
-    '''
-    Method to create object that computes btag scale factors for a single jet multiplicity.
-
-    Inputs:
-        number of jets category, must be string (3 or 4+)
-    Returns:
-        Object that computes btag scale factors
-    '''
-    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
-    
-    btag_wps = cfg_file['Jets']
-    btagger = btag_wps['btagger'] ## name in csv file
-    wps = list(set([btag_wps['permutations']['tightb'], btag_wps['permutations']['looseb']]))
-    if len(wps) > 1:
-        raise IOError("Only single working point supported right now.")
-    wp = wps[0]
-
-    #set_trace()    
-    csv_path = '/'.join([proj_dir, 'inputs', 'data', btag_csvFiles[year][btagger]])
-    eff_path = '/'.join([proj_dir, 'Corrections', jobid, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp.upper(), jobid)])
-    if not os.path.isfile(csv_path):
-        raise IOError('BTagging csv file %s not found.' % csv_path)
-    if not os.path.isfile(eff_path):
-        raise IOError('BTagging efficiencies file %s not found.' % eff_path)
-
-    if not (njets == '3' or njets == '4+'):
-        raise IOError("Number of jets can only be 3 or 4+")
-
-    njets_cat = '3Jets' if njets == '3' else '4PJets'
-    eff_dict = load(eff_path)[year][btagger][njets_cat]
-    sf_computer = BTagSF(
-        csv = csv_path,
-        wp_key = (btagger, 'used', wp),
-        effs = eff_dict
-    )
-
-    print('BTag SF constructed for %s jets' % njets)
-    return sf_computer
 
 ## evts = NanoEvents.from_file('/afs/cern.ch/work/j/jdulemba/public/ttJets2016Nano_0.root')
 ## evts['Jet']['DeepCSVMedium'] = evts['Jet']['btagDeepB'] > 0.8
