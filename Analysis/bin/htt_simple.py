@@ -45,16 +45,24 @@ corrections = {
 }
 
     ## parameters for b-tagging
-if corrections['BTagSF'] == True:
-    import python.BTagScaleFactors as btagSF
-    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
-    corrections.update({'BTag_Constructors' : {'3Jets' : threejets_btagSFs, '4PJets' : fourPlusjets_btagSFs} })
-
 jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
-wps_to_use = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
+btagger = jet_pars['btagger']
+wps_to_use = list(set([jet_pars['permutations']['tightb'],jet_pars['permutations']['looseb']]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
+btag_wp = btagger+wps_to_use[0]
+
+if corrections['BTagSF'] == True:
+    sf_file = '%s/Corrections/%s/%s' % (proj_dir, jobid, jet_pars['btagging']['btagSF_file'])
+    if not os.path.isfile(sf_file):
+        raise IOError("BTag SF file %s doesn't exist" % sf_file)
+
+    btag_sfs = load(sf_file)
+    threeJets = btag_sfs[args.year][btagger]['3Jets'][wps_to_use[0]]
+    fourPJets = btag_sfs[args.year][btagger]['4PJets'][wps_to_use[0]]
+    corrections.update({'BTag_Constructors' : {'3Jets' : threeJets, '4PJets' : fourPJets} })
+#set_trace()
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class htt_simple(processor.ProcessorABC):
@@ -154,7 +162,7 @@ class htt_simple(processor.ProcessorABC):
         selection.add('jets_3', df['Jet'].counts == 3)
         selection.add('jets_4p', df['Jet'].counts > 3)
         selection.add('objselection', objsel_evts)
-        selection.add('btag_pass', df['Jet'][wps_to_use[0]].sum() >= 2)            
+        selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)            
 
         self.isData = self.sample_name.startswith('data_Single')
         if self.isData:
@@ -211,10 +219,10 @@ class htt_simple(processor.ProcessorABC):
             if corrections['BTagSF'] == True:
                 #set_trace()
                 threeJets_cut = selection.require(objselection=True, jets_3=True)
-                threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=wps_to_use[0])
+                threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=btag_wp)
                 evt_weights._weights['Btag_SF'][threeJets_cut] = threeJets_btagwts['central'].prod()
                 fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
-                fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=wps_to_use[0])
+                fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=btag_wp)
                 evt_weights._weights['Btag_SF'][fourplusJets_cut] = fourplusJets_btagwts['central'].prod()
 
 
