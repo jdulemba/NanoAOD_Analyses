@@ -5,6 +5,11 @@ from pdb import set_trace
 import os
 from coffea import hist
 
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('--construct_btag', action='store_false', help='Makes btag SF constructor (default is True)')
+args = parser.parse_args()
+
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'htt_flav_effs_analyzer'
@@ -46,6 +51,10 @@ flav_effs = {
         },
     },
 }
+
+if args.construct_btag:
+    from copy import deepcopy
+    btag_contructs_dict = deepcopy(flav_effs)
 
 flav_to_name = {'bjet' : 'bottom', 'cjet' : 'charm', 'ljet' : 'light'}
 hname = 'Jets_pt_eta'
@@ -105,12 +114,40 @@ for year in ['2016', '2017', '2018']:
                 eff_lookup = dense_lookup(pass_lookup._values/all_lookup._values, edges)
 
                 tagger = 'DeepCSV' if wp.startswith('DEEPCSV') else 'DeepJet'
-                working_points.append(wp.split(tagger)[-1])
+                working_points.append(wp.split(tagger.upper())[-1])
                 flav_effs[year][tagger][jmult].update({flav_to_name[flav] : eff_lookup})
-   
+
 wp_name = list(set(working_points))[0]
     # save files
 flav_effs_name = '%s/htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (outdir, wp_name, jobid)
 save(flav_effs, flav_effs_name)
 print('\n', flav_effs_name, 'written')
 
+
+if args.construct_btag:
+    import Utilities.prettyjson as prettyjson
+    import python.BTagScaleFactors as btagSF
+
+    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
+
+    for year in flav_effs.keys():
+        for btagger in flav_effs[year].keys():
+            csv_path = '/'.join([proj_dir, 'inputs', 'data', btagSF.btag_csvFiles[year][btagger]])
+            if not os.path.isfile(csv_path):
+                raise IOError('BTagging csv file %s not found.' % csv_path)
+
+            for njets_cat in flav_effs[year][btagger].keys():
+                eff_dict = flav_effs[year][btagger][njets_cat]
+                sf_computer = btagSF.BTagSF(
+                    csv = csv_path,
+                    wp_key = (btagger, 'used', wp_name.lower().capitalize()),
+                    effs = eff_dict
+                )
+
+                print('BTag SF constructed for %s, %s %s wp, %s' % (year, btagger, wp_name.lower().capitalize(), njets_cat))
+                btag_contructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
+
+        # save files
+    btagSFs_name = '%s/htt_3PJets_%s_btag_scalefactors_%s.coffea' % (outdir, wp_name, jobid)
+    save(btag_contructs_dict, btagSFs_name)
+    print('\n', btagSFs_name, 'written')
