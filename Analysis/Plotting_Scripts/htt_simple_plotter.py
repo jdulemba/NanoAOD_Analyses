@@ -133,7 +133,7 @@ def get_samples_yield_and_frac(histo, lep):
 
     ## make plots
 for hname in hdict.keys():
-    if (hname not in variables.keys()) and (hname not in variables_2d.keys()): continue
+    if (hname not in variables.keys()): continue
     #if hname == 'cutflow': continue
     histo = hdict[hname]
     #set_trace()
