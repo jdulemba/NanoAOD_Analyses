@@ -3,7 +3,7 @@ import coffea.processor.dataframe
 import numpy as np
 import coffea.processor as processor
 
-def get_event_weights(df, year: str, corrections):
+def get_event_weights(df, year: str, corrections, BTagSFs = []):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
 
         ## only apply to MC
@@ -47,12 +47,16 @@ def get_event_weights(df, year: str, corrections):
     
             ## BTag SFs
         if corrections['BTagSF'] == True:
-            weights.add('Btag_SF',
-                np.ones(df.genWeight.size),
-                #np.ones(df.genWeight.size),
-                #np.ones(df.genWeight.size),
-                #shift=True # makes up/down variations relative to nominal
-            )
+            if BTagSFs:
+                for btagSF in BTagSFs:
+                    weights.add(btagSF, np.ones(df.genWeight.size))
+            else:
+                weights.add('Btag_SF',
+                    np.ones(df.genWeight.size),
+                    #np.ones(df.genWeight.size),
+                    #np.ones(df.genWeight.size),
+                    #shift=True # makes up/down variations relative to nominal
+                )
     ## Need to add at some point
             ## LHEScale Weight Variations
             ## PS Weight variations
