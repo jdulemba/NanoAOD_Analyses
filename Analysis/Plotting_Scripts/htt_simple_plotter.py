@@ -73,6 +73,8 @@ variables = {
     'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
     'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
+    'BTag_SF' : ('$SF_{btag}$', 1, (0.5, 1.5), True),
+    'Lep_SF' : ('$SF_{l}$', 1, (0.8, 1.1), True),
 }
 if args.lepton == 'Electron':
     variables.update({'Lep_etaSC' : ('$\\eta_{SC}$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True)})
@@ -141,104 +143,117 @@ for hname in hdict.keys():
     if histo.dense_dim() == 1:
         xtitle, rebinning, x_lims, withData = variables[hname]
 
-        ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
+        ## hists should have 4 category axes (dataset, jet multiplicity, btagger, lepton type) followed by variable 
         for lep in [args.lepton]:
-            for jmult in histo.axis('jmult')._sorted:
-                pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult])
-                if not os.path.isdir(pltdir):
-                    os.makedirs(pltdir)
+            for btagger in histo.axis('bdisc')._sorted:
+                for jmult in histo.axis('jmult')._sorted:
+                    pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult, btagger])
+                    if not os.path.isdir(pltdir):
+                        os.makedirs(pltdir)
 
-                if withData:
-                    fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                    fig.subplots_adjust(hspace=.07)
-                else:
-                    fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                    fig.subplots_adjust(hspace=.07)
-                hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
+                    if withData:
+                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+                    else:
+                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+                    hslice = histo[:, jmult, lep, btagger].integrate('jmult').integrate('leptype').integrate('bdisc')
 
-                #if 'Lep_eta' in hname: set_trace()
-                if hname == 'Jets_njets':
-                    print(jmult)
-                    yields_txt, yields_json = get_samples_yield_and_frac(hslice, lep)
-                    plt_tools.print_table(yields_txt, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, lep), print_output=True)
-                    with open('%s/%s_%s_yields_and_fracs.json' % (pltdir, jmult, lep), 'w') as out:
-                        out.write(prettyjson.dumps(yields_json))
+                    #set_trace()
+                    #if 'Lep_eta' in hname: set_trace()
+                    if hname == 'Jets_njets':
+                        print(jmult)
+                        yields_txt, yields_json = get_samples_yield_and_frac(hslice, lep)
+                        txt_name = '%s/%s_%s_%s_yields_and_fracs.txt' % (pltdir, btagger, jmult, lep)
+                        plt_tools.print_table(yields_txt, filename=txt_name, print_output=True)
+                        with open(txt_name, 'w') as out:
+                            out.write(prettyjson.dumps(yields_json))
 
-                if rebinning != 1:
-                    xaxis_name = hslice.dense_axes()[0].name
-                    hslice = hslice.rebin(xaxis_name, rebinning)
+                    if rebinning != 1:
+                        xaxis_name = hslice.dense_axes()[0].name
+                        hslice = hslice.rebin(xaxis_name, rebinning)
 
-                    ## plot MC and data
-                plot.plot1d(hslice[mc_samples],
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    stack=True,
-                    line_opts=None,
-                    fill_opts=stack_fill_opts,
-                    error_opts=stack_error_opts
-                )
-                #set_trace()
-                if withData:
-                    plot.plot1d(hslice[data_samples],
+                        ## plot MC and data
+                    plot.plot1d(hslice[mc_samples],
                         overlay=hslice.axes()[0].name,
                         ax=ax,
                         clear=False,
-                        error_opts=hstyles['data_err_opts']
+                        stack=True,
+                        line_opts=None,
+                        fill_opts=stack_fill_opts,
+                        error_opts=stack_error_opts
                     )
-                ax.autoscale(axis='x', tight=True)
-                ax.set_ylim(0, None)
-                ax.set_xlabel(None)
-                ax.set_xlim(x_lims)
+                    #set_trace()
+                    if withData:
+                        plot.plot1d(hslice[data_samples],
+                            overlay=hslice.axes()[0].name,
+                            ax=ax,
+                            clear=False,
+                            error_opts=hstyles['data_err_opts']
+                        )
+                    ax.autoscale(axis='x', tight=True)
+                    ax.set_ylim(0, None)
+                    ax.set_xlabel(None)
+                    if hname == 'BTag_SF':
+                        x_lims = (0.5, 2.5) if btagger == 'DeepJet' else (0.7, 1.2)
+                    ax.set_xlim(x_lims)
 
-                    ## set legend and corresponding colors
-                handles, labels = ax.get_legend_handles_labels()
-                for idx, sample in enumerate(labels):
-                    if sample == 'data' or sample == 'Observed': continue
-                    facecolor, legname = plt_tools.get_styles(sample, hstyles)
-                    handles[idx].set_facecolor(facecolor)
-                    labels[idx] = legname
-                # call ax.legend() with the new values
-                ax.legend(handles,labels, loc='upper right')
-                #set_trace()
+                        ## set legend and corresponding colors
+                    handles, labels = ax.get_legend_handles_labels()
+                    for idx, sample in enumerate(labels):
+                        if sample == 'data' or sample == 'Observed': continue
+                        facecolor, legname = plt_tools.get_styles(sample, hstyles)
+                        handles[idx].set_facecolor(facecolor)
+                        labels[idx] = legname
+                    # call ax.legend() with the new values
+                    ax.legend(handles,labels, loc='upper right')
+                    #set_trace()
 
-                if withData:
-                        ## plot data/MC ratio
-                    plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
-                        ax=rax,
-                        error_opts=hstyles['data_err_opts'], 
-                        #error_opts=data_err_opts, 
-                        denom_fill_opts={},
-                        guide_opts={},
-                        unc='num'
+                    if withData:
+                            ## plot data/MC ratio
+                        plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
+                            ax=rax,
+                            error_opts=hstyles['data_err_opts'], 
+                            #error_opts=data_err_opts, 
+                            denom_fill_opts={},
+                            guide_opts={},
+                            unc='num'
+                        )
+                        rax.set_ylabel('data/MC')
+                        rax.set_ylim(0.5, 1.5)
+                        rax.set_xlim(x_lims)
+
+                        # add btagger name
+                    ax.text(
+                        0.02, 0.95, btagger,
+                        fontsize=10,
+                        horizontalalignment='left',
+                        verticalalignment='bottom',
+                        transform=ax.transAxes
                     )
-                    rax.set_ylabel('data/MC')
-                    rax.set_ylim(0.5, 1.5)
-                    rax.set_xlim(x_lims)
 
+                        ## set axes labels and titles
+                    plt.xlabel(xtitle)
+                    cms_blurb = plt.text(
+                        0., 1., r"CMS Preliminary",
+                        fontsize=12, 
+                        horizontalalignment='left', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes,
+                        style='italic'
+                    )
+                    lumi_blurb = plt.text(
+                        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                        fontsize=12, 
+                        horizontalalignment='right', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes
+                    )
 
-                    ## set axes labels and titles
-                plt.xlabel(xtitle)
-                cms_blurb = plt.text(
-                    0., 1., r"CMS Preliminary",
-                    fontsize=12, 
-                    horizontalalignment='left', 
-                    verticalalignment='bottom', 
-                    transform=ax.transAxes,
-                    style='italic'
-                )
-                lumi_blurb = plt.text(
-                    1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    fontsize=12, 
-                    horizontalalignment='right', 
-                    verticalalignment='bottom', 
-                    transform=ax.transAxes
-                )
-
-                figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
-                fig.savefig(figname)
-                print('%s written' % figname)
-                plt.close()
-                #set_trace()
+                    figname = '%s/%s.png' % (pltdir, '_'.join([btagger, jmult, lep, hname]))
+                    fig.savefig(figname)
+                    print('%s written' % figname)
+                    plt.close()
+                    #set_trace()
 
 
