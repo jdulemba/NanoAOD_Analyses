@@ -73,7 +73,6 @@ def select_normal(df, w_decay_momid):
     fermions.add('neutral_leps', categories.require(leptons=True) & ( (np.abs(df['genParts'].pdgId) == 12) | (np.abs(df['genParts'].pdgId) == 14) ).flatten())
     #fermions.add('tau_decay',    categories.require(leptons=True) & ( np.abs(df['genParts'].pdgId) == 15 ).flatten())
     fermions.add('final_charged_leps', categories.require(final_leptons=True) & ( (np.abs(df['genParts'].pdgId) == 11) | (np.abs(df['genParts'].pdgId) == 13) ).flatten())
-    fermions.add('final_neutral_leps', categories.require(final_leptons=True) & ( (np.abs(df['genParts'].pdgId) == 12) | (np.abs(df['genParts'].pdgId) == 14) ).flatten())
 
     jagged_top_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(top=True))
     jagged_tbar_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(tbar=True))
@@ -86,7 +85,6 @@ def select_normal(df, w_decay_momid):
     jagged_neutralLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(neutral_leps=True))
     #jagged_Tau_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(tau_decay=True))
     jagged_FinalChargedLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(final_charged_leps=True))
-    jagged_FinalNeutralLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(final_neutral_leps=True))
 
     df['genParts']['charge'][jagged_top_sel] = df['genParts'][jagged_top_sel]['pdgId'].ones_like()*(2./3.)
     df['genParts']['charge'][jagged_tbar_sel] = df['genParts'][jagged_tbar_sel]['pdgId'].ones_like()*(-2./3.)
@@ -97,7 +95,6 @@ def select_normal(df, w_decay_momid):
     df['genParts']['charge'][jagged_chargedLeps_sel] = np.fmod(df['genParts'][jagged_chargedLeps_sel].pdgId, 2)*(-1.)
     df['genParts']['charge'][jagged_neutralLeps_sel] = df['genParts'][jagged_neutralLeps_sel].pdgId.zeros_like()
     df['genParts']['charge'][jagged_FinalChargedLeps_sel] = np.fmod(df['genParts'][jagged_FinalChargedLeps_sel].pdgId, 2)*(-1.)
-    df['genParts']['charge'][jagged_FinalNeutralLeps_sel] = df['genParts'][jagged_FinalNeutralLeps_sel].pdgId.zeros_like()
 
     #set_trace()
     tops = df['genParts'][jagged_top_sel]
@@ -110,7 +107,6 @@ def select_normal(df, w_decay_momid):
     neutral_leps = df['genParts'][jagged_neutralLeps_sel]
     #tau_leps = df['genParts'][jagged_Tau_sel]
     final_charged_leps = df['genParts'][jagged_FinalChargedLeps_sel]
-    final_neutral_leps = df['genParts'][jagged_FinalNeutralLeps_sel]
 
     #set_trace()
     GenObjects = awkward.Table(
@@ -123,7 +119,6 @@ def select_normal(df, w_decay_momid):
         ChargedLeps = charged_leps,
         NeutralLeps = neutral_leps,
         FinalChargedLeps = final_charged_leps,
-        FinalNeutralLeps = final_neutral_leps,
     )
 
     return GenObjects
@@ -142,7 +137,7 @@ def select(df, systype='', mode='NORMAL'):
     GenObjs = modes_to_choose[mode](df, w_decay_momid)
 
     charged_leps_to_use = GenObjs['FinalChargedLeps'] if systype == 'FINAL' else GenObjs['ChargedLeps']
-    neutral_leps_to_use = GenObjs['FinalNeutralLeps'] if systype == 'FINAL' else GenObjs['NeutralLeps']
+    neutral_leps_to_use = GenObjs['NeutralLeps']
     ttbar = genobj.from_collections(wpartons_up=GenObjs['GenWPartsUp'], wpartons_dw=GenObjs['GenWPartsDw'], charged_leps=charged_leps_to_use, neutral_leps=neutral_leps_to_use, bs=GenObjs['GenB'], bbars=GenObjs['GenBbar'], tops=GenObjs['GenTop'], tbars=GenObjs['GenTbar'])
 
     return ttbar
