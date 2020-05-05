@@ -18,7 +18,9 @@ def process_electrons(df, year):
         vetoID=df['Electron_mvaFall17V2Iso_WPL'],
         #vetoID=df['Electron_mvaFall17V2noIso_WPL'],
         deltaEtaSC=df['Electron_deltaEtaSC'],
-        pfRelIso=df['Electron_pfRelIso03_all']
+        pfRelIso=df['Electron_pfRelIso03_all'],
+        cutBasedID=df['Electron_cutBased'],
+        bitmap = df['Electron_vidNestedWPBitmap'],
     )
 
         # makes etaSC
@@ -27,6 +29,7 @@ def process_electrons(df, year):
 
     electrons['IPCuts'] = ((np.abs(electrons.etaSC) < 1.479) & (np.abs(electrons.dxy) < 0.05) & (np.abs(electrons.dz) < 0.10)) | ((np.abs(electrons.etaSC) >= 1.479) & (np.abs(electrons.dxy) < 0.10) & (np.abs(electrons.dz) < 0.20))
 
+    #set_trace()
         ## make electron ID/Iso categories
     electrons = make_electron_ids(electrons, year)
 
@@ -38,35 +41,42 @@ def process_electrons(df, year):
 * Isolation values are initially taken from the EXO-19-016 paper (Section 4.1)
 '''
 
+
 #def fail(electrons):
 #    return electrons
 #
 def veto_15(electrons):
-    ID = (electrons.vetoID)
-    #Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
+    ID = (electrons.cutBasedID == 1) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    #ID = (electrons.vetoID)
+    ##Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
     return ID
 
-#def loose_15(electrons):
-#
-#def medium_15(electrons):
-#
-#def tight_15(electrons):
-#
 def tight_15_NoECAL_Gap(electrons):
-    ID = (electrons.tightID)
-    Iso = (electrons.pfRelIso < 0.15) #*
+    ID = (electrons.cutBasedID == 4) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    #ID = (electrons.tightID)
+    #Iso = (electrons.pfRelIso < 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    return (ID & Iso & ecalgap & ipcuts)
+    return (ID & ecalgap & ipcuts)
+    #return (ID & Iso & ecalgap & ipcuts)
 
 def fakes(electrons):
-    ID = (electrons.tightID)
-    Iso = (electrons.pfRelIso >= 0.15) #*
+    '''
+    For ID values:
+        613566692 corresponds to Iso of 011 (pass medium and loose but not tight) part of binary but 100 for other cuts
+        613566564 corresponds to 001 for Iso but 100 for other cuts
+        613566628 corresponds to 010 for Iso but 100 for other cuts
+        passing tight cutBased ID corresponds to 613566756 == 100 100 100 100 100 100 100 100 100 100 in binary
+    '''
+    ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628)) 
+    #ID = (electrons.tightID)
+    #Iso = (electrons.pfRelIso >= 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    return (ID & Iso & ecalgap & ipcuts)
+    return (ID & ecalgap & ipcuts)
+    #return (ID & Iso & ecalgap & ipcuts)
 
 
 def make_electron_ids(electrons, year):
