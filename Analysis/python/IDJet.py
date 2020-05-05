@@ -93,7 +93,6 @@ def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
     requirements defined here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution#Smearing_procedures
     Procedure based off this: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_25/PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L59-L87
     '''
-    #set_trace()
         # At each jet 1 location is the index of the genJet that it matched best with
         # <<<<important>>>> selves without a match will get a -1 to preserve counts structure
     matched_genJet_inds = jets.argmatch(genjets, deltaRCut=dr_max/2, deltaPtCut=(pt_max_factor*jets.JER))
@@ -123,8 +122,7 @@ def process_jets(df, year, corrections=None):
         btagDeepFlavB=df['Jet_btagDeepFlavB'],
         Id=df['Jet_jetId'],
         #cleanmask=df['Jet_cleanmask'],
-        #bRegCorr=df['Jet_bRegCorr'],
-        #bRegRes=df['Jet_bRegRes'],
+        #genJetIdx=df['Jet_genJetIdx'],
         area=df['Jet_area'],
         rawFactor=df['Jet_rawFactor'],
     )
@@ -150,6 +148,7 @@ def process_jets(df, year, corrections=None):
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
                 # match jets to genJets to get ptGenJet
             get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
+            #set_trace()
             Jet_transformer = corrections['MC']['JT']
             Jet['pt_beforeJER'] = Jet.pt
             #set_trace()
