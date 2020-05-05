@@ -180,48 +180,48 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         eta      = ttbars.eta.flatten(),
         phi      = ttbars.phi.flatten(),
         mass     = ttbars.mass.flatten(),
-        decaytype= GenW.decaytype.sum(), # 0 is for INVALID, 2 for DILEP, 3 for SEMILEP, 4 for HADRONIC
+        decaytype= GenW[valid_evts].decaytype.sum(), # 0 is for INVALID, 2 for DILEP, 3 for SEMILEP, 4 for HADRONIC
     )    
 
 
+    #set_trace()
         ## make tables of TTbar event objects
     DILEP_evts = awkward.Table(
-        TTbar = GenTTbar[dilep_evts],
-        Top   = GenTop[dilep_evts],
-        Tbar  = GenTbar[dilep_evts],
-        B     = GenB[dilep_evts],
-        Bbar  = GenBbar[dilep_evts],
-        Wplus = GenW[GenW.charge == 1][dilep_evts],
-        Wminus = GenW[GenW.charge == -1][dilep_evts],
-        First_plus = charged_leps[dilep_evts][charged_leps[dilep_evts].charge > 0], # charged lepton always made leading
-        Second_plus = neutral_leps[dilep_evts][charged_leps[dilep_evts].charge > 0], # neutral lepton always made subleading
-        First_minus = charged_leps[dilep_evts][charged_leps[dilep_evts].charge < 0], # charged lepton always made leading
-        Second_minus = neutral_leps[dilep_evts][charged_leps[dilep_evts].charge < 0], # neutral lepton always made subleading
-        Up_plus = neutral_leps[dilep_evts][charged_leps[dilep_evts].charge > 0],
-        Down_plus = charged_leps[dilep_evts][charged_leps[dilep_evts].charge > 0],
-        Up_minus = neutral_leps[dilep_evts][charged_leps[dilep_evts].charge < 0],
-        Down_minus = charged_leps[dilep_evts][charged_leps[dilep_evts].charge < 0],
+        TTbar = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenTTbar[dilep_evts].flatten()),
+        Top   = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenTop[dilep_evts].flatten()),
+        Tbar  = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenTbar[dilep_evts].flatten()),
+        B     = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenB[dilep_evts].flatten()),
+        Bbar  = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenBbar[dilep_evts].flatten()),
+        Wplus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenW[GenW.charge == 1][dilep_evts].flatten()),
+        Wminus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenW[GenW.charge == -1][dilep_evts].flatten()),
+        First_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()), # charged lepton always made leading
+        Second_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), neutral_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()), # neutral lepton always made subleading
+        First_minus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge < 0].flatten()), # charged lepton always made leading
+        Second_minus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), neutral_leps[dilep_evts][charged_leps[dilep_evts].charge < 0].flatten()), # neutral lepton always made subleading
+        Up_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), neutral_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()),
+        Down_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()),
+        Up_minus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), neutral_leps[dilep_evts][charged_leps[dilep_evts].charge < 0].flatten()),
+        Down_minus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge < 0].flatten()),
     )
 
     HAD_evts = awkward.Table(
-        TTbar = GenTTbar[dihad_evts],
-        Top   = GenTop[dihad_evts],
-        Tbar  = GenTbar[dihad_evts],
-        B     = GenB[dihad_evts],
-        Bbar  = GenBbar[dihad_evts],
-        Wplus = GenW[GenW.charge == 1][dihad_evts],
-        Wminus = GenW[GenW.charge == -1][dihad_evts],
-        First_plus = First[First.charge > 0][dihad_evts],
-        Second_plus = Second[Second.charge > 0][dihad_evts],
-        First_minus = First[First.charge < 0][dihad_evts],
-        Second_minus = Second[Second.charge < 0][dihad_evts],
-        Up_plus = wpartons_up[wpartons_up.charge > 0][dihad_evts],
-        Down_plus = wpartons_dw[wpartons_dw.charge > 0][dihad_evts],
-        Up_minus = wpartons_up[wpartons_up.charge < 0][dihad_evts],
-        Down_minus = wpartons_dw[wpartons_dw.charge < 0][dihad_evts],
+        TTbar = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenTTbar[dihad_evts].flatten()),
+        Top   = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenTop[dihad_evts].flatten()),
+        Tbar  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenTbar[dihad_evts].flatten()),
+        B     = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenB[dihad_evts].flatten()),
+        Bbar  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenBbar[dihad_evts].flatten()),
+        Wplus = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenW[GenW.charge == 1][dihad_evts].flatten()),
+        Wminus= awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenW[GenW.charge == -1][dihad_evts].flatten()),
+        First_plus   = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), First[First.charge > 0][dihad_evts].flatten()),
+        Second_plus  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), Second[Second.charge > 0][dihad_evts].flatten()),
+        First_minus  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), First[First.charge < 0][dihad_evts].flatten()),
+        Second_minus = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), Second[Second.charge < 0][dihad_evts].flatten()),
+        Up_plus      = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wpartons_up[wpartons_up.charge > 0][dihad_evts].flatten()),
+        Down_plus    = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wpartons_dw[wpartons_dw.charge > 0][dihad_evts].flatten()),
+        Up_minus     = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wpartons_up[wpartons_up.charge < 0][dihad_evts].flatten()),
+        Down_minus   = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wpartons_dw[wpartons_dw.charge < 0][dihad_evts].flatten()),
     )
 
-    #set_trace()
         # make Had/Lep decaying objects for SEMILEP events
     top_isLep = (GenTop.decaytype == 1)[semilep_evts].flatten()
     Lep_Top = JaggedCandidateArray.candidatesfromcounts(
@@ -262,19 +262,19 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
     )
     
     SEMILEP_evts = awkward.Table(
-        TTbar = GenTTbar[semilep_evts],
-        Had_Top   = Had_Top,
-        Lep_Top   = Lep_Top,
-        Had_B     = Had_B,
-        Lep_B     = Lep_B,
-        Had_W = GenW[GenW.decaytype == 2][semilep_evts],
-        Lep_W = GenW[GenW.decaytype == 1][semilep_evts],
-        Lepton = charged_leps[semilep_evts],
-        Nu = neutral_leps[semilep_evts],
-        First_Had = First[semilep_evts],
-        Second_Had = Second[semilep_evts],
-        Up_Had = wpartons_up[semilep_evts],
-        Down_Had = wpartons_dw[semilep_evts],
+        TTbar     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), GenTTbar[semilep_evts].flatten()),
+        Had_Top   = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Had_Top.flatten()),
+        Lep_Top   = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Lep_Top.flatten()),
+        Had_B     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Had_B.flatten()),
+        Lep_B     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Lep_B.flatten()),
+        Had_W     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), GenW[GenW.decaytype == 2][semilep_evts].flatten()),
+        Lep_W     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), GenW[GenW.decaytype == 1][semilep_evts].flatten()),
+        Lepton    = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), charged_leps[semilep_evts].flatten()),
+        Nu        = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), neutral_leps[semilep_evts].flatten()),
+        First_Had = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), First[semilep_evts].flatten()),
+        Second_Had= awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Second[semilep_evts].flatten()),
+        Up_Had    = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wpartons_up[semilep_evts].flatten()),
+        Down_Had  = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wpartons_dw[semilep_evts].flatten()),
     )
 
 
