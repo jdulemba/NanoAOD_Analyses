@@ -6,14 +6,13 @@ import coffea.processor as processor
 from pdb import set_trace
 import os, sys
 import python.ObjectSelection as objsel
-import coffea.processor.dataframe
+#import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
-import python.BTagScaleFactors as btagSF
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
-import coffea.lumi_tools.lumi_tools as lumi_tools
 import python.GenParticleSelector as genpsel
+import python.TTGenMatcher as ttmatcher
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -32,6 +31,17 @@ args = parser.parse_args()
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
+    ## run on correct samples
+if args.year == '2016':
+    Nominal_ttJets = ['ttJets_PS', 'ttJets']
+else:
+    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
+if not isTTbar:
+    raise ValueError("This should only be run on nominal ttbar events!")
+
+init_btag = ~(np.array([key.startswith('data') for key in fileset.keys()]).all())
+
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
@@ -40,14 +50,27 @@ corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
-    'BTagSF' : False,
-    #'JetCor' : None,
+    'BTagSF' : init_btag,
     'JetCor' : jet_corrections,
 }
 
+    ## parameters for b-tagging
+jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
+btagger = jet_pars['btagger']
+wps_to_use = list(set([jet_pars['permutations']['tightb'],jet_pars['permutations']['looseb']]))
+if not( len(wps_to_use) == 1):
+    raise ValueError("Only 1 unique btag working point supported now")
+btag_wp = btagger+wps_to_use[0]
+
 if corrections['BTagSF'] == True:
-    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
+    sf_file = '%s/Corrections/%s/%s' % (proj_dir, jobid, jet_pars['btagging']['btagSF_file'])
+    if not os.path.isfile(sf_file):
+        raise ValueError("BTag SF file %s doesn't exist" % sf_file)
+
+    btag_sfs = load(sf_file)
+    threeJets = btag_sfs[args.year][btagger]['3Jets'][wps_to_use[0]]
+    fourPJets = btag_sfs[args.year][btagger]['4PJets'][wps_to_use[0]]
+    corrections.update({'BTag_Constructors' : {'3Jets' : threeJets, '4PJets' : fourPJets} })
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -58,33 +81,22 @@ class permProbComputer(processor.ProcessorABC):
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
-        self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
-        self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
-        self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
-        self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
+        self.tMass_axis = hist.Bin("topmass", "m(t_{had}) [GeV]", 500, 0., 500.)
+        self.wMass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", 500, 0., 500.)
+        self.nu_chi2_axis = hist.Bin("nu_chi2", r"$\nu$ $\chi^{2}$", 1000, 0., 1000.)
+        self.nu_dist_axis = hist.Bin("nu_dist", r"$\nu$ dist", 150, 0., 150.)
 
             ## make dictionary of hists
         histo_dict = {}
                 ## make jet hists
-        jet_hists = self.make_jet_hists()
-        histo_dict.update(jet_hists)
-                ## make lepton hists
-        lep_hists = self.make_lep_hists()
-        histo_dict.update(lep_hists)        
+        perm_4pj_hists = self.make_4pj_hists()
+        histo_dict.update(perm_4pj_hists)
 
         histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.corrections = corrections
-        if args.year == '2016':
-            self.Nominal_ttJets = ['ttJets_PS', 'ttJets']
-        else:
-            self.Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
-        if not self.Nominal_ttJets:
-            raise ValueError("This should only be run on ttbar events!")
 
     
     @property
@@ -92,39 +104,23 @@ class permProbComputer(processor.ProcessorABC):
         return self._accumulator
 
 
-    def make_jet_hists(self):
+    def make_4pj_hists(self):
         histo_dict = {}
-        histo_dict['Jets_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
-        histo_dict['Jets_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
-        histo_dict['Jets_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
-        histo_dict['Jets_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
-        histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.njets_axis)
-        histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
-        histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
-        histo_dict['Jets_LeadJet_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
-        histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
+        histo_dict['mWHad_vs_mTHad'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.tMass_axis, self.wMass_axis)
+        histo_dict['nusolver_chi2']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.nu_chi2_axis)
+        histo_dict['nusolver_dist']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.nu_dist_axis)
 
         return histo_dict
 
     
-    def make_lep_hists(self):
-        histo_dict = {}
-        histo_dict['Lep_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
-        histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
-        histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
-        histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
-        histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepIso_axis)
-
-        return histo_dict
-
 
 
     def process(self, df):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-            raise IOError("This function only works for LazyDataFrame objects")
+        #if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
+        #    raise ValueError("This function only works for LazyDataFrame objects")
 
         #if args.debug: set_trace()
         self.sample_name = df.dataset
@@ -137,12 +133,12 @@ class permProbComputer(processor.ProcessorABC):
         selection = processor.PackedSelection()
         regions = {
             'Muon' : {
-                '3Jets'  : {'objselection', 'jets_3', 'loose_or_tight_MU'},
-                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_MU'},
+                #'3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
             },
             'Electron' : {
-                '3Jets'  : {'objselection', 'jets_3', 'loose_or_tight_EL'},
-                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_EL'},
+                #'3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
             },
         }
 
@@ -150,8 +146,9 @@ class permProbComputer(processor.ProcessorABC):
         objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
         output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
         selection.add('jets_3', df['Jet'].counts == 3)
-        selection.add('jets_4+', df['Jet'].counts > 3)
+        selection.add('jets_4p', df['Jet'].counts > 3)
         selection.add('objselection', objsel_evts)
+        selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)
 
             ## add different selections
                 ## muons
@@ -175,18 +172,28 @@ class permProbComputer(processor.ProcessorABC):
             evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
                 pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
 
+        if corrections['BTagSF'] == True:
+            #set_trace()
+            threeJets_cut = selection.require(objselection=True, jets_3=True)
+            threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=btag_wp)
+            evt_weights._weights['Btag_SF'][threeJets_cut] = threeJets_btagwts['central'].prod()
+            fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
+            fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=btag_wp)
+            evt_weights._weights['Btag_SF'][fourplusJets_cut] = fourplusJets_btagwts['central'].prod()
 
-        #df['genParts'] = genpsel.process_genParts(df)
-        #df['lheParts'] = genpsel.process_lheParts(df)
-        genpsel.select(df, mode='NORMAL')
-        #genpsel.select(df, mode='LHE')
 
+            # find gen level particles for ttbar system
         #set_trace()
+        genp_mode = 'NORMAL'
+        GenTTbar = genpsel.select(df, systype='FINAL', mode=genp_mode)
+        #genpsel.select(df, mode='LHE')
+        #set_trace()
+        selection.add('semilep', GenTTbar['SL']['TTbar'].counts > 0)
+
         ## fill hists for each region
         for lepton in regions.keys():
             for jmult in regions[lepton].keys():
                 cut = selection.all(*regions[lepton][jmult])
-                #set_trace()
 
                 if cut.sum() > 0:
                     leptype = 'MU' if lepton == 'Muon' else 'EL'
@@ -199,50 +206,23 @@ class permProbComputer(processor.ProcessorABC):
                     else:
                         raise ValueError("Not sure what lepton type to choose for event")
 
+                    matched_perm = ttmatcher.best_match(gen_hyp=GenTTbar[cut], jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], met=df['MET'][cut])
+                    #set_trace()
+
                     evt_weights_to_use = evt_weights.weight()
                     ## apply lepton SFs to MC (only applicable to tight leptons)
                     if 'LeptonSF' in corrections.keys():
                         evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                    output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
-                    output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut][lep_mask],evt_weights=evt_weights_to_use[cut])
-
-
-            ##    ## apply btagging SFs to MC
-            ##if not isData:
-            ##    btag_weights = np.ones(clean_jets.size)
-            ##    #set_trace()
-            ##        ## get per-jet weights for all systematic variations + central value
-            ##    threeJ_wts = threejets_btagSFs.get_scale_factor(jets=clean_jets[three_jets_events], passing_cut=btag_wps[0])
-            ##    fourPJ_wts = fourPlusjets_btagSFs.get_scale_factor(jets=clean_jets[fourPlus_jets_events], passing_cut=btag_wps[0])
-            ##        ## calculate per-event SFs for central value
-            ##    btag_weights[three_jets_events] = threeJ_wts['central'].prod()
-            ##    btag_weights[fourPlus_jets_events] = fourPJ_wts['central'].prod()
-            ##    evt_weights *= btag_weights
+                    output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, perm=matched_perm, evt_weights=evt_weights_to_use[cut])
 
         return output
 
-    def fill_jet_hists(self, accumulator, jetmult, leptype, obj, evt_weights):
+    def fill_4pj_hists(self, accumulator, jetmult, leptype, perm, evt_weights):
         #set_trace()
-        accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, njets=obj.counts, weight=evt_weights)
-        accumulator['Jets_LeadJet_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.max(), weight=evt_weights)
-        accumulator['Jets_LeadJet_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta[:, 0], weight=evt_weights)
-        accumulator['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi[:, 0], weight=evt_weights)
-        accumulator['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E[:, 0], weight=evt_weights)
-        ##set_trace()
-
-        return accumulator        
-
-    def fill_lep_hists(self, accumulator, jetmult, leptype, obj, evt_weights):
-        #set_trace()
-        accumulator['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=evt_weights)
-        accumulator['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=evt_weights)
-        accumulator['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=evt_weights)
-        accumulator['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=evt_weights)
-        accumulator['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=obj.pfRelIso.flatten(), weight=evt_weights)
+        valid_evts = (perm['TTbar'].counts > 0) & ((perm['unique_matches'] == 4).flatten())
+        accumulator['mWHad_vs_mTHad'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, topmass=np.array(perm['THad'][valid_evts].mass.flatten()), wmass=np.array(perm['WHad'][valid_evts].mass.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
+        accumulator['nusolver_chi2'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, nu_chi2=np.array(perm['Nu'][valid_evts].chi2.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
+        accumulator['nusolver_dist'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, nu_dist=np.array(np.sqrt(perm['Nu'][valid_evts].chi2.flatten())), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
 
         return accumulator        
 
