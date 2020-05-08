@@ -1,4 +1,7 @@
 from pdb import set_trace
+#from numba import njit, objmode
+import numpy as np
+#import awkward
 
 def ctstar(top_p4, tbar_p4, debug=False):
 
@@ -24,3 +27,11 @@ def ctstar(top_p4, tbar_p4, debug=False):
 
     return top_ctstar, tbar_ctstar
 
+def MT(leptons, met, debug=False):
+    if debug: set_trace()
+
+    met_pt = (leptons.pt.ones_like())*(met.pt.flatten())
+    met_px = (leptons.pt.ones_like())*(met.p4.x.flatten())
+    met_py = (leptons.pt.ones_like())*(met.p4.y.flatten())
+
+    return np.sqrt( np.square(leptons.pt + met_pt) - np.square(leptons.p4.x + met_px) - np.square(leptons.p4.y + met_py) )
