@@ -39,7 +39,7 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
             'eta' : matched_jets.eta.flatten(),
             'phi' : matched_jets.phi.flatten(),
             'mass' : matched_jets.mass.flatten(),
-            'hadronFlav' : matched_jets.hadronFlav.flatten(),
+            #'hadronFlav' : matched_jets.hadronFlav.flatten(),
             'jetIdx' : matched_jets_inds.flatten(), # index of jet that the gen object is matched to in the event
             
         }})
