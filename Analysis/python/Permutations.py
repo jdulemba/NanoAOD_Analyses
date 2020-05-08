@@ -115,43 +115,43 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     )
 
             ## init variables
-    whad_pt   = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_eta  = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_phi  = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_mass = np.full_like(bhad.counts, np.nan, dtype=np.double) 
+    whad_px = np.full_like(bhad.counts, np.nan, dtype=np.double) 
+    whad_py = np.full_like(bhad.counts, np.nan, dtype=np.double) 
+    whad_pz = np.full_like(bhad.counts, np.nan, dtype=np.double) 
+    whad_E  = np.full_like(bhad.counts, np.nan, dtype=np.double) 
 
             # inds where only WJb p4 is used as WHad
     use_wjb_inds = (Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa).flatten()
-    whad_pt[use_wjb_inds]   = wjb[use_wjb_inds].pt.flatten()
-    whad_eta[use_wjb_inds]  = wjb[use_wjb_inds].eta.flatten()
-    whad_phi[use_wjb_inds]  = wjb[use_wjb_inds].phi.flatten()
-    whad_mass[use_wjb_inds] = wjb[use_wjb_inds].mass.flatten()
+    whad_px[use_wjb_inds] = wjb[use_wjb_inds].p4.x.flatten()
+    whad_py[use_wjb_inds] = wjb[use_wjb_inds].p4.y.flatten()
+    whad_pz[use_wjb_inds] = wjb[use_wjb_inds].p4.z.flatten()
+    whad_E[use_wjb_inds]  = wjb[use_wjb_inds].p4.energy.flatten()
 
             # inds where only WJa p4 is used as WHad
     use_wja_inds = (Merged_BHadWJb | Merged_BLepWJb | Lost_WJb).flatten()
-    whad_pt[use_wja_inds]   = wja[use_wja_inds].pt.flatten()
-    whad_eta[use_wja_inds]  = wja[use_wja_inds].eta.flatten()
-    whad_phi[use_wja_inds]  = wja[use_wja_inds].phi.flatten()
-    whad_mass[use_wja_inds] = wja[use_wja_inds].mass.flatten()
+    whad_px[use_wja_inds] = wja[use_wja_inds].p4.x.flatten()
+    whad_py[use_wja_inds] = wja[use_wja_inds].p4.y.flatten()
+    whad_pz[use_wja_inds] = wja[use_wja_inds].p4.z.flatten()
+    whad_E[use_wja_inds]  = wja[use_wja_inds].p4.energy.flatten()
 
             # inds where combined p4 from WJa and WJb is used as WHad (all other inds)
     use_comb_inds = ~(use_wjb_inds | use_wja_inds)
     comb_wjets_p4 = wja_p4[use_comb_inds].p4 + wjb_p4[use_comb_inds].p4
-    whad_pt[use_comb_inds]   = comb_wjets_p4.pt.flatten()
-    whad_pt[whad_pt == 0.] = np.nan
-    whad_eta[use_comb_inds]  = comb_wjets_p4.eta.flatten()
-    whad_eta[whad_eta == 0.] = np.nan
-    whad_phi[use_comb_inds]  = comb_wjets_p4.phi.flatten()
-    whad_phi[whad_phi == 0.] = np.nan
-    whad_mass[use_comb_inds] = comb_wjets_p4.mass.flatten()
-    whad_mass[whad_mass == 0.] = np.nan
+    whad_px[use_comb_inds] = comb_wjets_p4.x.flatten()
+    whad_px[whad_px == 0.] = np.nan
+    whad_py[use_comb_inds] = comb_wjets_p4.y.flatten()
+    whad_py[whad_py == 0.] = np.nan
+    whad_pz[use_comb_inds] = comb_wjets_p4.z.flatten()
+    whad_pz[whad_pz == 0.] = np.nan
+    whad_E[use_comb_inds]  = comb_wjets_p4.energy.flatten()
+    whad_E[whad_E == 0.]   = np.nan
 
     WHad = JaggedCandidateArray.candidatesfromcounts(
-        counts = (~np.isnan(whad_pt)).astype(int),
-        pt     = whad_pt[(~np.isnan(whad_pt))].flatten(),
-        eta    = whad_eta[(~np.isnan(whad_pt))].flatten(),
-        phi    = whad_phi[(~np.isnan(whad_pt))].flatten(),
-        mass   = whad_mass[(~np.isnan(whad_pt))].flatten(),
+        counts = (~np.isnan(whad_px)).astype(int),
+        px     = whad_px[(~np.isnan(whad_px))].flatten(),
+        py     = whad_py[(~np.isnan(whad_py))].flatten(),
+        pz     = whad_pz[(~np.isnan(whad_pz))].flatten(),
+        energy = whad_E[(~np.isnan(whad_E))].flatten(),
     )
 
     isWHadComplete = (WHad.counts == 1)
