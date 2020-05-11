@@ -23,10 +23,13 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
             ## tightID
         # check https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD for definitions
         if year == '2016':
-            jetId = 7 # pass loose, tight, tightLepVeto ID
+            #jetId = 7 # pass loose, tight, tightLepVeto ID
+            jetId = 3 # pass loose and tight, but not tightLepVeto ID
         else:
-            jetId = 4 # pass tight and tightLepVeto ID
-        jet_ID = (jets.Id >= jetId)
+            #jetId = 4 # pass tight and tightLepVeto ID
+            jetId = 2 # pass tight but not tightLepVeto ID
+        #jet_ID = (jets.Id >= jetId)
+        jet_ID = (jets.Id == jetId)
         if accumulator: accumulator['cutflow']['jets pass ID'] += jet_ID.sum().sum()
 
             ## remove jets that don't pass ID and pt/eta cuts
@@ -91,16 +94,17 @@ def select(df, year, corrections, accumulator=None, shift=None):
     evt_sel.add('tightEl_pass_vetoEl', (((df['Electron']['TIGHTEL']*1 + df['Electron']['VETOEL']*1) > 0).sum() == 1)) # only veto el (if it exists) is tight
     evt_sel.add('looseEl_pass_vetoEl', (((df['Electron']['LOOSEEL']*1 + df['Electron']['VETOEL']*1) > 0).sum() == 1)) # only veto el (if it exists) is loose
 
-        # leptons pass loose/tight requirements and triggers
-    evt_sel.add('tightMu_pass', evt_sel.require(single_lep=True, single_tightMu=True, zero_vetoEl=True, tightMu_pass_vetoMu=True, mu_triggers=True))
-    evt_sel.add('looseMu_pass', evt_sel.require(single_lep=True, single_looseMu=True, zero_vetoEl=True, looseMu_pass_vetoMu=True, mu_triggers=True))
-    evt_sel.add('tightEl_pass', evt_sel.require(single_lep=True, single_tightEl=True, zero_vetoMu=True, tightEl_pass_vetoEl=True, el_triggers=True))
-    evt_sel.add('looseEl_pass', evt_sel.require(single_lep=True, single_looseEl=True, zero_vetoMu=True, looseEl_pass_vetoEl=True, el_triggers=True))
+        # leptons pass loose/tight requirements and triggers (mu only pass mu triggers, el only pass el triggers)
+    evt_sel.add('tightMu_pass', evt_sel.require(single_lep=True, single_tightMu=True, zero_vetoEl=True, tightMu_pass_vetoMu=True, mu_triggers=True) & ~evt_sel.require(el_triggers=True))
+    evt_sel.add('looseMu_pass', evt_sel.require(single_lep=True, single_looseMu=True, zero_vetoEl=True, looseMu_pass_vetoMu=True, mu_triggers=True) & ~evt_sel.require(el_triggers=True))
+    evt_sel.add('tightEl_pass', evt_sel.require(single_lep=True, single_tightEl=True, zero_vetoMu=True, tightEl_pass_vetoEl=True, el_triggers=True) & ~evt_sel.require(mu_triggers=True))
+    evt_sel.add('looseEl_pass', evt_sel.require(single_lep=True, single_looseEl=True, zero_vetoMu=True, looseEl_pass_vetoEl=True, el_triggers=True) & ~evt_sel.require(mu_triggers=True))
 
     evt_sel.add('passing_mu', evt_sel.require(tightMu_pass=True) | evt_sel.require(looseMu_pass=True))
     evt_sel.add('passing_el', evt_sel.require(tightEl_pass=True) | evt_sel.require(looseEl_pass=True))
     evt_sel.add('passing_lep', evt_sel.require(passing_mu=True) | evt_sel.require(passing_el=True))
 
+    #set_trace()
     evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
 
         ## SetMET
