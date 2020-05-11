@@ -13,6 +13,7 @@ import numpy as np
 import Utilities.prettyjson as prettyjson
 import python.GenParticleSelector as genpsel
 import python.TTGenMatcher as ttmatcher
+import Utilities.make_variables as make_vars
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -81,14 +82,25 @@ class permProbComputer(processor.ProcessorABC):
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
+        self.lepcat_axis = hist.Cat("lepcat", "Lepton Category")
+        self.mtregion_axis = hist.Cat("mtregion", "MT Category")
         self.tMass_axis = hist.Bin("topmass", "m(t_{had}) [GeV]", 500, 0., 500.)
         self.wMass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", 500, 0., 500.)
-        self.nu_chi2_axis = hist.Bin("nu_chi2", r"$\nu$ $\chi^{2}$", 1000, 0., 1000.)
-        self.nu_dist_axis = hist.Bin("nu_dist", r"$\nu$ dist", 150, 0., 150.)
+        self.nu_chi2_axis = hist.Bin("nu_chi2", r"$\chi_{\nu}^{2}$", 1000, 0., 1000.)
+        self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$ dist", 150, 0., 150.)
+        self.maxmjet_axis = hist.Bin("maxmjet", "max m(jet}) [GeV]", 500, 0., 500.)
+        self.mbpjet_axis = hist.Bin("mbpjet", "m(b+j}) [GeV]", 1000, 0., 2000.)
 
             ## make dictionary of hists
         histo_dict = {}
-                ## make jet hists
+            ## make jet hists
+                # 3j merged
+        merged_3j_hists = self.make_3j_merged_hists()
+        histo_dict.update(merged_3j_hists)
+                # 3j lost 
+        lost_3j_hists = self.make_3j_lost_hists()
+        histo_dict.update(lost_3j_hists)
+                # 4+ jets
         perm_4pj_hists = self.make_4pj_hists()
         histo_dict.update(perm_4pj_hists)
 
@@ -103,26 +115,36 @@ class permProbComputer(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
+    def make_3j_merged_hists(self):
+        histo_dict = {}
+        histo_dict['mbpjet_vs_maxmjet']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.maxmjet_axis, self.mbpjet_axis)
+        histo_dict['Merged_nusolver_chi2'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_chi2_axis)
+        histo_dict['Merged_nusolver_dist'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_dist_axis)
+
+        return histo_dict
+
+    def make_3j_lost_hists(self):
+        histo_dict = {}
+        histo_dict['mbpjet']             = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.mbpjet_axis)
+        histo_dict['Lost_nusolver_chi2'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_chi2_axis)
+        histo_dict['Lost_nusolver_dist'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_dist_axis)
+
+        return histo_dict
+
 
     def make_4pj_hists(self):
         histo_dict = {}
-        histo_dict['mWHad_vs_mTHad'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.tMass_axis, self.wMass_axis)
-        histo_dict['nusolver_chi2']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.nu_chi2_axis)
-        histo_dict['nusolver_dist']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.nu_dist_axis)
+        histo_dict['mWHad_vs_mTHad'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.wMass_axis, self.tMass_axis)
+        histo_dict['nusolver_chi2']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_chi2_axis)
+        histo_dict['nusolver_dist']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.nu_dist_axis)
 
         return histo_dict
 
     
-
-
     def process(self, df):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        #if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-        #    raise ValueError("This function only works for LazyDataFrame objects")
-
-        #if args.debug: set_trace()
         self.sample_name = df.dataset
 
             ## make event weights
@@ -133,12 +155,36 @@ class permProbComputer(processor.ProcessorABC):
         selection = processor.PackedSelection()
         regions = {
             'Muon' : {
-                #'3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                'LoT' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '4Jets' :  {'objselection', 'jets_4',  'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '5Jets' :  {'objselection', 'jets_5',  'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '6PJets' : {'objselection', 'jets_6p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                },
+                'Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'},
+                    '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'btag_pass', 'semilep'},
+                    '4Jets' :  {'objselection', 'jets_4',  'tight_MU', 'btag_pass', 'semilep'},
+                    '5Jets' :  {'objselection', 'jets_5',  'tight_MU', 'btag_pass', 'semilep'},
+                    '6PJets' : {'objselection', 'jets_6p', 'tight_MU', 'btag_pass', 'semilep'},
+                },
             },
             'Electron' : {
-                #'3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                'LoT' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '4Jets' :  {'objselection', 'jets_4',  'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '5Jets' :  {'objselection', 'jets_5',  'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '6PJets' : {'objselection', 'jets_6p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                },
+                'Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'},
+                    '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'btag_pass', 'semilep'},
+                    '4Jets' :  {'objselection', 'jets_4',  'tight_EL', 'btag_pass', 'semilep'},
+                    '5Jets' :  {'objselection', 'jets_5',  'tight_EL', 'btag_pass', 'semilep'},
+                    '6PJets' : {'objselection', 'jets_6p', 'tight_EL', 'btag_pass', 'semilep'},
+                },
             },
         }
 
@@ -147,6 +193,9 @@ class permProbComputer(processor.ProcessorABC):
         output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
         selection.add('jets_3', df['Jet'].counts == 3)
         selection.add('jets_4p', df['Jet'].counts > 3)
+        selection.add('jets_4', df['Jet'].counts == 4)
+        selection.add('jets_5', df['Jet'].counts == 5)
+        selection.add('jets_6p', df['Jet'].counts >= 6)
         selection.add('objselection', objsel_evts)
         selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)
 
@@ -192,40 +241,70 @@ class permProbComputer(processor.ProcessorABC):
 
         ## fill hists for each region
         for lepton in regions.keys():
-            for jmult in regions[lepton].keys():
-                cut = selection.all(*regions[lepton][jmult])
+            for lepcat in regions[lepton].keys():
+                for jmult in regions[lepton][lepcat].keys():
+                    cut = selection.all(*regions[lepton][lepcat][jmult])
 
-                if cut.sum() > 0:
-                    leptype = 'MU' if lepton == 'Muon' else 'EL'
-                    if 'loose_or_tight_%s' % leptype in regions[lepton][jmult]:
-                        lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype] == True) | (df[lepton][cut]['LOOSE%s' % leptype] == True))
-                    elif 'tight_%s' % leptype in regions[lepton][jmult]:
-                        lep_mask = (df[lepton][cut]['TIGHT%s' % leptype] == True)
-                    elif 'loose_%s' % leptype in regions[lepton][jmult]:
-                        lep_mask = (df[lepton][cut]['LOOSE%s' % leptype] == True)
-                    else:
-                        raise ValueError("Not sure what lepton type to choose for event")
-
-                    matched_perm = ttmatcher.best_match(gen_hyp=GenTTbar[cut], jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], met=df['MET'][cut])
                     #set_trace()
+                    if cut.sum() > 0:
+                        leptype = 'MU' if lepton == 'Muon' else 'EL'
+                        if 'loose_or_tight_%s' % leptype in regions[lepton][lepcat][jmult]:
+                            lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype]) | (df[lepton][cut]['LOOSE%s' % leptype]))
+                        elif 'tight_%s' % leptype in regions[lepton][lepcat][jmult]:
+                            lep_mask = (df[lepton][cut]['TIGHT%s' % leptype])
+                        elif 'loose_%s' % leptype in regions[lepton][lepcat][jmult]:
+                            lep_mask = (df[lepton][cut]['LOOSE%s' % leptype])
+                        else:
+                            raise ValueError("Not sure what lepton type to choose for event")
 
-                    evt_weights_to_use = evt_weights.weight()
-                    ## apply lepton SFs to MC (only applicable to tight leptons)
-                    if 'LeptonSF' in corrections.keys():
-                        evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                    output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, perm=matched_perm, evt_weights=evt_weights_to_use[cut])
+                        matched_perm = ttmatcher.best_match(gen_hyp=GenTTbar[cut], jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], met=df['MET'][cut])
+
+                            ## create MT regions
+                        MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
+                        MTHigh = (MT >= 40.).flatten()
+
+                        evt_weights_to_use = evt_weights.weight()
+                        ## apply lepton SFs to MC (only applicable to tight leptons)
+                        if 'LeptonSF' in corrections.keys():
+                            evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
+
+                        if jmult == '3Jets':
+                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', perm=matched_perm[MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
+                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow', perm=matched_perm[~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
+                        else:
+                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', perm=matched_perm[MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
+                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow', perm=matched_perm[~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
 
         return output
 
-    def fill_4pj_hists(self, accumulator, jetmult, leptype, perm, evt_weights):
+    def fill_4pj_hists(self, accumulator, jetmult, leptype, lepcat, mtregion, perm, evt_weights):
         #set_trace()
         valid_evts = (perm['TTbar'].counts > 0) & ((perm['unique_matches'] == 4).flatten())
-        accumulator['mWHad_vs_mTHad'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, topmass=np.array(perm['THad'][valid_evts].mass.flatten()), wmass=np.array(perm['WHad'][valid_evts].mass.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
-        accumulator['nusolver_chi2'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, nu_chi2=np.array(perm['Nu'][valid_evts].chi2.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
-        accumulator['nusolver_dist'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, nu_dist=np.array(np.sqrt(perm['Nu'][valid_evts].chi2.flatten())), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
+        accumulator['mWHad_vs_mTHad'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, wmass=np.array(perm['WHad'][valid_evts].mass.flatten()), topmass=np.array(perm['THad'][valid_evts].mass.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
+        accumulator['nusolver_chi2'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_chi2=np.array(perm['Nu'][valid_evts].chi2.flatten()), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
+        accumulator['nusolver_dist'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_dist=np.array(np.sqrt(perm['Nu'][valid_evts].chi2.flatten())), weight=np.array((perm['Nu'][valid_evts].pt.ones_like()*evt_weights[valid_evts]).flatten()))
 
         return accumulator        
 
+
+    def make_3j_categories(self, accumulator, jetmult, leptype, lepcat, mtregion, perm, evt_weights):
+        valid_evts = (perm['TTbar'].counts > 0) & ((perm['unique_matches'] >= 3).flatten())
+
+        correct_merged = valid_evts & (perm['Merged_Event'] & (perm['Merged_BHadWJa'] | perm['Merged_BHadWJb'] | perm['Merged_WJets'])).flatten()
+        correct_lost   = valid_evts & (perm['Lost_Event'] & (perm['Lost_WJa'] | perm['Lost_WJb'])).flatten()
+
+            ## Lost Events
+        accumulator['Lost_nusolver_chi2'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_chi2=np.array(perm['Nu'][correct_lost].chi2.flatten()), weight=np.array((perm['Nu'][correct_lost].pt.ones_like()*evt_weights[correct_lost]).flatten()))
+        accumulator['Lost_nusolver_dist'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_dist=np.array(np.sqrt(perm['Nu'][correct_lost].chi2.flatten())), weight=np.array((perm['Nu'][correct_lost].pt.ones_like()*evt_weights[correct_lost]).flatten()))
+        accumulator['mbpjet'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, mbpjet=np.array(perm['THad'][correct_lost].mass.flatten()), weight=np.array((perm['Nu'][correct_lost].pt.ones_like()*evt_weights[correct_lost]).flatten()))
+
+            ## Merged Events
+        accumulator['Merged_nusolver_chi2'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_chi2=np.array(perm['Nu'][correct_merged].chi2.flatten()), weight=np.array((perm['Nu'][correct_merged].pt.ones_like()*evt_weights[correct_merged]).flatten()))
+        accumulator['Merged_nusolver_dist'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, nu_dist=np.array(np.sqrt(perm['Nu'][correct_merged].chi2.flatten())), weight=np.array((perm['Nu'][correct_merged].pt.ones_like()*evt_weights[correct_merged]).flatten()))
+        maxmjet = np.maximum(np.array(perm['BHad'][correct_merged].mass.flatten()), perm['WHad'][correct_merged].mass.flatten())
+        accumulator['mbpjet_vs_maxmjet'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mtregion=mtregion, maxmjet=maxmjet, mbpjet=np.array(perm['THad'][correct_merged].mass.flatten()), weight=np.array((perm['Nu'][correct_merged].pt.ones_like()*evt_weights[correct_merged]).flatten()))
+
+        return accumulator
 
     def postprocess(self, accumulator):
         return accumulator
@@ -241,8 +320,8 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    chunksize=10000,
-    #chunksize=500000,
+    #chunksize=10000,
+    chunksize=50000,
 )
 
 
