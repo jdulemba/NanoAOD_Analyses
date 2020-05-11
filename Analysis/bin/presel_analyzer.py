@@ -303,8 +303,8 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    chunksize=10000,
-    #chunksize=500000,
+    #chunksize=10000,
+    chunksize=50000,
 )
 
 

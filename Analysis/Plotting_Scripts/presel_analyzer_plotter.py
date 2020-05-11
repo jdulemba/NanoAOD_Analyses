@@ -27,7 +27,6 @@ jobid = os.environ['jobid']
 analyzer = 'presel_analyzer'
 
 input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-#input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
 f_ext = '%s.test.coffea' % analyzer if args.testing else 'TOT.coffea'
 outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 if not os.path.isdir(outdir):
@@ -60,20 +59,20 @@ objtypes = {
 }
 
 variables = {
-    #'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
-    #'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
-    #'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.), True),
-    #'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.), True),
-    #'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
-    #'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
-    #'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.), True),
-    #'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.), True),
-    #'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
-    #'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
-    #'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
-    #'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
-    #'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
-    #'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
+    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.), True),
+    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.), True),
+    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
+    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
+    'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.), True),
+    'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.), True),
+    'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
+    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
+    'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
+    'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
+    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
     #'Jets_Cjer' : ('$C_{JER}$(jets) ', 2, (0., 2.5), False),
     #'Jets_Cjer_ScalingMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
     #'Jets_Cjer_StochasticMethod' : ('$C_{JER}$(jets) Stochastic Method', 2, (0., 2.5), False),
@@ -90,10 +89,10 @@ variables = {
 if args.lepton == 'Electron':
     variables.update({'Lep_etaSC' : ('$\\eta_{SC}$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True)})
 
-variables_2d = {
-    'Jets_pt_GenReco_resolution_vs_genPt_beforeJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
-    'Jets_pt_GenReco_resolution_vs_genPt_afterJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
-}
+#variables_2d = {
+#    'Jets_pt_GenReco_resolution_vs_genPt_beforeJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
+#    'Jets_pt_GenReco_resolution_vs_genPt_afterJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
+#}
 
 
     ## get plotting colors/settings
@@ -151,7 +150,8 @@ def get_samples_yield_and_frac(histo, lep):
 
     ## make plots
 for hname in hdict.keys():
-    if (hname not in variables.keys()) and (hname not in variables_2d.keys()): continue
+    if (hname not in variables.keys()): continue
+    #if (hname not in variables.keys()) and (hname not in variables_2d.keys()): continue
     #if hname == 'cutflow': continue
     histo = hdict[hname]
     #set_trace()
