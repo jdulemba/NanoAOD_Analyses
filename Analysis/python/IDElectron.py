@@ -14,11 +14,12 @@ def process_electrons(df, year):
         charge=df['Electron_charge'],
         dxy=df['Electron_dxy'],
         dz=df['Electron_dz'],
-        tightID=df['Electron_mvaFall17V2noIso_WP80'],
-        vetoID=df['Electron_mvaFall17V2Iso_WPL'],
-        #vetoID=df['Electron_mvaFall17V2noIso_WPL'],
+        mvaTightID=df['Electron_mvaFall17V2noIso_WP80'],
+        mvaVetoID=df['Electron_mvaFall17V2noIso_WPL'],
+        #mvaVetoID=df['Electron_mvaFall17V2noIso_WPL'],
         deltaEtaSC=df['Electron_deltaEtaSC'],
         pfRelIso=df['Electron_pfRelIso03_all'],
+        minipfRelIso=df['Electron_miniPFRelIso_all'],
         cutBasedID=df['Electron_cutBased'],
         bitmap = df['Electron_vidNestedWPBitmap'],
     )
@@ -46,20 +47,20 @@ def process_electrons(df, year):
 #    return electrons
 #
 def veto_15(electrons):
-    ID = (electrons.cutBasedID == 1) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
-    #ID = (electrons.vetoID)
+    #ID = (electrons.cutBasedID == 1) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    ID = (electrons.mvaVetoID)
     ##Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
     return ID
 
 def tight_15_NoECAL_Gap(electrons):
-    ID = (electrons.cutBasedID == 4) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
-    #ID = (electrons.tightID)
-    #Iso = (electrons.pfRelIso < 0.15) #*
+    #ID = (electrons.cutBasedID == 4) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    ID = (electrons.mvaTightID)
+    Iso = (electrons.pfRelIso < 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    return (ID & ecalgap & ipcuts)
-    #return (ID & Iso & ecalgap & ipcuts)
+    #return (ID & ecalgap & ipcuts)
+    return (ID & Iso & ecalgap & ipcuts)
 
 def fakes(electrons):
     '''
@@ -67,16 +68,36 @@ def fakes(electrons):
         613566692 corresponds to Iso of 011 (pass medium and loose but not tight) part of binary but 100 for other cuts
         613566564 corresponds to 001 for Iso but 100 for other cuts
         613566628 corresponds to 010 for Iso but 100 for other cuts
+        613566500 corresponds to 000 for Iso but 100 for other cuts
         passing tight cutBased ID corresponds to 613566756 == 100 100 100 100 100 100 100 100 100 100 in binary
+        invertedIso_bitvals = [613566692, 613566564, 613566628, 613566500]
     '''
-    ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628)) 
-    #ID = (electrons.tightID)
-    #Iso = (electrons.pfRelIso >= 0.15) #*
+    #set_trace()
+    #tightIso_barrel = (electrons.pfRelIso < (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
+    #tightIso_endcap = (electrons.pfRelIso < (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
+    #tightIso_pass = tightIso_barrel | tightIso_endcap
+
+    #invTightIso_barrel = (electrons.pfRelIso >= (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
+    #invTightIso_endcap = (electrons.pfRelIso >= (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
+    #invTightIso_pass = invTightIso_barrel | invTightIso_endcap
+
+    #tightminiIso_barrel = (electrons.minipfRelIso < (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
+    #tightminiIso_endcap = (electrons.minipfRelIso < (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
+    #tightminiIso_pass = tightminiIso_barrel | tightminiIso_endcap
+
+    #invTightminiIso_barrel = (electrons.minipfRelIso >= (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
+    #invTightminiIso_endcap = (electrons.minipfRelIso >= (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
+    #invTightminiIso_pass = invTightminiIso_barrel | invTightminiIso_endcap
+
+
+    #ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628) | (electrons.bitmap == 613566500)) 
+    ID = (electrons.mvaTightID)
+    Iso = (electrons.pfRelIso >= 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    return (ID & ecalgap & ipcuts)
-    #return (ID & Iso & ecalgap & ipcuts)
+    #return (ID & ecalgap & ipcuts)
+    return (ID & Iso & ecalgap & ipcuts)
 
 
 def make_electron_ids(electrons, year):
@@ -104,9 +125,11 @@ def make_electron_ids(electrons, year):
     #set_trace()
     for elID in el_pars.keys():
         pt_cut = (electrons.pt >= el_pars[elID]['ptmin'])
-        etaSC_cut = (np.abs(electrons.etaSC) <= el_pars[elID]['etascmax'])
+        #etaSC_cut = (np.abs(electrons.etaSC) <= el_pars[elID]['etascmax'])
+        eta_cut = (np.abs(electrons.eta) <= el_pars[elID]['etamax'])
         pass_id = id_names[el_pars[elID]['id']](electrons)
-        electrons[elID] = (pass_id) & (pt_cut) & (etaSC_cut)
+        electrons[elID] = (pass_id) & (pt_cut) & (eta_cut)
+        #electrons[elID] = (pass_id) & (pt_cut) & (etaSC_cut)
 
     return electrons
 
