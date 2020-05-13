@@ -28,8 +28,8 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
         else:
             #jetId = 4 # pass tight and tightLepVeto ID
             jetId = 2 # pass tight but not tightLepVeto ID
-        #jet_ID = (jets.Id >= jetId)
-        jet_ID = (jets.Id == jetId)
+        jet_ID = (jets.Id >= jetId) # pass at least tight
+        #jet_ID = (jets.Id == jetId)
         if accumulator: accumulator['cutflow']['jets pass ID'] += jet_ID.sum().sum()
 
             ## remove jets that don't pass ID and pt/eta cuts
