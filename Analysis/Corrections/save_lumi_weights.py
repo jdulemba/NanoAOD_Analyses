@@ -37,6 +37,8 @@ for year in ['2016', '2017', '2018']:
         for lep in ['Electrons', 'Muons']:
             lumi_weights[year][lep][sample] = data_lumi[year][lep]/(nWeightedEvts/xsec)
 
+    print("%s calculated" % year)
+
     # save files
 mcweights_name = '%s/MC_LumiWeights.coffea' % outdir
 save(lumi_weights, mcweights_name)
