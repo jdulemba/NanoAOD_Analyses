@@ -26,7 +26,7 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
 
 
         # match jet closest to gen objects 
-    for genobj in ['Had_B', 'Lep_B', 'First_Had', 'Second_Had']:
+    for genobj in ['BHad', 'BLep', 'WJa', 'WJb']:
         deltaRs = jets.p4.delta_r(gen_hyp['SL'][genobj].p4.flatten())
         indexOfMin = deltaRs.argmin()
         passing_inds = deltaRs[indexOfMin] < 0.4
@@ -56,20 +56,20 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
     
         ## create matched perm objects
     matched_BHad = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['Had_B'],
-        **matched_dict_vars['Had_B']
+        counts= matched_dict_counts['BHad'],
+        **matched_dict_vars['BHad']
     ).pad(1)
     matched_BLep = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['Lep_B'],
-        **matched_dict_vars['Lep_B']
+        counts= matched_dict_counts['BLep'],
+        **matched_dict_vars['BLep']
     ).pad(1)
     matched_WJa = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['First_Had'],
-        **matched_dict_vars['First_Had']
+        counts= matched_dict_counts['WJa'],
+        **matched_dict_vars['WJa']
     ).pad(1)
     matched_WJb = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['Second_Had'],
-        **matched_dict_vars['Second_Had']
+        counts= matched_dict_counts['WJb'],
+        **matched_dict_vars['WJb']
     ).pad(1)
     matched_Lep = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['Lepton'],
