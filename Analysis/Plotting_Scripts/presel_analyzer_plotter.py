@@ -1,6 +1,5 @@
 from coffea.hist import plot
 # matplotlib
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 from coffea.util import load
@@ -237,21 +236,10 @@ for hname in hdict.keys():
 
                     ## set axes labels and titles
                 plt.xlabel(xtitle)
-                cms_blurb = plt.text(
-                    0., 1., r"CMS Preliminary",
-                    fontsize=12, 
-                    horizontalalignment='left', 
-                    verticalalignment='bottom', 
-                    transform=ax.transAxes,
-                    style='italic'
-                )
-                lumi_blurb = plt.text(
-                    1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    fontsize=12, 
-                    horizontalalignment='right', 
-                    verticalalignment='bottom', 
-                    transform=ax.transAxes
-                )
+                kwargs = {
+                    'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                }
+                ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
 
                 figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
                 fig.savefig(figname)
@@ -348,21 +336,10 @@ for hname in hdict.keys():
 
                         ## set axes labels and titles
                     plt.xlabel(ytitle)
-                    cms_blurb = plt.text(
-                        0., 1., r"CMS Preliminary",
-                        fontsize=12, 
-                        horizontalalignment='left', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes,
-                        style='italic'
-                    )
-                    lumi_blurb = plt.text(
-                        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                        fontsize=12, 
-                        horizontalalignment='right', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes
-                    )
+                    kwargs = {
+                        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                    }
+                    ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
 
                     #figname = 'test.png'
                     figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
@@ -402,21 +379,10 @@ for hname in hdict.keys():
                         ## set axes labels and titles
                     plt.xlabel(xtitle)
                     plt.ylabel(ytitle)
-                    cms_blurb = plt.text(
-                        0., 1., r"CMS Preliminary",
-                        fontsize=12, 
-                        horizontalalignment='left', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes,
-                        style='italic'
-                    )
-                    lumi_blurb = plt.text(
-                        1., 1., r"(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                        fontsize=12, 
-                        horizontalalignment='right', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes
-                    )
+                    kwargs = {
+                        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                    }
+                    ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
 
                     figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, top]))
                     fig.savefig(figname)
