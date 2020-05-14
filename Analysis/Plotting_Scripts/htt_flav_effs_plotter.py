@@ -4,6 +4,13 @@ from coffea.util import load, save
 from pdb import set_trace
 import os
 from coffea import hist
+from coffea.hist import plot
+# matplotlib
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
+import styles
+import Utilities.plot_tools as plt_tools
+import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -56,17 +63,73 @@ if args.construct_btag:
     from copy import deepcopy
     btag_contructs_dict = deepcopy(flav_effs)
 
+jet_mults = {
+    '3Jets' : '3 jets',
+    '4PJets' : '4+ jets',
+}
+
 flav_to_name = {'bjet' : 'bottom', 'cjet' : 'charm', 'ljet' : 'light'}
 hname = 'Jets_pt_eta'
 lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
 
-pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
-eta_binning = np.array([-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5])
-#eta_binning = np.array([-2.5, -2., -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5])
+#pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
+#eta_binning = np.array([-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5])
+pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 1000.0])
+eta_binning = np.array([-2.5, -2., -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5])
 pt_bins = hist.Bin('pt', 'pt', pt_binning)
 eta_bins = hist.Bin('eta', 'eta', eta_binning)
 
 working_points = []
+
+def plot_effs(heff, edges, lumi_to_use, jmult, btagger, wp, flav, plotdir, clear=True):
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    fig.subplots_adjust(hspace=.07)
+
+    opts = {'cmap' : 'OrRd'}
+    xedges, yedges = edges[0], edges[1]
+    sumw = heff._values
+    pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
+    ax.add_collection(pc)
+    if clear:
+        fig.colorbar(pc, ax=ax, label='%s Efficiency, %s %s' % (flav_to_name[flav], btagger, wp))
+    ax.autoscale(axis='x', tight=True)
+    ax.set_xlim(xedges[0], xedges[-1])
+    ax.set_ylim(yedges[0], yedges[-1])
+    
+        ## set axes labels and titles
+    plt.xlabel('$p_{T}$ [GeV]')
+    plt.ylabel('$\\eta$')
+    kwargs = {
+        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s)" % (lumi_to_use, jet_mults[jmult]),
+    }
+    ax = plt_tools.make_cms_lumi_blurb(ax, CMS_blurb=False, **kwargs)
+        # handmake CMS blurb since colorbar shifts things
+    cms_blurb = plt.text(
+        0., 1., r"CMS",
+        fontsize=12,
+        horizontalalignment='left',
+        verticalalignment='bottom',
+        transform=ax.transAxes,
+        weight='bold'
+    )
+    preliminary = plt.text(
+        0.1, 1., r"Preliminary",
+        fontsize=12,
+        horizontalalignment='left',
+        verticalalignment='bottom',
+        transform=ax.transAxes,
+        style='italic'
+    )
+
+    #figname = 'test.png'    
+    figname = '%s/%s_Efficiency.png' % (plotdir, '_'.join([btagger, wp, jmult, flav]))
+    fig.savefig(figname)
+    print('%s written' % figname)
+    plt.close()
+    #set_trace()
+
+
+data_lumi_dict = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())
 
 for year in ['2016', '2017', '2018']:
     input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
@@ -93,6 +156,13 @@ for year in ['2016', '2017', '2018']:
     hall_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
     hall_lep = hall_mu+hall_el
 
+        ## get data lumi and scale MC by lumi
+    lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
+
+    pltdir = '/'.join([proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer])
+    if not os.path.isdir(pltdir):
+        os.makedirs(pltdir)
+
     for wp in hpass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
         for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
             for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
@@ -113,10 +183,13 @@ for year in ['2016', '2017', '2018']:
                 all_lookup = dense_lookup(*(h_all.values().values()), edges)
                 eff_lookup = dense_lookup(pass_lookup._values/all_lookup._values, edges)
 
-                tagger = 'DeepCSV' if wp.startswith('DEEPCSV') else 'DeepJet'
-                working_points.append(wp.split(tagger.upper())[-1])
+                tagger = 'DeepCSV' if wp.upper().startswith('DEEPCSV') else 'DeepJet'
+                working_points.append(wp.upper().split(tagger.upper())[-1])
                 flav_effs[year][tagger][jmult].update({flav_to_name[flav] : eff_lookup})
 
+                plot_effs(eff_lookup, edges, lumi_to_use, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
+
+#set_trace()
 wp_name = list(set(working_points))[0]
     # save files
 flav_effs_name = '%s/htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (outdir, wp_name, jobid)
