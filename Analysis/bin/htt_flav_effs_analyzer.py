@@ -45,6 +45,7 @@ corrections = {
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'JetCor' : jet_corrections,
+    'BTagSF' : False,
 }
 
 jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
@@ -228,7 +229,7 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    chunksize=10000,
+    chunksize=10000 if args.debug else 50000,
     #chunksize=500000,
 )
 
