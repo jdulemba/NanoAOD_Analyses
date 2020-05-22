@@ -132,11 +132,7 @@
         }
     },
     "ttsolver": {
-        "filename": "prob_htt_DeepJet_2016Legacy_j20l50MT40_1lep.root",
-        "dirname": "nosys",
-        "USEPTRATIOS": 0,
-        "USEWJETQGTAG": 0,
-        "USEBTAG": 0,
+        "filename": "prob_htt_jpt30_ljpt0_leppt30_mvaEl.coffea",
         "USENS": 1,
         "USEMASS": 1,
         "USE3JMERGED": 1,
