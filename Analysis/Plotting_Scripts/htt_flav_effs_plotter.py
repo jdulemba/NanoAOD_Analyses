@@ -7,6 +7,8 @@ from coffea import hist
 from coffea.hist import plot
 # matplotlib
 import matplotlib.pyplot as plt
+import mplhep as hep
+plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 import styles
 import Utilities.plot_tools as plt_tools
@@ -81,8 +83,8 @@ eta_bins = hist.Bin('eta', 'eta', eta_binning)
 
 working_points = []
 
-def plot_effs(heff, edges, lumi_to_use, jmult, btagger, wp, flav, plotdir, clear=True):
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir, clear=True):
+    fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
 
     opts = {'cmap' : 'OrRd'}
@@ -99,31 +101,20 @@ def plot_effs(heff, edges, lumi_to_use, jmult, btagger, wp, flav, plotdir, clear
         ## set axes labels and titles
     plt.xlabel('$p_{T}$ [GeV]')
     plt.ylabel('$\\eta$')
-    kwargs = {
-        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s)" % (lumi_to_use, jet_mults[jmult]),
-    }
-    ax = plt_tools.make_cms_lumi_blurb(ax, CMS_blurb=False, **kwargs)
-        # handmake CMS blurb since colorbar shifts things
-    cms_blurb = plt.text(
-        0., 1., r"CMS",
-        fontsize=12,
+        # add lepton/jet multiplicity label
+    ax.text(
+        0.02, 0.95, "%s" % (jet_mults[jmult]),
+        fontsize=18,
         horizontalalignment='left',
         verticalalignment='bottom',
-        transform=ax.transAxes,
-        weight='bold'
+        transform=ax.transAxes
     )
-    preliminary = plt.text(
-        0.1, 1., r"Preliminary",
-        fontsize=12,
-        horizontalalignment='left',
-        verticalalignment='bottom',
-        transform=ax.transAxes,
-        style='italic'
-    )
+    ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
+    #set_trace()
     #figname = 'test.png'    
     figname = '%s/%s_Efficiency.png' % (plotdir, '_'.join([btagger, wp, jmult, flav]))
-    fig.savefig(figname)
+    fig.savefig(figname, bbox_inches='tight')
     print('%s written' % figname)
     plt.close()
     #set_trace()
@@ -187,7 +178,7 @@ for year in ['2016', '2017', '2018']:
                 working_points.append(wp.upper().split(tagger.upper())[-1])
                 flav_effs[year][tagger][jmult].update({flav_to_name[flav] : eff_lookup})
 
-                plot_effs(eff_lookup, edges, lumi_to_use, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
+                plot_effs(eff_lookup, edges, lumi_to_use, year, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
 
 #set_trace()
 wp_name = list(set(working_points))[0]
