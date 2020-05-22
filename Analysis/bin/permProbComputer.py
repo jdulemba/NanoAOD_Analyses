@@ -6,7 +6,6 @@ import coffea.processor as processor
 from pdb import set_trace
 import os, sys
 import python.ObjectSelection as objsel
-#import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
 import numpy as np
@@ -90,9 +89,9 @@ class permProbComputer(processor.ProcessorABC):
         self.tMass_axis = hist.Bin("topmass", "m(t_{had}) [GeV]", 500, 0., 500.)
         self.wMass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", 500, 0., 500.)
         self.nu_chi2_axis = hist.Bin("nu_chi2", r"$\chi_{\nu}^{2}$", 1000, 0., 1000.)
-        self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$ dist", 150, 0., 150.)
-        self.maxmjet_axis = hist.Bin("maxmjet", "max m(jet}) [GeV]", 500, 0., 500.)
-        self.mbpjet_axis = hist.Bin("mbpjet", "m(b+j}) [GeV]", 1000, 0., 2000.)
+        self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$", 150, 0., 150.)
+        self.maxmjet_axis = hist.Bin("maxmjet", "max m(jet) [GeV]", 500, 0., 500.)
+        self.mbpjet_axis = hist.Bin("mbpjet", "m(b+j) [GeV]", 1000, 0., 2000.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -120,9 +119,9 @@ class permProbComputer(processor.ProcessorABC):
 
     def make_3j_merged_hists(self):
         histo_dict = {}
-        histo_dict['Merged_mbpjet_vs_maxmjet']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.maxmjet_axis, self.mbpjet_axis)
-        histo_dict['Merged_nusolver_chi2'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.nu_chi2_axis)
-        histo_dict['Merged_nusolver_dist'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.nu_dist_axis)
+        histo_dict['Merged_mbpjet_vs_maxmjet'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.maxmjet_axis, self.mbpjet_axis)
+        histo_dict['Merged_nusolver_chi2']     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.nu_chi2_axis)
+        histo_dict['Merged_nusolver_dist']     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mtregion_axis, self.permcat_axis, self.nu_dist_axis)
 
         return histo_dict
 
