@@ -21,7 +21,7 @@ def process_electrons(df, year):
         pfRelIso=df['Electron_pfRelIso03_all'],
         minipfRelIso=df['Electron_miniPFRelIso_all'],
         cutBasedID=df['Electron_cutBased'],
-        bitmap = df['Electron_vidNestedWPBitmap'],
+        bitmap=df['Electron_vidNestedWPBitmap'],
     )
 
         # makes etaSC
@@ -47,20 +47,20 @@ def process_electrons(df, year):
 #    return electrons
 #
 def veto_15(electrons):
-    #ID = (electrons.cutBasedID == 1) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
-    ID = (electrons.mvaVetoID)
+    ID = (electrons.cutBasedID == 1) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    #ID = (electrons.mvaVetoID)
     ##Iso = (electrons.pfRelIso < 0.25) # based on muon loose Iso def
     return ID
 
 def tight_15_NoECAL_Gap(electrons):
-    #ID = (electrons.cutBasedID == 4) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
-    ID = (electrons.mvaTightID)
-    Iso = (electrons.pfRelIso < 0.15) #*
+    ID = (electrons.cutBasedID == 4) # 0 is Fail, 1 Veto, 2 Loose, 3 Medium, 4 Tight
+    #ID = (electrons.mvaTightID)
+    #Iso = (electrons.pfRelIso < 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    #return (ID & ecalgap & ipcuts)
-    return (ID & Iso & ecalgap & ipcuts)
+    return (ID & ecalgap & ipcuts)
+    #return (ID & Iso & ecalgap & ipcuts)
 
 def fakes(electrons):
     '''
@@ -90,14 +90,14 @@ def fakes(electrons):
     #invTightminiIso_pass = invTightminiIso_barrel | invTightminiIso_endcap
 
 
-    #ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628) | (electrons.bitmap == 613566500)) 
-    ID = (electrons.mvaTightID)
-    Iso = (electrons.pfRelIso >= 0.15) #*
+    ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628) | (electrons.bitmap == 613566500)) 
+    #ID = (electrons.mvaTightID)
+    #Iso = (electrons.pfRelIso >= 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
-    #return (ID & ecalgap & ipcuts)
-    return (ID & Iso & ecalgap & ipcuts)
+    return (ID & ecalgap & ipcuts)
+    #return (ID & Iso & ecalgap & ipcuts)
 
 
 def make_electron_ids(electrons, year):
