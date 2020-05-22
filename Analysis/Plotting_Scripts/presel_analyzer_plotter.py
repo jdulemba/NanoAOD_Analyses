@@ -1,6 +1,8 @@
 from coffea.hist import plot
 # matplotlib
 import matplotlib.pyplot as plt
+import mplhep as hep
+plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 from coffea.util import load
 from pdb import set_trace
@@ -166,11 +168,10 @@ for hname in hdict.keys():
                     os.makedirs(pltdir)
 
                 if withData:
-                    fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                    fig.subplots_adjust(hspace=.07)
+                    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                 else:
-                    fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                    fig.subplots_adjust(hspace=.07)
+                    fig, ax = plt.subplots()
+                fig.subplots_adjust(hspace=.07)
                 hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
 
                 #if 'Lep_eta' in hname: set_trace()
@@ -236,13 +237,18 @@ for hname in hdict.keys():
 
                     ## set axes labels and titles
                 plt.xlabel(xtitle)
-                kwargs = {
-                    'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                }
-                ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
+                    # add lepton/jet multiplicity label
+                ax.text(
+                    0.02, 0.92, "%s/%s" % (objtypes['Lep'][lep], jet_mults[jmult]),
+                    fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+                    horizontalalignment='left', 
+                    verticalalignment='bottom', 
+                    transform=ax.transAxes
+                )
+                ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
                 figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
-                fig.savefig(figname)
+                fig.savefig(figname, bbox_inches='tight')
                 print('%s written' % figname)
                 plt.close()
                 #set_trace()
@@ -325,25 +331,29 @@ for hname in hdict.keys():
                         rax.set_ylim(0.5, 1.5)
                         rax.set_xlim(x_lims)
 
-                        # add x axis range for projection
+                    #    # add x axis range for projection
+                    #ax.text(
+                    #    0.02, 0.95, "%.1f $\leq$ %s $\leq$ %.1f" % (bin_xmin, xtitle, bin_xmax),
+                    #    fontsize=8, 
+                    #    horizontalalignment='left', 
+                    #    verticalalignment='bottom', 
+                    #    transform=ax.transAxes
+                    #)
+
+                        ## set axes labels and titles
+                    plt.xlabel(ytitle)
                     ax.text(
-                        0.02, 0.95, "%.1f $\leq$ %s $\leq$ %.1f" % (bin_xmin, xtitle, bin_xmax),
-                        fontsize=8, 
+                        0.02, 0.92, "%s/%s\n%.1f $\leq$ %s $\leq$ %.1f" % (objtypes['Lep'][lep], jet_mults[jmult], bin_xmin, xtitle, bin_xmax),
+                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
                         horizontalalignment='left', 
                         verticalalignment='bottom', 
                         transform=ax.transAxes
                     )
-
-                        ## set axes labels and titles
-                    plt.xlabel(ytitle)
-                    kwargs = {
-                        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    }
-                    ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
+                    ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
                     #figname = 'test.png'
                     figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
-                    fig.savefig(figname)
+                    fig.savefig(figname, bbox_inches='tight')
                     print('%s written' % figname)
                     plt.close()
                     #set_trace()
@@ -379,13 +389,21 @@ for hname in hdict.keys():
                         ## set axes labels and titles
                     plt.xlabel(xtitle)
                     plt.ylabel(ytitle)
-                    kwargs = {
-                        'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    }
-                    ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
+                    #kwargs = {
+                    #    'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
+                    #}
+                    #ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
+                    ax.text(
+                        0.02, 0.92, "%s/%s" % (objtypes['Lep'][lep], jet_mults[jmult]),
+                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+                        horizontalalignment='left', 
+                        verticalalignment='bottom', 
+                        transform=ax.transAxes
+                    )
+                    ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
                     figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, top]))
-                    fig.savefig(figname)
+                    fig.savefig(figname, bbox_inches='tight')
                     print('%s written' % figname)
                     plt.close()
                     #set_trace()
