@@ -63,6 +63,43 @@ styles = {
         'markersize': 10.,
         'color':'k',
         'elinewidth': 1,
-    }
+    },
 
+        ## permutation categories
+    'Correct_BLep' : {
+        'name' : 'Correct $b_{l}$',
+        'linestyle' : '-',
+        'color' : 'r',
+        'elinewidth' : 1,
+    },
+    'Wrong_BLep' : {
+        'name' : 'Wrong $b_{l}$',
+        'linestyle' : '-',
+        'color' : 'b',
+        'elinewidth' : 1,
+    },
+    'Correct_THad' : {
+        'name' : 'Correct $t_{h}$',
+        'linestyle' : '-',
+        'color' : 'r',
+        'elinewidth' : 1,
+    },
+    'Wrong_THad' : {
+        'name' : 'Wrong $t_{h}$',
+        'linestyle' : '-',
+        'color' : 'b',
+        'elinewidth' : 1,
+    },
+    'Correct' : {
+        'name' : 'Correct',
+        'linestyle' : '-',
+        'color' : 'r',
+        'elinewidth' : 1,
+    },
+    'Wrong' : {
+        'name' : 'Wrong',
+        'linestyle' : '-',
+        'color' : 'b',
+        'elinewidth' : 1,
+    }
 }
