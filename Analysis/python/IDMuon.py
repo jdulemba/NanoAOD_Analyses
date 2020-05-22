@@ -82,7 +82,7 @@ def tight_noIso(muons):
 
 def antiloose_15Db(muons):
     ID  = (muons.tightId)
-    Iso = (muons.pfRelIso >= 0.15) & (muons.pfRelIso < 0.43)
+    Iso = (muons.pfRelIso >= 0.15)# & (muons.pfRelIso < 0.43)
 
     return (ID & Iso)
 
