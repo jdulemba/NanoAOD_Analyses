@@ -6,14 +6,11 @@ import coffea.processor as processor
 from pdb import set_trace
 import os, sys
 import python.ObjectSelection as objsel
-import coffea.processor.dataframe
-import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
 import coffea.lumi_tools.lumi_tools as lumi_tools
 import Utilities.make_variables as make_vars
-from python.IDJet import btag_values as btag_values
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -72,6 +69,12 @@ if corrections['BTagSF'] == True:
         corrections['BTag_Constructors'].update({btagger : {'3Jets' : threeJets, '4PJets' : fourPJets} })
 #set_trace()
 
+    ## specify ttJets samples
+if args.year == '2016':
+    Nominal_ttJets = ['ttJets_PS', 'ttJets']
+else:
+    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class evt_cuts_invest(processor.ProcessorABC):
@@ -126,10 +129,6 @@ class evt_cuts_invest(processor.ProcessorABC):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-            raise IOError("This function only works for LazyDataFrame objects")
-
-        #if args.debug: set_trace()
         self.sample_name = df.dataset
 
             ## make event weights
@@ -245,6 +244,16 @@ class evt_cuts_invest(processor.ProcessorABC):
                 #evt_weights._weights['DeepJet'][fourplusJets_cut] = deepjet_4pj_wts['central'].prod()
                 deepcsv_4pj_wts = self.corrections['BTag_Constructors']['DeepCSV']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
                 evt_weights._weights['DeepCSV'][fourplusJets_cut] = deepcsv_4pj_wts['central'].prod()
+
+            # don't use ttbar events with indices % 10 == 0, 1, 2
+            if self.sample_name in Nominal_ttJets:
+                events = df.event
+                selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
+                for lepton in regions.keys():
+                    for lepcat in regions[lepton].keys():
+                        for jmult in regions[lepton][lepcat].keys():
+                            sel = regions[lepton][lepcat][jmult]
+                            sel.update({'keep_ttbar'})
 
 
         #set_trace()
