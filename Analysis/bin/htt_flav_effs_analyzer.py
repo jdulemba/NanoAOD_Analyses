@@ -6,8 +6,6 @@ import coffea.processor as processor
 from pdb import set_trace
 import os, sys
 import python.ObjectSelection as objsel
-import coffea.processor.dataframe
-import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
@@ -52,6 +50,12 @@ jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jo
 wps_to_use = list(set([jet_pars['permutations']['tightb'], jet_pars['permutations']['looseb']]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
+
+    ## specify ttJets samples
+if args.year == '2016':
+    Nominal_ttJets = ['ttJets_PS', 'ttJets']
+else:
+    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -101,10 +105,6 @@ class Htt_Flav_Effs(processor.ProcessorABC):
     def process(self, df):
         output = self.accumulator.identity()
 
-        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-            raise IOError("This function only works for LazyDataFrame objects")
-
-        #if args.debug: set_trace()
         self.sample_name = df.dataset
         isTTbar = self.sample_name.startswith('ttJets')
 
@@ -179,6 +179,16 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 }
             })
 
+            # don't use ttbar events with indices % 10 == 0, 1, 2
+            if self.sample_name in Nominal_ttJets:
+                events = df.event
+                selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
+                for lepton in regions.keys():
+                    for jmult in regions[lepton].keys():
+                        for hflav in regions[lepton][jmult].keys():
+                            sel = regions[lepton][jmult][hflav]
+                            sel.update({'keep_ttbar'})
+
 
         btag_wps = [wp for wp in df['Jet'].columns if wps_to_use[0] in wp]
         #set_trace()
@@ -189,11 +199,11 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                     for hflav in regions[lepton][jmult].keys():
                         cut = selection.all(*regions[lepton][jmult][hflav])
  
+                        #set_trace()
                         evt_weights_to_use = evt_weights.weight()
                         ## apply lepton SFs to MC (only applicable to tight leptons)
                         if 'LeptonSF' in corrections.keys():
                             evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                        #set_trace()
                         output = self.fill_jet_hists_all( accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
                         output = self.fill_jet_hists_pass(accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut][(df['Jet'][cut][btag_wp])], evt_weights=evt_weights_to_use[cut])
 
