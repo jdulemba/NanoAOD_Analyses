@@ -56,8 +56,9 @@ corrections = {
     'JetCor' : jet_corrections,
 }
 
+cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
     ## parameters for b-tagging
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
+jet_pars = cfg_pars['Jets']
 btagger = jet_pars['btagger']
 wps_to_use = list(set([jet_pars['permutations']['tightb'],jet_pars['permutations']['looseb']]))
 if not( len(wps_to_use) == 1):
@@ -73,7 +74,7 @@ btag_wp = btagger+wps_to_use[0]
 #    threeJets = btag_sfs[args.year][btagger]['3Jets'][wps_to_use[0]]
 #    fourPJets = btag_sfs[args.year][btagger]['4PJets'][wps_to_use[0]]
 #    corrections.update({'BTag_Constructors' : {'3Jets' : threeJets, '4PJets' : fourPJets} })
-
+MTcut = jet_pars['MT']
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class permProbComputer(processor.ProcessorABC):
@@ -201,6 +202,16 @@ class permProbComputer(processor.ProcessorABC):
         selection.add('objselection', objsel_evts)
         selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)
 
+        # don't use ttbar events with indices % 10 == 0, 1, 2
+        if Nominal_ttJets:
+            events = df.event
+            selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1)) 
+            for lepton in regions.keys():
+                for lepcat in regions[lepton].keys():
+                    for jmult in regions[lepton][lepcat].keys():
+                        sel = regions[lepton][lepcat][jmult]
+                        sel.update({'keep_ttbar'})
+
             # sort jets by btag value
         df['Jet'] = df['Jet'][df['Jet']['btagDeepB'].argsort(ascending=False)] if btagger == 'DeepCSV' else df['Jet'][df['Jet']['btagDeepFlavB'].argsort(ascending=False)]
 
@@ -264,7 +275,7 @@ class permProbComputer(processor.ProcessorABC):
 
                             ## create MT regions
                         MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
-                        MTHigh = (MT >= 40.).flatten()
+                        MTHigh = (MT >= MTcut).flatten()
 
                         #print(jmult)
 
