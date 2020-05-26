@@ -81,10 +81,12 @@ class evt_cuts_invest(processor.ProcessorABC):
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
+        self.lepcat_axis = hist.Cat("lepcat", "Lepton Category")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
         self.mt_axis = hist.Bin("mt", "M_{T}", 200, 0., 1000.)
+        self.IsoPassFail_axis = hist.Bin("iso_passfail", "Pass/Fail Tight Iso Req", 2, 0., 2.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -107,14 +109,15 @@ class evt_cuts_invest(processor.ProcessorABC):
 
     def make_hists(self):
         histo_dict = {}
-        histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.njets_axis)
-        histo_dict['Jets_LeadJet_pt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
-        #histo_dict['Jets_LeadJet_pt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepIso_axis, self.mt_axis, self.pt_axis)
-        histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepIso_axis)
-        histo_dict['MT']     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mt_axis)
-        histo_dict['MT_Iso'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mt_axis, self.lepIso_axis)
-        histo_dict['MT_LJpt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mt_axis, self.pt_axis)
-        histo_dict['Iso_LJpt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepIso_axis, self.pt_axis)
+        histo_dict['Jets_LeadJet_pt']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['Jets_njets']     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.njets_axis)
+        histo_dict['Lep_iso']        = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.lepIso_axis)
+        histo_dict['MT']             = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mt_axis)
+        #histo_dict['MT_Iso']         = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mt_axis, self.lepIso_axis)
+        #histo_dict['MT_LJpt']        = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.mt_axis, self.pt_axis)
+        #histo_dict['Iso_LJpt']       = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.lepIso_axis, self.pt_axis)
+        histo_dict['El_iso_barrel']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.IsoPassFail_axis)
+        histo_dict['El_iso_endcap']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.IsoPassFail_axis)
 
         return histo_dict
 
@@ -137,12 +140,32 @@ class evt_cuts_invest(processor.ProcessorABC):
         selection = processor.PackedSelection()
         regions = {
             'Muon' : {
-                '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'DeepCSV_pass'},
-                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'DeepCSV_pass'},
+                'Loose_or_Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'DeepCSV_pass'},
+                },
+                'Loose' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_pass'},
+                },
+                'Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_pass'},
+                },
             },
             'Electron' : {
-                '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'DeepCSV_pass'},
-                '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'DeepCSV_pass'},
+                'Loose_or_Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'DeepCSV_pass'},
+                },
+                'Loose' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_pass'},
+                },
+                'Tight' : {
+                    '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_pass'},
+                    '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_pass'},
+                },
             },
         }
 
@@ -171,28 +194,29 @@ class evt_cuts_invest(processor.ProcessorABC):
                 del regions['Electron']
                         ## muons
                 selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-                #selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+                selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
                 selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
             if isSE_Data:
                 del regions['Muon']
                         ## electrons
                 selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-                #selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+                selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
                 selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
             for lepton in regions.keys():
-                for jmult in regions[lepton].keys():
-                    regions[lepton][jmult].update({'lumimask'})
+                for lepcat in regions[lepton].keys():
+                    for jmult in regions[lepton][lepcat].keys():
+                        regions[lepton][lepcat][jmult].update({'lumimask'})
 
         if not self.isData:
                 ## add different selections
                     ## muons
             selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-            #selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+            selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
             selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
                     ## electrons
             selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-            #selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+            selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
             selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
             #set_trace()
@@ -228,51 +252,62 @@ class evt_cuts_invest(processor.ProcessorABC):
         for lepton in regions.keys():
             lepSF_to_exclude = 'Electron_SF' if lepton == 'Muon' else 'Muon_SF'
             btagSF_to_exclude = 'DeepJet'
-            for jmult in regions[lepton].keys():
-                cut = selection.all(*regions[lepton][jmult])
-                #set_trace()
-
-                if cut.sum() > 0:
-                    ltype = 'MU' if lepton == 'Muon' else 'EL'
-                    if 'loose_or_tight_%s' % ltype in regions[lepton][jmult]:
-                        lep_mask = ((df[lepton][cut]['TIGHT%s' % ltype] == True) | (df[lepton][cut]['LOOSE%s' % ltype] == True))
-                    elif 'tight_%s' % ltype in regions[lepton][jmult]:
-                        lep_mask = (df[lepton][cut]['TIGHT%s' % ltype] == True)
-                    elif 'loose_%s' % ltype in regions[lepton][jmult]:
-                        lep_mask = (df[lepton][cut]['LOOSE%s' % ltype] == True)
-                    else:
-                        raise ValueError("Not sure what lepton type to choose for event")
-
-                        ## calculate MT
-                    MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
-
-                    evt_weights_to_use = evt_weights.weight()
+            for lepcat in regions[lepton].keys():
+                for jmult in regions[lepton][lepcat].keys():
+                    cut = selection.all(*regions[lepton][lepcat][jmult])
                     #set_trace()
-                    if not self.isData:
-                        evt_weights_to_use = evt_weights.partial_weight(exclude=[lepSF_to_exclude, btagSF_to_exclude])
 
-                    jets = df['Jet'][cut]
-                    leptons = df[lepton][cut][lep_mask]
+                    if cut.sum() > 0:
+                        ltype = 'MU' if lepton == 'Muon' else 'EL'
+                        if 'loose_or_tight_%s' % ltype in regions[lepton][lepcat][jmult]:
+                            lep_mask = ((df[lepton][cut]['TIGHT%s' % ltype] == True) | (df[lepton][cut]['LOOSE%s' % ltype] == True))
+                        elif 'tight_%s' % ltype in regions[lepton][lepcat][jmult]:
+                            lep_mask = (df[lepton][cut]['TIGHT%s' % ltype] == True)
+                        elif 'loose_%s' % ltype in regions[lepton][lepcat][jmult]:
+                            lep_mask = (df[lepton][cut]['LOOSE%s' % ltype] == True)
+                        else:
+                            raise ValueError("Not sure what lepton type to choose for event")
 
-                    output = self.fill_hists(accumulator=output, jetmult=jmult, leptype=lepton, jets=jets, leptons=leptons, MT=MT.flatten(), evt_weights=evt_weights_to_use[cut])
+                            ## calculate MT
+                        MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
+
+                        evt_weights_to_use = evt_weights.weight()
+                        #set_trace()
+                        if not self.isData:
+                            evt_weights_to_use = evt_weights.partial_weight(exclude=[lepSF_to_exclude, btagSF_to_exclude])
+
+                        jets = df['Jet'][cut]
+                        leptons = df[lepton][cut][lep_mask]
+
+                        output = self.fill_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, jets=jets, leptons=leptons, MT=MT.flatten(), evt_weights=evt_weights_to_use[cut])
+
+                            # check iso values for cut based wps
+                        if lepton == 'Electron':
+                            barrel_els = leptons[(np.abs(leptons.etaSC) <= 1.479)]
+                            endcap_els = leptons[(np.abs(leptons.etaSC) > 1.479)]
+                            tight_iso_cut_barrel = 0.0287 + 0.506/barrel_els.pt
+                            tight_iso_cut_endcap = 0.0445 + 0.963/endcap_els.pt
+                            tight_iso_passFail_barrel = barrel_els.pfRelIso < tight_iso_cut_barrel
+                            tight_iso_passFail_endcap = endcap_els.pfRelIso < tight_iso_cut_endcap
+                            output['El_iso_barrel'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, iso_passfail=tight_iso_passFail_barrel.flatten().astype(int), weight=evt_weights_to_use[cut][(np.abs(leptons.etaSC) <= 1.479).flatten()])
+                            output['El_iso_endcap'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, iso_passfail=tight_iso_passFail_endcap.flatten().astype(int), weight=evt_weights_to_use[cut][(np.abs(leptons.etaSC) > 1.479).flatten()])
 
 
 
         return output
 
-    def fill_hists(self, accumulator, jetmult, leptype, jets, leptons, MT, evt_weights):
+    def fill_hists(self, accumulator, jetmult, leptype, lepcat, jets, leptons, MT, evt_weights):
         lepIso = leptons.pfRelIso.flatten()
         #set_trace()
-        accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, njets=jets.counts, weight=evt_weights)
-        accumulator['Jets_LeadJet_pt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=jets.pt.max(), weight=evt_weights)
-        #accumulator['Jets_LeadJet_pt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=lepIso, mt=MT, pt=jets.pt.max(), weight=evt_weights)
+        accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, njets=jets.counts, weight=evt_weights)
+        accumulator['Jets_LeadJet_pt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, pt=jets.pt.max(), weight=evt_weights)
 
-        accumulator['Lep_iso'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=lepIso, weight=evt_weights)
+        accumulator['Lep_iso'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, iso=lepIso, weight=evt_weights)
 
-        accumulator['MT'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, mt=MT, weight=evt_weights)
-        accumulator['MT_Iso'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, mt=MT, iso=lepIso, weight=evt_weights)
-        accumulator['MT_LJpt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, mt=MT, pt=jets.pt.max(), weight=evt_weights)
-        accumulator['Iso_LJpt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=lepIso, pt=jets.pt.max(), weight=evt_weights)
+        accumulator['MT'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mt=MT, weight=evt_weights)
+        #accumulator['MT_Iso'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mt=MT, iso=lepIso, weight=evt_weights)
+        #accumulator['MT_LJpt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, mt=MT, pt=jets.pt.max(), weight=evt_weights)
+        #accumulator['Iso_LJpt'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, iso=lepIso, pt=jets.pt.max(), weight=evt_weights)
 
         return accumulator        
 
