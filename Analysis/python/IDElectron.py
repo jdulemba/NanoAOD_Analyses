@@ -22,6 +22,11 @@ def process_electrons(df, year):
         minipfRelIso=df['Electron_miniPFRelIso_all'],
         cutBasedID=df['Electron_cutBased'],
         bitmap=df['Electron_vidNestedWPBitmap'],
+        sieie=df['Electron_sieie'],
+        hoe=df['Electron_hoe'],
+        eInvMpInv=df['Electron_eInvMinusPInv'],
+        missingHits=df['Electron_lostHits'],
+        convVeto=df['Electron_convVeto'],
     )
 
         # makes etaSC
@@ -30,7 +35,7 @@ def process_electrons(df, year):
 
     electrons['IPCuts'] = ((np.abs(electrons.etaSC) < 1.479) & (np.abs(electrons.dxy) < 0.05) & (np.abs(electrons.dz) < 0.10)) | ((np.abs(electrons.etaSC) >= 1.479) & (np.abs(electrons.dxy) < 0.10) & (np.abs(electrons.dz) < 0.20))
 
-    #set_trace()
+
         ## make electron ID/Iso categories
     electrons = make_electron_ids(electrons, year)
 
@@ -65,32 +70,56 @@ def tight_15_NoECAL_Gap(electrons):
 def fakes(electrons):
     '''
     For ID values:
-        613566692 corresponds to Iso of 011 (pass medium and loose but not tight) part of binary but 100 for other cuts
-        613566564 corresponds to 001 for Iso but 100 for other cuts
-        613566628 corresponds to 010 for Iso but 100 for other cuts
-        613566500 corresponds to 000 for Iso but 100 for other cuts
         passing tight cutBased ID corresponds to 613566756 == 100 100 100 100 100 100 100 100 100 100 in binary
+        I think the 3rd group of bits corresponds to isolation
+        609372452 corresponds to 010 
+        607275300 corresponds to 001
+        605178148 corresponds to 000
+        611469604 corresponds to 011 but has entries that also pass the isolation criteria so it's not included
+        inverted Iso bitvals = [609372452, 607275300, 605178148]#, 611469604]
+        
         invertedIso_bitvals = [613566692, 613566564, 613566628, 613566500]
     '''
+    #    # testing electron iso inversion
+    #basic_cut = (electrons.pt > 30) & (np.abs(electrons.eta) < 2.4) & (electrons.ECAL_GAP) & (electrons.IPCuts)
+    #els = electrons[basic_cut]
+
+    #barrel = (np.abs(els.etaSC) <= 1.479)
+    #endcap = (np.abs(els.etaSC) > 1.479)
+    #bitmap = els.bitmap
+
+    #rho = els.pt.ones_like()*df['fixedGridRhoFastjetAll']
+    #tightID_barrel = barrel & (els.sieie < 0.0104) & (els.hoe < 0.026+1.15/els.etaSC+0.0324*rho/els.etaSC) & (np.abs(els.eInvMpInv) < 0.159) & (els.missingHits <= 1) & els.convVeto
+    #tightID_endcap = endcap & (els.sieie < 0.0353) & (els.hoe < 0.0188+2.06/els.etaSC+0.183*rho/els.etaSC) & (np.abs(els.eInvMpInv) < 0.0197) & (els.missingHits <= 1) & els.convVeto
+    #tightID_els = tightID_barrel | tightID_endcap
+
+    #barrel_els = els[tightID_barrel]
+    #endcap_els = els[tightID_endcap]
+    #tightIso_barrel = (barrel_els.pfRelIso < (0.0287 + 0.506/barrel_els.pt))
+    #tightIso_endcap = (endcap_els.pfRelIso < (0.0445 + 0.963/endcap_els.pt))
+    #tightIso_bitvals = set(bitmap[tightID_barrel][tightIso_barrel].flatten().tolist()+bitmap[tightID_endcap][tightIso_endcap].flatten().tolist())
+    ##tightIso_bitvals = list(set(bitmap[tightID_barrel][tightIso_barrel].flatten().tolist()+bitmap[tightID_endcap][tightIso_endcap].flatten().tolist()))
+    #invTightIso_barrel = (barrel_els.pfRelIso >= (0.0287 + 0.506/barrel_els.pt))
+    #invTightIso_endcap = (endcap_els.pfRelIso >= (0.0445 + 0.963/endcap_els.pt))
+    #invTightIso_bitvals = set(bitmap[tightID_barrel][invTightIso_barrel].flatten().tolist()+bitmap[tightID_endcap][invTightIso_endcap].flatten().tolist())
+    ##invTightIso_bitvals = list(set(bitmap[tightID_barrel][invTightIso_barrel].flatten().tolist()+bitmap[tightID_endcap][invTightIso_endcap].flatten().tolist()))
+
+    #only_inv_bits = list(invTightIso_bitvals - tightIso_bitvals)
+    #import re
+    #binary_nums = ['{0:0b}'.format(num) for num in only_inv_bits]
+    #split_binary_nums = [re.findall('...', num) for num in binary_nums]
+    #diff_inds = [[idx for idx, val in enumerate(re.findall('...', num)) if val != '100'] for num in binary_nums]
+    #flat_list = [item for sublist in diff_inds for item in sublist]
+    #flat_set = set(flat_list)
     #set_trace()
-    #tightIso_barrel = (electrons.pfRelIso < (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
-    #tightIso_endcap = (electrons.pfRelIso < (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
-    #tightIso_pass = tightIso_barrel | tightIso_endcap
+    #invest_barrel_els = els[(bitmap == 611469604) & (np.abs(els.etaSC) <= 1.479)]
+    #invest_endcap_els = els[(bitmap == 611469604) & (np.abs(els.etaSC) > 1.479)]
 
-    #invTightIso_barrel = (electrons.pfRelIso >= (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
-    #invTightIso_endcap = (electrons.pfRelIso >= (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
-    #invTightIso_pass = invTightIso_barrel | invTightIso_endcap
+    #invIso_barrel = invest_barrel_els.pfRelIso < 0.0287 + 0.506/invest_barrel_els.pt
+    #invIso_endcap = invest_endcap_els.pfRelIso < 0.0445 + 0.963/invest_endcap_els.pt
+        ##
 
-    #tightminiIso_barrel = (electrons.minipfRelIso < (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
-    #tightminiIso_endcap = (electrons.minipfRelIso < (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
-    #tightminiIso_pass = tightminiIso_barrel | tightminiIso_endcap
-
-    #invTightminiIso_barrel = (electrons.minipfRelIso >= (0.0287 + 0.506/electrons.pt)).flatten() & (np.abs(electrons.etaSC) <= 1.479).flatten()
-    #invTightminiIso_endcap = (electrons.minipfRelIso >= (0.0445 + 0.963/electrons.pt)).flatten() & (np.abs(electrons.etaSC) > 1.479).flatten()
-    #invTightminiIso_pass = invTightminiIso_barrel | invTightminiIso_endcap
-
-
-    ID = ((electrons.bitmap == 613566692) | (electrons.bitmap == 613566564) | (electrons.bitmap == 613566628) | (electrons.bitmap == 613566500)) 
+    ID = ((electrons.bitmap == 609372452) | (electrons.bitmap == 607275300) | (electrons.bitmap == 605178148)) #| (electrons.bitmap == 611469604))
     #ID = (electrons.mvaTightID)
     #Iso = (electrons.pfRelIso >= 0.15) #*
     ecalgap = (electrons.ECAL_GAP)
