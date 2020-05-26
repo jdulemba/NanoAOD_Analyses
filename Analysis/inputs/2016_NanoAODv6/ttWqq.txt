@@ -1,2 +1,2 @@
-root://xrootd-cms.infn.it//store/mc/RunIISummer16NanoAODv6/TTWJetsToQQ_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/270000/577AC739-88F4-4B49-BE65-60AB144E6536.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer16NanoAODv6/TTWJetsToQQ_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/270000/493FE79D-E4A7-074D-8BEB-DE526CB56C92.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer16NanoAODv6/TTWJetsToQQ_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/270000/577AC739-88F4-4B49-BE65-60AB144E6536.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer16NanoAODv6/TTWJetsToQQ_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/270000/493FE79D-E4A7-074D-8BEB-DE526CB56C92.root
