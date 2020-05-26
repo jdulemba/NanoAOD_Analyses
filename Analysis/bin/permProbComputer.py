@@ -41,8 +41,6 @@ isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
 
-init_btag = ~(np.array([key.startswith('data') for key in fileset.keys()]).all())
-
 ## load corrections for event weights
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
@@ -52,7 +50,6 @@ corrections = {
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
-    #'BTagSF' : init_btag,
     'JetCor' : jet_corrections,
 }
 
@@ -65,15 +62,6 @@ if not( len(wps_to_use) == 1):
     raise ValueError("Only 1 unique btag working point supported now")
 btag_wp = btagger+wps_to_use[0]
 
-#if corrections['BTagSF'] == True:
-#    sf_file = '%s/Corrections/%s/%s' % (proj_dir, jobid, jet_pars['btagging']['btagSF_file'])
-#    if not os.path.isfile(sf_file):
-#        raise ValueError("BTag SF file %s doesn't exist" % sf_file)
-#
-#    btag_sfs = load(sf_file)
-#    threeJets = btag_sfs[args.year][btagger]['3Jets'][wps_to_use[0]]
-#    fourPJets = btag_sfs[args.year][btagger]['4PJets'][wps_to_use[0]]
-#    corrections.update({'BTag_Constructors' : {'3Jets' : threeJets, '4PJets' : fourPJets} })
 MTcut = jet_pars['MT']
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -203,7 +191,7 @@ class permProbComputer(processor.ProcessorABC):
         selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)
 
         # don't use ttbar events with indices % 10 == 0, 1, 2
-        if Nominal_ttJets:
+        if self.sample_name in Nominal_ttJets:
             events = df.event
             selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1)) 
             for lepton in regions.keys():
@@ -236,16 +224,6 @@ class permProbComputer(processor.ProcessorABC):
             tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
             evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
                 pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
-
-        if corrections['BTagSF'] == True:
-            #set_trace()
-            threeJets_cut = selection.require(objselection=True, jets_3=True)
-            threeJets_btagwts = self.corrections['BTag_Constructors']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut=btag_wp)
-            evt_weights._weights['Btag_SF'][threeJets_cut] = threeJets_btagwts['central'].prod()
-            fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
-            fourplusJets_btagwts = self.corrections['BTag_Constructors']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut=btag_wp)
-            evt_weights._weights['Btag_SF'][fourplusJets_cut] = fourplusJets_btagwts['central'].prod()
-
 
             # find gen level particles for ttbar system
         #set_trace()
