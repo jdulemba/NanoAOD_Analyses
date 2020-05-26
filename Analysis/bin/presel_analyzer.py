@@ -41,11 +41,6 @@ corrections = {
     'JetCor' : jet_corrections,
 }
 
-if corrections['BTagSF'] == True:
-    import python.BTagScaleFactors as btagSF
-    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
-
     ## specify ttJets samples
 if args.year == '2016':
     Nominal_ttJets = ['ttJets_PS', 'ttJets']
