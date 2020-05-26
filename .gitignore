@@ -7,3 +7,5 @@ Analysis/*.coffea
 *.meta.json
 *.o
 *.so
+Analysis/BATCH*
+Analysis/con_*
