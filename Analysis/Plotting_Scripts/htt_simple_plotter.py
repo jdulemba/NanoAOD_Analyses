@@ -87,7 +87,7 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
+lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction[args.year]['%ss' % args.lepton], axis='dataset')

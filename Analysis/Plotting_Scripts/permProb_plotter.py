@@ -84,7 +84,7 @@ hstyles = styles.styles
 
     ## get data lumi and scale MC by lumi
 data_lumi_dict = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
+lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))
 
     ## make groups based on perm category
 pcat = hist.Cat("permcat", "Perm Category", sorting='placement')
