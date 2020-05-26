@@ -74,26 +74,11 @@ variables = {
     'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.), True),
     'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.), True),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
-    #'Jets_Cjer' : ('$C_{JER}$(jets) ', 2, (0., 2.5), False),
-    #'Jets_Cjer_ScalingMethod' : ('$C_{JER}$(jets) Scaling Method', 2, (0., 2.5), False),
-    #'Jets_Cjer_StochasticMethod' : ('$C_{JER}$(jets) Stochastic Method', 2, (0., 2.5), False),
-    #'Jets_ptGenJet' : ('$p_{T}$(gen jets) [GeV]', 2, (0., 300.), False),
-    #'Jets_JER' : ('JER (jets) ', 2, (0., 0.5), False),
-    #'Jets_JERsf' : ('$SF_{JER}$(jets) ', 2, (1., 1.5), False),
-    #'Jets_pt_beforeJER' : ('$p_{T}$(jets) Before JER Corr. [GeV]', 2, (0., 300.), False),
-    #'Jets_pt_GenReco_resolution_beforeJER' : ('$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
-    #'Jets_pt_GenReco_resolution_afterJER' : ('$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (-100., 100.), False),
-    #'Jets_pt_BeforeJER_AfterJER_resolution' : ('$p_{T}$(jets) (Reco Before JER Corr. - Reco After) [GeV]', 2, (-50., 50.), False),
-    #'Jets_pt_RecoOverGen_beforeJER' : ('Reco/Gen - 1 Before JER Corr. ($p_{T}$)', 1, (-1., 2.), False),
-    #'Jets_pt_RecoOverGen_afterJER' : ('Reco/Gen - 1 After JER Corr. ($p_{T}$)', 1, (-1., 2.), False),
+    'MT' : ('$M_{T}$', 1, (0, 300), True),
 }
 if args.lepton == 'Electron':
     variables.update({'Lep_etaSC' : ('$\\eta_{SC}$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True)})
 
-#variables_2d = {
-#    'Jets_pt_GenReco_resolution_vs_genPt_beforeJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. Before JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
-#    'Jets_pt_GenReco_resolution_vs_genPt_afterJER' : ('$p_{T}$(gen jets) [GeV]', '$p_{T}$(jets) Reso. After JER Corr. (Gen-Reco) [GeV]', 2, (0., 300.), 2, (-100., 100.), False),
-#}
 
 
     ## get plotting colors/settings
@@ -103,7 +88,7 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
+lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction[args.year]['%ss' % args.lepton], axis='dataset')
