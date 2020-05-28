@@ -272,7 +272,8 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    chunksize=10000 if args.debug else 50000,
+    chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if args.debug else 50000,
     #chunksize=50000,
 )
 
