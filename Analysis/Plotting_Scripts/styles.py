@@ -101,5 +101,23 @@ styles = {
         'linestyle' : '-',
         'color' : 'b',
         'elinewidth' : 1,
+    },
+    '3Jets' : {
+        'name' : '3 jets',
+        'linestyle' : '-',
+        'color' : '#e41a1c', # red
+        'elinewidth' : 3,
+    },
+    '4PJets' : {
+        'name' : '4+ jets',
+        'linestyle' : '-',
+        'color' : '#377eb8', # blue
+        'elinewidth' : 3,
+    },
+    '3PJets' : {
+        'name' : '3+ jets',
+        'linestyle' : '-',
+        'color' : '#4daf4a', # green
+        'elinewidth' : 3,
     }
 }
