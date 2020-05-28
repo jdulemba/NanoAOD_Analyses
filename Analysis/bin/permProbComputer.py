@@ -345,7 +345,6 @@ class permProbComputer(processor.ProcessorABC):
         return accumulator
 
 proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-
 output = processor.run_uproot_job(fileset,
     treename='Events',
     processor_instance=permProbComputer(),
@@ -355,8 +354,8 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    #chunksize=10000 if args.debug else 50000,
-    chunksize=10000,
+    chunksize=10000 if args.debug else 50000,
+    #chunksize=10000,
 )
 
 
