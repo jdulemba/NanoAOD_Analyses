@@ -128,8 +128,8 @@
             "looseb": "Medium"
         },
         "btagging": {
-            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_jpt30_ljpt0_leppt30.coffea",
-            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_jpt30_ljpt0_leppt30.coffea"
+            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_jpt30_ljpt50_MT40_cutBasedEl.coffea",
+            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_jpt30_ljpt50_MT40_cutBasedEl.coffea"
         }
     },
     "ttsolver": {
