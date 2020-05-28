@@ -13,6 +13,7 @@ import Utilities.prettyjson as prettyjson
 import re
 from coffea import hist
 import numpy as np
+from equal_split import partition_list
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -49,6 +50,12 @@ objtypes = {
     }
 }
 
+lep_cats = {
+    'Loose_or_Tight' : 'loose or tight %s' % objtypes['Lep'][args.lepton],
+    'Tight' : 'tight %s' % objtypes['Lep'][args.lepton],
+    'Loose' : 'loose %s' % objtypes['Lep'][args.lepton],
+}
+
 variables = {
     'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
@@ -58,6 +65,11 @@ variables = {
     #'MT_LJpt' : ('$M_{T}$', '$p_{T}$(leading jet) [GeV]', 1, (0., 300.), 2, (0., 300.), True),
     #'Iso_LJpt' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], '$p_{T}$(leading jet) [GeV]', 1, (0., 1.), 2, (0., 300.), True),
 }
+if args.lepton == 'Electron':
+    variables.update({
+        'El_iso_barrel' : ('pass/fail tight Iso, |$\eta_{SC}$| $\leq$ 1.479', 1, (0., 2.), True),
+        'El_iso_endcap' : ('pass/fail tight Iso, |$\eta_{SC}$| $>$ 1.479', 1, (0., 2.), True),
+    })
 
 
     ## get plotting colors/settings
@@ -131,275 +143,210 @@ def cumulative_fraction(data, mc, lep, topos_to_use=[]):
     return rows
 
 
-    ## make plots
-for hname in variables.keys():
-    if hname not in hdict.keys():
-        raise ValueError("%s not found in file" % hname)
-    histo = hdict[hname][:, :, args.lepton].integrate('leptype')
+#    ## make plots
+#for hname in variables.keys():
+#    if hname not in hdict.keys():
+#        raise ValueError("%s not found in file" % hname)
+#    histo = hdict[hname][:, :, args.lepton].integrate('leptype')
+#    #set_trace()
+#
+#    if histo.dense_dim() == 1:
+#        xtitle, rebinning, x_lims, withData = variables[hname]
+#
+#        #set_trace()
+#        ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
+#        for jmult in list(set([key[1] for key in histo.values().keys()])):
+#            for lepcat in list(set([key[2] for key in histo.values().keys()])):
+#                pltdir = '/'.join([outdir, args.lepton, jmult, lepcat])
+#                if not os.path.isdir(pltdir):
+#                    os.makedirs(pltdir)
+#
+#                if withData:
+#                    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+#                else:
+#                    fig, ax = plt.subplots()
+#                fig.subplots_adjust(hspace=.07)
+#                hslice = histo[:, jmult, lepcat].integrate('jmult').integrate('lepcat')
+#
+#                #if 'Lep_eta' in hname: set_trace()
+#                if hname == 'Jets_njets':
+#                    print(jmult)
+#                    yields_txt, yields_json = get_samples_yield_and_frac(hslice, args.lepton)
+#                    plt_tools.print_table(yields_txt, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, args.lepton), print_output=True)
+#                    with open('%s/%s_%s_yields_and_fracs.json' % (pltdir, jmult, args.lepton), 'w') as out:
+#                        out.write(prettyjson.dumps(yields_json))
+#
+#                if rebinning != 1:
+#                    xaxis_name = hslice.dense_axes()[0].name
+#                    hslice = hslice.rebin(xaxis_name, rebinning)
+#
+#                #set_trace()
+#                mc_dict = {key:np.sum(list(hslice[key].values().values()), axis=1) for key in [key[0] for key in list(hslice[mc_samples].values().keys())]} # make {topo: sum events} dict for sorting
+#                mc_order = sorted(mc_dict, key=mc_dict.get, reverse=False)
+#                    ## plot MC and data
+#                plot.plot1d(hslice[mc_samples],
+#                    overlay=hslice.axes()[0].name,
+#                    ax=ax,
+#                    clear=False,
+#                    stack=True,
+#                    line_opts=None,
+#                    fill_opts=stack_fill_opts,
+#                    error_opts=stack_error_opts,
+#                    order=mc_order,
+#                )
+#                if withData:
+#                    plot.plot1d(hslice[data_samples],
+#                        overlay=hslice.axes()[0].name,
+#                        ax=ax,
+#                        clear=False,
+#                        error_opts=hstyles['data_err_opts']
+#                    )
+#                ax.autoscale(axis='x', tight=True)
+#                ax.set_ylim(0, None)
+#                ax.set_xlabel(None)
+#                ax.set_xlim(x_lims)
+#
+#                    ## set legend and corresponding colors
+#                handles, labels = ax.get_legend_handles_labels()
+#                for idx, sample in enumerate(labels):
+#                    if sample == 'data' or sample == 'Observed': continue
+#                    facecolor, legname = plt_tools.get_styles(sample, hstyles)
+#                    handles[idx].set_facecolor(facecolor)
+#                    labels[idx] = legname
+#                # call ax.legend() with the new values
+#                ax.legend(handles,labels, loc='upper right')
+#                #set_trace()
+#
+#                if withData:
+#                        ## plot data/MC ratio
+#                    plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
+#                        ax=rax,
+#                        error_opts=hstyles['data_err_opts'], 
+#                        denom_fill_opts={},
+#                        guide_opts={},
+#                        unc='num'
+#                    )
+#                    rax.set_ylabel('data/MC')
+#                    rax.set_ylim(0.5, 1.5)
+#                    rax.set_xlim(x_lims)
+#
+#
+#                    ## set axes labels and titles
+#                plt.xlabel(xtitle)
+#                    # add lepton/jet multiplicity label
+#                ax.text(
+#                    0.02, 0.92, "%s, %s" % (lep_cats[lepcat], jet_mults[jmult]),
+#                    fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+#                    horizontalalignment='left', 
+#                    verticalalignment='bottom', 
+#                    transform=ax.transAxes
+#                )
+#                ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+#                if hname == 'Lep_iso':
+#                    #print(jmult)
+#                    #prompt_mc_frac = cumulative_fraction(data=hslice[data_samples], mc=hslice[mc_samples], lep=args.lepton, topos_to_use=['ttJets', 'singlet','EWK'])
+#                    #plt_tools.print_table(prompt_mc_frac, filename='%s/%s_%s_Iso_Fracs.txt' % (pltdir, jmult, args.lepton), print_output=True)
+#
+#                    mc_vals = np.sum(np.array(list(hslice[mc_samples].values().values())), axis=0)
+#                    data_vals = np.sum(np.array(list(hslice[data_samples].values().values())), axis=0)
+#                    max_binval = np.maximum(np.max(mc_vals), np.max(data_vals))
+#                    min_binval = np.minimum(np.min(mc_vals), np.min(data_vals))
+#                    ax.set_yscale('log')
+#                    ax.set_ylim(np.maximum(1e-1, min_binval), 10**np.ceil(np.log10(max_binval)))
+#
+#                figname = '%s/%s.png' % (pltdir, '_'.join([jmult, args.lepton, lepcat, hname]))
+#                fig.savefig(figname, bbox_inches='tight')
+#                print('%s written' % figname)
+#                #set_trace()
+#                plt.close()
+
+    
+
+
+## save values used to determine isolation sidebands (only for Loose leptons in data)
+lepIso_invest = True
+if lepIso_invest:
+    pltdir = '/'.join([outdir, args.lepton])
+    if not os.path.isdir(pltdir):
+        os.makedirs(pltdir)
+
+    histo = hdict['Lep_iso'][:, :, args.lepton, 'Loose'].integrate('leptype').integrate('lepcat')[data_samples].integrate('process')
+    xtitle, rebinning, x_lims, withData = variables['Lep_iso']
+
+    if rebinning != 1:
+        xaxis_name = histo.dense_axes()[0].name
+        hslice = histo.rebin(xaxis_name, rebinning)
+        
+    iso_vals = histo.axis('iso').edges(overflow='all')
+
+    vals_to_save = {
+        args.lepton : {'3Jets' : {}, '4PJets' : {}, '3PJets' : {}}
+    }    
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(hspace=.07)
+    for idx, jmult in enumerate(['3Jets', '4PJets', '3PJets']):
+        hslice = histo.integrate('jmult') if jmult == '3PJets' else histo[jmult].integrate('jmult')
+
+        #set_trace()        
+        ## construct iso sideband regions to investigate based on data in 'Loose' category
+        data_array = hslice.values(sumw2=False, overflow='all')[()]
+        data_partitions, inds_for_splitting = partition_list(data_array, 3) # get splitting of data and inds where that splitting occurs: returns list for partitions, ndarray for inds
+        vals_to_save[args.lepton][jmult] = {
+            'iso_binning' : iso_vals.tolist(),
+            'orig_data_array' : data_array.tolist(),
+            'partition_loc_inds' : inds_for_splitting.tolist(),
+            'iso_region_edges' : iso_vals[inds_for_splitting].tolist(),
+            'data_partitions' : data_partitions,
+            'data_partition_sums' : list(map(sum, data_partitions)),
+        }
+
+        plot.plot1d(hslice,
+            ax=ax,
+            clear=False,
+            line_opts={'linestyle' : hstyles[jmult]['linestyle'], 'color' : hstyles[jmult]['color'], 'linewidth' : hstyles[jmult]['elinewidth']},
+        )
+    ax.autoscale(axis='x', tight=True)
+    ax.set_ylim(0, None)
+    ax.set_xlabel(None)
+    ax.set_xlim(x_lims)
+    
+        ## set legend labels
+    handles, labels = ax.get_legend_handles_labels()
+    labels[0] = hstyles['3Jets']['name']
+    labels[1] = hstyles['4PJets']['name']
+    labels[2] = hstyles['3PJets']['name']
+    # call ax.legend() with the new values
+    ax.legend(handles,labels, loc='upper right')
+    
+    #set_trace()
+    
+        ## set axes labels and titles
+    plt.xlabel(xtitle)
+        # add lepton/jet multiplicity label
+    ax.text(
+        0.02, 0.95, lep_cats['Loose'],
+        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+        horizontalalignment='left', 
+        verticalalignment='bottom', 
+        transform=ax.transAxes
+    )
+    ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    data_vals = np.array(list(histo.values().values()))
+    max_binval = np.max(data_vals)
+    min_binval = np.min(data_vals[data_vals > 0])
+    ax.set_yscale('log')
+    ax.set_ylim(np.maximum(1e-1, min_binval), 10**np.ceil(np.log10(max_binval)))
+    
+    figname = '%s/%s.png' % (pltdir, '_'.join(['Loose', args.lepton, 'data', 'Lep_iso']))
+    fig.savefig(figname, bbox_inches='tight')
+    print('%s written' % figname)
+    #set_trace()
+    plt.close()
     #set_trace()
 
-    if histo.dense_dim() == 1:
-        xtitle, rebinning, x_lims, withData = variables[hname]
 
-        ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
-        for jmult in list(set([key[1] for key in histo.values().keys()])):
-            pltdir = '/'.join([outdir, args.lepton, jmult])
-            if not os.path.isdir(pltdir):
-                os.makedirs(pltdir)
-
-            if withData:
-                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-            else:
-                fig, ax = plt.subplots()
-            fig.subplots_adjust(hspace=.07)
-            hslice = histo[:, jmult].integrate('jmult')
-
-            #if 'Lep_eta' in hname: set_trace()
-            if hname == 'Jets_njets':
-                print(jmult)
-                yields_txt, yields_json = get_samples_yield_and_frac(hslice, args.lepton)
-                plt_tools.print_table(yields_txt, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, args.lepton), print_output=True)
-                with open('%s/%s_%s_yields_and_fracs.json' % (pltdir, jmult, args.lepton), 'w') as out:
-                    out.write(prettyjson.dumps(yields_json))
-
-            if rebinning != 1:
-                xaxis_name = hslice.dense_axes()[0].name
-                hslice = hslice.rebin(xaxis_name, rebinning)
-
-            mc_dict = {key:np.sum(list(hslice[key].values().values()), axis=1) for key in [key[0] for key in list(hslice[mc_samples].values().keys())]} # make {topo: sum events} dict for sorting
-            mc_order = sorted(mc_dict, key=mc_dict.get, reverse=False)
-            #set_trace()
-                ## plot MC and data
-            plot.plot1d(hslice[mc_samples],
-                overlay=hslice.axes()[0].name,
-                ax=ax,
-                clear=False,
-                stack=True,
-                line_opts=None,
-                fill_opts=stack_fill_opts,
-                error_opts=stack_error_opts,
-                order=mc_order,
-            )
-            if withData:
-                plot.plot1d(hslice[data_samples],
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    error_opts=hstyles['data_err_opts']
-                )
-            ax.autoscale(axis='x', tight=True)
-            ax.set_ylim(0, None)
-            ax.set_xlabel(None)
-            ax.set_xlim(x_lims)
-
-                ## set legend and corresponding colors
-            handles, labels = ax.get_legend_handles_labels()
-            for idx, sample in enumerate(labels):
-                if sample == 'data' or sample == 'Observed': continue
-                facecolor, legname = plt_tools.get_styles(sample, hstyles)
-                handles[idx].set_facecolor(facecolor)
-                labels[idx] = legname
-            # call ax.legend() with the new values
-            ax.legend(handles,labels, loc='upper right')
-            #set_trace()
-
-            if withData:
-                    ## plot data/MC ratio
-                plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
-                    ax=rax,
-                    error_opts=hstyles['data_err_opts'], 
-                    #error_opts=data_err_opts, 
-                    denom_fill_opts={},
-                    guide_opts={},
-                    unc='num'
-                )
-                rax.set_ylabel('data/MC')
-                rax.set_ylim(0.5, 1.5)
-                rax.set_xlim(x_lims)
-
-
-                ## set axes labels and titles
-            plt.xlabel(xtitle)
-                # add lepton/jet multiplicity label
-            ax.text(
-                0.02, 0.92, "%s/%s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
-                fontsize=hep.styles_cms.CMS['font.size']*0.90, 
-                horizontalalignment='left', 
-                verticalalignment='bottom', 
-                transform=ax.transAxes
-            )
-            ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-            if hname == 'Lep_iso':
-                print(jmult)
-                prompt_mc_frac = cumulative_fraction(data=hslice[data_samples], mc=hslice[mc_samples], lep=args.lepton, topos_to_use=['ttJets', 'singlet','EWK'])
-                #set_trace()
-                plt_tools.print_table(prompt_mc_frac, filename='%s/%s_%s_Iso_Fracs.txt' % (pltdir, jmult, args.lepton), print_output=True)
-
-                mc_vals = np.sum(np.array(list(hslice[mc_samples].values().values())), axis=0)
-                data_vals = np.sum(np.array(list(hslice[data_samples].values().values())), axis=0)
-                max_binval = np.maximum(np.max(mc_vals), np.max(data_vals))
-                min_binval = np.minimum(np.min(mc_vals), np.min(data_vals))
-                ax.set_yscale('log')
-                ax.set_ylim(np.maximum(1e-1, min_binval), 10**np.ceil(np.log10(max_binval)))
-
-            figname = '%s/%s.png' % (pltdir, '_'.join([jmult, args.lepton, hname]))
-            fig.savefig(figname, bbox_inches='tight')
-            print('%s written' % figname)
-            plt.close()
-            #set_trace()
-
-    elif histo.dense_dim() == 2:
-        xtitle, ytitle, x_rebinning, x_lims, y_rebinning, y_lims, withData = variables[hname]
-
-        ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
-        for lep in [args.lepton]:
-            for jmult in histo.axis('jmult')._sorted:
-                pltdir = '/'.join([outdir, lep, jmult])
-                if not os.path.isdir(pltdir):
-                    os.makedirs(pltdir)
-
-                hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
-
-                if x_rebinning != 1:
-                    xaxis_name = hslice.dense_axes()[0].name
-                    hslice = hslice.rebin(xaxis_name, x_rebinning)
-                if y_rebinning != 1:
-                    yaxis_name = hslice.dense_axes()[1].name
-                    hslice = hslice.rebin(yaxis_name, y_rebinning)
-
-                    # make 1D projections along y axis
-                bin_slices = [(x, x+10) for x in range(0, 100, 10)] # [(0, 10), (10, 20)..]
-                for bin_xmin, bin_xmax in bin_slices:
-                    if withData:
-                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
-                    else:
-                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
-
-                    #set_trace()
-                    y_slice = hslice[:, bin_xmin:bin_xmax, :].integrate(hslice.dense_axes()[0].name)
-                        ## plot MC and data
-                    plot.plot1d(y_slice[mc_samples],
-                        overlay=y_slice.axes()[0].name,
-                        ax=ax,
-                        clear=False,
-                        stack=True,
-                        line_opts=None,
-                        fill_opts=stack_fill_opts,
-                        error_opts=stack_error_opts
-                    )
-                    if withData:
-                        plot.plot1d(y_slice[data_samples],
-                            overlay=y_slice.axes()[0].name,
-                            ax=ax,
-                            clear=False,
-                            error_opts=hstyles['data_err_opts']
-                        )
-                    ax.autoscale(axis='x', tight=True)
-                    ax.set_ylim(0, None)
-                    ax.set_xlabel(None)
-                    ax.set_xlim(y_lims)
-
-                        ## set legend and corresponding colors
-                    handles, labels = ax.get_legend_handles_labels()
-                    for idx, sample in enumerate(labels):
-                        if sample == 'data' or sample == 'Observed': continue
-                        facecolor, legname = plt_tools.get_styles(sample, hstyles)
-                        handles[idx].set_facecolor(facecolor)
-                        labels[idx] = legname
-                    # call ax.legend() with the new values
-                    ax.legend(handles,labels, loc='upper right')
-                    #set_trace()
-
-                    if withData:
-                            ## plot data/MC ratio
-                        plot.plotratio(y_slice[data_samples].sum(y_slice.axes()[0].name), y_slice[mc_samples].sum(y_slice.axes()[0].name), 
-                            ax=rax,
-                            error_opts=hstyles['data_err_opts'], 
-                            #error_opts=data_err_opts, 
-                            denom_fill_opts={},
-                            guide_opts={},
-                            unc='num'
-                        )
-                        rax.set_ylabel('data/MC')
-                        rax.set_ylim(0.5, 1.5)
-                        rax.set_xlim(x_lims)
-
-                    #    # add x axis range for projection
-                    #ax.text(
-                    #    0.02, 0.95, "%.1f $\leq$ %s $\leq$ %.1f" % (bin_xmin, xtitle, bin_xmax),
-                    #    fontsize=8, 
-                    #    horizontalalignment='left', 
-                    #    verticalalignment='bottom', 
-                    #    transform=ax.transAxes
-                    #)
-
-                        ## set axes labels and titles
-                    plt.xlabel(ytitle)
-                    ax.text(
-                        0.02, 0.92, "%s/%s\n%.1f $\leq$ %s $\leq$ %.1f" % (objtypes['Lep'][lep], jet_mults[jmult], bin_xmin, xtitle, bin_xmax),
-                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
-                        horizontalalignment='left', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes
-                    )
-                    ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
-
-                    #figname = 'test.png'
-                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
-                    fig.savefig(figname, bbox_inches='tight')
-                    print('%s written' % figname)
-                    plt.close()
-                    #set_trace()
-
-
-                    # make 2D plots for each topology
-                for top in hslice.sparse_axes()[0]._sorted:
-                    if not withData and top == 'data': continue
-
-                    if withData:
-                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
-                    else:
-                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
-
-                    htop = hslice[top].integrate('process')
-                    top_label = plt_tools.get_label(top, hstyles)
-                    htop.label = '%s %s' % (top_label, htop.label)
-                        ## plot MC and data
-                    #set_trace()
-                    plot.plot2d(htop,
-                        xaxis=htop.axes()[0].name,
-                        ax=ax,
-                        patch_opts={'cmap' : 'OrRd'},
-                        clear=True,
-                    )
-                    ax.autoscale(axis='x', tight=True)
-                    ax.set_ylim(y_lims)
-                    ax.set_xlim(x_lims)
-
-
-                        ## set axes labels and titles
-                    plt.xlabel(xtitle)
-                    plt.ylabel(ytitle)
-                    #kwargs = {
-                    #    'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    #}
-                    #ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
-                    ax.text(
-                        0.02, 0.92, "%s/%s" % (objtypes['Lep'][lep], jet_mults[jmult]),
-                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
-                        horizontalalignment='left', 
-                        verticalalignment='bottom', 
-                        transform=ax.transAxes
-                    )
-                    ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
-
-                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, top]))
-                    fig.savefig(figname, bbox_inches='tight')
-                    print('%s written' % figname)
-                    plt.close()
-                    #set_trace()
-
+    outjson_name = '%s/%s_iso_sideband_regions_construction.json' % (pltdir, '_'.join(['Loose', args.lepton]))
+    with open(outjson_name, 'w') as out:
+        out.write(prettyjson.dumps(vals_to_save))
+    print('%s written' % outjson_name)
+    
