@@ -57,9 +57,9 @@ def select_normal(df, w_decay_momid):
         df['genParts'] = process_genParts(df)
 
     categories = processor.PackedSelection()
-    categories.add('quarks', ( (df['genParts'].status > 21) & (df['genParts'].status < 30) & (df['genParts'].momIdx.counts > 0) ).flatten())
-    categories.add('leptons', ( (df['genParts'].momIdx.counts > 0) & (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == w_decay_momid) ).flatten())
-    categories.add('final_leptons', ( (df['genParts'].status == 1) & (df['genParts'].momIdx.counts > 0) & ( (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == 24) | (df['genParts'].pdgId == df['genParts'][df['genParts'].momIdx].pdgId) ) ).flatten())
+    categories.add('quarks', ( (df['genParts'].status > 21) & (df['genParts'].status < 30) & (df['genParts'].momIdx != -1) ).flatten())
+    categories.add('leptons', ( (df['genParts'].momIdx != -1) & (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == w_decay_momid) ).flatten())
+    categories.add('final_leptons', ( (df['genParts'].status == 1) & (df['genParts'].momIdx != -1) & ( (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == 24) | (df['genParts'].pdgId == df['genParts'][df['genParts'].momIdx].pdgId) ) ).flatten())
 
     fermions = processor.PackedSelection()
     fermions.add('top',  categories.require(quarks=True) & (df['genParts'].pdgId == 6).flatten())
