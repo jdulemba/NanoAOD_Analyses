@@ -6,7 +6,7 @@ import Utilities.prettyjson as prettyjson
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 
-outdir = '%s/Corrections' % proj_dir
+outdir = '%s/Corrections/%s' % (proj_dir, jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
