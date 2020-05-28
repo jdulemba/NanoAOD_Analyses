@@ -97,7 +97,6 @@ def add_coffea_files(input_files):
 
     output_acc = input_accs[0]
     for idx in range(1, len(input_accs)):
-        print(idx)
         output_acc.add(input_accs[idx])
 
     return output_acc
