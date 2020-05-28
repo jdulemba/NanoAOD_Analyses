@@ -93,12 +93,12 @@ def make_dataset_groups(lepton, year):
 
 def add_coffea_files(input_files):
     from coffea.util import load
-    import collections
     input_accs = [load(fname) for fname in input_files]
 
-    output_acc = collections.Counter()
-    for acc in input_accs:
-        output_acc.update(acc)
+    output_acc = input_accs[0]
+    for idx in range(1, len(input_accs)):
+        print(idx)
+        output_acc.add(input_accs[idx])
 
     return output_acc
 
