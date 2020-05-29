@@ -14,7 +14,10 @@ if not os.path.isdir(outdir):
 ## pt and eta lists are hardcoded for now
 leptons = {
     'Electrons' : {
-        'pt' : ['SF_ElTOT_0', 'SF_ElTOT_1', 'SF_ElTOT_2', 'SF_ElTOT_3', 'SF_ElTOT_4', 'SF_ElTOT_5', 'SF_ElTOT_6', 'SF_ElTOT_7', 'SF_ElTOT_8', 'SF_ElTOT_9'],
+        'pt' : {
+            'reco_id' : ['SF_ElReco_ElTOT_0', 'SF_ElReco_ElTOT_1', 'SF_ElReco_ElTOT_2', 'SF_ElReco_ElTOT_3', 'SF_ElReco_ElTOT_4', 'SF_ElReco_ElTOT_5', 'SF_ElReco_ElTOT_6', 'SF_ElReco_ElTOT_7', 'SF_ElReco_ElTOT_8', 'SF_ElReco_ElTOT_9'],
+            'trig' : ['SF_ElISOTRG_0', 'SF_ElISOTRG_1', 'SF_ElISOTRG_2', 'SF_ElISOTRG_3', 'SF_ElISOTRG_4', 'SF_ElISOTRG_5', 'SF_ElISOTRG_6', 'SF_ElISOTRG_7', 'SF_ElISOTRG_8', 'SF_ElISOTRG_9'],
+        },
         'eta' : 'eta_ElTOT',
         'fnames' : {
             '2016' : 'SF_El_V16010b.root',
@@ -23,7 +26,11 @@ leptons = {
         }
     },
     'Muons' : {
-        'pt' : ['SF_MuTOT_0', 'SF_MuTOT_1', 'SF_MuTOT_2', 'SF_MuTOT_3', 'SF_MuTOT_4', 'SF_MuTOT_5', 'SF_MuTOT_6', 'SF_MuTOT_7'],
+        'pt' : {
+            'reco_id' : ['SF_MuTRK_MuTOT_0', 'SF_MuTRK_MuTOT_1', 'SF_MuTRK_MuTOT_2', 'SF_MuTRK_MuTOT_3', 'SF_MuTRK_MuTOT_4', 'SF_MuTRK_MuTOT_5', 'SF_MuTRK_MuTOT_6', 'SF_MuTRK_MuTOT_7'],
+            'trig' : ['SF_MuISOTRG_0', 'SF_MuISOTRG_1', 'SF_MuISOTRG_2', 'SF_MuISOTRG_3', 'SF_MuISOTRG_4', 'SF_MuISOTRG_5', 'SF_MuISOTRG_6', 'SF_MuISOTRG_7'],
+        },
+        #'pt' : ['SF_MuTOT_0', 'SF_MuTOT_1', 'SF_MuTOT_2', 'SF_MuTOT_3', 'SF_MuTOT_4', 'SF_MuTOT_5', 'SF_MuTOT_6', 'SF_MuTOT_7'],
         'eta' : 'eta_MuTOT',
         'fnames' : {
             '2016' : 'SF_Mu_V16010.root', 
@@ -36,32 +43,68 @@ leptons = {
 sf_output = {
     '2016' : {
         'Electrons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
         'Muons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
     },
     '2017' : {
         'Electrons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
         'Muons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
     },
     '2018' : {
         'Electrons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
         'Muons' : {
-            'Central' : {},
-            'Error' : {},
+            'Reco_ID' : {
+                'Central' : {},
+                'Error' : {},
+            },
+            'Trig' : {
+                'Central' : {},
+                'Error' : {},
+            },
         },
     },
 }
@@ -71,11 +114,16 @@ for lep in leptons.keys():
         sf_file = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, fname))
         eta_binning = sf_file[(leptons[lep]['eta'], 'dense_lookup')][1]
 
-        #set_trace()
+        #if lep == 'Muons': set_trace()
         sf_output[year][lep]['eta_ranges'] = [(eta_binning[idx], eta_binning[idx+1]) for idx in range(len(eta_binning)-1)]
-        for idx, pt_hist in enumerate(leptons[lep]['pt']):
-            sf_output[year][lep]['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(pt_hist, 'dense_lookup')])
-            sf_output[year][lep]['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % pt_hist, 'dense_lookup')])
+        for idx in range(len(eta_binning)-1):
+            #set_trace()
+                # reco/ID SFs
+            sf_output[year][lep]['Reco_ID']['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(leptons[lep]['pt']['reco_id'][idx], 'dense_lookup')])
+            sf_output[year][lep]['Reco_ID']['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % leptons[lep]['pt']['reco_id'][idx], 'dense_lookup')])
+                # trigger SFs
+            sf_output[year][lep]['Trig']['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')])
+            sf_output[year][lep]['Trig']['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')])
 
 lepSF_name = '%s/leptonSFs.coffea' % outdir
 save(sf_output, lepSF_name)    
