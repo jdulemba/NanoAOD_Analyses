@@ -135,7 +135,9 @@ def get_lepton_sf(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.n
     for idx, eta_range in enumerate(eta_ranges):
         mask = (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
         if not mask.any(): continue # no values fall within eta range
-        sf_hist = sf_dict[shift]['eta_bin%i' % idx]
-        lepSFs[mask] = sf_hist(pt[mask])
+        #set_trace()
+        recoSF = sf_dict['Reco_ID'][shift]['eta_bin%i' % idx]
+        trigSF = sf_dict['Trig'][shift]['eta_bin%i' % idx]
+        lepSFs[mask] = recoSF(pt[mask])*trigSF(pt[mask])
 
     return lepSFs
