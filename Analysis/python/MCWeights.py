@@ -40,9 +40,9 @@ def get_event_weights(df, year: str, corrections, BTagSFs = []):
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
             weights.add('pileup_weight',
-                corrections['Pileup'][year][df['dataset']]['central'](df['Pileup_nPU']),
-                corrections['Pileup'][year][df['dataset']]['up'](df['Pileup_nPU']),
-                corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nPU'])
+                corrections['Pileup'][year][df['dataset']]['central'](df['Pileup_nTrueInt']),
+                corrections['Pileup'][year][df['dataset']]['up'](df['Pileup_nTrueInt']),
+                corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nTrueInt'])
             )
     
             ## BTag SFs
