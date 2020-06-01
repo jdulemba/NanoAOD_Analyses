@@ -96,6 +96,7 @@ class evt_cuts_invest(processor.ProcessorABC):
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 2000, 0., 20.)
         self.mt_axis = hist.Bin("mt", "M_{T}", 200, 0., 1000.)
         self.IsoPassFail_axis = hist.Bin("iso_passfail", "Pass/Fail Tight Iso Req", 2, 0., 2.)
+        self.SF_axis = hist.Bin("sf", "SF", 500, 0., 5.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -127,6 +128,10 @@ class evt_cuts_invest(processor.ProcessorABC):
         #histo_dict['Iso_LJpt']      = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.lepIso_axis, self.pt_axis)
         histo_dict['El_iso_barrel']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.IsoPassFail_axis)
         histo_dict['El_iso_endcap']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.IsoPassFail_axis)
+
+        histo_dict['BTagSF'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
+        histo_dict['LepSF'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
+        histo_dict['EvtWeight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
 
         return histo_dict
 
@@ -324,8 +329,15 @@ class evt_cuts_invest(processor.ProcessorABC):
                             jets = df['Jet'][cut][MTHigh]
                             leptons = df[lepton][cut][lep_mask][MTHigh]
 
+                            btagSF = np.ones(MTHigh.size) if self.isData else evt_weights._weights[btaggers[0]][cut][MTHigh].flatten()
+                            lepSF = np.ones(MTHigh.size) if self.isData else evt_weights._weights['%s_SF' % lepton][cut][MTHigh].flatten()
+                            tot_weight = evt_weights_to_use[cut][MTHigh].flatten()
                             #set_trace()
-                            output = self.fill_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, jets=jets, leptons=leptons, MT=MT[MTHigh].flatten(), evt_weights=evt_weights_to_use[cut][MTHigh])
+                            output['BTagSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=btagSF)
+                            output['LepSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=lepSF)
+                            output['EvtWeight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=tot_weight)
+
+                            output = self.fill_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, jets=jets, leptons=leptons, MT=MT[MTHigh].flatten(), evt_weights=tot_weight)
 
                                 # check iso values for cut based wps
                             if lepton == 'Electron':
@@ -335,8 +347,8 @@ class evt_cuts_invest(processor.ProcessorABC):
                                 tight_iso_cut_endcap = 0.0445 + 0.963/endcap_els.pt
                                 tight_iso_passFail_barrel = barrel_els.pfRelIso < tight_iso_cut_barrel
                                 tight_iso_passFail_endcap = endcap_els.pfRelIso < tight_iso_cut_endcap
-                                output['El_iso_barrel'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, iso_passfail=tight_iso_passFail_barrel.flatten().astype(int), weight=evt_weights_to_use[cut][MTHigh][(np.abs(leptons.etaSC) <= 1.479).flatten()])
-                                output['El_iso_endcap'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, iso_passfail=tight_iso_passFail_endcap.flatten().astype(int), weight=evt_weights_to_use[cut][MTHigh][(np.abs(leptons.etaSC) > 1.479).flatten()])
+                                output['El_iso_barrel'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, iso_passfail=tight_iso_passFail_barrel.flatten().astype(int), weight=tot_weight[(np.abs(leptons.etaSC) <= 1.479).flatten()])
+                                output['El_iso_endcap'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, iso_passfail=tight_iso_passFail_endcap.flatten().astype(int), weight=tot_weight[(np.abs(leptons.etaSC) > 1.479).flatten()])
 
 
 
