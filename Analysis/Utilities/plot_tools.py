@@ -139,30 +139,3 @@ def print_table(lines, filename, separate_header=True, header_line=0, print_outp
             if (i == header_line and separate_header):
                 print("-"*(sum(widths)+3*(len(widths)-1)), file=f)
 
-def make_cms_lumi_blurb(ax, CMS_blurb=True, dim2=False, **kwargs):
-    if CMS_blurb:
-        cms_blurb = plt.text(
-            0., 1., r"CMS",
-            fontsize=12,
-            horizontalalignment='left',
-            verticalalignment='bottom',
-            transform=ax.transAxes,
-            weight='bold'
-        )
-        preliminary = plt.text(
-            0.1 if dim2 else 0.08, 1., r"Preliminary",
-            fontsize=12,
-            horizontalalignment='left',
-            verticalalignment='bottom',
-            transform=ax.transAxes,
-            style='italic'
-        )
-    if 'Lumi_blurb' in kwargs.keys():
-        lumi_blurb = plt.text(
-            1., 1., r"%s" % kwargs['Lumi_blurb'],
-            fontsize=12,
-            horizontalalignment='right',
-            verticalalignment='bottom',
-            transform=ax.transAxes
-        )
-    return ax
