@@ -30,7 +30,6 @@ leptons = {
             'reco_id' : ['SF_MuTRK_MuTOT_0', 'SF_MuTRK_MuTOT_1', 'SF_MuTRK_MuTOT_2', 'SF_MuTRK_MuTOT_3', 'SF_MuTRK_MuTOT_4', 'SF_MuTRK_MuTOT_5', 'SF_MuTRK_MuTOT_6', 'SF_MuTRK_MuTOT_7'],
             'trig' : ['SF_MuISOTRG_0', 'SF_MuISOTRG_1', 'SF_MuISOTRG_2', 'SF_MuISOTRG_3', 'SF_MuISOTRG_4', 'SF_MuISOTRG_5', 'SF_MuISOTRG_6', 'SF_MuISOTRG_7'],
         },
-        #'pt' : ['SF_MuTOT_0', 'SF_MuTOT_1', 'SF_MuTOT_2', 'SF_MuTOT_3', 'SF_MuTOT_4', 'SF_MuTOT_5', 'SF_MuTOT_6', 'SF_MuTOT_7'],
         'eta' : 'eta_MuTOT',
         'fnames' : {
             '2016' : 'SF_Mu_V16010.root', 
