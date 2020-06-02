@@ -113,7 +113,7 @@ def process_jets(df, year, corrections=None):
     from coffea.analysis_objects import JaggedCandidateArray
     
     Jet = JaggedCandidateArray.candidatesfromcounts(
-        df['nJet'],
+        counts=df['nJet'],
         pt=df['Jet_pt'],
         eta=df['Jet_eta'],
         phi=df['Jet_phi'],
@@ -132,7 +132,7 @@ def process_jets(df, year, corrections=None):
     Jet['massRaw'] = Jet.mass*(1.-Jet['rawFactor'])
 
     if not df.dataset.startswith('data_Single'):
-        Jet['hadronFlav'] = df['Jet_hadronFlavour']
+        Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
             ## apply JER
         if (jet_pars['applyJER'] == 1) and corrections is not None:
                 ## create gen jets for matching
