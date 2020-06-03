@@ -117,16 +117,12 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         regions = {
             'Muon' : {
                 '3Jets'  : {
-                    'bjet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_bjet'},
-                    'cjet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_cjet'},
-                    'ljet' : {'objselection', 'jets_3', 'loose_or_tight_MU', 'jets_ljet'},
+                    'objselection', 'jets_3', 'loose_or_tight_MU'
                 },
             },
             'Electron' : {
                 '3Jets'  : {
-                    'bjet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_bjet'},
-                    'cjet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_cjet'},
-                    'ljet' : {'objselection', 'jets_3', 'loose_or_tight_EL', 'jets_ljet'},
+                    'objselection', 'jets_3', 'loose_or_tight_EL'
                 },
             },
         }
@@ -138,10 +134,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
         ## add different selections
         selection.add('jets_3', df['Jet'].counts == 3)
-            ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
-        selection.add('jets_bjet', (df['Jet']['hadronFlav'] == 5).sum() > 0) # jets come from bjets (hadronFlav == 5)
-        selection.add('jets_cjet', (df['Jet']['hadronFlav'] == 4).sum() > 0) # jets come from cjets (hadronFlav == 4)
-        selection.add('jets_ljet', (df['Jet']['hadronFlav'] == 0).sum() > 0) # jets come from light jets (hadronFlav == 0)
+
                 ## muons
         selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
         selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
@@ -165,18 +158,10 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             ## add 4+ jets categories for ttbar events
             selection.add('jets_4+', df['Jet'].counts > 3)
             regions['Muon'].update({
-                '4PJets' : {
-                    'bjet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_bjet'},
-                    'cjet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_cjet'},
-                    'ljet' : {'objselection', 'jets_4+', 'loose_or_tight_MU', 'jets_ljet'},
-                }
+                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_MU'}
             })
             regions['Electron'].update({
-                '4PJets' : {
-                    'bjet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_bjet'},
-                    'cjet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_cjet'},
-                    'ljet' : {'objselection', 'jets_4+', 'loose_or_tight_EL', 'jets_ljet'},
-                }
+                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_EL'}
             })
 
             # don't use ttbar events with indices % 10 == 0, 1, 2
@@ -185,9 +170,8 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
                 for lepton in regions.keys():
                     for jmult in regions[lepton].keys():
-                        for hflav in regions[lepton][jmult].keys():
-                            sel = regions[lepton][jmult][hflav]
-                            sel.update({'keep_ttbar'})
+                        sel = regions[lepton][jmult]
+                        sel.update({'keep_ttbar'})
 
 
         btag_wps = [wp for wp in df['Jet'].columns if wps_to_use[0] in wp]
@@ -196,33 +180,42 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         for btag_wp in btag_wps:
             for lepton in regions.keys():
                 for jmult in regions[lepton].keys():
-                    for hflav in regions[lepton][jmult].keys():
-                        cut = selection.all(*regions[lepton][jmult][hflav])
+                    cut = selection.all(*regions[lepton][jmult])
  
-                        #set_trace()
-                        evt_weights_to_use = evt_weights.weight()
-                        ## apply lepton SFs to MC (only applicable to tight leptons)
-                        if 'LeptonSF' in corrections.keys():
-                            evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                        output = self.fill_jet_hists_all( accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut], evt_weights=evt_weights_to_use[cut])
-                        output = self.fill_jet_hists_pass(accumulator=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav=hflav, obj=df['Jet'][cut][(df['Jet'][cut][btag_wp])], evt_weights=evt_weights_to_use[cut])
+                    evt_weights_to_use = evt_weights.weight()
+                    ## apply lepton SFs to MC (only applicable to tight leptons)
+                    if 'LeptonSF' in corrections.keys():
+                        evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
+                    #set_trace()
+                    jets = df['Jet'][cut]
+                        ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
+                    bjets = jets[(jets['hadronFlav'] == 5)]
+                    cjets = jets[(jets['hadronFlav'] == 4)]
+                    ljets = jets[(jets['hadronFlav'] == 0)]
+
+                    output = self.fill_jet_hists_all( acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='bjet', obj=bjets, evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_jet_hists_pass(acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='bjet', obj=bjets[(bjets[btag_wp])], evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_jet_hists_all( acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='cjet', obj=cjets, evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_jet_hists_pass(acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='cjet', obj=cjets[(cjets[btag_wp])], evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_jet_hists_all( acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='ljet', obj=ljets, evt_weights=evt_weights_to_use[cut])
+                    output = self.fill_jet_hists_pass(acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='ljet', obj=ljets[(ljets[btag_wp])], evt_weights=evt_weights_to_use[cut])
 
         return output
 
 
-    def fill_jet_hists_all(self, accumulator, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
+    def fill_jet_hists_all(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #accumulator['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        #accumulator['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        return accumulator        
+        #acc['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        return acc        
 
-    def fill_jet_hists_pass(self, accumulator, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
+    def fill_jet_hists_pass(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #accumulator['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        #accumulator['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        accumulator['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        return accumulator        
+        #acc['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        return acc        
 
 
     def postprocess(self, accumulator):
