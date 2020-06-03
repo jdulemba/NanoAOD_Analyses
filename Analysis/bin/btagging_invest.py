@@ -97,6 +97,8 @@ class btagging_invest(processor.ProcessorABC):
         self.SF_axis = hist.Bin("sf", "SF", 500, 0., 5.)
         self.deepcsv_axis = hist.Bin("deepcsv", "SF", 100, 0., 1.)
         self.pu_axis = hist.Bin("pu", "nTrueInt", 100, 0., 100.)
+        self.rho_axis = hist.Bin("rho", "Rho", 100, 0., 100.)
+        self.vtx_axis = hist.Bin("vtx", "num vertices", 100, 0., 100.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -128,6 +130,10 @@ class btagging_invest(processor.ProcessorABC):
 
         histo_dict['nTrueInt_puweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.pu_axis)
         histo_dict['nTrueInt_noweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.pu_axis)
+        histo_dict['rho_puweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.rho_axis)
+        histo_dict['rho_noweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.rho_axis)
+        histo_dict['nvtx_puweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.vtx_axis)
+        histo_dict['nvtx_noweight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.vtx_axis)
         histo_dict['BTagSF'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
         histo_dict['LepSF'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
         histo_dict['PileupWeight'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.lepcat_axis, self.btag_axis, self.SF_axis)
@@ -373,6 +379,10 @@ class btagging_invest(processor.ProcessorABC):
                             if not self.isData:
                                 output['nTrueInt_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, pu=df['Pileup_nTrueInt'][cut][MTHigh], weight=pu_weight)
                                 output['nTrueInt_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, pu=df['Pileup_nTrueInt'][cut][MTHigh])
+                                output['rho_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh], weight=pu_weight)
+                                output['rho_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh])
+                                output['nvtx_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh], weight=pu_weight)
+                                output['nvtx_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh])
                             output['BTagSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=btagSF)
                             output['LepSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=lepSF)
                             output['PileupWeight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=pu_weight)
