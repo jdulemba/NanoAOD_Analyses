@@ -3,7 +3,7 @@ import coffea.processor.dataframe
 import numpy as np
 import coffea.processor as processor
 
-def get_event_weights(df, year: str, lepton: str, corrections):
+def get_event_weights(df, year: str, corrections):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
 
         ## Prefire Corrections
@@ -16,8 +16,26 @@ def get_event_weights(df, year: str, lepton: str, corrections):
 
         ## only apply to MC
     if not df.dataset.startswith('data_Single'):
-            ## Generator Weights    
-        weights.add('genweight', df.genWeight)
+            ## Generator Weights (normalize them)
+        genWeights = np.ones(df.genWeight.size)
+        genWeights[df.genWeight < 0] = -1.
+        genWeights[df.genWeight == 0] = 0.
+        weights.add('genweight', genWeights)
+
+            ## Initialize Lepton Scale Factors
+        if 'LeptonSF' in corrections.keys():
+            weights.add('Muon_SF',
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                shift=True # makes up/down variations relative to nominal
+            )
+            weights.add('Electron_SF',
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                np.ones(df.genWeight.size),
+                shift=True # makes up/down variations relative to nominal
+            )
     
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
@@ -27,11 +45,6 @@ def get_event_weights(df, year: str, lepton: str, corrections):
                 corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nPU'])
             )
     
-            ## Luminosity Reweighting
-        if 'Lumi' in corrections.keys():
-            weights.add('lumi_weight',
-                corrections['Lumi'][year][lepton][df['dataset']]
-            )
     
     ## Need to add at some point
             ## LHEScale Weight Variations
@@ -100,3 +113,18 @@ def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
     weight = exp(p0+p1*( (pt1+pt2)/2 ))
     return weight
 
+
+def get_lepton_sf(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.ndarray, shift='Central'):
+    if not (shift == 'Central' or shift == 'Error'):
+        raise ValueError('Shift value %s not defined' % shift)
+    sf_dict = corrections[year][lepton]
+    eta_ranges = sf_dict['eta_ranges']
+    lepSFs = np.ones(pt.size)
+
+    for idx, eta_range in enumerate(eta_ranges):
+        mask = (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
+        if not mask.any(): continue # no values fall within eta range
+        sf_hist = sf_dict[shift]['eta_bin%i' % idx]
+        lepSFs[mask] = sf_hist(pt[mask])
+
+    return lepSFs

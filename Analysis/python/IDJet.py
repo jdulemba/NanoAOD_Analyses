@@ -4,8 +4,8 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import numpy as np
 import os
+#import itertools
 
-year = "2016"
 btag_values = {}
 btag_values["2016"] = {
     'btagDeepB' : {
@@ -44,7 +44,7 @@ btag_values["2018"] = {
     }
 }
 
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Jets']
+jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DEEPCSV', 'DEEPJET']
 valid_WPs = ['LOOSE', 'MEDIUM', 'TIGHT']
@@ -56,44 +56,40 @@ if jet_pars['permutations']['tightb'] not in valid_WPs:
 if jet_pars['permutations']['looseb'] not in valid_WPs:
     raise IOError("%s is not a valid working point" % jet_pars['permutations']['looseb'])
 
-bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DEEPCSV' else 'btagDeepFlavB'
-wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
+#bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DEEPCSV' else 'btagDeepFlavB'
+#wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
+#wps = [''.join(wp) for wp in itertools.product(valid_taggers, valid_WPs)]
 
 
-
-def make_kin_cuts(jets):
+def make_pt_eta_cuts(jets):
     if isinstance(jets, awkward.array.base.AwkwardArray):
         pt_cut = (jets.pt >= jet_pars['ptmin'])
-        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
         eta_cut = (np.abs(jets.eta) <= jet_pars['etamax'])
-        kin_cuts = (pt_cut) & (leadpt_cut) & (eta_cut)
+        kin_cuts = (pt_cut & eta_cut)
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
 
     return kin_cuts
 
-
-def add_btag_wps(jets, btagger, wps=[]):
-    if btagger not in valid_taggers:
-        raise IOError("%s is not a supported b-tagger" % btagger)
-    bdiscr = 'btagDeepB' if btagger == 'DEEPCSV' else 'btagDeepFlavB'
-
+def make_leadjet_pt_cut(jets):
     if isinstance(jets, awkward.array.base.AwkwardArray):
-        for wp in wps:
-            if 'BTAG_%s' % wp in jets.columns:
-                continue
-            if wp not in valid_WPs:
-                raise IOError("%s is not a valid working point" % wp)
-            jets['BTAG_%s' % wp] = (jets[bdiscr] > btag_values[year][bdiscr][wp])
-
+        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
     else:
         raise ValueError("Only AwkwardArrays are supported")
 
-    return jets
+    return leadpt_cut
+
+def HEM_15_16_issue(jets):
+    if isinstance(jets, awkward.array.base.AwkwardArray):
+        hem_region = ((jets.eta > -3.2) & (jets.eta < -1.3) & (jets.phi > -1.57) & (jets.phi < -0.87))
+    else:
+        raise ValueError("Only AwkwardArrays are supported")
+
+    return hem_region
 
 
-def process_jets(df):
+def process_jets(df, year):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
@@ -115,14 +111,10 @@ def process_jets(df):
     if not df.dataset.startswith('data_Single'):
         Jet['hadronFlav'] = df['Jet_hadronFlavour']
 
-        ## add kinematic cuts
-    Jet['Kin_Cuts'] = make_kin_cuts(Jet)
-
         ## add btag wps
-    if len(wps) > 1:
-        raise IOError("Only one btag wp supported right now")
-    for wp in wps:
-        Jet['BTAG_%s' % wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
+    for bdiscr in btag_values[year].keys():
+        for wp in btag_values[year][bdiscr].keys():
+            Jet[wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
     
     return Jet
 

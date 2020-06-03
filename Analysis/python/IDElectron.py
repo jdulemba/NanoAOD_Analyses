@@ -15,8 +15,9 @@ def process_electrons(df):
         dxy=df['Electron_dxy'],
         dz=df['Electron_dz'],
         tightID=df['Electron_mvaFall17V2noIso_WP80'],
+        vetoID=df['Electron_mvaFall17V2noIso_WPL'],
         deltaEtaSC=df['Electron_deltaEtaSC'],
-        pfRelIsoAll=df['Electron_pfRelIso03_all']
+        pfRelIso=df['Electron_pfRelIso03_all']
     )
 
         # makes etaSC
@@ -35,8 +36,10 @@ def process_electrons(df):
 #def fail(electrons):
 #    return electrons
 #
-#def veto_15(electrons):
-#
+def veto_15(electrons):
+    ID = (electrons.vetoID)
+    return ID
+
 #def loose_15(electrons):
 #
 #def medium_15(electrons):
@@ -45,7 +48,7 @@ def process_electrons(df):
 #
 def tight_15_NoECAL_Gap(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIsoAll < 0.15) #???
+    Iso = (electrons.pfRelIso < 0.15) #???
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
@@ -53,7 +56,7 @@ def tight_15_NoECAL_Gap(electrons):
 
 def fakes(electrons):
     ID = (electrons.tightID)
-    Iso = (electrons.pfRelIsoAll >= 0.15) #???
+    Iso = (electrons.pfRelIso >= 0.15) #???
     ecalgap = (electrons.ECAL_GAP)
     ipcuts = (electrons.IPCuts)
 
@@ -62,11 +65,11 @@ def fakes(electrons):
 
 def make_electron_ids(electrons):
 
-    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars.json' % os.environ['PROJECT_DIR']).read())['Electrons']
+    el_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Electrons']
 
     id_names = {
         #'FAIL' : fail,
-        #'VETO_15' : veto_15,
+        'VETO_15' : veto_15,
         #'LOOSE_15' : loose_15,
         #'MEDIUM_15' : medium_15,
         #'TIGHT_15' : tight_15,
@@ -75,8 +78,8 @@ def make_electron_ids(electrons):
         'FAKES' : fakes
     }
 
-    #if el_pars['VETOEL']['id'] not in id_names.keys():
-    #    raise IOError("veto Electron ID name not valid")
+    if el_pars['VETOEL']['id'] not in id_names.keys():
+        raise IOError("veto Electron ID name not valid")
     if el_pars['LOOSEEL']['id'] not in id_names.keys():
         raise IOError("loose Electron ID name not valid")
     if el_pars['TIGHTEL']['id'] not in id_names.keys():

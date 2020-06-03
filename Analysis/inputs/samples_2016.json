@@ -225,12 +225,14 @@
     },
     {
         "DBSName": "/ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 6.35,
+        "xsection_old": 6.35,
+        "xsection": 3.45,
         "name": "singlet_schannel_PS"
     },
     {
         "DBSName": "/ST_s-channel_4f_leptonDecays_13TeV-amcatnlo-pythia8_TuneCUETP8M1/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 6.35,
+        "xsection_old": 6.35,
+        "xsection": 3.45,
         "name": "singlet_schannel"
     },
 
@@ -251,17 +253,17 @@
     },
     {
         "DBSName": "/WJetsToLNu_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 50380.0,
+        "xsection": 61526.7,
         "name": "WJets"
     },
     {
         "DBSName": "/WJetsToLNu_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext2-v1/NANOAODSIM",
-        "xsection": 50380.0,
+        "xsection": 61526.7,
         "name": "WJetsExt"
     },
     {
         "DBSName": "/W1JetsToLNu_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 9578.0,
+        "xsection": 9625.0,
         "name": "W1Jets"
     },
     {
@@ -305,32 +307,36 @@
 
     {
         "DBSName": "/WW_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 64.28,
+        "xsection": 118.7,
         "name": "WW"
     },
     {
         "DBSName": "/WW_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext1-v1/NANOAODSIM",
-        "xsection": 64.28,
+        "xsection": 118.7,
         "name": "WWExt"
     },
     {
         "DBSName": "/WZ_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 23.43,
+        "xsection_old": 23.43,
+        "xsection": 49.98,
         "name": "WZ"
     },
     {
         "DBSName": "/WZ_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext1-v1/NANOAODSIM",
-        "xsection": 23.43,
+        "xsection_old": 23.43,
+        "xsection": 49.98,
         "name": "WZExt"
     },
     {
         "DBSName": "/ZZ_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 10.16,
+        "xsection_old": 10.16,
+        "xsection": 27.28,
         "name": "ZZ"
     },
     {
         "DBSName": "/ZZ_TuneCUETP8M1_13TeV-pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext1-v1/NANOAODSIM",
-        "xsection": 10.16,
+        "xsection_old": 10.16,
+        "xsection": 27.28,
         "name": "ZZExt"
     },
  
@@ -339,12 +345,12 @@
 
    {
         "DBSName": "/QCD_Pt-15to20_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 3678000.0,
+        "xsection": 3616000.0,
         "name": "QCD_Mu_15to20"
     },
     {
         "DBSName": "/QCD_Pt-20to30_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 3189000.0,
+        "xsection": 3160000.0,
         "name": "QCD_Mu_20to30"
     },
     {
@@ -394,32 +400,32 @@
     },
     {
         "DBSName": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 800.9,
+        "xsection": 797.3,
         "name": "QCD_Mu_300to470"
     },
     {
         "DBSName": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext1-v1/NANOAODSIM",
-        "xsection": 800.9,
+        "xsection": 797.3,
         "name": "QCD_Mu_300to470Ext1"
     },
     {
         "DBSName": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext2-v1/NANOAODSIM",
-        "xsection": 800.9,
+        "xsection": 797.3,
         "name": "QCD_Mu_300to470Ext2"
     },
     {
         "DBSName": "/QCD_Pt-470to600_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 79.37,
+        "xsection": 79.25,
         "name": "QCD_Mu_470to600"
     },
     {
         "DBSName": "/QCD_Pt-470to600_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext1-v1/NANOAODSIM",
-        "xsection": 79.37,
+        "xsection": 79.25,
         "name": "QCD_Mu_470to600Ext1"
     },
     {
         "DBSName": "/QCD_Pt-470to600_MuEnrichedPt5_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7_ext2-v1/NANOAODSIM",
-        "xsection": 79.37,
+        "xsection": 79.25,
         "name": "QCD_Mu_470to600Ext2"
     },
     {
@@ -465,7 +471,7 @@
 
     {
         "DBSName": "/QCD_Pt-20to30_EMEnriched_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 5512000.0,
+        "xsection": 5533000.0,
         "name": "QCD_EM_20to30"
     },
     {
@@ -515,7 +521,7 @@
     },
     {
         "DBSName": "/QCD_Pt-300toInf_EMEnriched_TuneCUETP8M1_13TeV_pythia8/RunIISummer16NanoAODv6-PUMoriond17_Nano25Oct2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM",
-        "xsection": 1219.0,
+        "xsection": 1221.0,
         "name": "QCD_EM_300toInf"
     },
 

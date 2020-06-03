@@ -26,8 +26,9 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'presel_analyzer'
 
-input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
-f_ext = '%s.test.coffea' % analyzer if args.testing else '.coffea'
+input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+#input_dir = proj_dir if args.testing else '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer, args.lepton])
+f_ext = '%s.test.coffea' % analyzer if args.testing else 'TOT.coffea'
 outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Test']) if args.testing else '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
@@ -42,10 +43,8 @@ else:
     fnames = ['%s/%s%s' % (input_dir, args.sample, f_ext)] if args.sample else ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
 fnames = sorted(fnames)
 
+#set_trace()
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
-
-
-data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -61,13 +60,17 @@ objtypes = {
 }
 
 variables = {
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.)),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 4, (-2.5, 2.5)),
+    'Jets_LeadJet_phi' : ('$\\phi$(leading jet)', 1, (-4., 4.)),
+    'Jets_LeadJet_energy' : ('E(leading jet) [GeV]', 2, (0., 500.)),
     'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.)),
-    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.5, 2.5)),
+    'Jets_eta' : ('$\\eta$(jets)', 4, (-2.5, 2.5)),
     'Jets_phi' : ('$\\phi$(jets)', 1, (-4., 4.)),
     'Jets_energy' : ('E(jets) [GeV]', 2, (0., 500.)),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15)),
     'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.)),
-    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.5, 2.5)),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 4, (-2.5, 2.5)),
     'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 1, (-4., 4.)),
     'Lep_energy' : ('E(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 500.)),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.)),
@@ -77,21 +80,15 @@ variables = {
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
 stack_error_opts = {'edgecolor':(0,0,0,.5)}
-error_opts = {
-    'label':'Stat. Unc.',
-    'hatch':'///',
-    'facecolor':'none',
-    'edgecolor':(0,0,0,.5),
-    'linewidth': 0
-}
-data_err_opts = {
-    'marker': '.',
-    'markersize': 10.,
-    'color':'k',
-    'elinewidth': 1,
-}
 
-#set_trace()
+    ## get data lumi and scale MC by lumi
+data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
+lumi_correction = load('%s/Corrections/%s/MC_LumiWeights.coffea' % (proj_dir, jobid))
+for hname in hdict.keys():
+    if hname == 'cutflow': continue
+    hdict[hname].scale(lumi_correction[args.year]['%ss' % args.lepton], axis='dataset')
+
+
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile('(?!data*)')
 data_samples = re.compile('(data*)')
@@ -99,11 +96,37 @@ data_samples = re.compile('(data*)')
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
+process_groups = plt_tools.make_dataset_groups(args.lepton, args.year)
+#set_trace()
 for hname in hdict.keys():
     if hname == 'cutflow': continue
-    hdict[hname] = hdict[hname].group(process_cat, process, plt_tools.hardcoded_groups)
+    hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
     
 
+
+def get_samples_yield_and_frac(histo, lep):
+    '''
+    Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
+    Returns: list of tuples containing sample name, yield, and fraction
+    '''
+    yields = histo.integrate('njets').sum().values()
+    proc_yields_list = [(''.join(process), proc_yields) for process, proc_yields in yields.items()]
+    mc_yield = sum([process[1] for process in proc_yields_list if not (process[0] == 'data')])
+    data_yield = sum([process[1] for process in proc_yields_list if (process[0] == 'data')])
+
+    rows = [("Lumi: %s fb^-1" % format(data_lumi_year['%ss' % lep]/1000., '.1f'), "Sample", "Yield", "Frac")]
+    rows += [("", process, format(proc_yield, '.1f'), format((proc_yield/mc_yield)*100, '.1f')) for process, proc_yield in proc_yields_list if not process == 'data']
+    rows += [("", "SIM", format(mc_yield, '.1f'), '100.0')]
+    rows += [("", "", "", "")]
+    rows += [("", "data", format(data_yield, '.1f'), "")]
+    rows += [("", "", "", "")]
+    rows += [("", "data/SIM", "", format(data_yield/mc_yield, '.3f'))]
+        
+    return rows
+
+
+
+    ## make plots
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     histo = hdict[hname]
@@ -113,11 +136,18 @@ for hname in hdict.keys():
 
     if histo.dense_dim() == 1:
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton type) followed by variable
-        for jmult in histo.axes()[1]._sorted:
-            for lep in histo.axes()[2]._sorted:
+        for lep in [args.lepton]:
+            for jmult in histo.axis('jmult')._sorted:
+                pltdir = outdir if args.testing else '/'.join([outdir, lep, jmult])
+                if not os.path.isdir(pltdir):
+                    os.makedirs(pltdir)
                 fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                 fig.subplots_adjust(hspace=.07)
                 hslice = histo[:, jmult, lep].integrate('jmult').integrate('leptype')
+
+                if hname == 'Jets_njets':
+                    yields = get_samples_yield_and_frac(hslice, lep)
+                    plt_tools.print_table(yields, filename='%s/%s_%s_yields_and_fracs.txt' % (pltdir, jmult, lep), print_output=True)
 
                 if rebinning != 1:
                     xaxis_name = hslice.dense_axes()[0].name
@@ -137,7 +167,8 @@ for hname in hdict.keys():
                     overlay=hslice.axes()[0].name,
                     ax=ax,
                     clear=False,
-                    error_opts=data_err_opts
+                    error_opts=hstyles['data_err_opts']
+                    #error_opts=data_err_opts
                 )
                 ax.autoscale(axis='x', tight=True)
                 ax.set_ylim(0, None)
@@ -151,20 +182,21 @@ for hname in hdict.keys():
                     facecolor, legname = plt_tools.get_styles(sample, hstyles)
                     handles[idx].set_facecolor(facecolor)
                     labels[idx] = legname
-                # call plt.legend() with the new values
+                # call ax.legend() with the new values
+                ax.legend(handles,labels, loc='upper right')
                 #set_trace()
-                ax.legend(handles,labels)
 
                     ## plot data/MC ratio
                 plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
                     ax=rax,
-                    error_opts=data_err_opts, 
+                    error_opts=hstyles['data_err_opts'], 
+                    #error_opts=data_err_opts, 
                     denom_fill_opts={},
                     guide_opts={},
                     unc='num'
                 )
                 rax.set_ylabel('data/MC')
-                rax.set_ylim(0,2)
+                rax.set_ylim(0.5, 1.5)
                 rax.set_xlim(x_lims)
 
 
@@ -186,12 +218,8 @@ for hname in hdict.keys():
                     transform=ax.transAxes
                 )
 
-                pltdir = outdir if args.testing else '/'.join([outdir, jmult, lep])
-                if not os.path.isdir(pltdir):
-                    os.makedirs(pltdir)
                 figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
-
-                #set_trace()
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
+                #set_trace()

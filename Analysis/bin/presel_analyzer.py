@@ -1,12 +1,13 @@
+#!/usr/bin/env python
+
 from coffea import hist
 from coffea.util import save, load
 import coffea.processor as processor
 from pdb import set_trace
-import os
+import os, sys
 import python.ObjectSelection as objsel
 import coffea.processor.dataframe
 import Utilities.plot_tools as plt_tools
-import python.LeptonSF as lepSF
 import python.BTagScaleFactors as btagSF
 import python.MCWeights as MCWeights
 import numpy as np
@@ -19,84 +20,30 @@ analyzer = 'presel_analyzer'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
+parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to select')
-parser.add_argument('--sample', type=str, help='Use specific sample')
-parser.add_argument('--fname', type=str, help='Specify output filename')
+parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
 
-    ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
-if args.sample:
-        ## sample specified
-    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
-        raise IOError("File with samples %s.txt not found" % args.sample)
+# convert input string of fileset dictionary to actual dictionary
+fdict = (args.fset).replace("\'", "\"")
+fileset = prettyjson.loads(fdict)
 
-    samples = [args.sample]
-    if args.fname:
-        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
-
-else:
-        ## get file that has names for all datasets to use
-    fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s_inputs.txt' % analyzer])
-    if not os.path.isfile(fpath):
-        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
-    
-    txt_file = open(fpath, 'r')
-    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-    if not samples:
-        raise IOError("No samples found as inputs")
-
-    ## add files to fileset and get plotting weights
-fileset = {}
-for sample in samples:
-    txtpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s.txt' % sample])
-    if not os.path.isfile(txtpath):
-        raise IOError("Sample file %s.txt not found" % sample)
-
-    txtfiles = open(txtpath, 'r')
-    files_to_use = [fname.strip('\n') for fname in txtfiles]
-    
-    if ':' in args.frange:
-        file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
-    else:
-        file_start = 0
-        file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
-    
-    if file_start >= 0 and file_stop <= len(files_to_use):
-        files_to_use = files_to_use[file_start:file_stop]
-    else:
-        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
-
-    #    ## replace sample name with group name ( [WZ]Jets -> EWK for instance)
-    #group_name = plt_tools.get_group(sample)
-    #if group_name in fileset.keys():
-    #    for fname in files_to_use:
-    #        fileset[group_name].append(fname)
-    #else:
-    #    fileset[group_name] = files_to_use
-    fileset[sample] = files_to_use
-
-#set_trace()
 ## load corrections for event weights
-pu_correction = load('%s/Corrections/MC_PU_Weights.coffea' % proj_dir)
-lumi_correction = load('%s/Corrections/MC_LumiWeights.coffea' % proj_dir)
+pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
+lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
 corrections = {
     'Pileup' : pu_correction,
-    'Lumi' : lumi_correction,
     'Prefire' : True,
-    'LeptonSF' : False,
+    'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
 }
 
-if corrections['LeptonSF'] == True:
-    leptonSFs = lepSF.LeptonSF()
 if corrections['BTagSF'] == True:
-    threejets_btagSFs = btagSF.create_btag_sf_computer('3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer('4+')
+    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
+    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -115,13 +62,6 @@ class Presel_Analyzer(processor.ProcessorABC):
         self.njets_axis = hist.Bin("njets", "n_{jets}", 15, 0, 15)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
 
-        #self.lepton = {
-        #    'Muon': 'MU',
-        #    #'Electron' : 'EL'
-        #}
-        self.leptypes = ['LOOSEMU', 'TIGHTMU'] if args.lepton == 'Muon' else ['LOOSEEL', 'TIGHTEL']
-
-        #set_trace()        
             ## make dictionary of hists
         histo_dict = {}
                 ## make jet hists
@@ -137,9 +77,6 @@ class Presel_Analyzer(processor.ProcessorABC):
         self.sample_name = ''
         self.corrections = corrections
 
-        #    # get lepton SF info
-        #self.leptonSFs = leptonSFs
-
     
     @property
     def accumulator(self):
@@ -153,6 +90,10 @@ class Presel_Analyzer(processor.ProcessorABC):
         histo_dict['Jets_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
         histo_dict['Jets_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
         histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.njets_axis)
+        histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.pt_axis)
+        histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.eta_axis)
+        histo_dict['Jets_LeadJet_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.phi_axis)
+        histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.energy_axis)
 
         return histo_dict
 
@@ -177,88 +118,145 @@ class Presel_Analyzer(processor.ProcessorABC):
 
         #if args.debug: set_trace()
         self.sample_name = df.dataset
-        lep_to_use = args.lepton
-        #lep_to_use = [*self.lepton.keys()][0]
+
+            ## make event weights
+                # data or MC distinction made internally
+        evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
 
             ## initialize selections and regions
         selection = processor.PackedSelection()
-        regions = {}
-        #regions['objsel'] = {'objselection'}
-        regions['3Jets'] = {'objselection', '3jets'}
-        regions['4PJets'] = {'objselection', '4pjets'}
+        regions = {
+            'Muon' : {
+                '3Jets'  : {'objselection_mu', 'mu_jets_3', 'loose_or_tight_mu'},
+                '4PJets' : {'objselection_mu', 'mu_jets_4+', 'loose_or_tight_mu'},
+            },
+            'Electron' : {
+                '3Jets'  : {'objselection_el', 'el_jets_3', 'loose_or_tight_el'},
+                '4PJets' : {'objselection_el', 'el_jets_4+', 'loose_or_tight_el'},
+            },
+        }
 
         isData = self.sample_name.startswith('data_Single')
         if isData:
+            isSE_Data = self.sample_name.startswith('data_SingleElectron')
+            isSM_Data = self.sample_name.startswith('data_SingleMuon')
             runs = df.run
             lumis = df.luminosityBlock
             Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year))
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
-            #set_trace()
             selection.add('lumimask', LumiMask)
-            for region in regions.keys():
-                regions[region].update({'lumimask'})
    
- 
-            ## make event weights
-                # data or MC distinction made internally
-        evt_weights = MCWeights.get_event_weights(df, year=args.year, lepton='%ss' % lep_to_use, corrections=self.corrections)
+                ## object selection and add different selections
+            if isSM_Data:
+                del regions['Electron']
+                        ## muons
+                objsel_evts_mu = objsel.select(df, leptype='Muon', year=args.year, accumulator=output)
+                output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts_mu.sum()
+                selection.add('mu_jets_3', df['Jet_Muon'].counts == 3)
+                selection.add('mu_jets_4+', df['Jet_Muon'].counts > 3)
+                selection.add('objselection_mu', objsel_evts_mu)
+                selection.add('tight_mu', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+                #selection.add('loose_mu', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+                selection.add('loose_or_tight_mu', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+            if isSE_Data:
+                del regions['Muon']
+                        ## electrons
+                objsel_evts_el = objsel.select(df, leptype='Electron', year=args.year, accumulator=output)
+                output['cutflow']['nEvts passing jet and electron obj selection'] += objsel_evts_el.sum()
+                selection.add('el_jets_3', df['Jet_Electron'].counts == 3)
+                selection.add('el_jets_4+', df['Jet_Electron'].counts > 3)
+                selection.add('objselection_el', objsel_evts_el)
+                selection.add('tight_el', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+                #selection.add('loose_el', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+                selection.add('loose_or_tight_el', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
 
-        objsel_evts = objsel.select(df, leptype=lep_to_use, accumulator=output)
-        output['cutflow']['nEvts passing jet and %s objection' % lep_to_use] += objsel_evts.sum()
-        selection.add('objselection', objsel_evts)
+            for lepton in regions.keys():
+                for jmult in regions[lepton].keys():
+                    regions[lepton][jmult].update({'lumimask'})
 
-        
-        selection.add('3jets', df['Jet'].counts == 3)
-        selection.add('4pjets', df['Jet'].counts > 3)
+        if not isData:
+                ## object selection
+            objsel_evts_mu = objsel.select(df, leptype='Muon', year=args.year, accumulator=output)
+            output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts_mu.sum()
+            objsel_evts_el = objsel.select(df, leptype='Electron', year=args.year, accumulator=output)
+            output['cutflow']['nEvts passing jet and electron obj selection'] += objsel_evts_el.sum()
+
+                ## add different selections
+                    ## muons
+            selection.add('mu_jets_3', df['Jet_Muon'].counts == 3)
+            selection.add('mu_jets_4+', df['Jet_Muon'].counts > 3)
+            selection.add('objselection_mu', objsel_evts_mu)
+            selection.add('tight_mu', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+            #selection.add('loose_mu', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+            selection.add('loose_or_tight_mu', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+                    ## electrons
+            selection.add('el_jets_3', df['Jet_Electron'].counts == 3)
+            selection.add('el_jets_4+', df['Jet_Electron'].counts > 3)
+            selection.add('objselection_el', objsel_evts_el)
+            selection.add('tight_el', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+            #selection.add('loose_el', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+            selection.add('loose_or_tight_el', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
+
+            ## apply lepton SFs to MC (only applicable to tight leptons)
+            if 'LeptonSF' in corrections.keys():
+                tight_mu_cut = selection.require(objselection_mu=True, tight_mu=True) # find events passing muon object selection with one tight muon
+                evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
+                    pt=df['Muon'][tight_mu_cut].pt.flatten(), eta=df['Muon'][tight_mu_cut].eta.flatten())
+                tight_el_cut = selection.require(objselection_el=True, tight_el=True) # find events passing electron object selection with one tight electron
+                evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
+                    pt=df['Electron'][tight_el_cut].pt.flatten(), eta=df['Electron'][tight_el_cut].etaSC.flatten())
 
         #set_trace()
         ## fill hists for each region
-        for region in regions.keys():
-            #set_trace()
-            cut = selection.all(*regions[region])
-            output = self.fill_jet_hists(output, region, df['Jet'][cut], evt_weights.weight()[cut])
-            output = self.fill_lep_hists(output, region, df[lep_to_use][cut], evt_weights.weight()[cut])
+        for lepton in regions.keys():
+            for jmult in regions[lepton].keys():
+                cut = selection.all(*regions[lepton][jmult])
+                #set_trace()
+
+                evt_weights_to_use = evt_weights.weight()
+                if not isData:
+                    ## apply lepton SFs to MC (only applicable to tight leptons)
+                    if 'LeptonSF' in corrections.keys():
+                        evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
+                output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df['Jet_%s' % lepton][cut], evt_weights=evt_weights_to_use[cut])
+                output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, obj=df[lepton][cut],            evt_weights=evt_weights_to_use[cut])
 
 
-        ##    ## apply lepton SFs to MC (only applicable to tight leptons)
-        ##if not isData:
-        ##    lep_weights = leptonSFs.get_sf_(lepton='%ss' % lep_to_use, pt_array=sel_leps.pt.flatten(), eta_array=sel_leps.eta.flatten())
-        ##    lep_weights[~tight_leps] = 1.
-        ##    evt_weights *= lep_weights
-
-        ##    ## apply btagging SFs to MC
-        ##if not isData:
-        ##    btag_weights = np.ones(clean_jets.size)
-        ##    #set_trace()
-        ##        ## get per-jet weights for all systematic variations + central value
-        ##    threeJ_wts = threejets_btagSFs.get_scale_factor(jets=clean_jets[three_jets_events], passing_cut=btag_wps[0])
-        ##    fourPJ_wts = fourPlusjets_btagSFs.get_scale_factor(jets=clean_jets[fourPlus_jets_events], passing_cut=btag_wps[0])
-        ##        ## calculate per-event SFs for central value
-        ##    btag_weights[three_jets_events] = threeJ_wts['central'].prod()
-        ##    btag_weights[fourPlus_jets_events] = fourPJ_wts['central'].prod()
-        ##    evt_weights *= btag_weights
-
-
+            ##    ## apply btagging SFs to MC
+            ##if not isData:
+            ##    btag_weights = np.ones(clean_jets.size)
+            ##    #set_trace()
+            ##        ## get per-jet weights for all systematic variations + central value
+            ##    threeJ_wts = threejets_btagSFs.get_scale_factor(jets=clean_jets[three_jets_events], passing_cut=btag_wps[0])
+            ##    fourPJ_wts = fourPlusjets_btagSFs.get_scale_factor(jets=clean_jets[fourPlus_jets_events], passing_cut=btag_wps[0])
+            ##        ## calculate per-event SFs for central value
+            ##    btag_weights[three_jets_events] = threeJ_wts['central'].prod()
+            ##    btag_weights[fourPlus_jets_events] = fourPJ_wts['central'].prod()
+            ##    evt_weights *= btag_weights
 
         return output
 
-    def fill_jet_hists(self, accumulator, jetmult, obj, evt_weights):
+    def fill_jet_hists(self, accumulator, jetmult, leptype, obj, evt_weights):
         #set_trace()
-        accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, phi=obj.phi.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, energy=obj.p4.E.flatten(), weight=np.repeat(evt_weights, obj.counts))
-        accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, njets=obj.counts, weight=evt_weights)
+        accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=np.repeat(evt_weights, obj.counts))
+        accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, njets=obj.counts, weight=evt_weights)
+        accumulator['Jets_LeadJet_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.max(), weight=evt_weights)
+        accumulator['Jets_LeadJet_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta[:, 0], weight=evt_weights)
+        accumulator['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi[:, 0], weight=evt_weights)
+        accumulator['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E[:, 0], weight=evt_weights)
 
         return accumulator        
 
-    def fill_lep_hists(self, accumulator, jetmult, obj, evt_weights):
+    def fill_lep_hists(self, accumulator, jetmult, leptype, obj, evt_weights):
         #set_trace()
-        accumulator['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, pt=obj.pt.flatten(), weight=evt_weights)
-        accumulator['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, eta=obj.eta.flatten(), weight=evt_weights)
-        accumulator['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, phi=obj.phi.flatten(), weight=evt_weights)
-        accumulator['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, energy=obj.p4.E.flatten(), weight=evt_weights)
-        accumulator['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=args.lepton, iso=obj.pfRelIso.flatten(), weight=evt_weights)
+        accumulator['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, pt=obj.pt.flatten(), weight=evt_weights)
+        accumulator['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, eta=obj.eta.flatten(), weight=evt_weights)
+        accumulator['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, phi=obj.phi.flatten(), weight=evt_weights)
+        accumulator['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, energy=obj.p4.E.flatten(), weight=evt_weights)
+        accumulator['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, iso=obj.pfRelIso.flatten(), weight=evt_weights)
 
         return accumulator        
 
@@ -287,35 +285,5 @@ if args.debug:
 #set_trace()
 #print(output['cutflow'])
 
-    ## save output to coffea pkl file
-if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-    if args.fname:
-        cfname = '%s/%s.coffea' % (outdir, args.fname)
-    elif args.sample:
-        cfname = '%s/%s.coffea' % (outdir, args.sample)
-    else:
-        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
-else:
-    if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-        if args.fname:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
-        elif args.sample:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
-        else:
-            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
-    else:
-        outdir = proj_dir
-        if args.fname:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
-        elif args.sample:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
-        else:
-            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
-save(output, cfname)
-print('%s has been written' % cfname)
-
+save(output, args.outfname)
+print('%s has been written' % args.outfname)
