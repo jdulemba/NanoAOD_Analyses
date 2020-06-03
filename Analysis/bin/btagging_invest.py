@@ -371,18 +371,18 @@ class btagging_invest(processor.ProcessorABC):
                             jets = df['Jet'][cut][MTHigh]
                             leptons = df[lepton][cut][lep_mask][MTHigh]
 
-                            btagSF = np.ones(MTHigh.size) if self.isData else evt_weights._weights[btaggers[0]][cut][MTHigh].flatten()
-                            lepSF = np.ones(MTHigh.size) if self.isData else evt_weights._weights['%s_SF' % lepton][cut][MTHigh].flatten()
-                            pu_weight = np.ones(MTHigh.size) if self.isData else evt_weights._weights['pileup_weight'][cut][MTHigh].flatten()
+                            btagSF = np.ones(MTHigh.sum()) if self.isData else evt_weights._weights[btaggers[0]][cut][MTHigh].flatten()
+                            lepSF = np.ones(MTHigh.sum()) if self.isData else evt_weights._weights['%s_SF' % lepton][cut][MTHigh].flatten()
+                            pu_weight = np.ones(MTHigh.sum()) if self.isData else evt_weights._weights['pileup_weight'][cut][MTHigh].flatten()
                             tot_weight = evt_weights_to_use[cut][MTHigh].flatten()
                             #set_trace()
                             if not self.isData:
                                 output['nTrueInt_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, pu=df['Pileup_nTrueInt'][cut][MTHigh], weight=pu_weight)
                                 output['nTrueInt_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, pu=df['Pileup_nTrueInt'][cut][MTHigh])
-                                output['rho_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh], weight=pu_weight)
-                                output['rho_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh])
-                                output['nvtx_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh], weight=pu_weight)
-                                output['nvtx_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh])
+                            output['rho_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh], weight=pu_weight)
+                            output['rho_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, rho=df['fixedGridRhoFastjetAll'][cut][MTHigh])
+                            output['nvtx_puweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh], weight=pu_weight)
+                            output['nvtx_noweight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, vtx=df['PV_npvs'][cut][MTHigh])
                             output['BTagSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=btagSF)
                             output['LepSF'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=lepSF)
                             output['PileupWeight'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=lepcat, btag=btagregion, sf=pu_weight)
