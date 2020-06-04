@@ -20,7 +20,7 @@ def run():
     year_to_run(**kwargs)
 
 @njit()
-def get_permutations(njets_array, jets, leptons, met, btag_req=True,  use_merged=False):
+def get_permutations(njets_array, jets, leptons, met, use_merged=False):#, btag_req=True)
     '''
         Inputs:
             1D array with number of jets per event
@@ -52,10 +52,6 @@ def get_permutations(njets_array, jets, leptons, met, btag_req=True,  use_merged
         best_perm_probs = np.array([np.inf, np.inf, np.inf])
 
         for j0 in range(start, stop):
-            ## require btagging
-            if btag_req:
-                if jets[j0, 4] < 0.5: continue
-
             ## run NS to get nschi2 to be used solver
             nu = np.zeros(4)
             with objmode():
@@ -68,10 +64,10 @@ def get_permutations(njets_array, jets, leptons, met, btag_req=True,  use_merged
                 #print('3 jets')
                 for j1 in range(start, stop):
                     if j1 == j0: continue
-                    if btag_req:
-                        if jets[j1, 4] < 0.5: continue
                     for j2 in range(j1+1, stop):
                         if j2 == j0: continue
+                            # btagged jets can't be assigned to wjets
+                        if jets[j2, 4] > 0.5: continue
                             ## advanced indexing doesn't work with numba at this point, can only add px, py, pz separately
                         mbpjet = np.sqrt( np.sum(jets[:, 3].take([j2, j1]))**2 - (np.sum(jets[:, 0].take([j2, j1]))**2 + np.sum(jets[:, 1].take([j2, j1]))**2 + np.sum(jets[:, 2].take([j2, j1]))**2) ) ## sqrt(E2-p2) of combined j1+j2 4-vector
                         disc_probs = np.zeros(3)
@@ -99,10 +95,10 @@ def get_permutations(njets_array, jets, leptons, met, btag_req=True,  use_merged
                 #print('4+ jets')
                 for j1 in range(start, stop):
                     if j1 == j0: continue
-                    if btag_req:
-                        if jets[j1, 4] < 0.5: continue
                     for j2 in range(start, stop):
                         if j2 == j0 or j2 == j1: continue
+                            # btagged jets can't be assigned to wjets
+                        if jets[j2, 4] > 0.5: continue
                         for j3 in range(j2+1, stop):
                             if j3 == j0 or j3 == j1: continue
                                 ## advanced indexing doesn't work with numba at this point, can only add px, py, pz separately
@@ -134,7 +130,7 @@ def get_permutations(njets_array, jets, leptons, met, btag_req=True,  use_merged
 
 
 #@njit()
-def find_best_permutations(jets, leptons, MET, btagWP):
+def find_best_permutations(jets, leptons, MET, btagWP):#, btag_req=True):
     '''
     Inputs:
         Jets, leptons, MET, and btag working point for jets
@@ -148,7 +144,7 @@ def find_best_permutations(jets, leptons, MET, btagWP):
     jets_inputs = np.stack((jets.p4.x.flatten(), jets.p4.y.flatten(), jets.p4.z.flatten(), jets.p4.energy.flatten(), jets[btagWP].flatten()), axis=1).astype('float64') # one row has (px, py, pyz, E)
     leptons_inputs = np.stack((leptons.p4.x.flatten(), leptons.p4.y.flatten(), leptons.p4.z.flatten(), leptons.p4.energy.flatten()), axis=1).astype('float64') # one row has (px, py, pyz, E)
     met_inputs = np.stack((MET.p4.x.flatten(), MET.p4.y.flatten()), axis=1).astype('float64') # one row has (px, py)
-    bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=jets.counts, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)
+    bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=jets.counts, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs)#, btag_req=btag_req)
     ## for testing
     #nj = jets.counts[0:4]
     #bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=nj, jets=jets_inputs[0:sum(nj)], leptons=leptons_inputs[0:len(nj)], met=met_inputs[0:len(nj)])
