@@ -101,11 +101,11 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         self.btag_axis = hist.Cat("btag", "BTag Region")
         #self.mtregion_axis = hist.Cat("mtregion", "MT Region")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 60, -3, 3)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
         #self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
-        #self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
-        #self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
+        self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
+        self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
         #self.mt_axis = hist.Bin("mt", "M_{T}", 200, 0., 1000.)
         #self.btagSF_axis = hist.Bin("btagSF", "SF_{btag}", 100, 0., 5.)
         #self.lepSF_axis = hist.Bin("lepSF", "SF_{lep}", 100, 0., 2.)
@@ -118,12 +118,12 @@ class htt_btag_iso_cut(processor.ProcessorABC):
 
             ## make dictionary of hists
         histo_dict = {}
-        #        ## make jet hists
-        #jet_hists = self.make_jet_hists()
-        #histo_dict.update(jet_hists)
-        #        ## make lepton hists
-        #lep_hists = self.make_lep_hists()
-        #histo_dict.update(lep_hists)        
+                ## make jet hists
+        jet_hists = self.make_jet_hists()
+        histo_dict.update(jet_hists)
+                ## make lepton hists
+        lep_hists = self.make_lep_hists()
+        histo_dict.update(lep_hists)        
         #        ## make other hists
         #other_hists = self.make_other_hists()
         #histo_dict.update(other_hists)        
@@ -144,31 +144,31 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         return self._accumulator
 
 
-    #def make_jet_hists(self):
-    #    histo_dict = {}
-    #    histo_dict['Jets_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.pt_axis)
-    #    histo_dict['Jets_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.eta_axis)
-    #    histo_dict['Jets_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.phi_axis)
-    #    histo_dict['Jets_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.energy_axis)
-    #    histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.njets_axis)
-    #    histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.pt_axis)
-    #    histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.eta_axis)
-    #    histo_dict['Jets_LeadJet_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.phi_axis)
-    #    histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.energy_axis)
+    def make_jet_hists(self):
+        histo_dict = {}
+        histo_dict['Jets_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['Jets_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+    #    histo_dict['Jets_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
+    #    histo_dict['Jets_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.energy_axis)
+        histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.njets_axis)
+        histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+    #    histo_dict['Jets_LeadJet_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
+    #    histo_dict['Jets_LeadJet_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.energy_axis)
 
-    #    return histo_dict
+        return histo_dict
 
-    #
-    #def make_lep_hists(self):
-    #    histo_dict = {}
-    #    histo_dict['Lep_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.pt_axis)
-    #    histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.eta_axis)
-    #    histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.eta_axis)
-    #    histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.phi_axis)
-    #    histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.energy_axis)
-    #    histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.lepIso_axis)
+    
+    def make_lep_hists(self):
+        histo_dict = {}
+        histo_dict['Lep_pt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+    #    histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+    #    histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
+    #    histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.energy_axis)
+        histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.lepIso_axis)
 
-    #    return histo_dict
+        return histo_dict
 
     #def make_other_hists(self):
     #    histo_dict = {}
@@ -272,7 +272,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         selection.add('jets_4p', df['Jet'].counts > 3)
         selection.add('objselection', objsel_evts)
         #selection.add('DeepJet_pass', df['Jet']['DeepJet'+wps_to_use[0]].sum() >= 2)            
-        selection.add('DeepCSV_pass', df['Jet']['DeepCSV'+wps_to_use[0]].sum() >= 2)            
+        selection.add('DeepCSV_pass', df['Jet']['DeepCSV'+wps_to_use[0]].sum() >= 2)
         #selection.add('DeepCSV_fail', (df['Jet']['btagDeepB'].max() < 0.2) & (df['Jet']['btagDeepB'].max() > 0.1) ) # max DeepCSV value is between 0.1 and 0.2
 
             # sort jets by btag value
@@ -405,20 +405,13 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                             MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
                             MTHigh = (MT[valid_perms] >= MTcut).flatten()
 
-                            #output = self.fill_selection_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtcut=MTHigh[valid_perms], perm=best_perms, evt_weights=evt_weights_to_use[cut][valid_perms])
+                                # fill hists
                             output = self.fill_selection_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, MTcut=MTHigh, perm=best_perms, evt_weights=evt_weights_to_use[cut][valid_perms])
+                            output = self.fill_jet_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df['Jet'][cut][valid_perms][MTHigh], evt_weights=evt_weights_to_use[cut][valid_perms][MTHigh])
+                            output = self.fill_lep_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df[lepton][cut][lep_mask][valid_perms][MTHigh], evt_weights=evt_weights_to_use[cut][valid_perms][MTHigh])
+                            #output = self.fill_sf_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, evt_weights=evt_weights._weights if not self.isData else evt_weights_to_use, mask=cut , mtcut=MTHigh)
 
-
-                            #output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTHigh', obj=df['Jet'][cut][MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
-                            #output = self.fill_jet_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTLow', obj=df['Jet'][cut][~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
-                            ##set_trace()
-                            #output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTHigh', obj=df[lepton][cut][lep_mask][MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
-                            #output = self.fill_lep_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTLow', obj=df[lepton][cut][lep_mask][~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
-                            #output = self.fill_sf_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTHigh', evt_weights=evt_weights._weights if not self.isData else evt_weights_to_use, mask=cut , mtcut=MTHigh)
-                            #output = self.fill_sf_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, mtregion='MTLow', evt_weights=evt_weights._weights if not self.isData else evt_weights_to_use, mask=cut, mtcut=~MTHigh)
-
-                            #output['MT'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mtregion='MTHigh', mt=MT[MTHigh].flatten(), weight=evt_weights_to_use[cut][MTHigh])
-                            #output['MT'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mtregion='MTLow', mt=MT[~MTHigh].flatten(), weight=evt_weights_to_use[cut][~MTHigh])
+                            #output['MT'].fill(dataset=self.sample_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mt=MT[MTHigh].flatten(), weight=evt_weights_to_use[cut][MTHigh])
 
 
         return output
@@ -445,51 +438,53 @@ class htt_btag_iso_cut(processor.ProcessorABC):
 
         return acc        
 
-    #def fill_jet_hists(self, accumulator, jetmult, leptype, lepcat, btagregion, mtregion, obj, evt_weights):
-    #    #set_trace()
-    #    accumulator['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-    #    accumulator['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-    #    accumulator['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-    #    accumulator['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-    #    accumulator['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, njets=obj.counts, weight=evt_weights)
-    #    accumulator['Jets_LeadJet_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, pt=obj.pt.max(), weight=evt_weights)
-    #    accumulator['Jets_LeadJet_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, eta=obj.eta[:, 0], weight=evt_weights)
-    #    accumulator['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, phi=obj.phi[:, 0], weight=evt_weights)
-    #    accumulator['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, energy=obj.p4.E[:, 0], weight=evt_weights)
+    def fill_jet_hists(self, acc, jetmult, leptype, lepcat, btagregion, obj, evt_weights):
+        #set_trace()
+        acc['Jets_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_njets'].fill( dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, njets=obj.counts, weight=evt_weights)
 
-    #    return accumulator        
+        pt_sorted_jets = obj[obj.pt.argsort(ascending=False)]
+        acc['Jets_LeadJet_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=pt_sorted_jets.pt[:, 0], weight=evt_weights)
+        acc['Jets_LeadJet_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=pt_sorted_jets.eta[:, 0], weight=evt_weights)
+        #acc['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=pt_sorted_jets.phi[:, 0], weight=evt_weights)
+        #acc['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=pt_sorted_jets.p4.E[:, 0], weight=evt_weights)
 
-    #def fill_lep_hists(self, accumulator, jetmult, leptype, lepcat, btagregion, mtregion, obj, evt_weights):
-    #    #set_trace()
-    #    accumulator['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, pt=obj.pt.flatten(), weight=evt_weights)
-    #    accumulator['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, eta=obj.eta.flatten(), weight=evt_weights)
-    #    accumulator['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, phi=obj.phi.flatten(), weight=evt_weights)
-    #    accumulator['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, energy=obj.p4.E.flatten(), weight=evt_weights)
-    #    accumulator['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, iso=obj.pfRelIso.flatten(), weight=evt_weights)
-    #    if leptype == 'Electron': accumulator['Lep_etaSC'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, eta=obj.etaSC.flatten(), weight=evt_weights)
+        return acc        
 
-    #    return accumulator        
+    def fill_lep_hists(self, acc, jetmult, leptype, lepcat, btagregion, obj, evt_weights):
+        #set_trace()
+        acc['Lep_pt'].fill(    dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten(), weight=evt_weights)
+        acc['Lep_eta'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten(), weight=evt_weights)
+        #acc['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=evt_weights)
+        #acc['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=evt_weights)
+        acc['Lep_iso'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, iso=obj.pfRelIso.flatten(), weight=evt_weights)
+        #if leptype == 'Electron': acc['Lep_etaSC'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.etaSC.flatten(), weight=evt_weights)
 
-    #def fill_sf_hists(self, accumulator, jetmult, leptype, lepcat, btagregion, mtregion, evt_weights, mask, mtcut):
+        return acc        
+
+    #def fill_sf_hists(self, acc, jetmult, leptype, lepcat, btagregion, mtregion, evt_weights, mask, mtcut):
     #    #set_trace()
     #    if not self.isData:
     #        for btagger in btaggers:
-    #            accumulator['%s_SF' % btagger].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, btagSF=evt_weights[btagger][mask][mtcut])
-    #        accumulator['Lep_SF'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['%s_SF' % leptype][mask][mtcut])
-    #        if 'pileup_weight' in accumulator.keys(): 
-    #            accumulator['pileup_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['pileup_weight'][mask][mtcut])
-    #        if 'prefire_weight' in accumulator.keys(): 
-    #            accumulator['prefire_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['prefire_weight'][mask][mtcut])
+    #            acc['%s_SF' % btagger].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, btagSF=evt_weights[btagger][mask][mtcut])
+    #        acc['Lep_SF'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['%s_SF' % leptype][mask][mtcut])
+    #        if 'pileup_weight' in acc.keys(): 
+    #            acc['pileup_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['pileup_weight'][mask][mtcut])
+    #        if 'prefire_weight' in acc.keys(): 
+    #            acc['prefire_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights['prefire_weight'][mask][mtcut])
     #    else:
     #        for btagger in btaggers:
-    #            accumulator['%s_SF' % btagger].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, btagSF=evt_weights[mask][mtcut])
-    #        accumulator['Lep_SF' ].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
-    #        if 'pileup_weight' in accumulator.keys(): 
-    #            accumulator['pileup_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
-    #        if 'prefire_weight' in accumulator.keys(): 
-    #            accumulator['prefire_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
+    #            acc['%s_SF' % btagger].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, btagSF=evt_weights[mask][mtcut])
+    #        acc['Lep_SF' ].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
+    #        if 'pileup_weight' in acc.keys(): 
+    #            acc['pileup_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
+    #        if 'prefire_weight' in acc.keys(): 
+    #            acc['prefire_weight'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtregion=mtregion, lepSF=evt_weights[mask][mtcut])
 
-    #    return accumulator
+    #    return acc
 
 
     def postprocess(self, accumulator):
