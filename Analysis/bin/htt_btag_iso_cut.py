@@ -110,9 +110,9 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         #self.btagSF_axis = hist.Bin("btagSF", "SF_{btag}", 100, 0., 5.)
         #self.lepSF_axis = hist.Bin("lepSF", "SF_{lep}", 100, 0., 2.)
         self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 180, 200, 2000)
-        self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 60, 0, 30)
-        self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 60, 0, 30)
-        self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", 60, 0, 30)
+        self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 300, 0, 30)
+        self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 300, 0, 30)
+        self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", 300, 0, 30)
         self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 200, -1., 1.)
         self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 200, 0., 1.)
 
