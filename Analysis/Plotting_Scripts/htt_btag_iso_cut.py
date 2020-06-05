@@ -64,17 +64,25 @@ lep_cats = {
 
 variables = {
     'mtt' : ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.), True),
-    'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 300.), True),
-    'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 300.), True),
-    'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 300.), True),
-    'eta_thad' : ('$\\eta$($t_{h}$)', 2, (-3., 3.), True),
-    'eta_tlep' : ('$\\eta$($t_{l}$)', 2, (-3., 3.), True),
-    'eta_tt' : ('$\\eta$($t\\bar{t}$)', 2, (-3., 3.), True),
+    'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
+    'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 500.), True),
+    'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 500.), True),
+    'eta_thad' : ('$\\eta$($t_{h}$)', 2, (-4., 4.), True),
+    'eta_tlep' : ('$\\eta$($t_{l}$)', 2, (-4., 4.), True),
+    'eta_tt' : ('$\\eta$($t\\bar{t}$)', 2, (-4., 4.), True),
     'tlep_ctstar' : ('cos($\\theta^{*}_{t_{l}}$)', 2, (-1., 1.), True),
     'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), True),
-    'full_disc' : ('$\\lambda_{C}$', 1, (0, 30.), True),
-    'mass_disc' : ('$\\lambda_{M}$', 1, (0, 30.), True),
-    'ns_disc' : ('$\\lambda_{NS}$', 1, (0, 30.), True),
+    'full_disc' : ('$\\lambda_{C}$', 1, (5, 25.), True),
+    'mass_disc' : ('$\\lambda_{M}$', 1, (0, 20.), True),
+    'ns_disc' : ('$\\lambda_{NS}$', 1, (0, 10.), True),
+    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
+    'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
+    'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 1, (-2.6, 2.6), True),
+    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 1, (-2.6, 2.6), True),
+    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
 }
 
 
@@ -161,8 +169,7 @@ for hname in variables.keys():
                         xaxis_name = hslice.dense_axes()[0].name
                         hslice = hslice.rebin(xaxis_name, rebinning)
 
-                    if hname == 'tlep_ctstar':
-                    #if hname == 'Jets_njets':
+                    if hname == 'Jets_njets':
                         print(jmult)
                         yields_txt, yields_json = get_samples_yield_and_frac(hslice, args.lepton)
                         frac_name = '%s_yields_and_fracs' % '_'.join([jmult, args.lepton, lepcat, btagregion])
@@ -171,6 +178,8 @@ for hname in variables.keys():
                         with open('%s/%s.json' % (pltdir, frac_name), 'w') as out:
                             out.write(prettyjson.dumps(yields_json))
 
+                    if hname == 'mass_disc':
+                        x_lims = (3., 13.) if jmult == '3Jets' else (5., 15.)
                     mc_opts = {
                         'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets']
                     }
