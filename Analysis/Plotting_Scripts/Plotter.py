@@ -1,13 +1,14 @@
 from coffea.hist import plot
 # matplotlib
-#import matplotlib.pyplot as plt
-#import mplhep as hep
+import matplotlib.pyplot as plt
+import mplhep as hep
 #plt.style.use(hep.cms.style.ROOT)
 #plt.switch_backend('agg')
 import styles
 import Utilities.plot_tools as plt_tools
 import re
 from pdb import set_trace
+import numpy as np
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile('(?!data*)')
@@ -106,3 +107,29 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
     ax.legend(handles,labels, loc='upper right')
     
     return ax
+
+def plot_2d_norm(hdict, xaxis_name, yaxis_name, values, xlimits, ylimits, xlabel, ylabel, ax=None, **opts):
+    if ax is None:
+        ax = plt.gca()
+
+    xaxis = hdict.axis(xaxis_name)
+    yaxis = hdict.axis(yaxis_name)
+    xedges = xaxis.edges()
+    yedges = yaxis.edges()
+
+    cmap=opts['cmap'] if 'cmap' in opts.keys() else 'viridis'
+    pc = ax.pcolormesh(xedges, yedges, values.T, cmap=cmap)
+    ax.add_collection(pc)
+
+    cmap_label = opts['cmap_label'] if 'cmap_label' in opts.keys() else ''
+    plt.colorbar(pc, ax=ax, label=cmap_label, pad=0.)
+
+    ax.autoscale(axis='x', tight=True)
+    ax.set_xlim(xlimits)
+    ax.set_ylim(ylimits)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    
+    return ax
+
+
