@@ -74,7 +74,7 @@ variables = {
     'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), True),
     'full_disc' : ('$\\lambda_{C}$', 1, (5, 25.), True),
     'mass_disc' : ('$\\lambda_{M}$', 1, (0, 20.), True),
-    'ns_disc' : ('$\\lambda_{NS}$', 1, (0, 10.), True),
+    'ns_disc' : ('$\\lambda_{NS}$', 1, (3., 10.), True),
     'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
     'Jets_eta' : ('$\\eta$(jets)', 1, (-2.6, 2.6), True),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
@@ -180,6 +180,8 @@ for hname in variables.keys():
 
                     if hname == 'mass_disc':
                         x_lims = (3., 13.) if jmult == '3Jets' else (5., 15.)
+                    if hname == 'full_disc':
+                        x_lims = (6., 20.) if jmult == '3Jets' else (10., 22.)
                     mc_opts = {
                         'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets']
                     }
