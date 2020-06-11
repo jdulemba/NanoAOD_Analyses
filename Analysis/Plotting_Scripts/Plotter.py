@@ -9,10 +9,13 @@ import Utilities.plot_tools as plt_tools
 import re
 from pdb import set_trace
 import numpy as np
+#from coffea import hist
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile('(?!data*)')
 data_samples = re.compile('(data*)')
+qcd_samples = re.compile('(QCD*)')
+prompt_mc_mask = re.compile(r'^(?!.*(\b(?:%s)\b))' % '|'.join(['data*', 'QCD*']))
 
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
@@ -20,9 +23,9 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
 def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_opts):
 
-    #set_trace()
-    mcorder = mc_opts['mcorder'] if 'mcorder' in mc_opts.keys() else None
+    mcorder = mc_opts.get('mcorder')
 
+    #set_trace()
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
         overlay=hdict.axes()[0].name,
@@ -133,3 +136,61 @@ def plot_2d_norm(hdict, xaxis_name, yaxis_name, values, xlimits, ylimits, xlabel
     return ax
 
 
+def plot_1D(values, bins, density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
+    if ax is None:
+        ax = plt.gca()
+
+    hep.plot.histplot(values, bins, weights=weights, density=density, ax=ax, label=label, histtype=histtype, **kwargs)
+
+    return ax
+
+
+def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=None, norm_region=None):
+    if not norm_type:
+        raise ValueError("Normalization type has to be specified for qcd estimation")
+    if not shape_region:
+        raise ValueError("Region to get qcd shape has to be specified for qcd estimation")
+
+    sig_dmp = data_minus_prompt(sig_reg)
+    iso_dmp = data_minus_prompt(iso_sb)
+    btag_dmp = data_minus_prompt(btag_sb)
+    double_dmp = data_minus_prompt(double_sb)
+
+    dmp_dict = {
+        'ISO' : iso_dmp,
+        'BTAG' : btag_dmp,
+        'DOUBLE' : double_dmp,
+    }
+
+        # get normalized qcd shape (bins < 0. not allowed)
+    qcd_norm_shape = get_qcd_shape(dmp_dict[shape_region])
+
+    normalization = 0
+    if norm_type == 'ABCD':
+        normalization = (np.sum(btag_dmp.values(overflow='all')[()])*np.sum(iso_dmp.values(overflow='all')[()]))/(np.sum(double_dmp.values(overflow='all')[()]))
+
+    qcd_est_array = qcd_norm_shape*normalization
+        # substitute qcd_est array into original hist
+    for idx, val in enumerate(qcd_est_array):
+        sig_reg.values(overflow='all')[('QCD',)][idx] = val
+    
+    return sig_reg
+
+def data_minus_prompt(histo):
+    data_hist = histo[data_samples].integrate('process')
+    pmc_hist  = histo[prompt_mc_mask].integrate('process')
+
+    neg_pmc_hist = pmc_hist.copy()
+    data_minus_prompt = data_hist.copy()
+    neg_pmc_hist.scale(-1.)
+    data_minus_prompt.add(neg_pmc_hist)
+
+    return data_minus_prompt
+
+
+def get_qcd_shape(dmp_hist):
+    shape_array = dmp_hist.values(overflow='all')[()]
+    shape_array[shape_array < 0] = 0
+    norm_shape_array = shape_array/np.sum(shape_array)
+
+    return norm_shape_array
