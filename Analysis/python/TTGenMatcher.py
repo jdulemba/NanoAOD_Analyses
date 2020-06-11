@@ -53,33 +53,34 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
 
     matched_dict_counts.update({'Lepton' : matched_leps.counts})
     matched_dict_vars.update({'Lepton' : {remove_fast(key) : matched_leps[key].flatten() for key in matched_leps.columns if key != 'p4'}})
-    
+
         ## create matched perm objects
     matched_BHad = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['BHad'],
         **matched_dict_vars['BHad']
-    ).pad(1)
+    )#.pad(1)
     matched_BLep = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['BLep'],
         **matched_dict_vars['BLep']
-    ).pad(1)
+    )#.pad(1)
     matched_WJa = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['WJa'],
         **matched_dict_vars['WJa']
-    ).pad(1)
+    )#.pad(1)
     matched_WJb = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['WJb'],
         **matched_dict_vars['WJb']
-    ).pad(1)
+    )#.pad(1)
     matched_Lep = JaggedCandidateArray.candidatesfromcounts(
         counts= matched_dict_counts['Lepton'],
         **matched_dict_vars['Lepton']
-    ).pad(1)
+    )#.pad(1)
 
         # solve for neutrino
     nu_array = np.zeros((jets.counts.size, 4), dtype='float64')
     for idx, blep in enumerate(matched_BLep):
         if blep.size < 1: continue
+        if matched_Lep[idx].size < 1: continue
         if blep.size > 1: raise ValueError("More than one matched blep. Investigate")
 
             # must specify same dtype for all arrays
@@ -97,7 +98,7 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
         pz = nu_array[:, 2][valid_nu],
         mass = np.zeros(valid_nu.sum()),
         chi2 = nu_array[:, 3][valid_nu],
-    ).pad(1)
+    )#.pad(1)
 
     matched_perm = make_perm_table(bhad=matched_BHad, blep=matched_BLep, wja=matched_WJa, wjb=matched_WJb, lepton=matched_Lep, met=met, nu=matched_Nu)
     #set_trace()
