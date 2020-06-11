@@ -98,8 +98,6 @@ class htt_test_of_homogeneity(processor.ProcessorABC):
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.lepcat_axis = hist.Cat("lepcat", "Lepton Category")
         self.btag_axis = hist.Cat("btag", "btagging Category")
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 2000, 0., 20.)
         self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 180, 200, 2000)
         self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 200, -1., 1.)
@@ -150,20 +148,6 @@ class htt_test_of_homogeneity(processor.ProcessorABC):
                         '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_pass'},
                         '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_pass'},
                     },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_fail'},
-                    #    '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_fail'},
-                    #},
-                },
-                'Tight' : {
-                    'btagPass' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_pass'},
-                        '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_pass'},
-                    },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_fail'},
-                    #    '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_fail'},
-                    #},
                 },
             },
             'Electron' : {
@@ -172,20 +156,6 @@ class htt_test_of_homogeneity(processor.ProcessorABC):
                         '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_pass'},
                         '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_pass'},
                     },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_fail'},
-                    #    '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_fail'},
-                    #},
-                },
-                'Tight' : {
-                    'btagPass' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_pass'},
-                        '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_pass'},
-                    },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_fail'},
-                    #    '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_fail'},
-                    #},
                 },
             },
         }
