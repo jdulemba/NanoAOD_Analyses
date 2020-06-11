@@ -272,14 +272,29 @@ def find_best_permutations(jets, leptons, MET, btagWP):#, btag_req=True):
         energy= tt_p4.energy,
     )
 
+    remove_fast = lambda x : x.split('fast_')[-1]
+        ## Lepton
+    dict_vars = {'Lepton' : {remove_fast(key) : leptons[valid_evts][key].flatten() for key in leptons.columns if key != 'p4'}}
+    best_Lep = JaggedCandidateArray.candidatesfromcounts(
+        counts=valid_evts.astype(int),
+        **dict_vars['Lepton']
+    )
+
+        ## MET
+    dict_vars.update({'MET' : {remove_fast(key) : MET[valid_evts][key].flatten() for key in MET.columns if key != 'p4'}})
+    best_MET = JaggedCandidateArray.candidatesfromcounts(
+        counts=valid_evts.astype(int),
+        **dict_vars['MET']
+    )
+
         ## Combine everything into a single table, all objects are JaggedArrays
     best_permutations = awkward.Table(
         BHad = best_BHad,
         BLep = best_BLep,
         WJa = best_WJa,
         WJb = best_WJb,
-        Lepton = leptons[valid_evts],
-        MET = MET[valid_evts],
+        Lepton = best_Lep,
+        MET = best_MET,
         Nu = best_Nu,
         WLep = best_WLep,
         TLep = best_TLep,
