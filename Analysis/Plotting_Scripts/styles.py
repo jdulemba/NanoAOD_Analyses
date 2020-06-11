@@ -66,6 +66,22 @@ styles = {
     },
 
         ## permutation categories
+    'ttJets_right' : {
+        'facecolor' : '#e41a1c', ## red
+        'name' : "$t\\bart$ correct",
+    },
+    'ttJets_matchable' : {
+        'facecolor' : '#984ea3', ## purple
+        'name' : "$t\\bart$ matchable",
+    },
+    'ttJets_unmatchable' : {
+        'facecolor' : '#ffff33', ## yellow
+        'name' : "$t\\bart$ unmatchable",
+    },
+    'ttJets_other' : {
+        'facecolor' : '#a65628', ## brown
+        'name' : "$t\\bart$ other",
+    },
     'Correct_BLep' : {
         'name' : 'Correct $b_{l}$',
         'linestyle' : '-',
@@ -103,21 +119,45 @@ styles = {
         'elinewidth' : 1,
     },
     '3Jets' : {
-        'name' : '3 jets',
-        'linestyle' : '-',
+        #'name' : '3 jets',
+        'marker': '.',
+        'markersize': 10.,
+        #'linestyle' : '-',
         'color' : '#e41a1c', # red
-        'elinewidth' : 3,
+        'elinewidth' : 1,
     },
     '4PJets' : {
-        'name' : '4+ jets',
-        'linestyle' : '-',
+        #'name' : '4+ jets',
+        'marker': '.',
+        'markersize': 10.,
+        #'linestyle' : '-',
         'color' : '#377eb8', # blue
-        'elinewidth' : 3,
+        'elinewidth' : 1,
     },
     '3PJets' : {
-        'name' : '3+ jets',
-        'linestyle' : '-',
+        #'name' : '3+ jets',
+        'marker': '.',
+        'markersize': 10.,
+        #'linestyle' : '-',
         'color' : '#4daf4a', # green
-        'elinewidth' : 3,
+        'elinewidth' : 1,
+    },
+    'iso_reg_0' : {
+        'marker': '.',
+        'markersize': 10.,
+        'color' : '#e41a1c', # red
+        'elinewidth' : 1,
+    },
+    'iso_reg_1' : {
+        'marker': '.',
+        'markersize': 10.,
+        'color' : '#377eb8', # blue
+        'elinewidth' : 1,
+    },
+    'iso_reg_2' : {
+        'marker': '.',
+        'markersize': 10.,
+        'color' : '#4daf4a', # green
+        'elinewidth' : 1,
     }
 }
