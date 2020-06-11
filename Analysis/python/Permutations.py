@@ -12,13 +12,11 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
             1: Jet objects (BLeps, BHads, WJas, WJbs)
             2: Leptons, Neutrinos
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
-            4: Number of jets in events (njets)
-            5: Event weights (evt_wts)
     '''
-    
+
         ## these attributes are based on those from URTTbar/interface/Permutation.h https://gitlab.cern.ch/jdulemba/URTTbar/-/blob/htt_analysis_2016legacydata_9410/interface/Permutation.h
-    isWLepComplete = (lepton[~(lepton == None)].counts == 1) & (nu[~(nu == None)].counts == 1)
-    isTLepComplete = isWLepComplete & (blep[~(blep == None)].counts == 1)
+    isWLepComplete = (lepton.counts == 1) & (nu.counts == 1)
+    isTLepComplete = isWLepComplete & (blep.counts == 1)
 
     wlep_p4 = lepton[isWLepComplete].p4 + nu[isWLepComplete].p4
     WLep = JaggedCandidateArray.candidatesfromcounts(
@@ -41,10 +39,10 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
     ## Event categories
         # fill [None] events with values for easier comparisons
-    bhad_jetIdx = bhad.jetIdx.fillna(-999)
-    blep_jetIdx = blep.jetIdx.fillna(-999)
-    wja_jetIdx  = wja.jetIdx.fillna(-999)
-    wjb_jetIdx  = wjb.jetIdx.fillna(-999)
+    bhad_jetIdx = bhad.pad(1).jetIdx.fillna(-999)
+    blep_jetIdx = blep.pad(1).jetIdx.fillna(-999)
+    wja_jetIdx  = wja.pad(1).jetIdx.fillna(-999)
+    wjb_jetIdx  = wjb.pad(1).jetIdx.fillna(-999)
         # merged jets event categories
             # only bhad and blep merged
     Merged_BHadBLep = (bhad_jetIdx >= 0) & (bhad_jetIdx == blep_jetIdx) & (bhad_jetIdx != wja_jetIdx) & (bhad_jetIdx != wjb_jetIdx)
@@ -83,8 +81,8 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     Lost_Event = (Lost_BHad) | (Lost_BLep) | (Lost_WJa) | (Lost_WJb)
     ##
 
-    n_perm_matches = awkward.JaggedArray.fromcounts(np.ones(bhad.size, dtype=int), bhad[~(bhad == None)].counts + blep[~(blep == None)].counts + wja[~(wja == None)].counts + wjb[~(wjb == None)].counts)
-    isEmpty = (bhad_jetIdx < 0) & (blep_jetIdx < 0) & (wja_jetIdx < 0) & (wjb_jetIdx < 0)
+    n_perm_matches = awkward.JaggedArray.fromcounts(np.ones(bhad.size, dtype=int), bhad.counts + blep.counts + wja.counts + wjb.counts)
+    #isEmpty = (bhad_jetIdx < 0) & (blep_jetIdx < 0) & (wja_jetIdx < 0) & (wjb_jetIdx < 0)
 
         # find number of unique matches
     jetIdx_stack = np.stack((blep_jetIdx.flatten(), bhad_jetIdx.flatten(), wja_jetIdx.flatten(), wjb_jetIdx.flatten()), axis=1)
@@ -92,25 +90,25 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
 
         # create WHad
-            # fill [None] entries with zeros
+            # fill empty entries with zeros
     wja_dict = {
-        'px' : wja.p4.x.fillna(0.).flatten(),
-        'py' : wja.p4.y.fillna(0.).flatten(),
-        'pz' : wja.p4.z.fillna(0.).flatten(),
-        'energy' : wja.p4.energy.fillna(0.).flatten(),
+        'px' : wja.pad(1).p4.x.fillna(0.).flatten(),
+        'py' : wja.pad(1).p4.y.fillna(0.).flatten(),
+        'pz' : wja.pad(1).p4.z.fillna(0.).flatten(),
+        'energy' : wja.pad(1).p4.energy.fillna(0.).flatten(),
     }
     wja_p4 = JaggedCandidateArray.candidatesfromcounts(
-        counts = wja.counts,
+        counts = np.ones(wja.size),
         **wja_dict
     )
     wjb_dict = {
-        'px' : wjb.p4.x.fillna(0.).flatten(),
-        'py' : wjb.p4.y.fillna(0.).flatten(),
-        'pz' : wjb.p4.z.fillna(0.).flatten(),
-        'energy' : wjb.p4.energy.fillna(0.).flatten(),
+        'px' : wjb.pad(1).p4.x.fillna(0.).flatten(),
+        'py' : wjb.pad(1).p4.y.fillna(0.).flatten(),
+        'pz' : wjb.pad(1).p4.z.fillna(0.).flatten(),
+        'energy' : wjb.pad(1).p4.energy.fillna(0.).flatten(),
     }
     wjb_p4 = JaggedCandidateArray.candidatesfromcounts(
-        counts = wjb.counts,
+        counts = np.ones(wjb.size),
         **wjb_dict
     )
 
@@ -122,17 +120,17 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
             # inds where only WJb p4 is used as WHad
     use_wjb_inds = (Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa).flatten()
-    whad_px[use_wjb_inds] = wjb[use_wjb_inds].p4.x.flatten()
-    whad_py[use_wjb_inds] = wjb[use_wjb_inds].p4.y.flatten()
-    whad_pz[use_wjb_inds] = wjb[use_wjb_inds].p4.z.flatten()
-    whad_E[use_wjb_inds]  = wjb[use_wjb_inds].p4.energy.flatten()
+    whad_px[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.x.flatten()
+    whad_py[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.y.flatten()
+    whad_pz[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.z.flatten()
+    whad_E[use_wjb_inds]  = wjb_p4[use_wjb_inds].p4.energy.flatten()
 
             # inds where only WJa p4 is used as WHad
     use_wja_inds = (Merged_BHadWJb | Merged_BLepWJb | Lost_WJb).flatten()
-    whad_px[use_wja_inds] = wja[use_wja_inds].p4.x.flatten()
-    whad_py[use_wja_inds] = wja[use_wja_inds].p4.y.flatten()
-    whad_pz[use_wja_inds] = wja[use_wja_inds].p4.z.flatten()
-    whad_E[use_wja_inds]  = wja[use_wja_inds].p4.energy.flatten()
+    whad_px[use_wja_inds] = wja_p4[use_wja_inds].p4.x.flatten()
+    whad_py[use_wja_inds] = wja_p4[use_wja_inds].p4.y.flatten()
+    whad_pz[use_wja_inds] = wja_p4[use_wja_inds].p4.z.flatten()
+    whad_E[use_wja_inds]  = wja_p4[use_wja_inds].p4.energy.flatten()
 
             # inds where combined p4 from WJa and WJb is used as WHad (all other inds)
     use_comb_inds = ~(use_wjb_inds | use_wja_inds)
@@ -155,7 +153,7 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     )
 
     isWHadComplete = (WHad.counts == 1)
-    isTHadComplete = (isWHadComplete) & (bhad[~(bhad == None)].counts == 1)
+    isTHadComplete = (isWHadComplete) & (bhad.counts == 1)
 
     thad_p4 = WHad[isTHadComplete].p4 + bhad[isTHadComplete].p4
     THad = JaggedCandidateArray.candidatesfromcounts(
@@ -176,22 +174,23 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
         mass   = ttbar_p4.mass.flatten(),
     )
 
+    #set_trace()    
         ## Combine everything into a single table, all objects are JaggedArrays
     permutations = awkward.Table(
-        BHad = bhad[~(bhad == None)],
-        BLep = blep[~(blep == None)],
-        WJa = wja[~(wja == None)],
-        WJb = wjb[~(wjb == None)],
-        Lepton = lepton[~(lepton == None)],
-        MET = met[~(met == None)],
-        Nu = nu[~(nu == None)],
+        BHad = bhad,
+        BLep = blep,
+        WJa = wja,
+        WJb = wjb,
+        Lepton = lepton,
+        MET = met,
+        Nu = nu,
         WLep = WLep,
         TLep = TLep,
         WHad = WHad,
         THad = THad,
         TTbar = TTbar,
         n_perm_matches = n_perm_matches,
-        isEmpty = isEmpty,
+        #isEmpty = isEmpty,
         unique_matches = unique_matches,
         Merged_BHadBLep = Merged_BHadBLep,
         Merged_BHadWJa = Merged_BHadWJa,
@@ -210,5 +209,98 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     #set_trace()
     
     return permutations
+
+
+
+def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
+#def compare_matched_best_perms(mp, bp, njets, mp_mask=None, bp_mask=None):
+    '''
+    Compare object assignments across two permutations.
+    Inputs: matched perm, best perm, njets category, matched perm mask, best perm mask
+    '''
+    if mp['BLep'].size != bp['BLep'][bp_mask].size:
+    #if mp['BLep'][mp_mask].size != bp['BLep'][bp_mask].size:
+        raise ValueError("Permutations must have the same size in order to be compared!")
+    if not ((njets == '3Jets') or (njets == '4PJets')):
+        raise ValueError("Only 3Jets or 4+ jets categorizations are supported")
+
+    #set_trace()
+    #mp_blep_idx = mp['BLep'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    #mp_bhad_idx = mp['BHad'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    #mp_wja_idx = mp['WJa'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    #mp_wjb_idx = mp['WJb'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    #mp_lep_pt = mp['Lepton'][mp_mask].pad(1).pt.fillna(-999).flatten()
+    mp_blep_idx = mp['BLep'].pad(1).jetIdx.fillna(-999).flatten()
+    mp_bhad_idx = mp['BHad'].pad(1).jetIdx.fillna(-999).flatten()
+    mp_wja_idx = mp['WJa'].pad(1).jetIdx.fillna(-999).flatten()
+    mp_wjb_idx = mp['WJb'].pad(1).jetIdx.fillna(-999).flatten()
+    mp_lep_pt = mp['Lepton'].pad(1).pt.fillna(-999).flatten()
+
+    bp_blep_idx = bp['BLep'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    bp_bhad_idx = bp['BHad'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    bp_wja_idx = bp['WJa'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    bp_wjb_idx = bp['WJb'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
+    bp_lep_pt = bp['Lepton'][bp_mask].pad(1).pt.fillna(-999).flatten()
+
+        # index comparisons
+    same_blep = (mp_blep_idx == bp_blep_idx) & (mp_blep_idx >= 0)
+    same_bhad = (mp_bhad_idx == bp_bhad_idx) & (mp_bhad_idx >= 0)
+    same_wja = (mp_wja_idx == bp_wja_idx) & (mp_wja_idx >= 0)
+    same_wjb = (mp_wjb_idx == bp_wjb_idx) & (mp_wjb_idx >= 0)
+
+    same_bs = same_blep & same_bhad
+
+    cats = np.zeros(mp['BLep'].size) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
+    #cats = np.zeros(mp['BLep'][mp_mask].size) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
+    if njets == '3Jets':
+        valid_evts = ((mp['TTbar'].counts > 0) & ((mp['unique_matches'] >= 3).flatten()))
+
+            # merged events
+        merged_evts = valid_evts & mp['Merged_Event'].flatten()
+        correct_merged = merged_evts & (mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']).flatten()
+        wrong_merged = merged_evts & ~(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']).flatten()
+
+            # lost events
+        lost_evts = valid_evts & mp['Lost_Event'].flatten()
+        correct_lost = lost_evts & ((mp['Lost_WJa'] | mp['Lost_WJb'])).flatten()
+        wrong_lost = lost_evts & ~((mp['Lost_WJa'] | mp['Lost_WJb'])).flatten()
+
+        right_matching = same_bs & (((bp_wja_idx == mp_wja_idx) | (bp_wja_idx == mp_wjb_idx)) & (bp_wja_idx >= 0)) # bs are matched correctly, bp wjet is matched to one of the matched perm wjets
+
+        # event categorization
+            # unmatchable events
+        unmatchable_evts = (~valid_evts | wrong_merged | wrong_lost)
+            # right events
+        right_perm_evts = (correct_lost & right_matching) | (correct_merged & right_matching) # matched perm is correct event type and right object matching
+            # matchable events
+        matchable_evts = (correct_lost & ~right_matching) | (correct_merged & ~right_matching) # matched perm is correct event type but wrong object matching
+
+    else:
+        valid_evts = ((mp['TTbar'].counts > 0) & ((mp['unique_matches'] == 4).flatten()))
+        isWHadCorrect = ((bp_wja_idx == mp_wja_idx) & (bp_wjb_idx == mp_wjb_idx)) | ((bp_wja_idx == mp_wjb_idx) & (bp_wjb_idx == mp_wja_idx))
+        isTHadCorrect = same_bhad & isWHadCorrect
+        isTLepCorrect = same_blep & (bp_lep_pt == mp_lep_pt)
+        isCorrect = isTLepCorrect & isTHadCorrect
+
+        # event categorization
+            # unmatchable events
+        unmatchable_evts = ~valid_evts
+            # right events
+        right_perm_evts = (isCorrect & valid_evts)
+            #matchable events
+        matchable_evts = (~isCorrect & valid_evts)
+
+
+        # check that there's no overlap in event categories
+    all_cats_as_int = unmatchable_evts.astype(int)+right_perm_evts.astype(int)+matchable_evts.astype(int)
+    if (all_cats_as_int != 1).any():
+        raise ValueError("Events %s have overlapping categories!\nEvents %s have no categories!" % (np.where(all_cats_as_int > 1), np.where(all_cats_as_int == 0)))
+
+        # set values in category array
+    cats[right_perm_evts] = 1 # matched perm is correct event type and right object matching
+    cats[matchable_evts] = 2 # matched perm is correct event type but wrong object matching
+    cats[unmatchable_evts] = 3 # matched perm isn't valid or has wrong event type
+
+    return cats
 
 
