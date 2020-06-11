@@ -7,7 +7,11 @@ import matplotlib.pyplot as plt
 dataset_groups = { '2016' : {}, '2017' : {}, '2018' : {}}
 dataset_groups['2016'] = {
     'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-    'ttJets' : ['ttJets', 'ttJets_PS'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
+    'ttJets_right' : ['ttJets*_right'],
+    'ttJets_matchable' : ['ttJets*_matchable'],
+    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+    'ttJets_other' : ['ttJets*_other'],
+    'ttJets' : ['ttJets', 'ttJets_PS'],
     'ttJets_Sys' : ['ttJets_*DOWN', 'ttJets_*UP'],
     'singlet' : ['single*'],
     'QCD' : ['QCD*'],
@@ -64,18 +68,19 @@ def get_group(sample, styles=dataset_groups):
         print("Pattern not found for %s" % sample)
         return sample
 
-def make_dataset_groups(lepton, year):
+def make_dataset_groups(lepton, year, samples=[]):
     proj_dir = os.environ['PROJECT_DIR']
     jobid = os.environ['jobid']
 
-        ## get file that has names for all datasets to use
-    fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (year, jobid), 'analyzer_inputs.txt'])
-    if not os.path.isfile(fpath):
-        raise IOError("File %s not found" % fpath)
+    if not samples:
+            ## get file that has names for all datasets to use
+        fpath = '/'.join([proj_dir, 'inputs', '%s_%s' % (year, jobid), 'analyzer_inputs.txt'])
+        if not os.path.isfile(fpath):
+            raise IOError("File %s not found" % fpath)
 
-    txt_file = open(fpath, 'r')
-    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-    samples = [sample for sample in samples if not (sample.startswith('data') and lepton not in sample)] # get rid of data samples that don't correspond to lepton chosen
+        txt_file = open(fpath, 'r')
+        samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
+        samples = [sample for sample in samples if not (sample.startswith('data') and lepton not in sample)] # get rid of data samples that don't correspond to lepton chosen
 
     groupings = {}
     for group_name, patterns in dataset_groups[year].items():
