@@ -81,7 +81,7 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=Non
 def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_opts):
 
     #set_trace()
-    mcorder = mc_opts['mcorder'] if 'mcorder' in mc_opts.keys() else None
+    mcorder = mc_opts.get('mcorder')
 
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
@@ -111,20 +111,26 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
     
     return ax
 
-def plot_2d_norm(hdict, xaxis_name, yaxis_name, values, xlimits, ylimits, xlabel, ylabel, ax=None, **opts):
+def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel, ylabel, ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
     if ax is None:
         ax = plt.gca()
 
-    xaxis = hdict.axis(xaxis_name)
-    yaxis = hdict.axis(yaxis_name)
-    xedges = xaxis.edges()
-    yedges = yaxis.edges()
+    if xbins is not None:
+        xedges = xbins
+    else:
+        xaxis = hdict.axis(xaxis_name)
+        xedges = xaxis.edges()
+    if ybins is not None:
+        yedges = ybins
+    else:
+        yaxis = hdict.axis(yaxis_name)
+        yedges = yaxis.edges()
 
-    cmap=opts['cmap'] if 'cmap' in opts.keys() else 'viridis'
+    cmap = opts.get('cmap', 'viridis')
     pc = ax.pcolormesh(xedges, yedges, values.T, cmap=cmap)
     ax.add_collection(pc)
 
-    cmap_label = opts['cmap_label'] if 'cmap_label' in opts.keys() else ''
+    cmap_label = opts.get('cmap_label', '')
     plt.colorbar(pc, ax=ax, label=cmap_label, pad=0.)
 
     ax.autoscale(axis='x', tight=True)
@@ -194,3 +200,4 @@ def get_qcd_shape(dmp_hist):
     norm_shape_array = shape_array/np.sum(shape_array)
 
     return norm_shape_array
+
