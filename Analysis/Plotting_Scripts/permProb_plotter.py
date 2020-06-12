@@ -7,6 +7,8 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 from matplotlib import rcParams
 rcParams['font.size'] = 18
+rcParams["savefig.format"] = 'png'
+rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load, save
 from pdb import set_trace
 import os
@@ -17,6 +19,7 @@ from coffea import hist
 from coffea.lookup_tools.dense_lookup import dense_lookup
 import numpy as np
 import Plotter as Plotter
+from scipy import interpolate
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -84,17 +87,17 @@ perm_cats = {
 
 variables_3jets = {
     'Lost_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True),
-    'Lost_nusolver_dist' : ('$D_{\\nu, min}$', 1, (0., 150.), True),
+    'Lost_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True),
     'Lost_mbpjet' : ('m(b+j) [GeV]', 1, (0., 500.), True),
     'Merged_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True),
-    'Merged_nusolver_dist' : ('$D_{\\nu, min}$', 2, (0., 150.), True),
+    'Merged_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 2, (0., 150.), True),
     'Merged_mbpjet_vs_maxmjet' : ('max m(jet) [GeV]', 'm(b+j) [GeV]', 2, (0., 150.), 2, (0., 500.), True),
 }
 
 variables_4pjets = {
     'nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True),
-    'nusolver_dist' : ('$D_{\\nu, min}$', 1, (0., 150.), True),
-    'mWHad_vs_mTHad' : ('m($t_{had}$) [GeV]', 'm($W_{had}$) [GeV]', 1, (0., 500.), 1, (0., 500.), True),
+    'nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True),
+    'mWHad_vs_mTHad' : ('m($t_{h}$) [GeV]', 'm($W_{h}$) [GeV]', 8, (0., 500.), 8, (0., 500.), True),
 }
 
     ## get plotting colors/settings
@@ -144,12 +147,12 @@ for year in years_to_run:
     
             histo = hdict[hname]
                 ## rescale hist by lumi for muons and electrons separately and then combine
-            h_mu = histo[:, :, 'Muon', :].integrate('leptype')
+            h_mu = histo[:, :, 'Muon', :, :, :].integrate('leptype')
             h_mu.scale(lumi_correction[year]['Muons'], axis='process')
-            h_el = histo[:, :, 'Electron', :].integrate('leptype')
+            h_el = histo[:, :, 'Electron', :, :, :].integrate('leptype')
             h_el.scale(lumi_correction[year]['Electrons'], axis='process')
             h_tot = h_mu+h_el
-            h_tot = h_tot.integrate('process').integrate('mtregion')
+            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('process').integrate('mtregion')
         
             if h_tot.dense_dim() == 1:
                 xtitle, rebinning, x_lims, save_dist = variables_3jets[hname]
@@ -217,8 +220,8 @@ for year in years_to_run:
                         ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         #set_trace()
-                        figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, hname]))
-                        fig.savefig(figname, bbox_inches='tight')
+                        figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname]))
+                        fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
     
@@ -304,8 +307,8 @@ for year in years_to_run:
        
                             #set_trace() 
                             #figname = 'test.png'
-                            figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, topo, yvar if dax == 0 else xvar]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, topo, yvar if dax == 0 else xvar]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
                             #set_trace()
@@ -350,8 +353,8 @@ for year in years_to_run:
                             ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
        
                             #set_trace() 
-                            figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
     
@@ -386,8 +389,8 @@ for year in years_to_run:
                             )
                             ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
         
-                            figname = '%s/%s_norm.png' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s_norm' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
 
@@ -424,8 +427,8 @@ for year in years_to_run:
                         )
                         ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
-                        figname = '%s/%s_massdisc.png' % (pltdir, '_'.join([jmult, lepcat, hname]))
-                        fig.savefig(figname, bbox_inches='tight')
+                        figname = '%s/%s_massdisc' % (pltdir, '_'.join([jmult, lepcat, hname]))
+                        fig.savefig(figname)
                         print('%s written' % figname)
                         #set_trace()
                         plt.close()
@@ -442,12 +445,12 @@ for year in years_to_run:
         
             histo = hdict[hname]
                 ## rescale hist by lumi for muons and electrons separately and then combine
-            h_mu = histo[:, :, 'Muon', :].integrate('leptype')
+            h_mu = histo[:, :, 'Muon', :, :, :].integrate('leptype')
             h_mu.scale(lumi_correction[year]['Muons'], axis='process')
-            h_el = histo[:, :, 'Electron', :].integrate('leptype')
+            h_el = histo[:, :, 'Electron', :, :, :].integrate('leptype')
             h_el.scale(lumi_correction[year]['Electrons'], axis='process')
             h_tot = h_mu+h_el
-            h_tot = h_tot.integrate('process').integrate('mtregion')
+            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('process').integrate('mtregion')
         
             if h_tot.dense_dim() == 1:
                 xtitle, rebinning, x_lims, save_dist = variables_4pjets[hname]
@@ -517,8 +520,8 @@ for year in years_to_run:
                         ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         #set_trace()
-                        figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, hname]))
-                        fig.savefig(figname, bbox_inches='tight')
+                        figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname]))
+                        fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
         
@@ -546,14 +549,6 @@ for year in years_to_run:
                             yaxis_name = hslice.dense_axes()[1].name
                             hslice = hslice.rebin(yaxis_name, y_rebinning)
         
-                            # save distribution to dict
-                        if save_dist and (lepcat == 'Tight'):
-                            hcor = hslice['Correct_THad'].integrate('permcat')
-                            edges = (hcor.dense_axes()[0].edges(), hcor.dense_axes()[1].edges())
-                            lookup = dense_lookup(*(hcor.values().values()), edges) # not normalized
-                            permProbs[year][jmult].update({hname : lookup})
-    
-                        #set_trace()
                             # make 1D projection along dense axes
                         for dax in range(2):
                             fig, ax = plt.subplots()
@@ -601,8 +596,8 @@ for year in years_to_run:
                             ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                             #figname = 'test.png'
-                            figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, hname.split('_vs_')[1] if dax == 0 else hname.split('_vs_')[0]]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname.split('_vs_')[1] if dax == 0 else hname.split('_vs_')[0]]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
                             #set_trace()
@@ -648,13 +643,13 @@ for year in years_to_run:
                             plt.ylabel(ytitle)
                             ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
         
-                            figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
                             #set_trace()
 
-                                ## normalized plots
+                                ## normalized plots before interpolation
                             fig, ax = plt.subplots()
                             fig.subplots_adjust(hspace=.07)
         
@@ -683,10 +678,59 @@ for year in years_to_run:
                             )
                             ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
         
-                            figname = '%s/%s_norm.png' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
-                            fig.savefig(figname, bbox_inches='tight')
+                            figname = '%s/%s_norm_orig' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
+                            fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
+
+
+                                ## normalized plots after interpolation
+                            fig, ax = plt.subplots()
+                            fig.subplots_adjust(hspace=.07)
+        
+                            #set_trace()
+                            xcenter = hcat.axes()[0].centers()
+                            ycenter = hcat.axes()[1].centers()
+                            f = interpolate.interp2d(xcenter, ycenter, hcat.values()[()])
+                            new_xcenters = np.arange(0, 505, 5)
+                            new_ycenters = np.arange(0, 505, 5)
+                            interp_vals = f(new_xcenters, new_ycenters)
+                            norm_intval = interp_vals/np.sum(interp_vals) ## normalized array of values after interpolating
+                                # save distribution to dict
+                            if save_dist and (lepcat == 'Tight') and (cat == 'Correct_THad'):
+                                lookup = dense_lookup(*(interp_vals, (new_xcenters, new_ycenters))) # not normalized
+                                permProbs[year][jmult].update({hname : lookup})
+    
+                            values = np.ma.masked_where(norm_intval <= 0., norm_intval)
+                            ax = Plotter.plot_2d_norm(hcat, xbins=new_xcenters, ybins=new_ycenters,
+                                values=np.ma.masked_where(values <= 0.0, values), # mask nonzero probabilities for plotting
+                                xlimits=x_lims, ylimits=y_lims, xlabel=xtitle, ylabel=ytitle,
+                                ax=ax, **opts)
+
+                                # add lep category
+                            ax.text(
+                                0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
+                                fontsize=18, 
+                                horizontalalignment='left', 
+                                verticalalignment='bottom', 
+                                transform=ax.transAxes
+                            )
+                                # add perm category
+                            ax.text(
+                                0.95, 0.95, hstyles[cat]['name'],
+                                fontsize=18, 
+                                horizontalalignment='right', 
+                                verticalalignment='bottom', 
+                                transform=ax.transAxes
+                            )
+                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+        
+                            figname = '%s/%s_norm_interp' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
+                            fig.savefig(figname)
+                            print('%s written' % figname)
+                            plt.close()
+
+
 
                             ## plot distribution of mass disc values
                         fig, ax = plt.subplots()
@@ -697,7 +741,7 @@ for year in years_to_run:
                         correct_weight = correct_mass_disc_freq/np.sum(correct_mass_disc_freq)
                         wrong_mass_disc_freq = wrong_nl_norm_values.ravel()[np.isfinite(wrong_nl_norm_values.ravel())] # get non-infinite mass disc values
                         wrong_weight = wrong_mass_disc_freq/np.sum(wrong_mass_disc_freq)
-                        bins = np.linspace(5, 25, 101)
+                        bins = np.linspace(0, 20, 101)
                         ax.hist(correct_mass_disc_freq, bins, weights=correct_weight, linestyle='-', color='r', label='Correct $t_{h}$', histtype='step')
                         ax.hist(wrong_mass_disc_freq, bins, weights=wrong_weight, linestyle='-', color='b', label='Wrong $t_{h}$', histtype='step')
 
@@ -707,7 +751,7 @@ for year in years_to_run:
                         ax.legend(new_handles,labels, loc='upper right')
 
                         ax.autoscale(axis='x', tight=True)
-                        ax.set_xlim(5, 25)
+                        ax.set_xlim(0, 20)
                         ax.set_xlabel('$\\lambda_{M}$ = -log($P_{M}$)')
 
                             # add lep category
@@ -720,8 +764,8 @@ for year in years_to_run:
                         )
                         ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
-                        figname = '%s/%s_massdisc.png' % (pltdir, '_'.join([jmult, lepcat, hname]))
-                        fig.savefig(figname, bbox_inches='tight')
+                        figname = '%s/%s_massdisc' % (pltdir, '_'.join([jmult, lepcat, hname]))
+                        fig.savefig(figname)
                         print('%s written' % figname)
                         #set_trace()
                         plt.close()
