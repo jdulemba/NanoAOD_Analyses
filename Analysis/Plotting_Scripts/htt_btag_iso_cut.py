@@ -186,10 +186,10 @@ for hname in variables.keys():
                         if args.lepton == 'Electron':
                             x_lims = (0., 0.1) if lepcat == 'Tight' else (0., 0.5)
 
-                    if hname == 'mass_disc':
-                        x_lims = (3., 13.) if jmult == '3Jets' else (5., 15.)
-                    if hname == 'full_disc':
-                        x_lims = (6., 20.) if jmult == '3Jets' else (10., 22.)
+                    #if hname == 'mass_disc':
+                    #    x_lims = (3., 13.) if jmult == '3Jets' else (5., 15.)
+                    #if hname == 'full_disc':
+                    #    x_lims = (6., 20.) if jmult == '3Jets' else (10., 22.)
 
                     mc_opts = {
                     #    'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets'] if not ttJets_cats else ['QCD', 'EWK', 'singlet', 'ttJets_other', 'ttJets_unmatchable', 'ttJets_matchable', 'ttJets_right']
@@ -236,11 +236,11 @@ for hname in variables.keys():
                             fig, ax = plt.subplots()
                         fig.subplots_adjust(hspace=.07)
 
+                        #set_trace()
                         iso_sb = histo[:, jmult, 'btagPass', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
                         btag_sb = histo[:, jmult, 'btagFail', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
                         double_sb = histo[:, jmult, 'btagFail', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
                         hslice = Plotter.QCD_Est(sig_reg=hslice, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type='ABCD', shape_region='BTAG')
-                        #set_trace()
 
                         if withData:
                             ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
