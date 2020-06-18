@@ -19,16 +19,24 @@ dataset_groups['2016'] = {
 }
 dataset_groups['2017'] = {
     'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+    'ttJets_right' : ['ttJets*_right'],
+    'ttJets_matchable' : ['ttJets*_matchable'],
+    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+    'ttJets_other' : ['ttJets*_other'],
     'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-    'ttJets_Sys' : ['ttJetsSL_*', 'ttJetsDiLep_*', 'ttJetsHad_*'],
+    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
     'singlet' : ['single*'],
     'QCD' : ['QCD*'],
     'data' : ['data_Single*'],
 }
 dataset_groups['2018'] = {
     'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+    'ttJets_right' : ['ttJets*_right'],
+    'ttJets_matchable' : ['ttJets*_matchable'],
+    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+    'ttJets_other' : ['ttJets*_other'],
     'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-    'ttJets_Sys' : ['ttJetsSL_*', 'ttJetsDiLep_*', 'ttJetsHad_*'],
+    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
     'singlet' : ['single*'],
     'QCD' : ['QCD*'],
     'data' : ['data_Single*'],
@@ -93,16 +101,14 @@ def make_dataset_groups(lepton, year, samples=[]):
 
     return groupings
 
-#groupings = make_dataset_groups('Muon', '2016')
-
 
 def add_coffea_files(input_files):
     from coffea.util import load
-    input_accs = [load(fname) for fname in input_files]
 
-    output_acc = input_accs[0]
-    for idx in range(1, len(input_accs)):
-        output_acc.add(input_accs[idx])
+    output_acc = load(input_files[0])
+    for idx in range(1, len(input_files)):
+        #print(idx)
+        output_acc.add(load(input_files[idx]))
 
     return output_acc
 
