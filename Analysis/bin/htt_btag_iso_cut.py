@@ -365,10 +365,10 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                 events = df.event
                 selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
                 for lepton in regions.keys():
-                    for lepcat in regions[lepton].keys():
-                        for btagregion in regions[lepton][lepcat].keys():
-                            for jmult in regions[lepton][lepcat][btagregion].keys():
-                                sel = regions[lepton][lepcat][btagregion][jmult]
+                    for leptype in regions[lepton].keys():
+                        for btagregion in regions[lepton][leptype].keys():
+                            for jmult in regions[lepton][leptype][btagregion].keys():
+                                sel = regions[lepton][leptype][btagregion][jmult]
                                 sel.update({'keep_ttbar'})
 
             if isTTbar:
@@ -405,11 +405,11 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                             if not self.isData:
                                 evt_weights_to_use = evt_weights.partial_weight(exclude=[lepSF_to_exclude, btagSF_to_exclude])
 
-                            #set_trace()
-
                                 # find best permutations
-                            best_perms = ttpermutator.find_best_permutations(jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], MET=df['MET'][cut], btagWP=btag_wps[0])
+                            best_perms = ttpermutator.find_best_permutations(jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], MET=df['MET'][cut], btagWP=btag_wps[0], btag_req=False if btagregion == 'btagFail' else True)
                             valid_perms = best_perms['TTbar'].counts > 0
+
+                            #set_trace()
 
                             bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
                                 # get matched permutation (semilep ttbar only)
