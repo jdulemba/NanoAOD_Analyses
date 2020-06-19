@@ -44,12 +44,14 @@ ttpermutator.year_to_run(year=args.year)
 pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
 jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
+alpha_corrections = load('%s/Corrections/%s/alpha_correction_%s.coffea' % (proj_dir, jobid, jobid))[args.year]['E']['All'] # E, All determined by post application plots
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : init_btag,
     'JetCor' : jet_corrections,
+    'Alpha' : alpha_corrections,
 }
 
 cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
@@ -457,26 +459,38 @@ class htt_btag_iso_cut(processor.ProcessorABC):
 
 
     def fill_selection_hists(self, acc, jetmult, leptype, lepcat, btagregion, permarray, MTcut, perm, evt_weights):
-        thad_ctstar, tlep_ctstar = make_vars.ctstar(perm['THad'].p4, perm['TLep'].p4)
+            ## apply alpha correction for 3Jets
+        if jetmult == '3Jets':
+            orig_thad_p4, tlep_p4 = perm['THad'].p4.flatten()[MTcut], perm['TLep'].p4.flatten()[MTcut]
+            alpha_corr = self.corrections['Alpha'](172.5/orig_thad_p4.mass)
+            thad_p4 = orig_thad_p4*alpha_corr
+
+        else:
+            thad_p4, tlep_p4 = perm['THad'].p4.flatten()[MTcut], perm['TLep'].p4.flatten()[MTcut]
+            
+        ttbar_p4 = (thad_p4 + tlep_p4)
+        thad_ctstar, tlep_ctstar = make_vars.ctstar_flat(thad_p4, tlep_p4)
+
         for permval in np.unique(permarray).tolist():
             #set_trace()
             perm_inds = np.where(permarray == permval)
             dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
-            acc['mtt'].fill(     dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=perm['TTbar'].mass.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['mthad'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=perm['THad'].mass.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['pt_thad'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=perm['THad'].pt.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['pt_tlep'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=perm['TLep'].pt.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['pt_tt'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=perm['TTbar'].pt.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['eta_thad'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=perm['THad'].eta.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['eta_tlep'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=perm['TLep'].eta.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['eta_tt'].fill(  dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=perm['TTbar'].eta.flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
+
+            acc['mtt'].fill(     dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['mthad'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=thad_p4.mass[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['pt_thad'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=thad_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['pt_tlep'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=tlep_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['pt_tt'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=ttbar_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['eta_thad'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=thad_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['eta_tlep'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=tlep_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['eta_tt'].fill(  dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=ttbar_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
+
+            acc['tlep_ctstar'].fill(    dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar[perm_inds], weight=evt_weights[MTcut][perm_inds])
+            acc['tlep_ctstar_abs'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_weights[MTcut][perm_inds])
 
             acc['full_disc'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, prob=perm['Prob'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
             acc['mass_disc'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, massdisc=perm['MassDiscr'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
             acc['ns_disc'].fill(  dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, nsdisc=perm['NuDiscr'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-
-            acc['tlep_ctstar'].fill(    dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-            acc['tlep_ctstar_abs'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar_abs=tlep_ctstar[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
 
         return acc        
 
