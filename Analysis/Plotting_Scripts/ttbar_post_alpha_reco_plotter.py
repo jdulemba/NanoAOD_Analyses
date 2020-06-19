@@ -56,7 +56,7 @@ variables = {
     'Reco_mtt': ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.)),
     'Reco_mthad': ('m($t_{h}$) [GeV]', 2, (0., 300.)),
     'Reco_thad_ctstar': ('cos($\\theta^{*}_{t_{h}}$)', 2, (-1., 1.)),
-    'Reso_mtt': ('m($t\\bar{t}$) Resolution [GeV]', 2, (-300., 300.)),
+    'Reso_mtt': ('m($t\\bar{t}$) Resolution [GeV]', 1, (-300., 300.)),
     'Reso_mthad': ('m($t_{h}$) Resolution [GeV]', 2, (-200., 200.)),
     'Reso_thad_ctstar': ('cos($\\theta^{*}_{t_{h}}$) Resolution', 2, (-1., 1.)),
 }
