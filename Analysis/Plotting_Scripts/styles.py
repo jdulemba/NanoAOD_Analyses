@@ -159,5 +159,58 @@ styles = {
         'markersize': 10.,
         'color' : '#4daf4a', # green
         'elinewidth' : 1,
-    }
+    },
+
+    'AtoTT' : {
+        'color' : '#377eb8', # blue
+        'linewidth' : 2,
+        'name' : "A $\\rightarrow \mathrm{t\\bar t}$",
+    },
+    'HtoTT' : {
+        'color' : '#e41a1c', # red
+        'linewidth' : 2,
+        'name' : "H $\\rightarrow \mathrm{t\\bar t}$",
+    },
+    'M400' : { 
+        'color' : '#e41a1c', # red
+        'linewidth' : 2,
+        'name' : "m=400 GeV",
+    },
+    'M500' : { 
+        'color' : '#377eb8', # blue
+        'linewidth' : 2,
+        'name' : "m=500 GeV",
+    },
+    'M600' : { 
+        'color' : 'k', # black
+        'linewidth' : 2,
+        'name' : "m=600 GeV",
+    },
+    'M750' : { 
+        'color' : '#4daf4a', # green
+        'linewidth' : 2,
+        'name' : "m=750 GeV",
+    },
+    'W2p5' : { 
+        'color' : '#e41a1c', # red
+        'linewidth' : 2,
+        'name' : "$\mathrm{\Gamma}$/m=2.5%",
+    },
+    'W5' : { 
+        'color' : '#377eb8', # blue
+        'linewidth' : 2,
+        'name' : "$\mathrm{\Gamma}$/m=5%",
+    },
+    'W10' : { 
+        'color' : 'k', # black
+        'linewidth' : 2,
+        'name' : "$\mathrm{\Gamma}$/m=10%",
+    },
+    'W25' : { 
+        'color' : '#4daf4a', # green
+        'linewidth' : 2,
+        'name' : "$\mathrm{\Gamma}$/m=25%",
+    },
+
+
 }
