@@ -111,7 +111,7 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
     
     return ax
 
-def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel, ylabel, ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
+def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
     if ax is None:
         ax = plt.gca()
 
@@ -136,17 +136,24 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel, ylabel, ax=None, xaxis
     ax.autoscale(axis='x', tight=True)
     ax.set_xlim(xlimits)
     ax.set_ylim(ylimits)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    xtitle = opts.get('xtitle', xlabel)
+    ytitle = opts.get('ytitle', ylabel)
+    ax.set_xlabel(xtitle)
+    ax.set_ylabel(ytitle)
     
     return ax
 
 
-def plot_1D(values, bins, density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
+def plot_1D(values, bins, xlimits, xlabel='', ylabel='Events', linestyle='-', color='k', density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
     if ax is None:
         ax = plt.gca()
 
-    hep.plot.histplot(values, bins, weights=weights, density=density, ax=ax, label=label, histtype=histtype, **kwargs)
+    ax = hep.plot.histplot(values, bins, weights=weights, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
+    ax.set_xlim(xlimits)
+    xtitle = kwargs.get('xtitle', xlabel)
+    ytitle = kwargs.get('ytitle', ylabel)
+    ax.set_xlabel(xtitle)
+    ax.set_ylabel(ytitle)
 
     return ax
 
