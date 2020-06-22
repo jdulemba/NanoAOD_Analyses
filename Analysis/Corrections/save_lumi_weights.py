@@ -1,4 +1,4 @@
-from coffea.util import save
+from coffea.util import load, save
 from pdb import set_trace
 import os
 import Utilities.prettyjson as prettyjson
@@ -27,6 +27,12 @@ lumi_weights = {
     },
 }
 
+proj_dir = os.environ['PROJECT_DIR']
+signal_fname = '%s/signal_scripts/results/signal_effLumi_inds12.coffea' % proj_dir
+signalExists = os.path.isfile(signal_fname)
+if signalExists:
+    signal = load(signal_fname)
+
 # for each year, read nWeightedEvts from all meta.json files
 for year in ['2016', '2017', '2018']:
     if year == '2016':
@@ -44,6 +50,13 @@ for year in ['2016', '2017', '2018']:
         xsec = [info['xsection'] for info in xsec_file if info['name'] == sample ][0]
         for lep in ['Electrons', 'Muons']:
             lumi_weights[year][lep][sample] = data_lumi[year][lep]/(nWeightedEvts/xsec)
+
+    if signalExists:
+        for sig in signal[year].keys():
+            effLumi = signal[year][sig]
+            for lep in ['Electrons', 'Muons']:
+                lumi_weights[year][lep][sig] = data_lumi[year][lep]/effLumi
+            
 
     print("%s calculated" % year)
 
