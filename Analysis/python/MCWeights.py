@@ -57,6 +57,13 @@ def get_event_weights(df, year: str, corrections, BTagSFs = []):
                     #np.ones(df.genWeight.size),
                     #shift=True # makes up/down variations relative to nominal
                 )
+
+            ## Signal Reweighting
+        if 'Signal' in corrections.keys():
+            weights.add('Signal_Reweight',
+                np.zeros(df.size)
+            )
+
     ## Need to add at some point
             ## LHEScale Weight Variations
             ## PS Weight variations
