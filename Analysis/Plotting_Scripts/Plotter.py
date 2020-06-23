@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 #plt.style.use(hep.cms.style.ROOT)
 #plt.switch_backend('agg')
-import styles
+from . import styles
 import Utilities.plot_tools as plt_tools
 import re
 from pdb import set_trace
@@ -111,7 +111,7 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
     
     return ax
 
-def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
+def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', mask=None, ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
     if ax is None:
         ax = plt.gca()
 
@@ -125,6 +125,9 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', ax=None,
     else:
         yaxis = hdict.axis(yaxis_name)
         yedges = yaxis.edges()
+
+    if mask is not None:
+        values = np.ma.masked_where(mask, values)
 
     cmap = opts.get('cmap', 'viridis')
     pc = ax.pcolormesh(xedges, yedges, values.T, cmap=cmap)
