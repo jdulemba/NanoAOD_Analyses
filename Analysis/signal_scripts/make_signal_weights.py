@@ -147,6 +147,8 @@ for year in years_to_run:
         lumi = np.sum(np.multiply(phi_over_tt_weights, tt_lumi_histo.values()[()]))/xsec
         lumi_dict[year][sig] = lumi
 
+
+    ## save weights
 if len(years_to_run) == 3:
     sigweights_outfname = '%s/Corrections/%s/signal_weights_%s_inds0.coffea' % (proj_dir, jobid, jobid)
     save(weights_dict, sigweights_outfname)
