@@ -14,6 +14,7 @@ parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify whic
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
+parser.add_argument('--signal', type=str, help='Signal sample to use')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -86,13 +87,27 @@ opts = ""
 #if args.sample: opts += " --sample=%s" % args.sample
 if args.debug: opts += " --debug"
 
+if analyzer == 'signal_reweight_test':
+    if args.signal is None:
+        raise ValueError("Signal sample must be specified when running %s" % analyzer)
+    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {SIGNAL} {OUTFNAME} {OPTS}""".format(
+            PROJDIR=proj_dir,
+            ANALYZER=analyzer,
+            FSET=fileset,
+            YEAR=args.year,
+            SIGNAL=args.signal,
+            OUTFNAME='_'.join([cfname.split('.coffea')[0], args.signal])+'.coffea',
+            #OUTFNAME=cfname,
+            OPTS=opts
+    )
 
-run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
-        PROJDIR=proj_dir,
-        ANALYZER=analyzer,
-        FSET=fileset,
-        YEAR=args.year,
-        OUTFNAME=cfname,
-        OPTS=opts
-)
+else:
+    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
+            PROJDIR=proj_dir,
+            ANALYZER=analyzer,
+            FSET=fileset,
+            YEAR=args.year,
+            OUTFNAME=cfname,
+            OPTS=opts
+    )
 os.system(run_cmd)
