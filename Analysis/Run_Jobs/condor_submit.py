@@ -11,6 +11,7 @@ parser.add_argument('jobdir', help='Directory name to be created in nobackup are
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
+parser.add_argument('--signal', type=str, help='Signal sample to use')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -52,6 +53,16 @@ Proxy_path = {PROXYPATH}
 
     return condorfile
 
+def add_signal_condor_jobs(idx, frange, sample):
+    condorfile = """
+Output = con_{IDX}.stdout
+Error = con_{IDX}.stderr
+Log = con_{IDX}.log
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --outfname={BATCHDIR}/{SAMPLE}_{SIGNAL}_out_{IDX}.coffea
+Queue
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=args.signal, SAMPLE=sample, BATCHDIR=batch_dir)
+    return condorfile
+
 def add_condor_jobs(idx, frange, sample):
     condorfile = """
 Output = con_{IDX}.stdout
@@ -71,7 +82,8 @@ for sample in samples_to_use:
 
     sample_name = sample.split('/')[-1].split('.')[0]
         ## make batch_job.sh file
-    batch_dir = '%s/%s/%s' % (proj_dir, jobdir, sample_name)
+    batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, args.signal) if analyzer == 'signal_reweight_test' else '%s/%s/%s' % (proj_dir, jobdir, sample_name)
+    #batch_dir = '%s/%s/%s' % (proj_dir, jobdir, sample_name)
     if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
     batch_cmd = create_batch_job()
     batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
@@ -86,8 +98,16 @@ for sample in samples_to_use:
     file_inds = [idx for idx, fname in enumerate([fname.strip('\n') for fname in sfiles if not fname.startswith('#')])]
     splitting = tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
-    for idx, chunk in enumerate(file_chunks):
-        condor_cmd += add_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
+    if analyzer == 'signal_reweight_test':
+        if args.signal is None:
+            raise ValueError("Signal sample must be specified when running %s" % analyzer)
+        #set_trace()
+        for idx, chunk in enumerate(file_chunks):
+            condor_cmd += add_signal_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
+            #condor_cmd += add_signal_condor_jobs(idx, chunk, '_'.join([sample.split('/')[-1].split('.')[0], args.signal]))
+    else:
+        for idx, chunk in enumerate(file_chunks):
+            condor_cmd += add_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
 
     condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
     condor_conf.write(condor_cmd)
