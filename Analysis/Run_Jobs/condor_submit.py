@@ -53,14 +53,14 @@ Proxy_path = {PROXYPATH}
 
     return condorfile
 
-def add_signal_condor_jobs(idx, frange, sample):
+def add_signal_condor_jobs(idx, frange, sample, signal):
     condorfile = """
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
 Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --outfname={BATCHDIR}/{SAMPLE}_{SIGNAL}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=args.signal, SAMPLE=sample, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, BATCHDIR=batch_dir)
     return condorfile
 
 def add_condor_jobs(idx, frange, sample):
@@ -81,17 +81,6 @@ for sample in samples_to_use:
         raise IOError("Sample file %s.txt not found" % sample)
 
     sample_name = sample.split('/')[-1].split('.')[0]
-        ## make batch_job.sh file
-    batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, args.signal) if analyzer == 'signal_reweight_test' else '%s/%s/%s' % (proj_dir, jobdir, sample_name)
-    #batch_dir = '%s/%s/%s' % (proj_dir, jobdir, sample_name)
-    if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
-    batch_cmd = create_batch_job()
-    batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
-    batch_conf.write(batch_cmd)
-    batch_conf.close()
-    
-        ## make condor.jdl file
-    condor_cmd = base_condor_jdl()
 
         # add output, error, log, arguments for each job splitting
     sfiles = open(sample, 'r')
@@ -99,26 +88,56 @@ for sample in samples_to_use:
     splitting = tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
     if analyzer == 'signal_reweight_test':
-        if args.signal is None:
-            raise ValueError("Signal sample must be specified when running %s" % analyzer)
-        #set_trace()
-        for idx, chunk in enumerate(file_chunks):
-            condor_cmd += add_signal_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
-            #condor_cmd += add_signal_condor_jobs(idx, chunk, '_'.join([sample.split('/')[-1].split('.')[0], args.signal]))
+        signals_to_use = [sig.strip('\n') for sig in open('inputs/signal_opts.txt', 'r') if not sig.startswith('#')] if args.signal is None else [args.signal]
+        for signal in signals_to_use:
+                ## make batch_job.sh file
+            batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, signal)
+            if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
+            batch_cmd = create_batch_job()
+            batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
+            batch_conf.write(batch_cmd)
+            batch_conf.close()
+            
+                ## make condor.jdl file
+            condor_cmd = base_condor_jdl()
+
+            for idx, chunk in enumerate(file_chunks):
+                condor_cmd += add_signal_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0], signal)
+
+            condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
+            condor_conf.write(condor_cmd)
+            condor_conf.close()
+
+            # submit job
+            if args.submit:
+                orig_dir = os.getcwd()
+                print('\nSubmitting jobs for %s' % signal)
+                os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
+                os.system('cd ' + orig_dir)
+
     else:
+            ## make batch_job.sh file
+        batch_dir = '%s/%s/%s' % (proj_dir, jobdir, sample_name)
+        if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
+        batch_cmd = create_batch_job()
+        batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
+        batch_conf.write(batch_cmd)
+        batch_conf.close()
+        
+            ## make condor.jdl file
+        condor_cmd = base_condor_jdl()
+
         for idx, chunk in enumerate(file_chunks):
             condor_cmd += add_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
 
-    condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
-    condor_conf.write(condor_cmd)
-    condor_conf.close()
+        condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
+        condor_conf.write(condor_cmd)
+        condor_conf.close()
 
-    #set_trace()
-    # submit job
-    if args.submit:
-        orig_dir = os.getcwd()
-        print('\nSubmitting jobs for %s' % sample_name)
-        os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
-        os.system('cd ' + orig_dir)
+        # submit job
+        if args.submit:
+            orig_dir = os.getcwd()
+            print('\nSubmitting jobs for %s' % sample_name)
+            os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
+            os.system('cd ' + orig_dir)
 
-#os.system('python %s/Run_Jobs/track_jobs.py %s' % (proj_dir, jobdir))

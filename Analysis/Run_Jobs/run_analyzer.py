@@ -96,8 +96,8 @@ if analyzer == 'signal_reweight_test':
             FSET=fileset,
             YEAR=args.year,
             SIGNAL=args.signal,
-            OUTFNAME='_'.join([cfname.split('.coffea')[0], args.signal])+'.coffea',
-            #OUTFNAME=cfname,
+            #OUTFNAME='_'.join([cfname.split('.coffea')[0], args.signal])+'.coffea',
+            OUTFNAME=cfname,
             OPTS=opts
     )
 
