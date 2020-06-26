@@ -24,7 +24,6 @@ samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % 
 def check_correctness(jobdir, dump_rescue = False):
     isCorrect = True
     sample = jobdir.split('/')[-1]
-    #set_trace()
     if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, sample)):  ## TOT output file already created
         #print('%s/%s_TOT.coffea already exists' % (jobdir, sample))
         return isCorrect
