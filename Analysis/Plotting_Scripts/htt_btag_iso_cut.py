@@ -8,14 +8,14 @@ rcParams['font.size'] = 20
 from coffea.util import load
 from pdb import set_trace
 import os
-import styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 import re
 from coffea import hist
 import numpy as np
 import fnmatch
-import Plotter as Plotter
+import Utilities.Plotter as Plotter
+#import Plotter as Plotter
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -90,7 +90,6 @@ variables = {
 
 
     ## get plotting colors/settings
-hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
 stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
