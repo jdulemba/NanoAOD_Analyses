@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 #plt.style.use(hep.cms.style.ROOT)
 #plt.switch_backend('agg')
-from . import styles
+from Utilities import styles
 import Utilities.plot_tools as plt_tools
 import re
 from pdb import set_trace
@@ -82,13 +82,15 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
 
     #set_trace()
     mcorder = mc_opts.get('mcorder')
+    stack = mc_opts.get('stack', True)
 
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
         overlay=hdict.axes()[0].name,
         ax=ax,
         clear=False,
-        stack=True,
+        stack=stack,
+        #stack=True,
         line_opts=None,
         fill_opts=stack_fill_opts,
         error_opts=stack_error_opts,
