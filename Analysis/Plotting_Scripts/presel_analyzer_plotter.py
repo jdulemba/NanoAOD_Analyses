@@ -4,14 +4,18 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
+from matplotlib import rcParams
+rcParams["savefig.format"] = 'png'
+rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load
 from pdb import set_trace
 import os
-import styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 import re
 from coffea import hist
+import Utilities.Plotter as Plotter
+from Utilities import styles
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -83,8 +87,6 @@ if args.lepton == 'Electron':
 
     ## get plotting colors/settings
 hstyles = styles.styles
-stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
@@ -171,69 +173,25 @@ for hname in hdict.keys():
                     xaxis_name = hslice.dense_axes()[0].name
                     hslice = hslice.rebin(xaxis_name, rebinning)
 
-                    ## plot MC and data
-                plot.plot1d(hslice[mc_samples],
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    stack=True,
-                    line_opts=None,
-                    fill_opts=stack_fill_opts,
-                    error_opts=stack_error_opts
-                )
-                #set_trace()
+                    ## plot mc+data
                 if withData:
-                    plot.plot1d(hslice[data_samples],
-                        overlay=hslice.axes()[0].name,
-                        ax=ax,
-                        clear=False,
-                        error_opts=hstyles['data_err_opts']
-                    )
-                ax.autoscale(axis='x', tight=True)
-                ax.set_ylim(0, None)
-                ax.set_xlabel(None)
-                ax.set_xlim(x_lims)
-
-                    ## set legend and corresponding colors
-                handles, labels = ax.get_legend_handles_labels()
-                for idx, sample in enumerate(labels):
-                    if sample == 'data' or sample == 'Observed': continue
-                    facecolor, legname = plt_tools.get_styles(sample, hstyles)
-                    handles[idx].set_facecolor(facecolor)
-                    labels[idx] = legname
-                # call ax.legend() with the new values
-                ax.legend(handles,labels, loc='upper right')
-                #set_trace()
-
-                if withData:
-                        ## plot data/MC ratio
-                    plot.plotratio(hslice[data_samples].sum(hslice.axes()[0].name), hslice[mc_samples].sum(hslice.axes()[0].name), 
-                        ax=rax,
-                        error_opts=hstyles['data_err_opts'], 
-                        #error_opts=data_err_opts, 
-                        denom_fill_opts={},
-                        guide_opts={},
-                        unc='num'
-                    )
-                    rax.set_ylabel('data/MC')
-                    rax.set_ylim(0.5, 1.5)
-                    rax.set_xlim(x_lims)
-
+                    ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims)
+                else:
+                    ax = Plotter.plot_mc1d(ax, hslice, xlabel=xtitle, xlimits=x_lims)
 
                     ## set axes labels and titles
-                plt.xlabel(xtitle)
                     # add lepton/jet multiplicity label
                 ax.text(
-                    0.02, 0.92, "%s/%s" % (objtypes['Lep'][lep], jet_mults[jmult]),
-                    fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+                    0.02, 0.92, "%s, %s" % (objtypes['Lep'][lep], jet_mults[jmult]),
+                    fontsize=hep.styles_cms.CMS['font.size']*0.75, 
                     horizontalalignment='left', 
                     verticalalignment='bottom', 
                     transform=ax.transAxes
                 )
                 ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
-                figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname]))
-                fig.savefig(figname, bbox_inches='tight')
+                figname = '%s/%s' % (pltdir, '_'.join([jmult, lep, hname]))
+                fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
                 #set_trace()
@@ -261,84 +219,34 @@ for hname in hdict.keys():
                 bin_slices = [(x, x+10) for x in range(0, 100, 10)] # [(0, 10), (10, 20)..]
                 for bin_xmin, bin_xmax in bin_slices:
                     if withData:
-                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                     else:
-                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
+                        fig, ax = plt.subplots()
+                    fig.subplots_adjust(hspace=.07)
 
                     #set_trace()
                     y_slice = hslice[:, bin_xmin:bin_xmax, :].integrate(hslice.dense_axes()[0].name)
-                        ## plot MC and data
-                    plot.plot1d(y_slice[mc_samples],
-                        overlay=y_slice.axes()[0].name,
-                        ax=ax,
-                        clear=False,
-                        stack=True,
-                        line_opts=None,
-                        fill_opts=stack_fill_opts,
-                        error_opts=stack_error_opts
-                    )
+
+                        ## plot mc+data
                     if withData:
-                        plot.plot1d(y_slice[data_samples],
-                            overlay=y_slice.axes()[0].name,
-                            ax=ax,
-                            clear=False,
-                            error_opts=hstyles['data_err_opts']
-                        )
-                    ax.autoscale(axis='x', tight=True)
-                    ax.set_ylim(0, None)
-                    ax.set_xlabel(None)
-                    ax.set_xlim(y_lims)
+                        ax, rax = Plotter.plot_stack1d(ax, rax, yslice, xlabel=xtitle, xlimits=x_lims)
+                    else:
+                        ax = Plotter.plot_mc1d(ax, yslice, xlabel=xtitle, xlimits=x_lims)
 
-                        ## set legend and corresponding colors
-                    handles, labels = ax.get_legend_handles_labels()
-                    for idx, sample in enumerate(labels):
-                        if sample == 'data' or sample == 'Observed': continue
-                        facecolor, legname = plt_tools.get_styles(sample, hstyles)
-                        handles[idx].set_facecolor(facecolor)
-                        labels[idx] = legname
-                    # call ax.legend() with the new values
-                    ax.legend(handles,labels, loc='upper right')
-                    #set_trace()
-
-                    if withData:
-                            ## plot data/MC ratio
-                        plot.plotratio(y_slice[data_samples].sum(y_slice.axes()[0].name), y_slice[mc_samples].sum(y_slice.axes()[0].name), 
-                            ax=rax,
-                            error_opts=hstyles['data_err_opts'], 
-                            #error_opts=data_err_opts, 
-                            denom_fill_opts={},
-                            guide_opts={},
-                            unc='num'
-                        )
-                        rax.set_ylabel('data/MC')
-                        rax.set_ylim(0.5, 1.5)
-                        rax.set_xlim(x_lims)
-
-                    #    # add x axis range for projection
-                    #ax.text(
-                    #    0.02, 0.95, "%.1f $\leq$ %s $\leq$ %.1f" % (bin_xmin, xtitle, bin_xmax),
-                    #    fontsize=8, 
-                    #    horizontalalignment='left', 
-                    #    verticalalignment='bottom', 
-                    #    transform=ax.transAxes
-                    #)
 
                         ## set axes labels and titles
-                    plt.xlabel(ytitle)
                     ax.text(
-                        0.02, 0.92, "%s/%s\n%.1f $\leq$ %s $\leq$ %.1f" % (objtypes['Lep'][lep], jet_mults[jmult], bin_xmin, xtitle, bin_xmax),
-                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+                        0.02, 0.92, "%s, %s\n%.1f $\leq$ %s $\leq$ %.1f" % (objtypes['Lep'][lep], jet_mults[jmult], bin_xmin, xtitle, bin_xmax),
+                        fontsize=hep.styles_cms.CMS['font.size']*0.75, 
                         horizontalalignment='left', 
                         verticalalignment='bottom', 
                         transform=ax.transAxes
                     )
                     ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
-                    #figname = 'test.png'
-                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
-                    fig.savefig(figname, bbox_inches='tight')
+                    #figname = 'test'
+                    figname = '%s/%s' % (pltdir, '_'.join([jmult, lep, hname, 'xrange%sto%s' % (bin_xmin, bin_xmax)]))
+                    fig.savefig(figname)
                     print('%s written' % figname)
                     plt.close()
                     #set_trace()
@@ -349,11 +257,10 @@ for hname in hdict.keys():
                     if not withData and top == 'data': continue
 
                     if withData:
-                        fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                     else:
-                        fig, ax = plt.subplots(1, 1, figsize=(7,7))#, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
+                        fig, ax = plt.subplots()
+                    fig.subplots_adjust(hspace=.07)
 
                     htop = hslice[top].integrate('process')
                     top_label = plt_tools.get_label(top, hstyles)
@@ -363,7 +270,7 @@ for hname in hdict.keys():
                     plot.plot2d(htop,
                         xaxis=htop.axes()[0].name,
                         ax=ax,
-                        patch_opts={'cmap' : 'OrRd'},
+                        #patch_opts={'cmap' : 'OrRd'},
                         clear=True,
                     )
                     ax.autoscale(axis='x', tight=True)
@@ -374,21 +281,17 @@ for hname in hdict.keys():
                         ## set axes labels and titles
                     plt.xlabel(xtitle)
                     plt.ylabel(ytitle)
-                    #kwargs = {
-                    #    'Lumi_blurb' : "(13 TeV %.2f fb$^{-1}$, %s/%s)" % (data_lumi_year['%ss' % lep]/1000., objtypes['Lep'][lep], jet_mults[jmult]),
-                    #}
-                    #ax = plt_tools.make_cms_lumi_blurb(ax, **kwargs)
                     ax.text(
-                        0.02, 0.92, "%s/%s" % (objtypes['Lep'][lep], jet_mults[jmult]),
-                        fontsize=hep.styles_cms.CMS['font.size']*0.90, 
+                        0.02, 0.92, "%s, %s" % (objtypes['Lep'][lep], jet_mults[jmult]),
+                        fontsize=hep.styles_cms.CMS['font.size']*0.75, 
                         horizontalalignment='left', 
                         verticalalignment='bottom', 
                         transform=ax.transAxes
                     )
                     ax = hep.cms.cmslabel(ax=ax, data=True if withData else False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % lep]/1000., 1))
 
-                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, lep, hname, top]))
-                    fig.savefig(figname, bbox_inches='tight')
+                    figname = '%s/%s' % (pltdir, '_'.join([jmult, lep, hname, top]))
+                    fig.savefig(figname)
                     print('%s written' % figname)
                     plt.close()
                     #set_trace()
