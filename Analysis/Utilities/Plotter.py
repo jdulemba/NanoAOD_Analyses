@@ -213,3 +213,33 @@ def get_qcd_shape(dmp_hist):
 
     return norm_shape_array
 
+
+def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all'):
+    '''
+    Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
+    Returns: list of tuples containing sample name, yield, and fraction
+    '''
+    yields = histo.integrate(histo.dense_axes()[0].name).sum().values(overflow=overflow)
+    proc_yields_list = [(''.join(process), proc_yields) for process, proc_yields in yields.items()]
+    mc_yield = sum([process[1] for process in proc_yields_list if not (process[0] == 'data')])
+    data_yield = sum([process[1] for process in proc_yields_list if (process[0] == 'data')])
+
+    rows = [("Lumi: %s fb^-1" % format(lumi, '.1f'), "Sample", "Yield", "Frac")]
+    rows += [("", process, format(proc_yield, '.1f'), format((proc_yield/mc_yield)*100, '.1f')) for process, proc_yield in proc_yields_list if not process == 'data']
+    rows += [("", "SIM", format(mc_yield, '.1f'), '100.0')]
+    rows += [("", "", "", "")]
+    rows += [("", "data", format(data_yield, '.1f'), "")]
+    rows += [("", "", "", "")]
+    rows += [("", "data/SIM", "", format(data_yield/mc_yield, '.3f'))]
+    if promptmc:
+        prompt_mc_yield = sum([process[1] for process in proc_yields_list if not ((process[0] == 'data') or (process[0] == 'QCD'))])
+        rows += [("", "", "", "")]
+        rows += [("", "Prompt MC", format(prompt_mc_yield, '.1f'), "")]
+        rows += [("", "data-Prompt MC", format(data_yield-prompt_mc_yield, '.1f'), "")]
+
+    yields_dict = {process:round(proc_yield, 2) for process, proc_yield in proc_yields_list}
+    yields_dict.update({'SIM': round(mc_yield, 2)})
+    yields_dict.update({'data/SIM': round(data_yield/mc_yield, 3)})
+
+    return rows, yields_dict
+
