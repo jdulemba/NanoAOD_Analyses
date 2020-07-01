@@ -15,7 +15,6 @@ from coffea import hist
 import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
-#import Plotter as Plotter
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -101,52 +100,21 @@ ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
 names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
-    ttJets_lumi_topo = '_'.join(ttJets_cats[0].split('_')[:-1]) # gets ttJets or ttJets_PS
-    ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
-    lumi_correction.update({key: ttJets_eff_lumi for key in ttJets_cats})
+    for tt_cat in ttJets_cats:
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
+        lumi_correction.update({tt_cat: ttJets_eff_lumi})
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction, axis='dataset')
-
 
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names)
-#set_trace()
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
-    
-
-def get_samples_yield_and_frac(histo, lep):
-    '''
-    Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
-    Returns: list of tuples containing sample name, yield, and fraction
-    '''
-    yields = histo.integrate(histo.dense_axes()[0].name, overflow='all').values()
-    proc_yields_list = [(''.join(process), proc_yields) for process, proc_yields in yields.items()]
-    mc_yield = sum([process[1] for process in proc_yields_list if not (process[0] == 'data')])
-    data_yield = sum([process[1] for process in proc_yields_list if (process[0] == 'data')])
-    prompt_mc_yield = sum([process[1] for process in proc_yields_list if not ((process[0] == 'data') or (process[0] == 'QCD'))])
-
-    rows = [("Lumi: %s fb^-1" % format(data_lumi_year['%ss' % lep]/1000., '.1f'), "Sample", "Yield", "Frac")]
-    rows += [("", process, format(proc_yield, '.1f'), format((proc_yield/mc_yield)*100, '.1f')) for process, proc_yield in proc_yields_list if not process == 'data']
-    rows += [("", "SIM", format(mc_yield, '.1f'), '100.0')]
-    rows += [("", "", "", "")]
-    rows += [("", "data", format(data_yield, '.1f'), "")]
-    rows += [("", "", "", "")]
-    rows += [("", "data/SIM", "", format(data_yield/mc_yield, '.3f'))]
-    rows += [("", "", "", "")]
-    rows += [("", "Prompt MC", format(prompt_mc_yield, '.1f'), "")]
-    rows += [("", "data-Prompt MC", format(data_yield-prompt_mc_yield, '.1f'), "")]
-        
-    yields_dict = {process:round(proc_yield, 2) for process, proc_yield in proc_yields_list}
-    yields_dict.update({'SIM': round(mc_yield, 2)})
-    yields_dict.update({'data/SIM': round(data_yield/mc_yield, 3)})
-
-    return rows, yields_dict
-
 
 
     ## make plots
@@ -201,7 +169,7 @@ for hname in variables.keys():
 
                     if hname == 'Jets_njets':
                         print(jmult)
-                        yields_txt, yields_json = get_samples_yield_and_frac(hslice, args.lepton)
+                        yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
                         frac_name = '%s_yields_and_fracs' % '_'.join([jmult, args.lepton, lepcat, btagregion])
                         plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (pltdir, frac_name), print_output=True)
                         print('%s/%s.txt written' % (pltdir, frac_name))
@@ -248,7 +216,7 @@ for hname in variables.keys():
 
                         if hname == 'Jets_njets':
                             print(jmult)
-                            yields_txt, yields_json = get_samples_yield_and_frac(hslice, args.lepton)
+                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
                             frac_name = '%s_yields_and_fracs_QCD_Est' % '_'.join([jmult, args.lepton, lepcat, btagregion])
                             plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (pltdir, frac_name), print_output=True)
                             print('%s/%s.txt written' % (pltdir, frac_name))
