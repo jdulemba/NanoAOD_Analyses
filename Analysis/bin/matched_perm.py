@@ -41,7 +41,7 @@ ttpermutator.year_to_run(year=args.year)
 if args.year == '2016':
     Nominal_ttJets = ['ttJets_PS', 'ttJets']
 else:
-    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+    Nominal_ttJets = ['ttJetsSL']
 isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
