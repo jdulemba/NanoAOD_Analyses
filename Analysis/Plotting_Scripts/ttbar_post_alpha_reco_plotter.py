@@ -10,14 +10,14 @@ rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load
 from pdb import set_trace
 import os
-import styles
+import Utilities.styles as styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 #import re
 from coffea import hist
 import numpy as np
 import fnmatch
-import Plotter as Plotter
+import Utilities.Plotter as Plotter
 from coffea.hist import plot
 
 from argparse import ArgumentParser
@@ -75,13 +75,15 @@ lumi_to_use = (data_lumi_year['Muons']+data_lumi_year['Electrons'])/2000.
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
 ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
 names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
+
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
-    ttJets_lumi_topo = '_'.join(ttJets_cats[0].split('_')[:-1]) # gets ttJets or ttJets_PS
-    mu_lumi = lumi_correction['Muons'][ttJets_lumi_topo]
-    el_lumi = lumi_correction['Electrons'][ttJets_lumi_topo]
-    lumi_correction['Muons'].update({key: mu_lumi for key in ttJets_cats})
-    lumi_correction['Electrons'].update({key: el_lumi for key in ttJets_cats})
+    for tt_cat in ttJets_cats:
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        mu_lumi = lumi_correction['Muons'][ttJets_lumi_topo]
+        el_lumi = lumi_correction['Electrons'][ttJets_lumi_topo]
+        lumi_correction['Muons'].update({tt_cat: mu_lumi})
+        lumi_correction['Electrons'].update({tt_cat: el_lumi})
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction, axis='dataset')
