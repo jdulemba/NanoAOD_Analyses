@@ -10,7 +10,7 @@ rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load, save
 from pdb import set_trace
 import os
-import styles
+import Utilities.styles as styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 import re
@@ -18,7 +18,7 @@ from coffea import hist
 from coffea.hist import plot
 import numpy as np
 import fnmatch
-import Plotter as Plotter
+import Utilities.Plotter as Plotter
 from equal_split import partition_list
 from scipy import stats
 from scipy import interpolate
@@ -179,11 +179,12 @@ for year in years_to_run:
     names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
     ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
     if len(ttJets_cats) > 0:
-        ttJets_lumi_topo = '_'.join(ttJets_cats[0].split('_')[:-1]) # gets ttJets or ttJets_PS
-        mu_lumi = lumi_correction[year]['Muons'][ttJets_lumi_topo]
-        el_lumi = lumi_correction[year]['Electrons'][ttJets_lumi_topo]
-        lumi_correction[year]['Muons'].update({key: mu_lumi for key in ttJets_cats})
-        lumi_correction[year]['Electrons'].update({key: el_lumi for key in ttJets_cats})
+        for tt_cat in ttJets_cats:
+            ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+            mu_lumi = lumi_correction[year]['Muons'][ttJets_lumi_topo]
+            el_lumi = lumi_correction[year]['Electrons'][ttJets_lumi_topo]
+            lumi_correction[year]['Muons'].update({tt_cat: mu_lumi})
+            lumi_correction[year]['Electrons'].update({tt_cat: el_lumi})
 
         ## make groups based on process
     process_groups = plt_tools.make_dataset_groups('Muon', year, samples=names) # works when only MC present
