@@ -10,14 +10,13 @@ rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load
 from pdb import set_trace
 import os
-import styles
+import Utilities.styles as styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
-#import re
 from coffea import hist
 import numpy as np
 import fnmatch
-import Plotter as Plotter
+import Utilities.Plotter as Plotter
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -107,9 +106,10 @@ ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
 names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
-    ttJets_lumi_topo = '_'.join(ttJets_cats[0].split('_')[:-1]) # gets ttJets or ttJets_PS
-    ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
-    lumi_correction.update({key: ttJets_eff_lumi for key in ttJets_cats})
+    for tt_cat in ttJets_cats:
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
+        lumi_correction.update({tt_cat: ttJets_eff_lumi})
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction, axis='dataset')
