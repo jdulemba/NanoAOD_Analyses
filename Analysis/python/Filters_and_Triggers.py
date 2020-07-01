@@ -3,25 +3,46 @@ import numpy as np
 
 from pdb import set_trace
 
-single_el_trigger_paths = {}
-single_el_trigger_paths["2016"] = ["HLT_Ele27_WPTight_Gsf"]
-single_el_trigger_paths["2017"] = ["HLT_Ele27_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf"]
-single_el_trigger_paths["2018"] = ["HLT_Ele32_WPTight_Gsf"]
+single_el_trigger_paths = {
+    '2016' : {
+        'Iso' : ["HLT_Ele27_WPTight_Gsf"],
+        'noIso' : ["HLT_Ele27_WPLoose_Gsf"],
+    },
+    '2017' : {
+        'Iso' : ["HLT_Ele27_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf"],
+        'noIso' : ["HLT_Ele20_WPLoose_Gsf"],
+    },
+    '2018' : {
+        'Iso' : ["HLT_Ele32_WPTight_Gsf"],
+        'noIso' : ["HLT_Ele20_WPLoose_Gsf"],
+    },
+}
 
-single_mu_trigger_paths = {}
-single_mu_trigger_paths["2016"] = ["HLT_IsoMu24", "HLT_IsoTkMu24"]
-single_mu_trigger_paths["2017"] = ["HLT_IsoMu27"]
-single_mu_trigger_paths["2018"] = ["HLT_IsoMu24"]
+single_mu_trigger_paths = {
+    '2016' : {
+        'Iso' : ["HLT_IsoMu24", "HLT_IsoTkMu24"],
+        'noIso' : ["HLT_Mu50"],
+    },
+    '2017' : {
+        'Iso' : ["HLT_IsoMu27"],
+        'noIso' : ["HLT_Mu50"],
+    },
+    '2018' : {
+        'Iso' : ["HLT_IsoMu24"],
+        'noIso' : ["HLT_Mu50"],
+    },
+}
 
-def get_triggers(df, leptype, year, accumulator=None):
+def get_triggers(df, leptype, year, noIso=False, accumulator=None):
     ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
 
+    iso_cat = 'noIso' if noIso else 'Iso'
     if leptype == 'Muon':
-        triggers = [df[i] for i in single_mu_trigger_paths[year] if i in df.columns]
+        triggers = [df[i] for i in single_mu_trigger_paths[year][iso_cat] if i in df.columns]
         pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
 
     elif leptype == 'Electron':
-        triggers = [df[i] for i in single_el_trigger_paths[year] if i in df.columns]
+        triggers = [df[i] for i in single_el_trigger_paths[year][iso_cat] if i in df.columns]
         pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
 
     else:
