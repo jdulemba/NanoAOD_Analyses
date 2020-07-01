@@ -66,15 +66,15 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
         return jets, passing_jets
 
 
-def select(df, year, corrections, accumulator=None, shift=None):
+def select(df, year, corrections, noIso=False, accumulator=None, shift=None):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
     evt_sel = processor.PackedSelection()
 
     ### trigger selection
-    evt_sel.add('mu_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Muon', year=year))
-    evt_sel.add('el_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Electron', year=year))
+    evt_sel.add('mu_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Muon', year=year, noIso=noIso))
+    evt_sel.add('el_triggers', Filters_and_Triggers.get_triggers(df=df, leptype='Electron', year=year, noIso=noIso))
 
     ### filter selection
     evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(df=df, year=year))
