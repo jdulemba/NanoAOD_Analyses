@@ -5,6 +5,8 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 from matplotlib import rcParams
 rcParams['font.size'] = 20
+rcParams["savefig.format"] = 'png'
+rcParams["savefig.bbox"] = 'tight'
 from coffea.util import load
 from pdb import set_trace
 import os
@@ -188,58 +190,62 @@ for hname in variables.keys():
                     ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
                     #set_trace()
-                    figname = '%s/%s.png' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
-                    fig.savefig(figname, bbox_inches='tight')
+                    figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
+                    fig.savefig(figname)
                     print('%s written' % figname)
                     plt.close()
 
 
                         # plot with QCD estimation
                     if (btagregion  == 'btagPass') and (lepcat == 'Tight') and args.qcd_est:
+                        shape_reg = 'BTAG'
+                        #for norm in ['Sideband']:
+                        for norm in ['ABCD', 'Sideband']:
+                            qcd_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
+                            qcd_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', qcd_name])
+                            if not os.path.isdir(qcd_dir):
+                                os.makedirs(qcd_dir)
 
-                        if withData:
-                            fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        else:
-                            fig, ax = plt.subplots()
-                        fig.subplots_adjust(hspace=.07)
+                            if withData:
+                                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                            else:
+                                fig, ax = plt.subplots()
+                            fig.subplots_adjust(hspace=.07)
 
-                        #set_trace()
-                        iso_sb = histo[:, jmult, 'btagPass', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
-                        btag_sb = histo[:, jmult, 'btagFail', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
-                        double_sb = histo[:, jmult, 'btagFail', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
-                        hslice = Plotter.QCD_Est(sig_reg=hslice, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type='ABCD', shape_region='BTAG')
+                            iso_sb = histo[:, jmult, 'btagPass', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
+                            btag_sb = histo[:, jmult, 'btagFail', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
+                            double_sb = histo[:, jmult, 'btagFail', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
+                            hslice = Plotter.QCD_Est(sig_reg=hslice, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type=norm, shape_region=shape_reg, norm_region=shape_reg if norm=='Sideband' else None)
 
-                        if withData:
-                            ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
-                        else:
-                            ax = Plotter.plot_mc1d(ax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
+                            if withData:
+                                ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
+                            else:
+                                ax = Plotter.plot_mc1d(ax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
 
-                        if hname == 'Jets_njets':
-                            print(jmult)
-                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
-                            frac_name = '%s_yields_and_fracs_QCD_Est' % '_'.join([jmult, args.lepton, lepcat, btagregion])
-                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (pltdir, frac_name), print_output=True)
-                            print('%s/%s.txt written' % (pltdir, frac_name))
-                            with open('%s/%s.json' % (pltdir, frac_name), 'w') as out:
-                                out.write(prettyjson.dumps(yields_json))
+                            if hname == 'Jets_njets':
+                                print(jmult)
+                                yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
+                                frac_name = '%s_yields_and_fracs_QCD_Est_%s' % ('_'.join([jmult, args.lepton, lepcat, btagregion]), qcd_name)
+                                plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (qcd_dir, frac_name), print_output=True)
+                                print('%s/%s.txt written' % (qcd_dir, frac_name))
+                                with open('%s/%s.json' % (qcd_dir, frac_name), 'w') as out:
+                                    out.write(prettyjson.dumps(yields_json))
 
-                            # add lepton/jet multiplicity label
-                        #set_trace()
-                        ax.text(
-                            0.02, 0.88 if withData else 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                            fontsize=rcParams['font.size']*0.75, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
-                        )
-                        ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                # add lepton/jet multiplicity label
+                            ax.text(
+                                0.02, 0.88 if withData else 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                fontsize=rcParams['font.size']*0.75, 
+                                horizontalalignment='left', 
+                                verticalalignment='bottom', 
+                                transform=ax.transAxes
+                            )
+                            ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
-                        #set_trace()
-                        figname = '%s/%s_QCD_Est' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
-                        fig.savefig(figname, bbox_inches='tight')
-                        print('%s written' % figname)
-                        plt.close()
+                            #set_trace()
+                            figname = '%s/%s_QCD_Est_%s' % (qcd_dir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]), qcd_name)
+                            fig.savefig(figname)
+                            print('%s written' % figname)
+                            plt.close()
 
     
-
 
