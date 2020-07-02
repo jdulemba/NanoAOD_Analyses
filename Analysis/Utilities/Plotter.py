@@ -180,12 +180,28 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
         'DOUBLE' : double_dmp,
     }
 
+    qcd_dict = {
+        'ISO' : iso_sb[qcd_samples].integrate('process'),
+        'BTAG' : btag_sb[qcd_samples].integrate('process'),
+        'DOUBLE' : double_sb[qcd_samples].integrate('process'),
+        'SIG' : sig_reg[qcd_samples].integrate('process'),
+    }
+
         # get normalized qcd shape (bins < 0. not allowed)
     qcd_norm_shape = get_qcd_shape(dmp_dict[shape_region])
 
+    # find normalization
+    '''
+    sideband norm = (QCD MC in sig region)/(QCD MC in norm_region)*(data-prompt in norm_region)
+
+    ABCD norm = (BTAG*ISO)/(DOUBLE) data-prompt yields
+    '''
     normalization = 0
     if norm_type == 'ABCD':
         normalization = (np.sum(btag_dmp.values(overflow='all')[()])*np.sum(iso_dmp.values(overflow='all')[()]))/(np.sum(double_dmp.values(overflow='all')[()]))
+    elif norm_type == 'Sideband':
+        normalization = np.sum(qcd_dict['SIG'].values(overflow='all')[()])/np.sum(qcd_dict[norm_region].values(overflow='all')[()])*np.sum(dmp_dict[norm_region].values(overflow='all')[()])
+
 
     qcd_est_array = qcd_norm_shape*normalization
         # substitute qcd_est array into original hist
