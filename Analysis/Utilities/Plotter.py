@@ -21,14 +21,24 @@ hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
 stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
-def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_opts):
+def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None, ylimits=None, **mc_opts):
 
     mcorder = mc_opts.get('mcorder')
 
     #set_trace()
+    if hdict.sparse_dim() > 1:
+        mc_dict = hdict[:, sys].integrate('sys')
+        mc_dict = mc_dict[mc_samples]
+        data_dict = hdict[:, 'nosys'].integrate('sys')
+        data_dict = data_dict[data_samples]
+    
+    else:
+        mc_dict = hdict[mc_samples]
+        data_dict = hdict[data_samples]
+
         ## plot MC and data
-    plot.plot1d(hdict[mc_samples],
-        overlay=hdict.axes()[0].name,
+    plot.plot1d(mc_dict,
+        overlay=mc_dict.axes()[0].name,
         ax=ax,
         clear=False,
         stack=True,
@@ -37,8 +47,8 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=Non
         error_opts=stack_error_opts,
         order=mcorder,
     )
-    plot.plot1d(hdict[data_samples],
-        overlay=hdict.axes()[0].name,
+    plot.plot1d(data_dict,
+        overlay=data_dict.axes()[0].name,
         ax=ax,
         clear=False,
         error_opts=hstyles['data_err_opts']
@@ -60,7 +70,7 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=Non
     #set_trace()
     
         ## plot data/MC ratio
-    plot.plotratio(hdict[data_samples].sum(hdict.axes()[0].name), hdict[mc_samples].sum(hdict.axes()[0].name),
+    plot.plotratio(data_dict.sum(data_dict.axes()[0].name), mc_dict.sum(mc_dict.axes()[0].name),
         ax=rax,
         error_opts=hstyles['data_err_opts'],
         denom_fill_opts={},
@@ -202,13 +212,13 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
     elif norm_type == 'Sideband':
         normalization = np.sum(qcd_dict['SIG'].values(overflow='all')[()])/np.sum(qcd_dict[norm_region].values(overflow='all')[()])*np.sum(dmp_dict[norm_region].values(overflow='all')[()])
 
-
     qcd_est_array = qcd_norm_shape*normalization
+    output_qcd = sig_reg.copy()
         # substitute qcd_est array into original hist
     for idx, val in enumerate(qcd_est_array):
-        sig_reg.values(overflow='all')[('QCD',)][idx] = val
+        output_qcd.values(overflow='all')[('QCD',)][idx] = val
     
-    return sig_reg
+    return output_qcd
 
 def data_minus_prompt(histo):
     data_hist = histo[data_samples].integrate('process')
@@ -230,12 +240,23 @@ def get_qcd_shape(dmp_hist):
     return norm_shape_array
 
 
-def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all'):
+def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all', sys='nosys'):
     '''
     Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
     Returns: list of tuples containing sample name, yield, and fraction
     '''
-    yields = histo.integrate(histo.dense_axes()[0].name).sum().values(overflow=overflow)
+    if histo.sparse_dim() > 1:
+        mc_dict = histo[:, sys].integrate('sys')
+        mc_dict = mc_dict[mc_samples]
+        data_dict = histo[:, 'nosys'].integrate('sys')
+        data_dict = data_dict[data_samples]
+
+    else:
+        mc_dict = histo[mc_samples]
+        data_dict = histo[data_samples]
+
+    yields = mc_dict.integrate(mc_dict.dense_axes()[0].name).sum().values(overflow=overflow)
+    yields.update(data_dict.integrate(data_dict.dense_axes()[0].name).sum().values(overflow=overflow))
     proc_yields_list = [(''.join(process), proc_yields) for process, proc_yields in yields.items()]
     mc_yield = sum([process[1] for process in proc_yields_list if not (process[0] == 'data')])
     data_yield = sum([process[1] for process in proc_yields_list if (process[0] == 'data')])
