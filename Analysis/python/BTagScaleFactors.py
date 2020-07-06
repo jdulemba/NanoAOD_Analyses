@@ -87,7 +87,7 @@ class BTagSF(object):
             'central' : ('UDSG_central', 'C_central', 'B_central'),
             'bc_up' : ('UDSG_central', 'C_up', 'B_up'),
             'bc_down' : ('UDSG_central', 'C_down', 'B_down'),
-            'udgs_up' : ('UDSG_up', 'C_central', 'B_central'),
+            'udsg_up' : ('UDSG_up', 'C_central', 'B_central'),
             'udsg_down' : ('UDSG_down', 'C_central', 'B_central'),
             }
 
