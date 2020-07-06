@@ -198,6 +198,10 @@ for hname in variables.keys():
 
                         # plot with QCD estimation
                     if (btagregion  == 'btagPass') and (lepcat == 'Tight') and args.qcd_est:
+                        iso_sb = histo[:, jmult, 'btagPass', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
+                        btag_sb = histo[:, jmult, 'btagFail', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
+                        double_sb = histo[:, jmult, 'btagFail', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
+                        sig_histo = histo[:, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
                         shape_reg = 'BTAG'
                         #for norm in ['Sideband']:
                         for norm in ['ABCD', 'Sideband']:
@@ -212,19 +216,16 @@ for hname in variables.keys():
                                 fig, ax = plt.subplots()
                             fig.subplots_adjust(hspace=.07)
 
-                            iso_sb = histo[:, jmult, 'btagPass', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
-                            btag_sb = histo[:, jmult, 'btagFail', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
-                            double_sb = histo[:, jmult, 'btagFail', 'Loose'].integrate('jmult').integrate('lepcat').integrate('btag')
-                            hslice = Plotter.QCD_Est(sig_reg=hslice, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type=norm, shape_region=shape_reg, norm_region=shape_reg if norm=='Sideband' else None)
+                            qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type=norm, shape_region=shape_reg, norm_region=shape_reg if norm=='Sideband' else None)
 
                             if withData:
-                                ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
+                                ax, rax = Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts)
                             else:
-                                ax = Plotter.plot_mc1d(ax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
+                                ax = Plotter.plot_mc1d(ax, qcd_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts)
 
                             if hname == 'Jets_njets':
                                 print(jmult)
-                                yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
+                                yields_txt, yields_json = Plotter.get_samples_yield_and_frac(qcd_est_histo, data_lumi_year['%ss' % args.lepton]/1000., promptmc=True)
                                 frac_name = '%s_yields_and_fracs_QCD_Est_%s' % ('_'.join([jmult, args.lepton, lepcat, btagregion]), qcd_name)
                                 plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (qcd_dir, frac_name), print_output=True)
                                 print('%s/%s.txt written' % (qcd_dir, frac_name))
