@@ -10,7 +10,11 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
-import styles
+from matplotlib import rcParams
+rcParams['font.size'] = 18
+rcParams["savefig.format"] = 'png'
+rcParams["savefig.bbox"] = 'tight'
+import Utilities.styles as styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 
@@ -113,8 +117,8 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
 
     #set_trace()
     #figname = 'test.png'    
-    figname = '%s/%s_Efficiency.png' % (plotdir, '_'.join([btagger, wp, jmult, flav]))
-    fig.savefig(figname, bbox_inches='tight')
+    figname = '%s/%s_Efficiency' % (plotdir, '_'.join([btagger, wp, jmult, flav]))
+    fig.savefig(figname)
     print('%s written' % figname)
     plt.close()
     #set_trace()
