@@ -335,16 +335,16 @@ class htt_btag_iso_cut(processor.ProcessorABC):
             selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
             selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
 
-            #set_trace()
+            set_trace()
             ### apply lepton SFs to MC (only applicable to tight leptons)
             if 'LeptonSF' in corrections.keys():
                 tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
                 tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-                evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
+                evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_comb_lepSF(year=args.year, lepton='Muons', corrections=lepSF_correction,
                     pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
                 tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
                 tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-                evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
+                evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_comb_lepSF(year=args.year, lepton='Electrons', corrections=lepSF_correction,
                     pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
 
                 ## apply btagging SFs to MC
@@ -391,7 +391,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                         cut = selection.all(*regions[lepton][leptype][btagregion][jmult])
                         #set_trace()
 
-                        #print(lepton, leptype, btagregion, jmult)
+                        if args.debug: print(lepton, leptype, btagregion, jmult)
                         if cut.sum() > 0:
                             ltype = 'MU' if lepton == 'Muon' else 'EL'
                             if 'loose_or_tight_%s' % ltype in regions[lepton][leptype][btagregion][jmult]:
@@ -429,9 +429,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                 else:
                                     raise ValueError("Not sure what lepton type to choose for event")
                                 mp = ttmatcher.best_match(gen_hyp=GenTTbar[(cut & semilep_evts)], jets=df['Jet'][(cut & semilep_evts)], leptons=df[lepton][(cut & semilep_evts)][sl_lep_mask], met=df['MET'][(cut & semilep_evts)])
-                                #set_trace()
                                 perm_cat_array = compare_matched_best_perms(mp, best_perms, njets=jmult, bp_mask=semilep_evts[cut])
-                                #set_trace()
                                 bp_status[(cut & semilep_evts)] = perm_cat_array
                                 #bp_status[(cut & semilep_evts)][valid_perms[semilep_evts[cut]]] = perm_cat_array
 
