@@ -4,6 +4,12 @@ import os
 from pdb import set_trace
 from coffea.util import save
 
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('--split_uncs', action='store_true', help='Use individual jec uncertainty sources file')
+
+args = parser.parse_args()
+
 proj_dir = os.environ['PROJECT_DIR']
 
 def tag_to_DataTag(tag, era):
@@ -16,7 +22,7 @@ jec_levels_MC = ['L1FastJet', 'L2Relative', 'L3Absolute']
 jec_levels_Data = ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']
 
 jecfiles = {
-    'Unc' : 'Uncertainty', # or UncertaintySources for splitting
+    'Unc' : 'UncertaintySources' if args.split_uncs else 'Uncertainty', # or UncertaintySources for splitting
     '2016' : {
         'tag' : 'Summer16_07Aug2017_V11',
         'DATA' : ['BCD', 'EF', 'GH']
@@ -99,7 +105,7 @@ for year in ['2016', '2017', '2018']:
     #    }
 
     JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jec_tag, level, jet_type) for level in jec_levels_MC]})
-    JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jec_tag, jecfiles['Unc'], jet_type)]})
+    JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_MC_%s_%s' % (jec_tag, jecfiles['Unc'], jet_type))})
     JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
     JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
     Jet_transformer = JetTransformer(jec=JECcorrector, junc=JECuncertainties, jer=JER, jersf=JERsf)
@@ -112,5 +118,6 @@ for year in ['2016', '2017', '2018']:
     }
 
 #set_trace()
-save(jet_corrections, '%s/Corrections/JetCorrections.coffea' % proj_dir)
-print('\n%s/Corrections/JetCorrections.coffea written' % proj_dir)
+fname = 'JetCorrections_UncSources.coffea' if args.split_uncs else 'JetCorrections.coffea'
+save(jet_corrections, '%s/Corrections/%s' % (proj_dir, fname))
+print('\n%s/Corrections/%s written' % (proj_dir, fname))
