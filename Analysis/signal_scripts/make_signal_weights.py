@@ -14,7 +14,7 @@ import os, re
 import Utilities.plot_tools as plot_tools
 from coffea.lookup_tools.dense_lookup import dense_lookup
 import Utilities.prettyjson as prettyjson
-from Plotting_Scripts import Plotter
+from Utilities import Plotter
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -105,7 +105,8 @@ for year in years_to_run:
         fig.savefig(figname)
         print('%s written' % figname)
         plt.close(fig)
-    
+
+    set_trace()    
     ## get signal_dists
     signal_dict = load('%s/signal_scripts/inputs/signal/signal_dists.coffea' % proj_dir)
     for sig in signal_dict.keys():
