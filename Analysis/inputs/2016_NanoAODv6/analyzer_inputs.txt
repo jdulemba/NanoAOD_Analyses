@@ -46,3 +46,15 @@ WW
 WZ
 ZJets
 ZZ
+ttJets_hdampUP
+ttJets_hdampDOWN
+ttJets_mtopUP
+ttJets_mtopDOWN
+ttJets_ueUP
+ttJets_ueDOWN
+ttJets_isrUP
+ttJets_isrDOWN
+ttJets_fsrUP
+ttJets_fsrDOWN
+ttJets_mtop1695
+ttJets_mtop1755
