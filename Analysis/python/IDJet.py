@@ -55,6 +55,14 @@ if jet_pars['permutations']['tightb'] not in valid_WPs:
 if jet_pars['permutations']['looseb'] not in valid_WPs:
     raise IOError("%s is not a valid working point" % jet_pars['permutations']['looseb'])
 
+
+_signature_map = {
+    'JetPt': 'pt',
+    'JetEta': 'eta',
+    'Rho': 'rho',
+    'JetA': 'area'
+}
+
 #bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DeepCSV' else 'btagDeepFlavB'
 #wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
 #wps = [''.join(wp) for wp in itertools.product(valid_taggers, valid_WPs)]
@@ -105,7 +113,7 @@ def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
     jets['ptGenJet'] =  ptGenJet
 
 
-def process_jets(df, year, corrections=None):
+def process_jets(df, year, corrections=None, shift=None):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
@@ -131,6 +139,11 @@ def process_jets(df, year, corrections=None):
     Jet['ptRaw'] = Jet.pt*(1.-Jet['rawFactor'])
     Jet['massRaw'] = Jet.mass*(1.-Jet['rawFactor'])
 
+       ## add btag wps
+    for bdiscr in btag_values[year].keys():
+        for wp in btag_values[year][bdiscr].keys():
+            Jet[wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
+    
     if not df.dataset.startswith('data_Single'):
         Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
             ## apply JER
@@ -139,26 +152,15 @@ def process_jets(df, year, corrections=None):
             import python.GenParticleSelector as genpsel
             df['genJets'] = genpsel.process_genJets(df)
 
-            #JEC = corrections['MC']['JEC']
-            #JECUnc = correctionsi['MC']['JECUnc']
-            JERsf = corrections['MC']['JERsf']
-            #set_trace()
-            Jet['JERsf'] = JERsf.getScaleFactor(JetEta=Jet.eta, JetPt=Jet.pt) if year == '2018' else JERsf.getScaleFactor(JetEta=Jet.eta)
+                # match jets to genJets to get ptGenJet
             JER = corrections['MC']['JER']
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
-                # match jets to genJets to get ptGenJet
             get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
-            #set_trace()
             Jet_transformer = corrections['MC']['JT']
-            Jet['pt_beforeJER'] = Jet.pt
+            import python.JetMET_corrections as JETMET_corr
+            JETMET_corr.transform(Jet_transformer, jet=Jet, met=df['MET'], shift=shift)
+            #Jet_transformer.transform(Jet, met=df['MET'])
             #set_trace()
-            Jet_transformer.transform(Jet, met=df['MET'])
-            #Jet_transformer.transform(Jet)
 
-        ## add btag wps
-    for bdiscr in btag_values[year].keys():
-        for wp in btag_values[year][bdiscr].keys():
-            Jet[wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
-    
     return Jet
 
