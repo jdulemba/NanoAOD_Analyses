@@ -212,5 +212,22 @@ styles = {
         'name' : "$\mathrm{\Gamma}$/m=25%",
     },
 
+        ## systematic variations
+    'Nominal' : {
+        'color' : 'k',
+        'name' : 'Nominal',
+    },
+    'Up' : {
+        'color' : 'k',
+        'linestyle' : '-',
+        #'color' : '#e41a1c', # red
+        'label' : 'Up',
+    },
+    'Down' : {
+        'color' : 'k', # blue
+        #'color' : '#377eb8', # blue
+        'linestyle' : '--',
+        'label' : 'Down',
+    },
 
 }
