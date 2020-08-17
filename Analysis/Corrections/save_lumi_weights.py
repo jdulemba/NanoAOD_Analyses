@@ -36,7 +36,7 @@ if signalExists:
 # for each year, read nWeightedEvts from all meta.json files
 for year in ['2016', '2017', '2018']:
     if year == '2016':
-        Nominal_ttJets = ['ttJets_PS', 'ttJets']
+        Nominal_ttJets = ['ttJets_PS']#, 'ttJets']
     else:
         Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
     xsec_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, year)).read()) # file with cross sections
@@ -53,9 +53,15 @@ for year in ['2016', '2017', '2018']:
 
     if signalExists:
         for sig in signal[year].keys():
-            effLumi = signal[year][sig]
-            for lep in ['Electrons', 'Muons']:
-                lumi_weights[year][lep][sig] = data_lumi[year][lep]/effLumi
+            effLumi_pos = signal[year][sig]['pos']
+            if 'Int' in sig:
+                effLumi_neg = signal[year][sig]['neg']
+                for lep in ['Electrons', 'Muons']:
+                    lumi_weights[year][lep]['%s_neg' % sig] = data_lumi[year][lep]/effLumi_neg
+                    lumi_weights[year][lep]['%s_pos' % sig] = data_lumi[year][lep]/effLumi_pos
+            else:
+                for lep in ['Electrons', 'Muons']:
+                    lumi_weights[year][lep]['%s_pos' % sig] = data_lumi[year][lep]/effLumi_pos
             
 
     print("%s calculated" % year)
