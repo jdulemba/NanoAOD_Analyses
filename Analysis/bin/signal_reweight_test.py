@@ -36,17 +36,22 @@ args = parser.parse_args()
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
+if len(fileset.keys()) > 1:
+    raise ValueError("Only one topology run at a time in order to determine which corrections and systematics to run")
+samplename = list(fileset.keys())[0]
+
+# get dataset classification, used for corrections/systematics
     ## specify ttJets samples
 if args.year == '2016':
     Nominal_ttJets = ['ttJets_PS', 'ttJets']
 else:
     Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
 
-isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
-if not isTTbar:
+isNominal_ttJets_ = samplename in Nominal_ttJets
+if not isNominal_ttJets_:
     raise ValueError("This should only be run on nominal ttbar events!")
+isData_ = samplename.startswith('data')
 
-init_btag = ~(np.array([key.startswith('data') for key in fileset.keys()]).all())
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
@@ -56,7 +61,8 @@ pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid
 lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
 jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
 alpha_corrections = load('%s/Corrections/%s/alpha_correction_%s.coffea' % (proj_dir, jobid, jobid))[args.year]['E']['All'] # E, All determined by post application plots
-signal_corrections = load('%s/Corrections/%s/signal_weights_%s_inds0.coffea' % (proj_dir, jobid, jobid))[args.year]
+signal_corrections = load('%s/Corrections/%s/signal_genweights.coffea' % (proj_dir, jobid))
+#signal_corrections = load('%s/Corrections/%s/signal_weights_%s_inds0.coffea' % (proj_dir, jobid, jobid))[args.year]
 if args.signal not in signal_corrections.keys():
     raise ValueError("Sample %s not found in %s" % (args.signal, '%s/Corrections/%s/signal_weights_%s_inds0.coffea' % (proj_dir, jobid, jobid)))
 
@@ -64,7 +70,7 @@ corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
-    'BTagSF' : init_btag,
+    'BTagSF' : not isData_,
     'JetCor' : jet_corrections,
     'Alpha' : alpha_corrections,
     'Signal' : signal_corrections,
@@ -109,7 +115,7 @@ class signal_reweight_test(processor.ProcessorABC):
         #self.mtregion_axis = hist.Cat("mtregion", "MT Region")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
-        #self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
@@ -126,12 +132,12 @@ class signal_reweight_test(processor.ProcessorABC):
 
             ## make dictionary of hists
         histo_dict = {}
-        #        ## make jet hists
-        #jet_hists = self.make_jet_hists()
-        #histo_dict.update(jet_hists)
-        #        ## make lepton hists
-        #lep_hists = self.make_lep_hists()
-        #histo_dict.update(lep_hists)        
+                ## make jet hists
+        jet_hists = self.make_jet_hists()
+        histo_dict.update(jet_hists)
+                ## make lepton hists
+        lep_hists = self.make_lep_hists()
+        histo_dict.update(lep_hists)        
                 ## make selection plots
         selection_hists = self.make_selection_hists()
         histo_dict.update(selection_hists)        
@@ -141,7 +147,6 @@ class signal_reweight_test(processor.ProcessorABC):
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.corrections = corrections
-        self.isData = True
 
     
     @property
@@ -175,37 +180,28 @@ class signal_reweight_test(processor.ProcessorABC):
 
         return histo_dict
 
-    #def make_other_hists(self):
-    #    histo_dict = {}
-    #    for btagger in btaggers:
-    #        histo_dict['%s_SF' % btagger] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.btagSF_axis)
-    #    histo_dict['Lep_SF']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.lepSF_axis)
-    #    if corrections['Prefire'] == True:
-    #        histo_dict['prefire_weight']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.lepSF_axis)
-    #    if corrections['Pileup'] is not None:
-    #        histo_dict['pileup_weight']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtregion_axis, self.lepSF_axis)
-
-    #    return histo_dict
-
     def make_selection_hists(self):
         histo_dict = {}
         histo_dict['mtt']      = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtt_axis)
         histo_dict['mthad']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtop_axis)
-        #histo_dict['pt_thad']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
-        #histo_dict['pt_tlep']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
-        #histo_dict['pt_tt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
-        #histo_dict['eta_thad'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
-        #histo_dict['eta_tlep'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
-        #histo_dict['eta_tt']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+        histo_dict['pt_thad']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['pt_tlep']  = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['pt_tt']    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['eta_thad'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+        histo_dict['eta_tlep'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+        histo_dict['eta_tt']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
 
-        #histo_dict['full_disc'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.probDisc_axis)
-        #histo_dict['mass_disc'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.massDisc_axis)
-        #histo_dict['ns_disc']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.nsDisc_axis)
+        histo_dict['full_disc'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.probDisc_axis)
+        histo_dict['mass_disc'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.massDisc_axis)
+        histo_dict['ns_disc']   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.nsDisc_axis)
 
         histo_dict['tlep_ctstar']     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.ctstar_axis)
-        #histo_dict['tlep_ctstar_abs'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.ctstar_abs_axis)
+        histo_dict['tlep_ctstar_abs'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.ctstar_abs_axis)
 
-        #histo_dict['MT'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mt_axis)
+        histo_dict['MT'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mt_axis)
+
+        histo_dict['MET_pt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
+        histo_dict['MET_phi']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
 
         return histo_dict
 
@@ -213,12 +209,12 @@ class signal_reweight_test(processor.ProcessorABC):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        self.sample_name = df.dataset
-        isTTbar = self.sample_name.startswith('ttJets')
+        self.sample_name = args.signal
 
             ## make event weights
                 # data or MC distinction made internally
-        evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections, BTagSFs=btaggers)
+        mu_evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections, BTagSFs=btaggers, isTTbar=isNominal_ttJets_)
+        el_evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections, BTagSFs=btaggers, isTTbar=isNominal_ttJets_)
 
             ## initialize selections and regions
         selection = processor.PackedSelection()
@@ -229,21 +225,21 @@ class signal_reweight_test(processor.ProcessorABC):
                         '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_pass', 'gen_evt'},
                         '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_pass', 'gen_evt'},
                     },
-                    'btagFail' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_fail', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_fail', 'gen_evt'},
-                    },
+                #    'btagFail' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'DeepCSV_fail', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'DeepCSV_fail', 'gen_evt'},
+                #    },
                 },
-                'Loose' : {
-                    'btagPass' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_pass', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_pass', 'gen_evt'},
-                    },
-                    'btagFail' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_fail', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_fail', 'gen_evt'},
-                    },
-                },
+                #'Loose' : {
+                #    'btagPass' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_pass', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_pass', 'gen_evt'},
+                #    },
+                #    'btagFail' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'loose_MU', 'DeepCSV_fail', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'loose_MU', 'DeepCSV_fail', 'gen_evt'},
+                #    },
+                #},
             },
             'Electron' : {
                 'Tight' : {
@@ -251,26 +247,26 @@ class signal_reweight_test(processor.ProcessorABC):
                         '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_pass', 'gen_evt'},
                         '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_pass', 'gen_evt'},
                     },
-                    'btagFail' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_fail', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_fail', 'gen_evt'},
-                    },
+                #    'btagFail' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'DeepCSV_fail', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'DeepCSV_fail', 'gen_evt'},
+                #    },
                 },
-                'Loose' : {
-                    'btagPass' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_pass', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_pass', 'gen_evt'},
-                    },
-                    'btagFail' : {
-                        '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_fail', 'gen_evt'},
-                        '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_fail', 'gen_evt'},
-                    },
-                },
+                #'Loose' : {
+                #    'btagPass' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_pass', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_pass', 'gen_evt'},
+                #    },
+                #    'btagFail' : {
+                #        '3Jets'  : {'objselection', 'jets_3' , 'loose_EL', 'DeepCSV_fail', 'gen_evt'},
+                #        '4PJets' : {'objselection', 'jets_4p', 'loose_EL', 'DeepCSV_fail', 'gen_evt'},
+                #    },
+                #},
             },
         }
 
             ## object selection
-        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])#accumulator=output)
         output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
         selection.add('jets_3', df['Jet'].counts == 3)
         selection.add('jets_4p', df['Jet'].counts > 3)
@@ -287,83 +283,95 @@ class signal_reweight_test(processor.ProcessorABC):
         deepcsv_fail[valid_counts_inds] = (deepcsv_sorted[valid_counts_inds][:, 0] < btag_values[args.year]['btagDeepB']['DeepCSV'+wps_to_use[0]]) & (deepcsv_sorted[valid_counts_inds][:, 1] < btag_values[args.year]['btagDeepB']['DeepCSV'+wps_to_use[0]])
         selection.add('DeepCSV_fail', deepcsv_fail ) # highest and second highest DeepCSV values don't pass tight and loose WPs
 
-        #set_trace()
-        self.isData = self.sample_name.startswith('data_Single')
-        if self.isData:
-            isSE_Data = self.sample_name.startswith('data_SingleElectron')
-            isSM_Data = self.sample_name.startswith('data_SingleMuon')
-            runs = df.run
-            lumis = df.luminosityBlock
-            Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year))
-            LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
-            selection.add('lumimask', LumiMask)
-   
-                ## object selection and add different selections
-            if isSM_Data:
-                del regions['Electron']
-                        ## muons
-                selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-                selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
-            if isSE_Data:
-                del regions['Muon']
-                        ## electrons
-                selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-                selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
+            ## add different selections
+                ## muons
+        selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+        selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
+                ## electrons
+        selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
+        selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
 
+        #set_trace()
+        ### apply lepton SFs to MC (only applicable to tight leptons)
+        if 'LeptonSF' in corrections.keys():
+            tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
+            tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
+            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
+                pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
+            mu_reco_cen = np.ones(df.size)
+            mu_reco_err = np.zeros(df.size)
+            mu_trig_cen = np.ones(df.size)
+            mu_trig_err = np.zeros(df.size)
+            mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
+            mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
+            mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
+            mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
+            mu_evt_weights.add('Lep_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+            mu_evt_weights.add('Lep_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+
+            tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
+            tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
+            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
+                pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
+            el_reco_cen = np.ones(df.size)
+            el_reco_err = np.zeros(df.size)
+            el_trig_cen = np.ones(df.size)
+            el_trig_err = np.zeros(df.size)
+            el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
+            el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
+            el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
+            el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
+            el_evt_weights.add('Lep_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+            el_evt_weights.add('Lep_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
+
+            ## apply btagging SFs to MC
+        if corrections['BTagSF'] == True:
+            #set_trace()
+            deepcsv_cen = np.ones(df.size)
+            deepcsv_bc_up = np.ones(df.size)
+            deepcsv_bc_dw = np.ones(df.size)
+            deepcsv_l_up = np.ones(df.size)
+            deepcsv_l_dw = np.ones(df.size)
+            threeJets_cut = selection.require(objselection=True, jets_3=True)
+            deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
+            deepcsv_cen[threeJets_cut] = deepcsv_3j_wts['central'].prod()
+            deepcsv_bc_up[threeJets_cut] = deepcsv_3j_wts['bc_up'].prod()
+            deepcsv_bc_dw[threeJets_cut] = deepcsv_3j_wts['bc_down'].prod()
+            deepcsv_l_up[threeJets_cut] = deepcsv_3j_wts['udsg_up'].prod()
+            deepcsv_l_dw[threeJets_cut] = deepcsv_3j_wts['udsg_down'].prod()
+
+            fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
+            deepcsv_4pj_wts = self.corrections['BTag_Constructors']['DeepCSV']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
+            deepcsv_cen[fourplusJets_cut] = deepcsv_4pj_wts['central'].prod()
+            deepcsv_bc_up[fourplusJets_cut] = deepcsv_4pj_wts['bc_up'].prod()
+            deepcsv_bc_dw[fourplusJets_cut] = deepcsv_4pj_wts['bc_down'].prod()
+            deepcsv_l_up[fourplusJets_cut] = deepcsv_4pj_wts['udsg_up'].prod()
+            deepcsv_l_dw[fourplusJets_cut] = deepcsv_4pj_wts['udsg_down'].prod()
+
+                # make dict of btag weights
+            btag_weights = {
+                'DeepCSV_CEN' : deepcsv_cen,
+                'DeepCSV_bc_UP' : deepcsv_bc_up,
+                'DeepCSV_bc_DW' : deepcsv_bc_dw,
+                'DeepCSV_l_UP' : deepcsv_l_up,
+                'DeepCSV_l_DW' : deepcsv_l_dw,
+            }
+
+        # use ttbar events with indices % 10 == 1, 2 for applying signal weights
+        if self.sample_name in Nominal_ttJets:
+            events = df.event
+            selection.add('keep_ttbar', np.stack([((events % 10) == idx) for idx in [1, 2]], axis=1).any(axis=1))
             for lepton in regions.keys():
-                #for btagger in regions[lepton].keys():
                 for leptype in regions[lepton].keys():
                     for btagregion in regions[lepton][leptype].keys():
                         for jmult in regions[lepton][leptype][btagregion].keys():
-                            regions[lepton][leptype][btagregion][jmult].update({'lumimask'})
+                            sel = regions[lepton][leptype][btagregion][jmult]
+                            sel.update({'keep_ttbar'})
 
-        if not self.isData:
-                ## add different selections
-                    ## muons
-            selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-            selection.add('loose_MU', df['Muon']['LOOSEMU'].sum() == 1) # one muon passing LOOSE criteria
-                    ## electrons
-            selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-            selection.add('loose_EL', df['Electron']['LOOSEEL'].sum() == 1) # one electron passing LOOSE criteria
-
-            #set_trace()
-            ### apply lepton SFs to MC (only applicable to tight leptons)
-            if 'LeptonSF' in corrections.keys():
-                tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
-                tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-                evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
-                    pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
-                tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
-                tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-                evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
-                    pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
-
-                ## apply btagging SFs to MC
-            if corrections['BTagSF'] == True:
-                #set_trace()
-                threeJets_cut = selection.require(objselection=True, jets_3=True)
-                deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
-                evt_weights._weights['DeepCSV'][threeJets_cut] = deepcsv_3j_wts['central'].prod()
-
-                fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
-                deepcsv_4pj_wts = self.corrections['BTag_Constructors']['DeepCSV']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
-                evt_weights._weights['DeepCSV'][fourplusJets_cut] = deepcsv_4pj_wts['central'].prod()
-
-            # use ttbar events with indices % 10 == 1, 2 for applying signal weights
-            if self.sample_name in Nominal_ttJets:
-                events = df.event
-                selection.add('keep_ttbar', np.stack([((events % 10) == idx) for idx in [1, 2]], axis=1).any(axis=1))
-                for lepton in regions.keys():
-                    for leptype in regions[lepton].keys():
-                        for btagregion in regions[lepton][leptype].keys():
-                            for jmult in regions[lepton][leptype][btagregion].keys():
-                                sel = regions[lepton][leptype][btagregion][jmult]
-                                sel.update({'keep_ttbar'})
-
-            if isTTbar:
-                genp_mode = 'NORMAL'
-                GenTTbar = genpsel.select(df, systype='FINAL', mode=genp_mode)
-                selection.add('gen_evt', (GenTTbar['SL']['TTbar'].counts > 0) | (GenTTbar['DL']['TTbar'].counts > 0) | (GenTTbar['Had']['TTbar'].counts > 0) )
+        if isNominal_ttJets_:
+            genp_mode = 'NORMAL'
+            GenTTbar = genpsel.select(df, systype='FINAL', mode=genp_mode)
+            selection.add('gen_evt', (GenTTbar['SL']['TTbar'].counts > 0) | (GenTTbar['DL']['TTbar'].counts > 0) | (GenTTbar['Had']['TTbar'].counts > 0) )
 
         # get arrays for gen mtt and top costh for signal weight
             # mtt
@@ -391,20 +399,23 @@ class signal_reweight_test(processor.ProcessorABC):
 
         ### set signal weights
         gen_evts = selection.require(gen_evt=True)
-        evt_weights._weights['Signal_Reweight'][gen_evts] = self.corrections['Signal'][args.signal](gen_mtt[gen_evts], gen_top_ctstar[gen_evts])
         #set_trace()
+        pos_wt = np.ones(df.size)
+        pos_wt[gen_evts] = self.corrections['Signal'][args.signal]['pos']['Central'](gen_mtt[gen_evts], gen_top_ctstar[gen_evts])
+        if 'Int' in self.sample_name:
+            neg_wt = np.ones(df.size)
+            neg_wt[gen_evts] = self.corrections['Signal'][args.signal]['neg']['Central'](gen_mtt[gen_evts], gen_top_ctstar[gen_evts])
 
         ## fill hists for each region
         for lepton in regions.keys():
-            lepSF_to_exclude = 'Electron_SF' if lepton == 'Muon' else 'Muon_SF'
+            evt_weights = mu_evt_weights if lepton == 'Muon' else el_evt_weights
             for leptype in regions[lepton].keys():
-                btagSF_to_exclude = 'DeepJet'
                 for btagregion in regions[lepton][leptype].keys():
                     for jmult in regions[lepton][leptype][btagregion].keys():
                         cut = selection.all(*regions[lepton][leptype][btagregion][jmult])
                         #set_trace()
 
-                        #print(lepton, leptype, btagregion, jmult)
+                        if args.debug: print(lepton, leptype, btagregion, jmult)
                         if cut.sum() > 0:
                             ltype = 'MU' if lepton == 'Muon' else 'EL'
                             if 'loose_or_tight_%s' % ltype in regions[lepton][leptype][btagregion][jmult]:
@@ -416,41 +427,41 @@ class signal_reweight_test(processor.ProcessorABC):
                             else:
                                 raise ValueError("Not sure what lepton type to choose for event")
 
-                            evt_weights_to_use = evt_weights.weight()
-                            if not self.isData:
-                                evt_weights_to_use = evt_weights.partial_weight(exclude=[lepSF_to_exclude, btagSF_to_exclude])
+                            #set_trace()
+
+                            evt_weights_to_use = evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]]
+                            pos_wts_to_use = evt_weights_to_use*pos_wt
 
                                 # find best permutations
                             best_perms = ttpermutator.find_best_permutations(jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], MET=df['MET'][cut], btagWP=btag_wps[0], btag_req=False if btagregion == 'btagFail' else True)
                             valid_perms = best_perms['TTbar'].counts > 0
-
-                            #set_trace()
 
 
                                 ## calculate MT
                             MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
                             MTHigh = (MT[valid_perms] >= MTcut).flatten()
 
-                                # fill hists
-                            output = self.fill_selection_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, MTcut=MTHigh, perm=best_perms, evt_weights=evt_weights_to_use[cut][valid_perms])
-                            #output = self.fill_selection_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=bp_status[cut][valid_perms][MTHigh], MTcut=MTHigh, perm=best_perms, evt_weights=evt_weights_to_use[cut][valid_perms])
-                            #output = self.fill_jet_hists(      acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=bp_status[cut][valid_perms][MTHigh], obj=df['Jet'][cut][valid_perms][MTHigh], evt_weights=evt_weights_to_use[cut][valid_perms][MTHigh])
-                            #output = self.fill_lep_hists(      acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=bp_status[cut][valid_perms][MTHigh], obj=df[lepton][cut][lep_mask][valid_perms][MTHigh], evt_weights=evt_weights_to_use[cut][valid_perms][MTHigh])
-                            ##output = self.fill_sf_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, evt_weights=evt_weights._weights if not self.isData else evt_weights_to_use, mask=cut , mtcut=MTHigh)
-
+                                # fill hists for positive weights
+                            output = self.fill_selection_hists(acc=output, wt_type='pos', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, MTcut=MTHigh, perm=best_perms, evt_weights=pos_wts_to_use[cut][valid_perms])
+                            output = self.fill_jet_hists(      acc=output, wt_type='pos', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df['Jet'][cut][valid_perms][MTHigh], evt_weights=pos_wts_to_use[cut][valid_perms][MTHigh])
+                            output = self.fill_lep_hists(      acc=output, wt_type='pos', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df[lepton][cut][lep_mask][valid_perms][MTHigh], evt_weights=pos_wts_to_use[cut][valid_perms][MTHigh])
+                            output['MT'].fill(dataset='%s_pos' % self.sample_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mt=MT[valid_perms][MTHigh].flatten(), weight=pos_wts_to_use[cut][valid_perms][MTHigh])
                             #set_trace()
-                            #for permval in np.unique(bp_status[cut][valid_perms][MTHigh]).tolist():
-                            #    #set_trace()
-                            #    perm_inds = np.where(bp_status[cut][valid_perms][MTHigh] == permval)
-                            #    dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
-                            #    output['MT'].fill(dataset=dataset_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mt=MT[valid_perms][MTHigh].flatten()[perm_inds], weight=evt_weights_to_use[cut][valid_perms][MTHigh][perm_inds])
+
+                            if 'Int' in self.sample_name:
+                                neg_wts_to_use = evt_weights_to_use*neg_wt
+
+                                output = self.fill_selection_hists(acc=output, wt_type='neg', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, MTcut=MTHigh, perm=best_perms, evt_weights=neg_wts_to_use[cut][valid_perms])
+                                output = self.fill_jet_hists(      acc=output, wt_type='neg', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df['Jet'][cut][valid_perms][MTHigh], evt_weights=neg_wts_to_use[cut][valid_perms][MTHigh])
+                                output = self.fill_lep_hists(      acc=output, wt_type='neg', jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, obj=df[lepton][cut][lep_mask][valid_perms][MTHigh], evt_weights=neg_wts_to_use[cut][valid_perms][MTHigh])
+                                output['MT'].fill(dataset='%s_neg' % self.sample_name, jmult=jmult, leptype=lepton, lepcat=leptype, btag=btagregion, mt=MT[valid_perms][MTHigh].flatten(), weight=neg_wts_to_use[cut][valid_perms][MTHigh])
 
 
         return output
 
 
 
-    def fill_selection_hists(self, acc, jetmult, leptype, lepcat, btagregion, MTcut, perm, evt_weights):
+    def fill_selection_hists(self, acc, wt_type, jetmult, leptype, lepcat, btagregion, MTcut, perm, evt_weights):
             ## apply alpha correction for 3Jets
         if jetmult == '3Jets':
             orig_thad_p4, tlep_p4 = perm['THad'].p4.flatten()[MTcut], perm['TLep'].p4.flatten()[MTcut]
@@ -463,67 +474,51 @@ class signal_reweight_test(processor.ProcessorABC):
         ttbar_p4 = (thad_p4 + tlep_p4)
         thad_ctstar, tlep_ctstar = make_vars.ctstar_flat(thad_p4, tlep_p4)
 
-        acc['mtt'].fill(        dataset=args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass, weight=evt_weights[MTcut])
-        acc['mthad'].fill(      dataset=args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=thad_p4.mass, weight=evt_weights[MTcut])
-        acc['tlep_ctstar'].fill(dataset=args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar, weight=evt_weights[MTcut])
+        acc['mtt'].fill(            dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass, weight=evt_weights[MTcut])
+        acc['mthad'].fill(          dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=thad_p4.mass, weight=evt_weights[MTcut])
+        acc['tlep_ctstar'].fill(    dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar, weight=evt_weights[MTcut])
+        acc['tlep_ctstar_abs'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar_abs=np.abs(tlep_ctstar), weight=evt_weights[MTcut])
 
-        #    # fill positiv-weighted evts
-        #pos_wts = np.where(evt_weights[MTcut] > 0.)
-        #acc['mtt'].fill(        dataset='%s_pos' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass[pos_wts], weight=evt_weights[MTcut][pos_wts])
-        #acc['mthad'].fill(      dataset='%s_pos' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=thad_p4.mass[pos_wts], weight=evt_weights[MTcut][pos_wts])
-        #acc['tlep_ctstar'].fill(dataset='%s_pos' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar[pos_wts], weight=evt_weights[MTcut][pos_wts])
+        acc['pt_thad'].fill( dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=thad_p4.pt, weight=evt_weights[MTcut])
+        acc['pt_tlep'].fill( dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=tlep_p4.pt, weight=evt_weights[MTcut])
+        acc['pt_tt'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=ttbar_p4.pt, weight=evt_weights[MTcut])
+        acc['eta_thad'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=thad_p4.eta, weight=evt_weights[MTcut])
+        acc['eta_tlep'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=tlep_p4.eta, weight=evt_weights[MTcut])
+        acc['eta_tt'].fill(  dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=ttbar_p4.eta, weight=evt_weights[MTcut])
 
-        #    # fill negative-weighted evts
-        #neg_wts = np.where(evt_weights[MTcut] <= 0.)
-        #acc['mtt'].fill(        dataset='%s_neg' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass[neg_wts], weight=evt_weights[MTcut][neg_wts])
-        #acc['mthad'].fill(      dataset='%s_neg' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=thad_p4.mass[neg_wts], weight=evt_weights[MTcut][neg_wts])
-        #acc['tlep_ctstar'].fill(dataset='%s_neg' % args.signal, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar=tlep_ctstar[neg_wts], weight=evt_weights[MTcut][neg_wts])
+        acc['full_disc'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, prob=perm['Prob'].flatten()[MTcut], weight=evt_weights[MTcut])
+        acc['mass_disc'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, massdisc=perm['MassDiscr'].flatten()[MTcut], weight=evt_weights[MTcut])
+        acc['ns_disc'].fill(  dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, nsdisc=perm['NuDiscr'].flatten()[MTcut], weight=evt_weights[MTcut])
 
-        #    #acc['pt_thad'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=thad_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['pt_tlep'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=tlep_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['pt_tt'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=ttbar_p4.pt[perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['eta_thad'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=thad_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['eta_tlep'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=tlep_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['eta_tt'].fill(  dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=ttbar_p4.eta[perm_inds], weight=evt_weights[MTcut][perm_inds])
-
-        #    #acc['tlep_ctstar_abs'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_weights[MTcut][perm_inds])
-
-        #    #acc['full_disc'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, prob=perm['Prob'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['mass_disc'].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, massdisc=perm['MassDiscr'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
-        #    #acc['ns_disc'].fill(  dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, nsdisc=perm['NuDiscr'].flatten()[MTcut][perm_inds], weight=evt_weights[MTcut][perm_inds])
+        acc['MET_pt'].fill( dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=perm['MET'].pt.flatten()[MTcut], weight=evt_weights[MTcut])
+        acc['MET_phi'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=perm['MET'].phi.flatten()[MTcut], weight=evt_weights[MTcut])
 
         return acc        
 
-    def fill_jet_hists(self, acc, jetmult, leptype, lepcat, btagregion, permarray, obj, evt_weights):
+    def fill_jet_hists(self, acc, wt_type, jetmult, leptype, lepcat, btagregion, obj, evt_weights):
         #set_trace()
-        for permval in np.unique(permarray).tolist():
-            perm_inds = np.where(permarray == permval)
-            dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
-            acc['Jets_pt'].fill(    dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten()[perm_inds], weight=(obj.pt.ones_like()*evt_weights).flatten()[perm_inds])
-            acc['Jets_eta'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten()[perm_inds], weight=(obj.pt.ones_like()*evt_weights).flatten()[perm_inds])
-            acc['Jets_njets'].fill( dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, njets=obj.counts[perm_inds], weight=evt_weights[perm_inds])
-            #acc['Jets_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-            #acc['Jets_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_pt'].fill(    dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_eta'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        acc['Jets_njets'].fill( dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, njets=obj.counts, weight=evt_weights)
+        #acc['Jets_phi'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_energy'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
 
-            pt_sorted_jets = obj[obj.pt.argsort(ascending=False)]
-            acc['Jets_LeadJet_pt'].fill(    dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=pt_sorted_jets.pt[:, 0][perm_inds], weight=evt_weights[perm_inds])
-            acc['Jets_LeadJet_eta'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=pt_sorted_jets.eta[:, 0][perm_inds], weight=evt_weights[perm_inds])
-            #acc['Jets_LeadJet_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=pt_sorted_jets.phi[:, 0], weight=evt_weights)
-            #acc['Jets_LeadJet_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=pt_sorted_jets.p4.E[:, 0], weight=evt_weights)
+        pt_sorted_jets = obj[obj.pt.argsort(ascending=False)]
+        acc['Jets_LeadJet_pt'].fill(    dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=pt_sorted_jets.pt[:, 0], weight=evt_weights)
+        acc['Jets_LeadJet_eta'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=pt_sorted_jets.eta[:, 0], weight=evt_weights)
+        #acc['Jets_LeadJet_phi'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=pt_sorted_jets.phi[:, 0], weight=evt_weights)
+        #acc['Jets_LeadJet_energy'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=pt_sorted_jets.p4.E[:, 0], weight=evt_weights)
 
         return acc        
 
-    def fill_lep_hists(self, acc, jetmult, leptype, lepcat, btagregion, permarray, obj, evt_weights):
+    def fill_lep_hists(self, acc, wt_type, jetmult, leptype, lepcat, btagregion, obj, evt_weights):
         #set_trace()
-        for permval in np.unique(permarray).tolist():
-            perm_inds = np.where(permarray == permval)
-            dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
-            acc['Lep_pt'].fill(    dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten()[perm_inds], weight=evt_weights[perm_inds])
-            acc['Lep_eta'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten()[perm_inds], weight=evt_weights[perm_inds])
-            acc['Lep_iso'].fill(   dataset=dataset_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, iso=obj.pfRelIso.flatten()[perm_inds], weight=evt_weights[perm_inds])
-            #acc['Lep_phi'].fill(   dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=evt_weights)
-            #acc['Lep_energy'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=evt_weights)
-            #if leptype == 'Electron': acc['Lep_etaSC'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.etaSC.flatten(), weight=evt_weights)
+        acc['Lep_pt'].fill(    dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=obj.pt.flatten(), weight=evt_weights)
+        acc['Lep_eta'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.eta.flatten(), weight=evt_weights)
+        acc['Lep_iso'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, iso=obj.pfRelIso.flatten(), weight=evt_weights)
+        #acc['Lep_phi'].fill(   dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=obj.phi.flatten(), weight=evt_weights)
+        #acc['Lep_energy'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, energy=obj.p4.E.flatten(), weight=evt_weights)
+        #if leptype == 'Electron': acc['Lep_etaSC'].fill(dataset=self.sample_name, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=obj.etaSC.flatten(), weight=evt_weights)
 
         return acc        
 
