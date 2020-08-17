@@ -12,12 +12,10 @@ def get_sample_list(indir, sample=None, text_file=None):
 
         ## get samples to use
     if sample:
-            ## sample specified
-        if not os.path.isfile('%s/%s.txt' % (indir, sample)):
-            raise IOError("File with samples %s.txt not found" % sample)
-    
-        samples = ['%s/%s.txt' % (indir, sample)]
-    
+        ## match sample to any available in 'indir'
+        fname_opts = [fname.split('.')[0] for fname in os.listdir(indir) if fname.endswith('.txt')]
+        samples = ['%s/%s.txt' % (indir, name) for name in fname_opts if fnmatch.fnmatch(name, sample)]
+
     else:
             ## get file that has names for all datasets to use
         fpath = '/'.join([indir, text_file])
@@ -26,8 +24,9 @@ def get_sample_list(indir, sample=None, text_file=None):
     
         txt_file = open(fpath, 'r')
         samples = ['%s/%s.txt' % (indir, sample.strip('\n')) for sample in txt_file if not sample.startswith('#')]
-        if not samples:
-            raise IOError("No samples found as inputs")
+
+    if not samples:
+        raise ValueError("No samples found to match %s" % sample)
 
     return samples
 
