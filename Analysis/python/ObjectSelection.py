@@ -8,13 +8,14 @@ import python.IDElectron as IDElectron
 import python.IDMet as IDMet
 import numpy as np
 import coffea.processor as processor
+import Utilities.systematics as systematics
 
-def select_jets(jets, muons, electrons, year, accumulator=None):
+def select_jets(jets, muons, electrons, year, cutflow=None):
     
     if isinstance(jets, awkward.array.base.AwkwardArray):
             ## pt and eta cuts
         pass_pt_eta_cuts = IDJet.make_pt_eta_cuts(jets)
-        if accumulator: accumulator['cutflow']['jets pass pT and eta cuts'] += pass_pt_eta_cuts.sum().sum()
+        if cutflow is not None: cutflow['jets pass pT and eta cuts'] += pass_pt_eta_cuts.sum().sum()
 
         #    ## HEM issue
         #if year == '2018':
@@ -30,7 +31,7 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
             jetId = 2 # pass tight but not tightLepVeto ID
         jet_ID = (jets.Id >= jetId) # pass at least tight
         #jet_ID = (jets.Id == jetId)
-        if accumulator: accumulator['cutflow']['jets pass ID'] += jet_ID.sum().sum()
+        if cutflow is not None: cutflow['jets pass ID'] += jet_ID.sum().sum()
 
             ## remove jets that don't pass ID and pt/eta cuts
         jets = jets[(jet_ID & pass_pt_eta_cuts)]
@@ -47,26 +48,26 @@ def select_jets(jets, muons, electrons, year, accumulator=None):
 
             ## leading jet pt cut
         leadpt_cut = IDJet.make_leadjet_pt_cut(jets)
-        if accumulator: accumulator['cutflow']['jets pass lead jet pT cut'] += leadpt_cut.sum()
+        if cutflow is not None: cutflow['jets pass lead jet pT cut'] += leadpt_cut.sum()
 
             ## 3 or more jets
         njet_restriction = 3
         njets_cuts = (jets.counts >= njet_restriction)
         #njets_cuts = (jets.counts == njet_restriction)
-        if accumulator: accumulator['cutflow']['nEvts with %s+ clean jets passing ID and kin selection' % njet_restriction] += njets_cuts.sum()
+        if cutflow is not None: cutflow['nEvts with %s+ clean jets passing ID and kin selection' % njet_restriction] += njets_cuts.sum()
 
         passing_jets = (leadpt_cut & njets_cuts)
 
     else:
         raise ValueError("Only AwkwardArrays are supported")
 
-    if accumulator:
-        return jets, passing_jets, accumulator
+    if cutflow is not None:
+        return jets, passing_jets, cutflow
     else:
         return jets, passing_jets
 
 
-def select(df, year, corrections, noIso=False, accumulator=None, shift=None):
+def select(df, year, corrections, noIso=False, cutflow=None, shift=None):
 
     if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
         raise IOError("This function only works for LazyDataFrame objects")
@@ -104,16 +105,18 @@ def select(df, year, corrections, noIso=False, accumulator=None, shift=None):
     evt_sel.add('passing_el', evt_sel.require(tightEl_pass=True) | evt_sel.require(looseEl_pass=True))
     evt_sel.add('passing_lep', evt_sel.require(passing_mu=True) | evt_sel.require(passing_el=True))
 
-    #set_trace()
     evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
+    #set_trace()
+    if cutflow is not None: cutflow['lep_and_filter_pass'] += evt_sel.require(lep_and_filter_pass=True).sum()
 
         ## SetMET
     df['MET'] = IDMet.process_met(df)
 
     ### jets selection
-    df['Jet'] = IDJet.process_jets(df, year, corrections['JetCor']) # initialize jets
-    if accumulator:
-        new_jets, passing_jets, accumulator = select_jets(df['Jet'], df['Muon'], df['Electron'], year, accumulator)
+    df['Jet'] = IDJet.process_jets(df, year, corrections['JetCor'], shift=shift)# initialize jets
+    #df['Jet'] = IDJet.process_jets(df, year, corrections['JetCor'], shift=shift) if shift in systematics.jet_sys else IDJet.process_jets(df, year, corrections['JetCor'])# initialize jets
+    if cutflow is not None:
+        new_jets, passing_jets, cutflow = select_jets(df['Jet'], df['Muon'], df['Electron'], year, cutflow)
     else:
         new_jets, passing_jets = select_jets(df['Jet'], df['Muon'], df['Electron'], year)
     
