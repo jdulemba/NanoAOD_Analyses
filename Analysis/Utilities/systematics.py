@@ -269,6 +269,8 @@ sys_to_name = {
         'JES_DW' : 'JES_DW',
         'MET_UP' : 'MET_UP',
         'MET_DW' : 'MET_DW',
+        'mtop1695': 'MTOP3GeV_DW',
+        'mtop1755': 'MTOP3GeV_UP',
     },
     '2018' : {
         'nosys' : 'nosys',
@@ -306,6 +308,8 @@ sys_to_name = {
         'JES_DW' : 'JES_DW',
         'MET_UP' : 'MET_UP',
         'MET_DW' : 'MET_DW',
+        'mtop1695': 'MTOP3GeV_DW',
+        'mtop1755': 'MTOP3GeV_UP',
     },
 }
 
