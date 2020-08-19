@@ -56,6 +56,30 @@ template_groups['2016'] = {
     'tWChannel' : ['single*_tW*'],
     'data_obs' : ['data_Single*'],
 }
+template_groups['2017'] = {
+    'QCD' : ['QCD*'],
+    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+    'VV' : ['[WZ][WZ]'],
+    'TTV' : ['tt[WZ]*'],
+    'WJets' : ['WJets'],
+    'ZJets' : ['ZJets'],
+    'sChannel' : ['single*_schannel*'],
+    'tChannel' : ['single*_tchannel*'],
+    'tWChannel' : ['single*_tW*'],
+    'data_obs' : ['data_Single*'],
+}
+template_groups['2018'] = {
+    'QCD' : ['QCD*'],
+    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+    'VV' : ['[WZ][WZ]'],
+    'TTV' : ['tt[WZ]*'],
+    'WJets' : ['WJets'],
+    'ZJets' : ['ZJets'],
+    'sChannel' : ['single*_schannel*'],
+    'tChannel' : ['single*_tchannel*'],
+    'tWChannel' : ['single*_tW*'],
+    'data_obs' : ['data_Single*'],
+}
 
 
 def get_styles(sample, styles):
