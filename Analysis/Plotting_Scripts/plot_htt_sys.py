@@ -12,10 +12,8 @@ from pdb import set_trace
 import os
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
-#import re
 from coffea import hist
 import numpy as np
-#import fnmatch
 import Utilities.Plotter as Plotter
 import Utilities.systematics as systematics
 from coffea.hist import plot
@@ -41,10 +39,10 @@ analyzer = 'htt_btag_iso_cut'
 
 input_dir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
 
-lep_dname = '%s/%s/%s_Post_QCD_Est_dict.coffea' % (input_dir, args.lepton, args.lepton)
-if os.path.isfile(lep_dname):
-    hdict = load(lep_dname)
-else: raise ValueError("%s doesn't exist" % lep_dname)
+lep_fname = '%s/%s/%s_Post_QCD_Est_dict.coffea' % (input_dir, args.lepton, args.lepton)
+if os.path.isfile(lep_fname):
+    hdict = load(lep_fname)
+else: raise ValueError("%s doesn't exist" % lep_fname)
 
 outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), 'plot_htt_sys', args.lepton])
 if not os.path.isdir(outdir):
@@ -108,18 +106,15 @@ process_cat = 'process'
 process_groups = {'ttJets' : ['ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'], 'EWK' : ['EWK'], 'singlet' : ['singlet'], 'QCD' : ['QCD'], 'data' : ['data']}
 
     ## compare up/down variations to nominal for each systematic
-#for hdict in hdicts:
-#set_trace()
-#lep = sorted(set([key[0] for key in hdict.keys()]))[0]
 jmults = sorted(set([key[1] for key in hdict.keys()]))
 systs = sorted(set([key[2] for key in hdict.keys()]))
-#hnames = sorted(set([key[3] for key in hdict.keys()]))
+#set_trace()
 
 systypes = sorted(set(['_'.join(sys.split('_')[:-1]) for sys in systs if (not sys == 'nosys') and (not ('UP' and 'DW') in sys)]))
 if ('RENORM_UP_FACTOR_DW' and 'RENORM_DW_FACTOR_UP') in systs:
     systypes += ['RENFACTOR_DIFF']
 for jmult in jmults:
-    for hname in variables.keys():#hnames:
+    for hname in variables.keys():
         xtitle, x_lims, maskData = variables[hname]
         
         nom_histo = hdict[(args.lepton, jmult, 'nosys', hname)]
@@ -182,6 +177,7 @@ for jmult in jmults:
 
         if (args.comp) or (args.ratio):
             for sys in systypes:
+                print(jmult, hname, sys)
                 pltdir = '/'.join([outdir, jmult, 'Variations_UP_DW', sys])
                 if not os.path.isdir(pltdir):
                     os.makedirs(pltdir)
@@ -203,6 +199,14 @@ for jmult in jmults:
                 }
 
                 if args.comp:
+                        # save data/MC ratios for nominal and variations
+                    if hname == 'Jets_njets':
+                        #set_trace()
+                        yields_txt = Plotter.get_sys_variations_yield_and_frac(nosys=nom_histo, up=up_histo, down=dw_histo, up_sys=sys, dw_sys=sys)
+                        frac_name = '%s/%s_sys_ratios.txt' % (pltdir, '_'.join([jmult, args.lepton, sys]))
+                        plt_tools.print_table(yields_txt, filename=frac_name, print_output=True)
+                        print('%s written' % frac_name)
+
                         ## make data/MC plots for nominal and variations        
                     fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                     fig.subplots_adjust(hspace=.07)
@@ -240,7 +244,7 @@ for jmult in jmults:
                         for vline in vlines:
                             ax.axvline(vline, color='k', linestyle='--')
                             if rax is not None: rax.axvline(vline, color='k', linestyle='--')
-                    hep.cms.cmslabel(ax=ax, data=maskData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                    hep.cms.cmslabel(ax=ax, data=not maskData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
                     
                     #set_trace()
                     figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, sys, hname]))
