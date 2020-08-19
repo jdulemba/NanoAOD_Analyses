@@ -42,6 +42,22 @@ dataset_groups['2018'] = {
     'data' : ['data_Single*'],
 }
 
+    ## dataset groupings for making templates to be used in fit
+template_groups = { '2016' : {}, '2017' : {}, '2018' : {}}
+template_groups['2016'] = {
+    'QCD' : ['QCD*'],
+    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+    'VV' : ['[WZ][WZ]'],
+    'TTV' : ['tt[WZ]*'],
+    'WJets' : ['WJets'],
+    'ZJets' : ['ZJets'],
+    'sChannel' : ['single*_schannel*'],
+    'tChannel' : ['single*_tchannel*'],
+    'tWChannel' : ['single*_tW*'],
+    'data_obs' : ['data_Single*'],
+}
+
+
 def get_styles(sample, styles):
     best_pattern = ''
     for pattern, style_dict in styles.items():
@@ -76,7 +92,7 @@ def get_group(sample, styles=dataset_groups):
         print("Pattern not found for %s" % sample)
         return sample
 
-def make_dataset_groups(lepton, year, samples=[]):
+def make_dataset_groups(lepton, year, samples=[], gdict='dataset'):
     proj_dir = os.environ['PROJECT_DIR']
     jobid = os.environ['jobid']
 
@@ -91,7 +107,14 @@ def make_dataset_groups(lepton, year, samples=[]):
         samples = [sample for sample in samples if not (sample.startswith('data') and lepton not in sample)] # get rid of data samples that don't correspond to lepton chosen
 
     groupings = {}
-    for group_name, patterns in dataset_groups[year].items():
+    if gdict == 'dataset':
+        groups_dict = dataset_groups 
+    elif gdict == 'templates':
+        groups_dict = template_groups
+    else:
+        raise ValueError("Can only choose between 'dataset' and 'templates' as inputs for gdict")
+
+    for group_name, patterns in groups_dict[year].items():
         flist = []
         for sample in samples:
             if any([fnmatch.fnmatch(sample, pattern) for pattern in patterns]):
@@ -118,7 +141,7 @@ def save_accumulator(accumulator, output_fname):
     print('%s written' % output_fname)
 
 
-def print_table(lines, filename, separate_header=True, header_line=0, print_output=False):
+def print_table(lines, filename='', separate_header=True, header_line=0, print_output=False):
     ''' Prints a formatted table given a 2 dimensional array '''
     #Count the column width
     widths = []
@@ -142,11 +165,12 @@ def print_table(lines, filename, separate_header=True, header_line=0, print_outp
             print(print_string.format(*line))
             if (i == header_line and separate_header):
                 print("-"*(sum(widths)+3*(len(widths)-1)))
-    
-    with open(filename, 'w') as f:
-        #Write the data into filename
-        for i,line in enumerate(lines):
-            print(print_string.format(*line), file=f)
-            if (i == header_line and separate_header):
-                print("-"*(sum(widths)+3*(len(widths)-1)), file=f)
+
+    if filename != '': # save to filename    
+        with open(filename, 'w') as f:
+            #Write the data into filename
+            for i,line in enumerate(lines):
+                print(print_string.format(*line), file=f)
+                if (i == header_line and separate_header):
+                    print("-"*(sum(widths)+3*(len(widths)-1)), file=f)
 
