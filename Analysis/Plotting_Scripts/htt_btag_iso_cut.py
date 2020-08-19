@@ -449,8 +449,6 @@ if args.qcd_est:
             # keys are (lepton, jmult, sys, hname)
         save_keys = sorted(itertools.product([args.lepton], ['3Jets', '4PJets'], [sys_to_name[sys] for sys in systs_to_run], [name for name in variables.keys()]))
         post_qcd_est = {key:None for key in save_keys}
-        #save_keys = sorted(itertools.product([args.lepton], ['3Jets', '4PJets'], [sys_to_name[sys] for sys in systs_to_run], [name for name in variables.keys() if (('mtt' in name) or ('tlep_ctstar_abs' in name))]))
-        #mtt_ctstar_qcd_est = {key:None for key in save_keys}
 
     for hname in variables.keys():
         if hname not in hdict.keys():
@@ -507,6 +505,7 @@ if args.qcd_est:
                 iso_sb    = histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
                 btag_sb   = histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
                 double_sb = histo[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                sig_histo = histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
             else:
                 iso_sb_histo    = histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
                 btag_sb_histo   = histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
@@ -514,7 +513,7 @@ if args.qcd_est:
                 iso_sb    = Plotter.linearize_hist(iso_sb_histo)
                 btag_sb   = Plotter.linearize_hist(btag_sb_histo)
                 double_sb = Plotter.linearize_hist(double_sb_histo)
-
+                sig_histo = Plotter.linearize_hist(histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
 
                 ## plot shape uncertainties and find normalization uncs
             if args.plot_uncs:
@@ -548,7 +547,6 @@ if args.qcd_est:
                     continue
                 print('QCD est:', jmult, sys, hname)
                 #set_trace()
-                sig_histo = histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag') if histo.dense_dim() == 1 else Plotter.linearize_hist(histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
 
                 shape_reg = 'BTAG'
                 for norm in ['Sideband']:
