@@ -18,7 +18,7 @@ mc_samples = re.compile('(?!data*)')
 data_samples = re.compile('(data*)')
 qcd_samples = re.compile('(QCD*)')
 prompt_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'QCD*']))
-nonTT_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'ttJets*']))
+nonTT_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'ttJets*', 'TT$'])) # 'TT$' is for templates
 
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
@@ -252,8 +252,7 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
     #set_trace()
     if sig_reg.sparse_dim() > 1:
         if sys in systematics.ttJets_sys.values():
-            #set_trace()
-            tt_dict = sig_reg['ttJets*', sys].integrate('sys')
+            tt_dict = sig_reg['TT', sys].integrate('sys') if 'TT' in sorted(set([key[0] for key in sig_reg.values().keys()])) else sig_reg['ttJets*', sys].integrate('sys') # added if statement when making template files
             non_tt_mc_dict = sig_reg[nonTT_mc_mask, 'nosys'].integrate('sys')
             mc_dict = iso_sb.copy()
             mc_dict.clear()
