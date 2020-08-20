@@ -30,7 +30,7 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'signal_reweight_test'
+analyzer = 'htt_signal_reweight'
 
 input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
 f_ext = 'TOT.coffea'
