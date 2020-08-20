@@ -97,6 +97,11 @@ if args.debug: opts += " --debug"
 if analyzer == 'htt_signal_reweight':
     if args.signal is None:
         raise ValueError("Signal sample must be specified when running %s" % analyzer)
+    opts += " --evt_sys={EVTSYS} --rewt_sys={REWTSYS}".format(
+            EVTSYS=args.evt_sys.upper(),
+            REWTSYS=args.rewt_sys.upper(),
+        )
+    opts += " --only_sys=%i" % args.only_sys
     run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {SIGNAL} {OUTFNAME} {OPTS}""".format(
             PROJDIR=proj_dir,
             ANALYZER=analyzer,

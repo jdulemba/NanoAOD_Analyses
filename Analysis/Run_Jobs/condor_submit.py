@@ -61,9 +61,9 @@ def add_signal_condor_jobs(idx, frange, sample, signal):
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --outfname={BATCHDIR}/{SAMPLE}_{SIGNAL}_out_{IDX}.coffea
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_{SIGNAL}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir)
     return condorfile
 
 def add_condor_jobs(idx, frange, sample):
