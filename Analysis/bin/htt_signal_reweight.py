@@ -20,7 +20,7 @@ from python.Permutations import compare_matched_best_perms
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'signal_reweight_test'
+analyzer = 'htt_signal_reweight'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -103,7 +103,7 @@ MTcut = jet_pars['MT']
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
-class signal_reweight_test(processor.ProcessorABC):
+class htt_signal_reweight(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
@@ -123,12 +123,12 @@ class signal_reweight_test(processor.ProcessorABC):
         #self.btagSF_axis = hist.Bin("btagSF", "SF_{btag}", 100, 0., 5.)
         #self.lepSF_axis = hist.Bin("lepSF", "SF_{lep}", 100, 0., 2.)
         self.mtop_axis = hist.Bin("mtop", "m(top) [GeV]", 300, 0, 300)
-        self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 180, 200, 2000)
+        self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 360, 200, 2000)
         self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 300, 0, 30)
         self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 300, 0, 30)
         self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", 300, 0, 30)
         self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 200, -1., 1.)
-        self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 200, 0., 1.)
+        self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 100, 0., 1.)
 
             ## make dictionary of hists
         histo_dict = {}
@@ -202,6 +202,8 @@ class signal_reweight_test(processor.ProcessorABC):
 
         histo_dict['MET_pt'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
         histo_dict['MET_phi']= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
+
+        histo_dict['mtt_vs_tlep_ctstar_abs'] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtt_axis, self.ctstar_abs_axis)
 
         return histo_dict
 
@@ -493,6 +495,8 @@ class signal_reweight_test(processor.ProcessorABC):
         acc['MET_pt'].fill( dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=perm['MET'].pt.flatten()[MTcut], weight=evt_weights[MTcut])
         acc['MET_phi'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=perm['MET'].phi.flatten()[MTcut], weight=evt_weights[MTcut])
 
+        acc['mtt_vs_tlep_ctstar_abs'].fill(dataset='%s_%s' % (self.sample_name, wt_type), jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=ttbar_p4.mass, ctstar_abs=np.abs(tlep_ctstar), weight=evt_weights[MTcut])
+
         return acc        
 
     def fill_jet_hists(self, acc, wt_type, jetmult, leptype, lepcat, btagregion, obj, evt_weights):
@@ -531,7 +535,7 @@ proc_executor = processor.iterative_executor if args.debug else processor.future
 
 output = processor.run_uproot_job(fileset,
     treename='Events',
-    processor_instance=signal_reweight_test(),
+    processor_instance=htt_signal_reweight(),
     executor=proc_executor,
     executor_args={
         'workers': 8,
