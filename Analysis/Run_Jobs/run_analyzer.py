@@ -94,7 +94,7 @@ opts = ""
 #if args.sample: opts += " --sample=%s" % args.sample
 if args.debug: opts += " --debug"
 
-if analyzer == 'signal_reweight_test':
+if analyzer == 'htt_signal_reweight':
     if args.signal is None:
         raise ValueError("Signal sample must be specified when running %s" % analyzer)
     run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {SIGNAL} {OUTFNAME} {OPTS}""".format(

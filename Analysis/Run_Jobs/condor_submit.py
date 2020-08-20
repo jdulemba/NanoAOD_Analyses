@@ -90,7 +90,7 @@ for sample in samples_to_use:
     file_inds = [idx for idx, fname in enumerate([fname.strip('\n') for fname in sfiles if not fname.startswith('#')])]
     splitting = tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
-    if analyzer == 'signal_reweight_test':
+    if analyzer == 'htt_signal_reweight':
         signals_to_use = [sig.strip('\n') for sig in open('inputs/signal_opts.txt', 'r') if not sig.startswith('#')] if args.signal is None else [args.signal]
         for signal in signals_to_use:
                 ## make batch_job.sh file
