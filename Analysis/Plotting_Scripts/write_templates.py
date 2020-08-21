@@ -8,6 +8,8 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 import uproot
+from rootpy.io import root_open
+    
     
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -16,12 +18,12 @@ parser.add_argument('--maskData', action='store_false', help='Mask templates for
 
 args = parser.parse_args()
 
-def get_templates(tmp_rname):
+def get_bkg_templates(tmp_rname):
     '''
     Function that writes linearized mtt vs costheta distributions to root file.
     '''
     ## variables that only need to be defined/evaluated once
-    hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+    hdict = plt_tools.add_coffea_files(bkg_fnames) if len(bkg_fnames) > 1 else load(bkg_fnames[0])
 
         ## get data lumi and scale MC by lumi
     data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
@@ -112,13 +114,14 @@ def get_templates(tmp_rname):
     print('%s written' % tmp_rname)
 
 
-def write_correct_template_format(in_fname):
+def write_correct_template_format(in_fname, isSignal=None):
     '''
     Opens temporary root file where template distributions are and then saves them with the correct structure/naming
     '''
+    if isSignal is None:
+        raise ValueError("isSignal needs to be set to 'True' to write signal templates, 'False' for background'")
+    signame = 'sig' if isSignal else 'bkg'
 
-    from rootpy.io import root_open
-    
     rfile = root_open(in_fname) if in_fname.endswith('.root') else root_open('%s.root' % in_fname)
     
     mu_3j_keys = [key.name for key in rfile.keys() if '3Jets_mujets' in key.name]
@@ -127,7 +130,7 @@ def write_correct_template_format(in_fname):
     el_4pj_keys = [key.name for key in rfile.keys() if '4PJets_ejets' in key.name]
     
     #set_trace()
-    fname_3j = '%s/templates_lj_3Jets_bkg_%s_QCD_Est_%s.root' % (outdir, jobid, args.year)
+    fname_3j = '%s/templates_lj_3Jets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
     with root_open(fname_3j, 'w') as rout:
         mu_dir = rout.mkdir('mujets')
         mu_dir.cd()
@@ -151,7 +154,7 @@ def write_correct_template_format(in_fname):
 
     print('%s written' % fname_3j)
 
-    fname_4pj = '%s/templates_lj_4PJets_bkg_%s_QCD_Est_%s.root' % (outdir, jobid, args.year)
+    fname_4pj = '%s/templates_lj_4PJets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
     with root_open(fname_4pj, 'w') as rout:
         mu_dir = rout.mkdir('mujets')
         mu_dir.cd()
@@ -175,17 +178,116 @@ def write_correct_template_format(in_fname):
 
 
 
+def get_sig_templates(tmp_rname):
+    '''
+    Function that writes linearized mtt vs costheta distributions to root file.
+    '''
+    from rootpy.plotting import Hist2D
+
+    widthTOname = lambda width : str(width).replace('.', 'p')
+    nameTOwidth = lambda width : str(width).replace('p', '.')
+
+    ## variables that only need to be defined/evaluated once
+    hdict = plt_tools.add_coffea_files(sig_fnames) if len(sig_fnames) > 1 else load(sig_fnames[0])
+
+        ## get data lumi and scale MC by lumi
+    data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
+
+        # get correct hist and rebin
+    hname_to_use = 'mtt_vs_tlep_ctstar_abs'
+    if hname_to_use not in hdict.keys():
+        raise ValueError("%s not found in file" % hname_to_use)
+    xrebinning, yrebinning = 2, 1
+    #xrebinning, yrebinning = linearize_binning
+    histo = hdict[hname_to_use] # process, sys, jmult, leptype, btag, lepcat
+    
+    xaxis_name = histo.dense_axes()[0].name
+    yaxis_name = histo.dense_axes()[1].name
+        ## rebin x axis
+    if isinstance(xrebinning, np.ndarray):
+        new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+    elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+        new_xbins = xrebinning
+    histo = histo.rebin(xaxis_name, new_xbins)
+
+        ## rebin y axis
+    if isinstance(yrebinning, np.ndarray):
+        new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+    elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+        new_ybins = yrebinning
+    rebin_histo = histo.rebin(yaxis_name, new_ybins)
+    rebin_histo = rebin_histo[:, :, :, :, 'btagPass', 'Tight'].integrate('lepcat').integrate('btag')
+
+    signals = sorted(set([key[0] for key in rebin_histo.values().keys()]))    
+
+        # create 2D signal hists and write to temp file        
+    with root_open(tmp_rname, 'w') as out:
+        #for lep in ['Muon']:
+        for lep in ['Muon', 'Electron']:
+            lepdir = 'mujets' if lep == 'Muon' else 'ejets'
+
+                # scale by lumi
+            lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))[args.year]['%ss' % lep]
+            scaled_histo = rebin_histo.copy()
+            scaled_histo.scale(lumi_correction, axis='dataset')
+    
+            #for jmult in ['3Jets']:        
+            for jmult in sorted(set([key[2] for key in rebin_histo.values().keys()])):
+                histo = scaled_histo[:, :, jmult, lep].integrate('jmult').integrate('leptype')
+    
+                for signal in signals:
+                    _, mass, width, pI, wt = tuple(signal.split('_'))
+                    samtype = 'int' if pI == 'Int' else 'sgn'
+                    bostype = 'ggA' if _ == 'AtoTT' else 'ggH'
+    
+                    sub_name = '%s_%s-%s-%s-%s' % (bostype, wt, samtype, widthTOname(width).split('W')[-1]+'pc', mass) if pI == 'Int' else '%s_pos-%s-%s-%s' % (bostype, samtype, widthTOname(width).split('W')[-1]+'pc', mass)
+    
+                    #set_trace()
+                    for sys in systematics.keys():
+                        sysname, onlyTT = systematics[sys]
+                        if onlyTT: continue
+                        if sys not in histo.axis('sys')._sorted:
+                            print('\n\n   Systematic %s not available, skipping\n\n' % sys)
+                            continue
+                        print(lep, jmult, sub_name, sys)
+                        if 'Lep_RECO' in sys: sysname = sysname.replace('LEP', lepdir[0])
+    
+                        template_histo = histo[signal, sys].integrate('dataset').integrate('sys')
+                        if wt == 'neg':
+                            template_histo.scale(-1.)
+                        sumw, sumw2 = template_histo.values(sumw2=True, overflow='all')[()] # get vals and errors for all bins (including under/overflow)
+
+                            ## create rootpy hist and rename
+                        rtpy_h2d = Hist2D(template_histo.dense_axes()[0].edges(), template_histo.dense_axes()[1].edges())
+                        outhname = '_'.join([jmult, lepdir, sub_name]) if sys == 'nosys' else '_'.join([jmult, lepdir, sub_name, sysname])
+                        rtpy_h2d.name = outhname
+                            # set bin content for rootpy hist
+                        for binx in range(0, rtpy_h2d.GetNbinsX()+2):
+                            for biny in range(0, rtpy_h2d.GetNbinsY()+2):
+                                rtpy_h2d[binx, biny] = sumw[binx, biny], sumw2[binx, biny]
+                        #set_trace()
+                        rtpy_h2d.Write()
+        
+    print('%s written' % tmp_rname)
+
+
 if __name__ == '__main__':
     proj_dir = os.environ['PROJECT_DIR']
     jobid = os.environ['jobid']
-    analyzer = 'htt_btag_iso_cut'
     
-    input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
     f_ext = 'TOT.coffea'
+
+        # define variables to get histogram for signal
+    sig_analyzer = 'htt_signal_reweight'
+    sig_input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), sig_analyzer])
+    sig_fnames = sorted(['%s/%s' % (sig_input_dir, fname) for fname in os.listdir(sig_input_dir) if fname.endswith(f_ext)])
     
-    fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
+        # define variables to get histogram for background    
+    bkg_analyzer = 'htt_btag_iso_cut'
+    bkg_input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), bkg_analyzer])
+    bkg_fnames = sorted(['%s/%s' % (bkg_input_dir, fname) for fname in os.listdir(bkg_input_dir) if fname.endswith(f_ext)])
     
-    outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Templates'])
+    outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), bkg_analyzer, 'Templates'])
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
@@ -225,13 +327,25 @@ if __name__ == '__main__':
         np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
     )
 
-    temp_rname = 'tmp.root'
+    #try:
+    #    temp_bkg_rname = 'tmp_bkg.root'
+    #    print("Creating background templates")
+    #    get_bkg_templates(temp_bkg_rname)
+    #    write_correct_template_format(temp_bkg_rname, isSignal=False)
+    #    os.system('rm %s' % temp_bkg_rname)
+    #    print('%s deleted' % temp_bkg_rname)
+    #    
+    #except:
+    #    print('Could not write background templates to file')
+
     try:
-        get_templates(temp_rname)
+        temp_sig_rname = 'tmp_sig.root'
+        print("Creating signal templates")
+        get_sig_templates(temp_sig_rname)
         #set_trace()
-        write_correct_template_format(temp_rname)
-        os.system('rm %s' % temp_rname)
-        print('%s deleted' % temp_rname)
+        write_correct_template_format(temp_sig_rname, isSignal=True)
+        os.system('rm %s' % temp_sig_rname)
+        print('%s deleted' % temp_sig_rname)
         
     except:
-        print('Could not write templates to file')
+        print('Could not write signal templates to file')
