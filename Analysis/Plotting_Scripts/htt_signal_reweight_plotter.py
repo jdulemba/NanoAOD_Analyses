@@ -17,6 +17,7 @@ from coffea import hist
 import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
+#import Utilities.systematics as systematics
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -114,7 +115,7 @@ data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).r
 lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))[args.year]['%ss' % args.lepton]
 
 for idx, hname in enumerate(hdict.keys()):
-    if hname == 'cutflow': continue
+    if 'cutflow' in hname: continue
     hdict[hname].scale(lumi_correction, axis='dataset')
     if idx == 0:
         signals = sorted(set(['_'.join(key[0].split('_')[:-1]) for key in hdict[hname].values().keys()]))
@@ -128,7 +129,13 @@ for hname in variables.keys():
     if hname not in hdict.keys():
         raise ValueError("%s not found in file" % hname)
     #set_trace()
-    histo = hdict[hname][:, :, args.lepton, :, :].integrate('leptype') # dataset, jmult, leptype, btag, lepcat
+    histo = hdict[hname][:, :, :, args.lepton, 'btagPass', 'Tight'].integrate('leptype').integrate('btag').integrate('lepcat') # dataset, jmult, leptype, btag, lepcat
+
+    #set_trace()
+    systs = sorted(set([key[1] for key in histo.values().keys()]))
+    systypes = sorted(set(['_'.join(sys.split('_')[:-1]) for sys in systs if (not sys == 'nosys') and (not ('UP' and 'DW') in sys)]))
+    if ('RENORM_UP_FACTOR_DW' and 'RENORM_DW_FACTOR_UP') in systs:
+        systypes += ['RENFACTOR_DIFF']
 
     if histo.dense_dim() == 1:
         xtitle, rebinning, x_lims, withData = variables[hname]
@@ -136,217 +143,216 @@ for hname in variables.keys():
             xaxis_name = histo.dense_axes()[0].name
             histo = histo.rebin(xaxis_name, rebinning)
 
+        if hname == 'Lep_iso':
+            x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
         #set_trace()
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
-        for jmult in list(set([key[1] for key in histo.values().keys()])):
-            for lepcat in list(set([key[3] for key in histo.values().keys()])):
-                if hname == 'Lep_iso':
-                    if args.lepton == 'Muon':
-                        x_lims = (0., 0.15) if lepcat == 'Tight' else (0.15, 1.)
-                    if args.lepton == 'Electron':
-                        x_lims = (0., 0.1) if lepcat == 'Tight' else (0., 0.5)
-                for btagregion in list(set([key[2] for key in histo.values().keys()])):
-
-                    if (hname == 'mtt') or (hname == 'tlep_ctstar') or (hname == 'tlep_ctstar_abs'):
-                        if args.comp_widths:
-                            #set_trace()
-                            for boson in bosons:
-                                pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, 'Comp_Widths', boson])
-                                if not os.path.isdir(pltdir):
-                                    os.makedirs(pltdir)
-                                for mass in masses:
-                                    mass_title = 'm($%s$)=%s GeV' % (boson[0], mass.split('M')[-1])
-                                    for shape in shapes:
-                                        #set_trace()
-                                            ## sort samples by increasing width (2.5, 5, 10, 25)
-                                        samples = sorted([sig for sig in signals if fnmatch.fnmatch(sig, '%s*%s*%s' % (boson, mass, shape))], key=lambda sample: float(nameTOwidth(sample.split('_')[2])[1:]))
-
-                                        if shape == 'Int':
-                                            #set_trace()
-                                            pos_fig, pos_ax = plt.subplots()
-                                            pos_fig.subplots_adjust(hspace=.07)
-                                            neg_fig, neg_ax = plt.subplots()
-                                            neg_fig.subplots_adjust(hspace=.07)
-
-                                            for sig in samples:
-                                                boson, mass, width, shape = sig.split('_')
-                                                opts = Plotter.styles.styles[width]
-
-                                                pos_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(pos_histo.values()[()], pos_histo.dense_axes()[0].edges(), ax=pos_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-                                                neg_histo = histo['%s_neg' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(neg_histo.values()[()], neg_histo.dense_axes()[0].edges(), ax=neg_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-
-                                            pos_ax.legend(loc='upper right', title='%s, Int, w > 0' % mass_title)
-                                                # add labels
-                                            pos_ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=pos_ax.transAxes
-                                            )
-                                            pos_ax = hep.cms.cmslabel(ax=pos_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-                                            #set_trace()
-                                            pos_figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Int', 'pos', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            pos_fig.savefig(pos_figname)
-                                            print('%s written' % pos_figname)
-
-                                            neg_ax.legend(loc='upper right', title='%s, Int, w < 0' % mass_title)
-                                                # add labels
-                                            neg_ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=neg_ax.transAxes
-                                            )
-                                            neg_ax = hep.cms.cmslabel(ax=neg_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-                                            #set_trace()
-                                            neg_figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Int', 'neg', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            neg_fig.savefig(neg_figname)
-                                            print('%s written' % neg_figname)
-
-                                            plt.close()
-                                        else:
-                                            fig, ax = plt.subplots()
-                                            fig.subplots_adjust(hspace=.07)
-
-                                            for sig in samples:
-                                                boson, mass, width, shape = sig.split('_')
-                                                opts = Plotter.styles.styles[width]
-
-                                                w_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(w_histo.values()[()], w_histo.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-                                            #set_trace()
-                                            ax.legend(loc='upper right', title='%s, Res' % mass_title)
-
-                                                # add labels
-                                            ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
-                                            )
-                                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-
-                                            figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Res', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            fig.savefig(figname)
-                                            print('%s written' % figname)
-                                            plt.close()
-
-                        if args.comp_masses:
-                            #set_trace()
-                            for boson in bosons:
-                                pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, 'Comp_Masses', boson])
-                                if not os.path.isdir(pltdir):
-                                    os.makedirs(pltdir)
-                                for width in widths:
-                                    width_title = '$\\Gamma$/m($%s$)=%s%%' % (boson[0], nameTOwidth(width.split('W')[-1]))
-                                    for shape in shapes:
-                                        #set_trace()
-                                            ## sort samples by increasing mass (400, 500, 600, 750)
-                                        samples = sorted([sig for sig in signals if fnmatch.fnmatch(sig, '%s*%s*%s' % (boson, width, shape))])
-
-                                        if shape == 'Int':
-                                            #set_trace()
-                                            pos_fig, pos_ax = plt.subplots()
-                                            pos_fig.subplots_adjust(hspace=.07)
-                                            neg_fig, neg_ax = plt.subplots()
-                                            neg_fig.subplots_adjust(hspace=.07)
-
-                                            for sig in samples:
-                                                boson, mass, width, shape = sig.split('_')
-                                                opts = Plotter.styles.styles[mass]
-
-                                                pos_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(pos_histo.values()[()], pos_histo.dense_axes()[0].edges(), ax=pos_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-                                                neg_histo = histo['%s_neg' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(neg_histo.values()[()], neg_histo.dense_axes()[0].edges(), ax=neg_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-
-                                            pos_ax.legend(loc='upper right', title='%s, Int, w > 0' % width_title)
-                                                # add labels
-                                            pos_ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=pos_ax.transAxes
-                                            )
-                                            pos_ax = hep.cms.cmslabel(ax=pos_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-                                            #set_trace()
-                                            pos_figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Int', 'pos', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            pos_fig.savefig(pos_figname)
-                                            print('%s written' % pos_figname)
-
-                                            neg_ax.legend(loc='upper right', title='%s, Int, w < 0' % width_title)
-                                                # add labels
-                                            neg_ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=neg_ax.transAxes
-                                            )
-                                            neg_ax = hep.cms.cmslabel(ax=neg_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-                                            #set_trace()
-                                            neg_figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Int', 'neg', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            neg_fig.savefig(neg_figname)
-                                            print('%s written' % neg_figname)
-
-                                            plt.close()
-                                        else:
-                                            fig, ax = plt.subplots()
-                                            fig.subplots_adjust(hspace=.07)
-
-                                            for sig in samples:
-                                                boson, mass, width, shape = sig.split('_')
-                                                opts = Plotter.styles.styles[mass]
-
-                                                w_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                                Plotter.plot_1D(w_histo.values()[()], w_histo.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
-                                            #set_trace()
-                                            ax.legend(loc='upper right', title='%s, Res' % width_title)
-
-                                                # add labels
-                                            ax.text(
-                                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
-                                            )
-                                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-
-                                            figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Res', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
-                                            fig.savefig(figname)
-                                            print('%s written' % figname)
-                                            plt.close()
-
-                    if args.plot_indiv:
-                        for sig in signals:
-                            boson, mass, width, shape = sig.split('_')
-                            label = get_title(boson, mass, width, shape)
-
-                            pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, sig])
-                            if not os.path.isdir(pltdir):
-                                os.makedirs(pltdir)
-
-                            fig, ax = plt.subplots()
-                            fig.subplots_adjust(hspace=.07)
-
-                            if shape == 'Int':
-                                pos_hist = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                neg_hist = histo['%s_neg' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
-                                int_hist = pos_hist.copy()
-                                int_hist.add(neg_hist)
+        for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+            if (hname == 'mtt') or (hname == 'tlep_ctstar') or (hname == 'tlep_ctstar_abs'):
+                if args.comp_widths:
+                    #set_trace()
+                    for boson in bosons:
+                        pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, 'Comp_Widths', boson])
+                        if not os.path.isdir(pltdir):
+                            os.makedirs(pltdir)
+                        for mass in masses:
+                            mass_title = 'm($%s$)=%s GeV' % (boson[0], mass.split('M')[-1])
+                            for shape in shapes:
                                 #set_trace()
+                                    ## sort samples by increasing width (2.5, 5, 10, 25)
+                                samples = sorted([sig for sig in signals if fnmatch.fnmatch(sig, '%s*%s*%s' % (boson, mass, shape))], key=lambda sample: float(nameTOwidth(sample.split('_')[2])[1:]))
 
-                                Plotter.plot_1D(pos_hist.values()[()], pos_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='r', label='w > 0', histtype='step')
-                                Plotter.plot_1D(neg_hist.values()[()], neg_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='b', label='w < 0', histtype='step')
-                                Plotter.plot_1D(int_hist.values()[()], int_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='k', label='Sum', histtype='step')
-                                ymin, ymax = min(min(pos_hist.values()[()]), min(neg_hist.values()[()]), min(int_hist.values()[()])), max(max(pos_hist.values()[()]), max(neg_hist.values()[()]), max(int_hist.values()[()]))
-                                ax.set_ylim(ymin*1.05, ymax*1.2)
+                                if shape == 'Int':
+                                    #set_trace()
+                                    pos_fig, pos_ax = plt.subplots()
+                                    pos_fig.subplots_adjust(hspace=.07)
+                                    neg_fig, neg_ax = plt.subplots()
+                                    neg_fig.subplots_adjust(hspace=.07)
 
-                            else:
-                                hslice = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                    for sig in samples:
+                                        boson, mass, width, shape = sig.split('_')
+                                        opts = Plotter.styles.styles[width]
 
-                                Plotter.plot_1D(hslice.values()[()], hslice.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, label='w > 0', histtype='step')
+                                        pos_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(pos_histo.values()[()], pos_histo.dense_axes()[0].edges(), ax=pos_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
+                                        neg_histo = histo['%s_neg' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(neg_histo.values()[()], neg_histo.dense_axes()[0].edges(), ax=neg_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
 
-                            ax.legend(loc='upper right', title=label)
+                                    pos_ax.legend(loc='upper right', title='%s, Int, w > 0' % mass_title)
+                                        # add labels
+                                    pos_ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=pos_ax.transAxes
+                                    )
+                                    pos_ax = hep.cms.cmslabel(ax=pos_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                    #set_trace()
+                                    pos_figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Int', 'pos', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    pos_fig.savefig(pos_figname)
+                                    print('%s written' % pos_figname)
 
-                                # add labels
-                            ax.text(
-                                0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                                fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
-                            )
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                    neg_ax.legend(loc='upper right', title='%s, Int, w < 0' % mass_title)
+                                        # add labels
+                                    neg_ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=neg_ax.transAxes
+                                    )
+                                    neg_ax = hep.cms.cmslabel(ax=neg_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                    #set_trace()
+                                    neg_figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Int', 'neg', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    neg_fig.savefig(neg_figname)
+                                    print('%s written' % neg_figname)
 
+                                    plt.close()
+                                else:
+                                    fig, ax = plt.subplots()
+                                    fig.subplots_adjust(hspace=.07)
+
+                                    for sig in samples:
+                                        boson, mass, width, shape = sig.split('_')
+                                        opts = Plotter.styles.styles[width]
+
+                                        w_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(w_histo.values()[()], w_histo.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
+                                    #set_trace()
+                                    ax.legend(loc='upper right', title='%s, Res' % mass_title)
+
+                                        # add labels
+                                    ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                                    )
+                                    ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+                                    figname = '%s/%s' % (pltdir, '_'.join([boson, mass, 'Res', 'WidthComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    fig.savefig(figname)
+                                    print('%s written' % figname)
+                                    plt.close()
+
+                if args.comp_masses:
+                    #set_trace()
+                    for boson in bosons:
+                        pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, 'Comp_Masses', boson])
+                        if not os.path.isdir(pltdir):
+                            os.makedirs(pltdir)
+                        for width in widths:
+                            width_title = '$\\Gamma$/m($%s$)=%s%%' % (boson[0], nameTOwidth(width.split('W')[-1]))
+                            for shape in shapes:
+                                #set_trace()
+                                    ## sort samples by increasing mass (400, 500, 600, 750)
+                                samples = sorted([sig for sig in signals if fnmatch.fnmatch(sig, '%s*%s*%s' % (boson, width, shape))])
+
+                                if shape == 'Int':
+                                    #set_trace()
+                                    pos_fig, pos_ax = plt.subplots()
+                                    pos_fig.subplots_adjust(hspace=.07)
+                                    neg_fig, neg_ax = plt.subplots()
+                                    neg_fig.subplots_adjust(hspace=.07)
+
+                                    for sig in samples:
+                                        boson, mass, width, shape = sig.split('_')
+                                        opts = Plotter.styles.styles[mass]
+
+                                        pos_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(pos_histo.values()[()], pos_histo.dense_axes()[0].edges(), ax=pos_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
+                                        neg_histo = histo['%s_neg' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(neg_histo.values()[()], neg_histo.dense_axes()[0].edges(), ax=neg_ax, xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
+
+                                    pos_ax.legend(loc='upper right', title='%s, Int, w > 0' % width_title)
+                                        # add labels
+                                    pos_ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=pos_ax.transAxes
+                                    )
+                                    pos_ax = hep.cms.cmslabel(ax=pos_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                    #set_trace()
+                                    pos_figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Int', 'pos', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    pos_fig.savefig(pos_figname)
+                                    print('%s written' % pos_figname)
+
+                                    neg_ax.legend(loc='upper right', title='%s, Int, w < 0' % width_title)
+                                        # add labels
+                                    neg_ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=neg_ax.transAxes
+                                    )
+                                    neg_ax = hep.cms.cmslabel(ax=neg_ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                                    #set_trace()
+                                    neg_figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Int', 'neg', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    neg_fig.savefig(neg_figname)
+                                    print('%s written' % neg_figname)
+
+                                    plt.close()
+                                else:
+                                    fig, ax = plt.subplots()
+                                    fig.subplots_adjust(hspace=.07)
+
+                                    for sig in samples:
+                                        boson, mass, width, shape = sig.split('_')
+                                        opts = Plotter.styles.styles[mass]
+
+                                        w_histo = histo['%s_pos' % sig, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag').integrate('dataset')
+                                        Plotter.plot_1D(w_histo.values()[()], w_histo.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color=opts['color'], label=opts['name'], histtype='step')
+                                    #set_trace()
+                                    ax.legend(loc='upper right', title='%s, Res' % width_title)
+
+                                        # add labels
+                                    ax.text(
+                                        0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                        fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                                    )
+                                    ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+                                    figname = '%s/%s' % (pltdir, '_'.join([boson, width, 'Res', 'MassComp', jmult, args.lepton, lepcat, btagregion, hname]))
+                                    fig.savefig(figname)
+                                    print('%s written' % figname)
+                                    plt.close()
+
+            if args.plot_indiv:
+                #set_trace()
+                for sig in signals:
+                    boson, mass, width, shape = sig.split('_')
+                    label = get_title(boson, mass, width, shape)
+
+                    #set_trace()
+                    for sys in systs:
+                    #for sys in ['nosys']:
+                        print(jmult, sig, sys, hname)
+                        pltdir = '/'.join([outdir, args.lepton, jmult, 'Individual', sig, sys])
+                        if not os.path.isdir(pltdir):
+                            os.makedirs(pltdir)
+
+                        fig, ax = plt.subplots()
+                        fig.subplots_adjust(hspace=.07)
+
+                        if shape == 'Int':
+                            pos_hist = histo['%s_pos' % sig, sys, jmult].integrate('jmult').integrate('sys').integrate('dataset')
+                            neg_hist = histo['%s_neg' % sig, sys, jmult].integrate('jmult').integrate('sys').integrate('dataset')
+                            int_hist = pos_hist.copy()
+                            int_hist.add(neg_hist)
                             #set_trace()
-                            figname = '%s/%s' % (pltdir, '_'.join([sig, jmult, args.lepton, lepcat, btagregion, hname]))
-                            fig.savefig(figname)
-                            print('%s written' % figname)
-                            plt.close()
+
+                            Plotter.plot_1D(pos_hist.values()[()], pos_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='r', label='w > 0', histtype='step')
+                            Plotter.plot_1D(neg_hist.values()[()], neg_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='b', label='w < 0', histtype='step')
+                            Plotter.plot_1D(int_hist.values()[()], int_hist.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, color='k', label='Sum', histtype='step')
+                            ymin, ymax = min(min(pos_hist.values()[()]), min(neg_hist.values()[()]), min(int_hist.values()[()])), max(max(pos_hist.values()[()]), max(neg_hist.values()[()]), max(int_hist.values()[()]))
+                            ax.set_ylim(ymin*1.05, ymax*1.2)
+
+                        else:
+                            hslice = histo['%s_pos' % sig, sys, jmult].integrate('jmult').integrate('sys').integrate('dataset')
+
+                            Plotter.plot_1D(hslice.values()[()], hslice.dense_axes()[0].edges(), xlimits=x_lims, xlabel=xtitle, label='w > 0', histtype='step')
+
+                        ax.legend(loc='upper right', title=label)
+
+                            # add labels
+                        ax.text(
+                            0.02, 0.94, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+                            fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                        )
+                        ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+                        #set_trace()
+                        figname = '%s/%s' % (pltdir, '_'.join([sig, jmult, args.lepton, sys, hname]))
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
