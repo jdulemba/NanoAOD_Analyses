@@ -151,7 +151,7 @@ class htt_signal_reweight(processor.ProcessorABC):
         self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 300, 0, 30)
         self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 300, 0, 30)
         self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", 300, 0, 30)
-        self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 200, -1., 1.)
+        self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 40, -1., 1.)
         self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 20, 0., 1.)
 
             ## make dictionary of hists
