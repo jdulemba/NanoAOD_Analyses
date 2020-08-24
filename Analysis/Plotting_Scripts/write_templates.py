@@ -14,9 +14,18 @@ from rootpy.io import root_open
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
+parser.add_argument('--njets', default='all', nargs='?', choices=['3', '4+', 'all'], help='Specify which jet multiplicity to use.')
+parser.add_argument('--only_bkg', action='store_true', help='Make background templates only.')
+parser.add_argument('--only_sig', action='store_true', help='Make signal templates only.')
 parser.add_argument('--maskData', action='store_false', help='Mask templates for data, default is True.')
 
 args = parser.parse_args()
+
+njets_to_run = []
+if (args.njets == '3') or (args.njets == 'all'):
+    njets_to_run += ['3Jets']
+if (args.njets == '4+') or (args.njets == 'all'):
+    njets_to_run += ['4PJets']
 
 def get_bkg_templates(tmp_rname):
     '''
@@ -83,8 +92,7 @@ def get_bkg_templates(tmp_rname):
         histo.scale(lumi_correction, axis='dataset')
         histo = histo.group(process_cat, process, process_groups)[:, :, :, lep, :, :].integrate('leptype')
 
-        #for jmult in ['3Jets']:        
-        for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+        for jmult in njets_to_run:
             iso_sb    = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
             btag_sb   = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
             double_sb = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
@@ -114,70 +122,6 @@ def get_bkg_templates(tmp_rname):
     print('%s written' % tmp_rname)
 
 
-def write_correct_template_format(in_fname, isSignal=None):
-    '''
-    Opens temporary root file where template distributions are and then saves them with the correct structure/naming
-    '''
-    if isSignal is None:
-        raise ValueError("isSignal needs to be set to 'True' to write signal templates, 'False' for background'")
-    signame = 'sig' if isSignal else 'bkg'
-
-    rfile = root_open(in_fname) if in_fname.endswith('.root') else root_open('%s.root' % in_fname)
-    
-    mu_3j_keys = [key.name for key in rfile.keys() if '3Jets_mujets' in key.name]
-    el_3j_keys = [key.name for key in rfile.keys() if '3Jets_ejets' in key.name]
-    mu_4pj_keys = [key.name for key in rfile.keys() if '4PJets_mujets' in key.name]
-    el_4pj_keys = [key.name for key in rfile.keys() if '4PJets_ejets' in key.name]
-    
-    #set_trace()
-    fname_3j = '%s/templates_lj_3Jets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
-    with root_open(fname_3j, 'w') as rout:
-        mu_dir = rout.mkdir('mujets')
-        mu_dir.cd()
-
-        for key in mu_3j_keys:
-            hname = key.split('3Jets_mujets_')[-1]
-            histo = rfile.Get(key)
-            if (hname == 'data_obs') and (args.maskData):
-                histo.Reset()
-            mu_dir.WriteTObject(histo, hname)
-    
-        el_dir = rout.mkdir('ejets')
-        el_dir.cd()
-    
-        for key in el_3j_keys:
-            hname = key.split('3Jets_ejets_')[-1]
-            histo = rfile.Get(key)
-            if (hname == 'data_obs') and (args.maskData):
-                histo.Reset()
-            el_dir.WriteTObject(histo, hname)
-
-    print('%s written' % fname_3j)
-
-    fname_4pj = '%s/templates_lj_4PJets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
-    with root_open(fname_4pj, 'w') as rout:
-        mu_dir = rout.mkdir('mujets')
-        mu_dir.cd()
-        for key in mu_4pj_keys:
-            hname = key.split('4PJets_mujets_')[-1]
-            histo = rfile.Get(key)
-            if (hname == 'data_obs') and (args.maskData):
-                histo.Reset()
-            mu_dir.WriteTObject(histo, hname)
-    
-        el_dir = rout.mkdir('ejets')
-        el_dir.cd()
-        for key in el_4pj_keys:
-            hname = key.split('4PJets_ejets_')[-1]
-            histo = rfile.Get(key)
-            if (hname == 'data_obs') and (args.maskData):
-                histo.Reset()
-            el_dir.WriteTObject(histo, hname)
-
-    print('%s written' % fname_4pj)
-
-
-
 def get_sig_templates(tmp_rname):
     '''
     Function that writes linearized mtt vs costheta distributions to root file.
@@ -197,10 +141,11 @@ def get_sig_templates(tmp_rname):
     hname_to_use = 'mtt_vs_tlep_ctstar_abs'
     if hname_to_use not in hdict.keys():
         raise ValueError("%s not found in file" % hname_to_use)
-    xrebinning, yrebinning = 2, 1
-    #xrebinning, yrebinning = linearize_binning
+    xrebinning, yrebinning = mtt_ctstar_2d_binning
+    #xrebinning, yrebinning = 2, 1
     histo = hdict[hname_to_use] # process, sys, jmult, leptype, btag, lepcat
-    
+
+    #set_trace()    
     xaxis_name = histo.dense_axes()[0].name
     yaxis_name = histo.dense_axes()[1].name
         ## rebin x axis
@@ -215,8 +160,9 @@ def get_sig_templates(tmp_rname):
         new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
     elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
         new_ybins = yrebinning
-    rebin_histo = histo.rebin(yaxis_name, new_ybins)
-    rebin_histo = rebin_histo[:, :, :, :, 'btagPass', 'Tight'].integrate('lepcat').integrate('btag')
+    #set_trace()
+    histo = histo.rebin(yaxis_name, new_ybins)
+    rebin_histo = histo[:, :, :, :, 'btagPass', 'Tight'].integrate('lepcat').integrate('btag')
 
     signals = sorted(set([key[0] for key in rebin_histo.values().keys()]))    
 
@@ -231,8 +177,7 @@ def get_sig_templates(tmp_rname):
             scaled_histo = rebin_histo.copy()
             scaled_histo.scale(lumi_correction, axis='dataset')
     
-            #for jmult in ['3Jets']:        
-            for jmult in sorted(set([key[2] for key in rebin_histo.values().keys()])):
+            for jmult in njets_to_run:
                 histo = scaled_histo[:, :, jmult, lep].integrate('jmult').integrate('leptype')
     
                 for signal in signals:
@@ -249,12 +194,13 @@ def get_sig_templates(tmp_rname):
                         if sys not in histo.axis('sys')._sorted:
                             print('\n\n   Systematic %s not available, skipping\n\n' % sys)
                             continue
-                        print(lep, jmult, sub_name, sys)
                         if 'Lep_RECO' in sys: sysname = sysname.replace('LEP', lepdir[0])
     
                         template_histo = histo[signal, sys].integrate('dataset').integrate('sys')
                         if wt == 'neg':
                             template_histo.scale(-1.)
+                        if (pI == 'Int') and (wt == 'pos'): continue
+                        print(lep, jmult, sub_name, sys)
                         sumw, sumw2 = template_histo.values(sumw2=True, overflow='all')[()] # get vals and errors for all bins (including under/overflow)
 
                             ## create rootpy hist and rename
@@ -269,6 +215,77 @@ def get_sig_templates(tmp_rname):
                         rtpy_h2d.Write()
         
     print('%s written' % tmp_rname)
+
+
+def write_correct_template_format(in_fname, isSignal=None):
+    '''
+    Opens temporary root file where template distributions are and then saves them with the correct structure/naming
+    '''
+    if isSignal is None:
+        raise ValueError("isSignal needs to be set to 'True' to write signal templates, 'False' for background'")
+    signame = 'sig' if isSignal else 'bkg'
+
+    rfile = root_open(in_fname) if in_fname.endswith('.root') else root_open('%s.root' % in_fname)
+
+    #set_trace()
+    if '3Jets' in njets_to_run:    
+        mu_3j_keys = [key.name for key in rfile.keys() if '3Jets_mujets' in key.name]
+        el_3j_keys = [key.name for key in rfile.keys() if '3Jets_ejets' in key.name]
+
+        fname_3j = '%s/templates_lj_3Jets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
+        with root_open(fname_3j, 'w') as rout:
+            mu_dir = rout.mkdir('mujets')
+            mu_dir.cd()
+
+            for key in mu_3j_keys:
+                hname = key.split('3Jets_mujets_')[-1]
+                histo = rfile.Get(key)
+                histo.name = hname
+                if (hname == 'data_obs') and (args.maskData):
+                    histo.Reset()
+                mu_dir.WriteTObject(histo, hname)
+        
+            el_dir = rout.mkdir('ejets')
+            el_dir.cd()
+        
+            for key in el_3j_keys:
+                hname = key.split('3Jets_ejets_')[-1]
+                histo = rfile.Get(key)
+                histo.name = hname
+                if (hname == 'data_obs') and (args.maskData):
+                    histo.Reset()
+                el_dir.WriteTObject(histo, hname)
+
+        print('%s written' % fname_3j)
+
+    if '4PJets' in njets_to_run:
+        mu_4pj_keys = [key.name for key in rfile.keys() if '4PJets_mujets' in key.name]
+        el_4pj_keys = [key.name for key in rfile.keys() if '4PJets_ejets' in key.name]
+        
+        fname_4pj = '%s/templates_lj_4PJets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
+        with root_open(fname_4pj, 'w') as rout:
+            mu_dir = rout.mkdir('mujets')
+            mu_dir.cd()
+            for key in mu_4pj_keys:
+                hname = key.split('4PJets_mujets_')[-1]
+                histo = rfile.Get(key)
+                histo.name = hname
+                if (hname == 'data_obs') and (args.maskData):
+                    histo.Reset()
+                mu_dir.WriteTObject(histo, hname)
+        
+            el_dir = rout.mkdir('ejets')
+            el_dir.cd()
+            for key in el_4pj_keys:
+                hname = key.split('4PJets_ejets_')[-1]
+                histo = rfile.Get(key)
+                histo.name = hname
+                if (hname == 'data_obs') and (args.maskData):
+                    histo.Reset()
+                el_dir.WriteTObject(histo, hname)
+
+        print('%s written' % fname_4pj)
+
 
 
 if __name__ == '__main__':
@@ -326,26 +343,34 @@ if __name__ == '__main__':
         #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
         np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
     )
+        # binning for signal 2d dists
+    mtt_ctstar_2d_binning = (
+        np.arange(300., 1205., 5.),
+        #1,
+        np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+    )
 
-    #try:
-    #    temp_bkg_rname = 'tmp_bkg.root'
-    #    print("Creating background templates")
-    #    get_bkg_templates(temp_bkg_rname)
-    #    write_correct_template_format(temp_bkg_rname, isSignal=False)
-    #    os.system('rm %s' % temp_bkg_rname)
-    #    print('%s deleted' % temp_bkg_rname)
-    #    
-    #except:
-    #    print('Could not write background templates to file')
+    if not args.only_sig:
+        try:
+            temp_bkg_rname = 'tmp_bkg.root'
+            print("Creating background templates")
+            get_bkg_templates(temp_bkg_rname)
+            write_correct_template_format(temp_bkg_rname, isSignal=False)
+            os.system('rm %s' % temp_bkg_rname)
+            print('%s deleted' % temp_bkg_rname)
+            
+        except:
+            print('Could not write background templates to file')
 
-    try:
-        temp_sig_rname = 'tmp_sig.root'
-        print("Creating signal templates")
-        get_sig_templates(temp_sig_rname)
-        #set_trace()
-        write_correct_template_format(temp_sig_rname, isSignal=True)
-        os.system('rm %s' % temp_sig_rname)
-        print('%s deleted' % temp_sig_rname)
-        
-    except:
-        print('Could not write signal templates to file')
+    if not args.only_bkg:
+        try:
+            temp_sig_rname = 'tmp_sig.root'
+            print("Creating signal templates")
+            get_sig_templates(temp_sig_rname)
+            #set_trace()
+            write_correct_template_format(temp_sig_rname, isSignal=True)
+            os.system('rm %s' % temp_sig_rname)
+            print('%s deleted' % temp_sig_rname)
+            
+        except:
+            print('Could not write signal templates to file')
