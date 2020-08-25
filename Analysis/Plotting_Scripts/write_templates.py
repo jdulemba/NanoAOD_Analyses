@@ -103,7 +103,7 @@ def get_bkg_templates(tmp_rname):
                     print('\n\n   Systematic %s not available, skipping\n\n' % sys)
                     continue
                 sysname, onlyTT = systematics[sys]
-                if 'Lep_RECO' in sys: sysname = sysname.replace('LEP', lepdir[0])
+                if 'LEP' in sysname: sysname = sysname.replace('LEP', lepdir[0])
         
                 qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type='Sideband', shape_region='BTAG', norm_region='BTAG', sys=sys)
         
@@ -194,12 +194,13 @@ def get_sig_templates(tmp_rname):
                         if sys not in histo.axis('sys')._sorted:
                             print('\n\n   Systematic %s not available, skipping\n\n' % sys)
                             continue
-                        if 'Lep_RECO' in sys: sysname = sysname.replace('LEP', lepdir[0])
+                        #set_trace()
+                        if 'LEP' in sysname: sysname = sysname.replace('LEP', lepdir[0])
     
                         template_histo = histo[signal, sys].integrate('dataset').integrate('sys')
                         if wt == 'neg':
                             template_histo.scale(-1.)
-                        if (pI == 'Int') and (wt == 'pos'): continue
+                        #if (pI == 'Int') and (wt == 'pos'): continue
                         print(lep, jmult, sub_name, sys)
                         sumw, sumw2 = template_histo.values(sumw2=True, overflow='all')[()] # get vals and errors for all bins (including under/overflow)
 
@@ -319,8 +320,10 @@ if __name__ == '__main__':
         'btag_bc_DW' : ('CMS_eff_b_13TeVDown', False),
         'btag_l_UP' : ('CMS_fake_b_13TeVUp', False),
         'btag_l_DW' : ('CMS_fake_b_13TeVDown', False),
-        'Lep_RECOUp' : ('CMS_eff_LEPUp', False),
-        'Lep_RECODown' : ('CMS_eff_LEPDown', False),
+        'Lep_RECOUp' : ('CMS_eff_reco_LEPUp', False),
+        'Lep_RECODown' : ('CMS_eff_reco_LEPDown', False),
+        'Lep_TRIGUp' : ('CMS_eff_trigger_LEPUp', False),
+        'Lep_TRIGDown' : ('CMS_eff_trigger_LEPDown', False),
         'PileupUp' : ('CMS_pileupUp', False),
         'PileupDown' : ('CMS_pileupDown', False),
         'MET_UP' : ('CMS_METunclustered_13TeVUp', False),
