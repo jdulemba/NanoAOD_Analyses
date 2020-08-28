@@ -26,7 +26,7 @@ def check_correctness(jobdir, dump_rescue = False):
     sample = jobdir.split('/')[-1]
     if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, sample)):  ## TOT output file already created
         #print('%s/%s_TOT.coffea already exists' % (jobdir, sample))
-        return isCorrect
+        return isCorrect, 0, True
     jdl = open('%s/condor.jdl' % jobdir).read()
     blocks = jdl.split('\n\n')
     header = blocks[0]
@@ -60,7 +60,7 @@ Failed jobs: %d
                     '\n\n'.join([block_map[key] for key in fails])
                     )
 
-    return isCorrect
+    return isCorrect, len(fails), False
 
 tot_files = {}
 def merge_files(jobdir, samples):
@@ -84,44 +84,68 @@ def merge_files(jobdir, samples):
                 print('%s written' % merged_fname)
             tot_files[sample] = merged_fname
 
-#set_trace()
 escape = False
-start = time.time()
-elapsed = 0
-totjobs = -1
 finished_samples = []
 
 while not escape:
     stdout= subprocess.Popen("condor_q $USER -nobatch", stdout=subprocess.PIPE, shell=True).stdout.read()
     njobs = 0
+    samples_status = {}
+
+    #set_trace()
+        ## this loop is just to check how many jobs are still running for each sample
     for sample in samples:
         if sample in finished_samples: continue
             ## checks how many lines correspond to jobdir/sample 
         sample_njobs = len([line for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line])
         if sample_njobs == 0:
-            finished_samples.append(sample)
+            isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+            if isCorrect == True:
+                status = 'MERGED' if alreadyComplete else 'COMPLETE' # jobs are already merged or (completed but still need to be merged)
+            else:
+                status = 'RESUB' # jobs need to be resubmitted
+            samples_status[sample] = (status, nfails)
         else:
-            njobs += sample_njobs
+                ## get lines corresponding to sample
+            job_lines = [line.decode() for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line]
+                ## get job statuses
+            job_statuses = [''.join(line).split()[5] for line in job_lines] # 5 is hardcoded
+                ## check how many jobs haven't been removed
+            njobs_running = len([status for status in job_statuses if not (status == 'X')])
+            if njobs_running == 0:
+                isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+                if isCorrect == True:
+                    status = 'MERGED' if alreadyComplete else 'COMPLETE' # jobs are already merged or (completed but still need to be merged)
+                else:
+                    status = 'RESUB' # jobs need to be resubmitted
+                samples_status[sample] = (status, nfails)
+            else:
+                samples_status[sample] = ('RUNNING', njobs_running) # jobs running
+                njobs += njobs_running
 
-    eta = 'UNKNOWN'
-    if totjobs != -1:
-        elapsed = time.time() - start
-        completed = totjobs - njobs
-        if completed != 0:
-            eta_time = njobs*(elapsed/completed)
-            m, s = divmod(eta_time, 60)
-            h, m = divmod(m, 60)
-            eta = "%d:%02d:%02d" % (h, m, s)
-    else:
-        totjobs = njobs
+        ## this loop is responsible for merging or resubmitting jobs based on status
+    for sample, (status, sample_njobs) in samples_status.items():
+            ## if status is 'RESUB', resubmit jobs to condor
+        if status == 'RESUB':
+            set_trace()
+            os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
+            samples_status[sample] = ('RUNNING', sample_njobs)
 
-    #set_trace()
+            ## if status is 'RUNNING' do nothing, jobs are already running
+        elif status == 'RUNNING':
+            print('\t%s has %i jobs running' % (sample, sample_njobs) )
+
+            ## if status is 'MERGED' or 'COMPLETE', run merge_jobs and add files to finished_samples list so they're not check anymore
+        else:
+            merge_files(jobdir, [sample])
+            finished_samples.append(sample)
+
+        ## recheck all jobs if there are none running
     if njobs == 0:
-            ## check if all jobs have run correctly
         failed_samples = []
         finished_samples = [] # reinitialize finished_samples to check if they're actually finished
         for sample in samples:
-            isCorrect = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+            isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
             if isCorrect == False: 
                 failed_samples.append(sample)
                 os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
@@ -130,13 +154,12 @@ while not escape:
         if finished_samples:
             merge_files(jobdir, finished_samples)
         if len(failed_samples) == 0:
-            print('All jobs completed: runtime = %i' % elapsed)
+            print('All jobs completed')
             escape = True
         else:
             time.sleep(30)
-
     else:
-        print("%i jobs are still running, checking again in 30 seconds. ETA: %s" % (njobs, eta))
+        print("%i jobs are still running, checking again in 30 seconds\n" % njobs )
         time.sleep(30)
 
 ## merge all TOT files from each sample into one
