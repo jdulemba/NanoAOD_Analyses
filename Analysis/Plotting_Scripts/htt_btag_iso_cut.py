@@ -25,7 +25,7 @@ parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
 parser.add_argument('--nosys', action='store_true', help='Make plots without systematics and no qcd estimation')
 parser.add_argument('--qcd_est', action='store_true', help='Estimate qcd contribution')
-parser.add_argument('--plot_uncs', action='store_true', help='Make plots of shape and normalization uncertainties')
+parser.add_argument('--plot_shapes', action='store_true', help='Make plots of qcd shape, and shape and normalization uncertainties')
 parser.add_argument('--save_sys', action='store_true', help='Save dists for all systematic variations')
 
 args = parser.parse_args()
@@ -83,7 +83,7 @@ variables = {
     ###'mtt' : ('m($t\\bar{t}$) [GeV]', linearize_binning[0], (200., 2000.), True),
     ###'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[1], (0., 1.), True),
     'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
-    'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), True),
+    'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
     'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
     'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
     'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 500.), True),
@@ -140,7 +140,7 @@ for hname in hdict.keys():
 
 
 
-def plot_shapes(reg_C, reg_D, **opts):
+def plot_shape_uncs(reg_C, reg_D, **opts):
     fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
 
@@ -219,6 +219,66 @@ def plot_shapes(reg_C, reg_D, **opts):
     #set_trace()
 
 
+def plot_qcd_shape(reg,**opts):
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(hspace=.07)
+
+        # get opts
+    xlimits = opts.get('xlims')
+    xlabel = opts.get('xtitle')
+    jmult = opts.get('jmult')
+    pltdir = opts.get('pltdir')
+    hname = opts.get('hname')
+    vlines = opts.get('vlines')
+
+    dmp_hist = reg.integrate('process').copy()
+
+        # get normalized arrays of data-promptMC    
+    dmp_sumw, dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_prompt(reg))
+
+    for idx in range(len(dmp_sumw)):
+        dmp_hist.values(overflow='all', sumw2=True)[()][0][idx] = dmp_sumw[idx]
+        dmp_hist.values(overflow='all', sumw2=True)[()][1][idx] = dmp_sumw2[idx]
+
+    hist.plot1d(dmp_hist, ax=ax, clear=False,
+        error_opts={'color' : 'k'},
+    )
+        ## set legend and corresponding colors
+    handles, labels = ax.get_legend_handles_labels()
+    labels = ['data-driven QCD']
+    ax.legend(handles, labels, loc='upper right')#, title='data-$prompt_{MC}$')
+
+    ax.autoscale(axis='x', tight=True)
+    ax.set_ylabel('Probability Density')
+    ax.set_ylim(0, None)
+    ax.set_xlabel(xlabel)
+    ax.set_xlim(xlimits)
+
+    if vlines is not None:
+        #set_trace()
+            # draw vertical lines separating ctstar bins
+        for vline in vlines:
+            ax.axvline(vline, color='k', linestyle='--')
+
+    ax.text(
+        0.02, 0.94, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+        fontsize=rcParams['font.size'],
+        horizontalalignment='left',
+        verticalalignment='bottom',
+        transform=ax.transAxes
+    )
+    ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+    #set_trace()
+    if not os.path.isdir(pltdir):
+        os.makedirs(pltdir)
+    figname = '%s/QCD_Shape_BTAGSideband_%s_%s_%s' % (pltdir, args.lepton, jmult, hname)
+    #figname = 'test'
+    fig.savefig(figname)
+    print('%s written' % figname)
+    #set_trace()
+
+
 def get_norm_unc(reg_A, reg_B):
     ## relative norm unc = N_dmp,B/N_qcd,B - 1
     N_dmp_B = np.sum(Plotter.data_minus_prompt(reg_B).values(overflow='all')[()])
@@ -239,8 +299,8 @@ if args.nosys:
     for hname in variables.keys():
         if hname not in hdict.keys():
             raise ValueError("%s not found in file" % hname)
-        #set_trace()
         histo = hdict[hname][:, 'nosys', :, args.lepton, :, :].integrate('sys').integrate('leptype') # process, sys, jmult, leptype, btag, lepcat
+        #set_trace()
     
         if histo.dense_dim() == 1:
             xtitle, rebinning, x_lims, withData = variables[hname]
@@ -516,11 +576,13 @@ if args.qcd_est:
                 sig_histo = Plotter.linearize_hist(histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
 
                 ## plot shape uncertainties and find normalization uncs
-            if args.plot_uncs:
+            if args.plot_shapes:
                 #set_trace()
                 if (hname == 'Jets_njets') or (hname == 'mtt_vs_tlep_ctstar_abs'):
                     unc_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', 'Uncertainties'])
                     if not os.path.isdir(unc_dir): os.makedirs(unc_dir)
+                    shape_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', 'Shapes'])
+                    if not os.path.isdir(shape_dir): os.makedirs(shape_dir)
 
                     if hname == 'Jets_njets':
                         sig = histo[:, 'nosys', jmult, 'btagPass', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
@@ -531,12 +593,21 @@ if args.qcd_est:
                         print('%s/%s.txt written' % ('/'.join([outdir, args.lepton, jmult, 'QCD_Est']), unc_txt_name))
 
                     if hname == 'mtt_vs_tlep_ctstar_abs':
+                        ## plot qcd shape
                             ## plot projection onto mtt
-                        plot_shapes(reg_C=double_sb_histo.integrate('ctstar_abs'), reg_D=iso_sb_histo.integrate('ctstar_abs'), **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':unc_dir, 'hname': 'mtt', 'jmult':jmult})
+                        plot_qcd_shape(reg=btag_sb_histo.integrate('ctstar_abs'), **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'hname': 'mtt', 'jmult':jmult})
                             ## plot projection onto ctstar
-                        plot_shapes(reg_C=double_sb_histo.integrate('mtt'), reg_D=iso_sb_histo.integrate('mtt'), **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':unc_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult})
+                        plot_qcd_shape(reg=btag_sb_histo.integrate('mtt'), **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult})
                             ## plot linearized 2D mtt ctstar dist
-                        plot_shapes(reg_C=double_sb, reg_D=iso_sb, **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins) , 'pltdir':unc_dir, 'hname':hname, 'jmult':jmult, 'vlines':vlines})
+                        plot_qcd_shape(reg=btag_sb, **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins) , 'pltdir':shape_dir, 'hname':hname, 'jmult':jmult, 'vlines':vlines})
+
+                        ## plot shape uncertainties
+                            ## plot projection onto mtt
+                        plot_shape_uncs(reg_C=double_sb_histo.integrate('ctstar_abs'), reg_D=iso_sb_histo.integrate('ctstar_abs'), **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':unc_dir, 'hname': 'mtt', 'jmult':jmult})
+                            ## plot projection onto ctstar
+                        plot_shape_uncs(reg_C=double_sb_histo.integrate('mtt'), reg_D=iso_sb_histo.integrate('mtt'), **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':unc_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult})
+                            ## plot linearized 2D mtt ctstar dist
+                        plot_shape_uncs(reg_C=double_sb, reg_D=iso_sb, **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins) , 'pltdir':unc_dir, 'hname':hname, 'jmult':jmult, 'vlines':vlines})
 
 
                 ## plot systematic variations after qcd estimation is made
