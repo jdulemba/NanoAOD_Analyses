@@ -154,8 +154,10 @@ def add_coffea_files(input_files):
 
     output_acc = load(input_files[0])
     for idx in range(1, len(input_files)):
-        #print(idx)
-        output_acc.add(load(input_files[idx]))
+        try:
+            output_acc.add(load(input_files[idx]))
+        except:
+            raise ValueError("File %s (number %i) could not be added" % (input_files[idx], idx))
 
     return output_acc
 
