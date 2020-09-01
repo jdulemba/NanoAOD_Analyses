@@ -127,7 +127,6 @@ while not escape:
     for sample, (status, sample_njobs) in samples_status.items():
             ## if status is 'RESUB', resubmit jobs to condor
         if status == 'RESUB':
-            set_trace()
             os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
             samples_status[sample] = ('RUNNING', sample_njobs)
 
