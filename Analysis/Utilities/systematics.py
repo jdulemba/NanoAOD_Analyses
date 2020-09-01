@@ -249,8 +249,6 @@ signal_reweight_opts = {
         'BTAG_L_DW' : 'btag_l_DW',
         'PILEUP_UP' : 'PileupUp',
         'PILEUP_DW' : 'PileupDown',
-        'PREFIRE_UP' : 'PrefireUp',
-        'PREFIRE_DW' : 'PrefireDown',
         #'ISR_UP' : 'ISRUp',
         #'ISR_DW' : 'ISRDown',
         #'FSR_UP' : 'FSRUp',
