@@ -11,7 +11,7 @@ parser.add_argument('jobdir', help='Directory name to be created in nobackup are
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
-parser.add_argument('--signal', type=str, help='Signal sample to use')
+parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex')
 parser.add_argument('--evt_sys', type=str, default='NONE', help='Specify event systematics to run, will be capitalized. Default is NONE')
 parser.add_argument('--rewt_sys', type=str, default='NONE', help='Specify reweighting systematics to run, will be capitalized. Default is NONE')
 parser.add_argument('--only_sys', type=int, default=0, help='Only run specified systematics and not nominal weights (nosys)')
@@ -57,13 +57,14 @@ Proxy_path = {PROXYPATH}
     return condorfile
 
 def add_signal_condor_jobs(idx, frange, sample, signal):
+    sig_outname = 'AHtoTT' if signal == parser.get_default('signal') else signal
     condorfile = """
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_{SIGNAL}_out_{IDX}.coffea
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --signal={SIGNAL} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_{SIGOUTNAME}_out_{IDX}.coffea
 Queue
-""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir, SIGOUTNAME=sig_outname)
     return condorfile
 
 def add_condor_jobs(idx, frange, sample):
@@ -91,32 +92,31 @@ for sample in samples_to_use:
     splitting = tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
     if analyzer == 'htt_signal_reweight':
-        signals_to_use = [sig.strip('\n') for sig in open('inputs/signal_opts.txt', 'r') if not sig.startswith('#')] if args.signal is None else [args.signal]
-        for signal in signals_to_use:
-                ## make batch_job.sh file
-            batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, signal)
-            if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
-            batch_cmd = create_batch_job()
-            batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
-            batch_conf.write(batch_cmd)
-            batch_conf.close()
-            
-                ## make condor.jdl file
-            condor_cmd = base_condor_jdl()
+            ## make batch_job.sh file
+        batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, args.signal) if not args.signal == parser.get_default('signal') else '%s/%s/%s_AHtoTT' % (proj_dir, jobdir, sample_name)
+        if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
+        batch_cmd = create_batch_job()
+        batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
+        batch_conf.write(batch_cmd)
+        batch_conf.close()
+        
+            ## make condor.jdl file
+        condor_cmd = base_condor_jdl()
 
-            for idx, chunk in enumerate(file_chunks):
-                condor_cmd += add_signal_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0], signal)
+        for idx, chunk in enumerate(file_chunks):
+            condor_cmd += add_signal_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0], args.signal)
 
-            condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
-            condor_conf.write(condor_cmd)
-            condor_conf.close()
+        condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
+        condor_conf.write(condor_cmd)
+        condor_conf.close()
 
-            # submit job
-            if args.submit:
-                orig_dir = os.getcwd()
-                print('\nSubmitting jobs for %s' % signal)
-                os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
-                os.system('cd ' + orig_dir)
+        #set_trace()
+        # submit job
+        if args.submit:
+            orig_dir = os.getcwd()
+            print('\nSubmitting jobs for %s' % args.signal) if not args.signal == parser.get_default('signal') else print('\nSubmitting jobs for all signal')
+            os.system('cd ' + batch_dir + ' && condor_submit condor.jdl')
+            os.system('cd ' + orig_dir)
 
     else:
             ## make batch_job.sh file

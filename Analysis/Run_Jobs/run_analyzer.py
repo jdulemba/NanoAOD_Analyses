@@ -14,7 +14,7 @@ parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify whic
 parser.add_argument('--sample', type=str, help='String used to specify which samples to run, can be name or regex.')
 parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-parser.add_argument('--signal', type=str, help='Signal sample to use')
+parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex formatting.')
 parser.add_argument('--evt_sys', type=str, default='NONE', help='Specify event systematics to run, will be capitalized. Default is NONE')
 parser.add_argument('--rewt_sys', type=str, default='NONE', help='Specify reweighting systematics to run, will be capitalized. Default is NONE')
 parser.add_argument('--only_sys', type=int, default=0, help='Only run specified systematics and not nominal weights (nosys)')
@@ -71,7 +71,7 @@ else:
         if args.outfname:
             cfname = args.outfname
         elif args.signal and args.sample:
-            cfname = '%s/%s_%s_%sto%s.coffea' % (outdir, args.signal, args.sample, file_start, file_stop)
+            cfname = '%s/%s_%s_%sto%s.coffea' % (outdir, args.signal, args.sample, file_start, file_stop) if not args.signal == parser.get_default('signal') else '%s/AHtoTT_%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
         elif args.sample:
             cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
         else:
@@ -81,7 +81,7 @@ else:
         if args.outfname:
             cfname = args.outfname
         elif args.signal and args.sample:
-            cfname = '%s/%s_%s_%s_%s.test.coffea' % (outdir, args.signal, args.sample, args.year, analyzer)
+            cfname = '%s/%s_%s_%s_%s.test.coffea' % (outdir, args.signal, args.sample, args.year, analyzer) if not args.signal == parser.get_default('signal') else '%s/AHtoTT_%s_%s_%s.test.coffea' % (outdir, args.sample, args.year, analyzer)
         elif args.sample:
             cfname = '%s/%s_%s_%s.test.coffea' % (outdir, args.sample, args.year, analyzer)
         else:
@@ -102,13 +102,12 @@ if analyzer == 'htt_signal_reweight':
             REWTSYS=args.rewt_sys.upper(),
         )
     opts += " --only_sys=%i" % args.only_sys
-    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {SIGNAL} {OUTFNAME} {OPTS}""".format(
+    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} --signal={SIGNAL} {OPTS}""".format(
             PROJDIR=proj_dir,
             ANALYZER=analyzer,
             FSET=fileset,
             YEAR=args.year,
             SIGNAL=args.signal,
-            #OUTFNAME='_'.join([cfname.split('.coffea')[0], args.signal])+'.coffea',
             OUTFNAME=cfname,
             OPTS=opts
     )
