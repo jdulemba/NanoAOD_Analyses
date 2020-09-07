@@ -14,6 +14,7 @@ from rootpy.io import root_open
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
+parser.add_argument('--smooth', action='store_true', help='Use lowess for template smoothing.')
 parser.add_argument('--njets', default='all', nargs='?', choices=['3', '4+', 'all'], help='Specify which jet multiplicity to use.')
 parser.add_argument('--only_bkg', action='store_true', help='Make background templates only.')
 parser.add_argument('--only_sig', action='store_true', help='Make signal templates only.')
@@ -26,6 +27,29 @@ if (args.njets == '3') or (args.njets == 'all'):
     njets_to_run += ['3Jets']
 if (args.njets == '4+') or (args.njets == 'all'):
     njets_to_run += ['4PJets']
+
+if args.smooth:
+    import statsmodels.nonparametric.smoothers_lowess as sm
+    LOWESS = sm.lowess
+
+def smoothing(histo, nbinsx, nbinsy):
+        # np array of original bin values
+    histvals = histo.values()[()]
+    xin = np.arange(nbinsx)
+    total_array = np.zeros(nbinsx*nbinsy)
+
+        # loop over each bin of cos theta
+    for ybin in range(nbinsy):
+        yin = histvals[ybin*nbinsx:(ybin+1)*nbinsx]
+        total_array[ybin*nbinsx:(ybin+1)*nbinsx] = LOWESS(yin, xin, frac=2./3, it=1, return_sorted=False)
+
+        # substitute smoothed array into copy of original hist
+    smoothed_histo = histo.copy()
+    for idx in range(nbinsx*nbinsy):
+        smoothed_histo.values()[()][idx] = total_array[idx]
+
+    return smoothed_histo
+
 
 def get_bkg_templates(tmp_rname):
     '''
@@ -106,16 +130,17 @@ def get_bkg_templates(tmp_rname):
                 if 'LEP' in sysname: sysname = sysname.replace('LEP', lepdir[0])
         
                 qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type='Sideband', shape_region='BTAG', norm_region='BTAG', sys=sys)
-        
+
+                    ## write nominal and systematic variations for each topology to file
                 for proc in sorted(set([key[0] for key in qcd_est_histo.values().keys()])):
                     if (proc != 'TT') and onlyTT: continue
                     if (proc == 'data_obs') and not (sys == 'nosys'): continue
                     name = proc+lepdir if proc == 'QCD' else proc
                     print(lep, jmult, sys, name)
-                    #set_trace()
                     outhname = '_'.join([jmult, lepdir, name]) if sys == 'nosys' else '_'.join([jmult, lepdir, name, sysname])
                     template_histo = qcd_est_histo[proc].integrate('process')
-                    #if proc == 'data_obs': set_trace()
+                    if (sys != 'nosys') and (args.smooth):
+                        template_histo = smoothing(template_histo, nbinsx=len(xrebinning)-1, nbinsy=len(yrebinning)-1)
                     upfout[outhname] = hist.export1d(template_histo)
     
     upfout.close()
@@ -203,6 +228,8 @@ def get_sig_templates(tmp_rname):
                         #if (pI == 'Int') and (wt == 'pos'): continue
                         print(lep, jmult, sub_name, sys)
                         sumw, sumw2 = template_histo.values(sumw2=True, overflow='all')[()] # get vals and errors for all bins (including under/overflow)
+                        #if args.smooth:
+                        #    set_trace()
 
                             ## create rootpy hist and rename
                         rtpy_h2d = Hist2D(template_histo.dense_axes()[0].edges(), template_histo.dense_axes()[1].edges())
@@ -233,7 +260,7 @@ def write_correct_template_format(in_fname, isSignal=None):
         mu_3j_keys = [key.name for key in rfile.keys() if '3Jets_mujets' in key.name]
         el_3j_keys = [key.name for key in rfile.keys() if '3Jets_ejets' in key.name]
 
-        fname_3j = '%s/templates_lj_3Jets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
+        fname_3j = '%s/templates_lj_3Jets_%s_smoothed_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year) if args.smooth else '%s/templates_lj_3Jets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
         with root_open(fname_3j, 'w') as rout:
             mu_dir = rout.mkdir('mujets')
             mu_dir.cd()
@@ -263,7 +290,7 @@ def write_correct_template_format(in_fname, isSignal=None):
         mu_4pj_keys = [key.name for key in rfile.keys() if '4PJets_mujets' in key.name]
         el_4pj_keys = [key.name for key in rfile.keys() if '4PJets_ejets' in key.name]
         
-        fname_4pj = '%s/templates_lj_4PJets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
+        fname_4pj = '%s/templates_lj_4PJets_%s_smoothed_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year) if args.smooth else '%s/templates_lj_4PJets_%s_%s_QCD_Est_%s.root' % (outdir, signame, jobid, args.year)
         with root_open(fname_4pj, 'w') as rout:
             mu_dir = rout.mkdir('mujets')
             mu_dir.cd()
