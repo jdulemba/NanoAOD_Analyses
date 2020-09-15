@@ -3,6 +3,7 @@ import coffea.processor.dataframe
 import numpy as np
 import coffea.processor as processor
 import Utilities.systematics as systematics
+import awkward
 
 def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
@@ -33,7 +34,6 @@ def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
     
         ## PS and LHE weights for ttbar events
         if isTTbar:
-            import awkward
             ## PS Weight variations
             # PSWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#PSWeight
             psweights = awkward.JaggedArray.fromcounts(df['nPSWeight'], df['PSWeight'])
@@ -74,43 +74,13 @@ def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
 
     return weights    
 
-def get_gen_weights(df, shift=None, mask=None):
-    'LHEScaleWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#LHE\nPSWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#PSWeight'
 
-    gen_weight = df.genWeight[(mask)]
-
-        ## LHEScale Weight Variations
-    #if shift == 'FACTOR_DW':
-    #    weight = df['LHEScaleWeight'][3][(mask)] # (muR=1, muF=0.5)
-    #elif shift == 'FACTOR_UP':
-    #    weight = df['LHEScaleWeight'][5][(mask)] # (muR=1, muF=2)
-    #if shift == 'RENORM_DW':
-    #    weight = df['LHEScaleWeight'][1][(mask)] # (muR=0.5, muF=1)
-    #elif shift == 'RENORM_UP':
-    #    weight = df['LHEScaleWeight'][7][(mask)] # (muR=2, muF=1)
-    #elif shift == 'RENFACTOR_DW':
-    #    weight = df['LHEScaleWeight'][0][(mask)] # (muR=0.5, muF=0.5)
-    #elif shift == 'RENFACTOR_UP':
-    #    weight = df['LHEScaleWeight'][8][(mask)] # (muR=2, muF=2)
-    #elif shift == 'RENORM_UP_FACTOR_DW':
-    #    weight = df['LHEScaleWeight'][6][(mask)] # (muR=2, muF=0.5)
-    #elif shift == 'RENORM_DW_FACTOR_UP':
-    #    weight = df['LHEScaleWeight'][2][(mask)] # (muR=0.5, muF=2)
-
-    #    ## PS Weight variations
-    #elif shift == 'ISR_DW':
-    #    weight = df['PSWeight'][0][(mask)] # (ISR=0.5, FSR=1)
-    #elif shift == 'ISR_UP':
-    #    weight = df['PSWeight'][2][(mask)] # (ISR=2, FSR=1)
-    #if shift == 'FSR_DW':
-    #    weight = df['PSWeight'][1][(mask)] # (ISR=1, FSR=0.5)
-    #elif shift == 'FSR_UP':
-    #    weight = df['PSWeight'][3][(mask)] # (ISR=1, FSR=2)
-    #else: #nominal
-    #    weight = 1.
-
-    return gen_weight*weight        
-
+def get_pdf_weights(df):
+    if len(sorted(set(df['nLHEPdfWeight']))) > 1:
+        raise ValueError('Differing number of PDF weights for events')
+    pdfweights = awkward.JaggedArray.fromcounts(df['nLHEPdfWeight'], df['LHEPdfWeight'])
+    df['PDFWeights'] = pdfweights
+    
 
 
 def get_toppt_weights(pt1=np.array([-1.]), pt2=np.array([-1.]), shift=None):
