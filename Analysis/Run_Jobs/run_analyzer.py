@@ -57,6 +57,7 @@ for sample in samples_to_use:
 print(fileset)
 
     ## save output to coffea pkl file
+#set_trace()
 if (args.frange).lower() == 'all':
     outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
     if args.outfname:
@@ -70,7 +71,7 @@ else:
         outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
         if args.outfname:
             cfname = args.outfname
-        elif args.signal and args.sample:
+        elif args.signal and args.sample and analyzer == 'htt_signal_reweight':
             cfname = '%s/%s_%s_%sto%s.coffea' % (outdir, args.signal, args.sample, file_start, file_stop) if not args.signal == parser.get_default('signal') else '%s/AHtoTT_%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
         elif args.sample:
             cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
@@ -80,7 +81,7 @@ else:
         outdir = proj_dir
         if args.outfname:
             cfname = args.outfname
-        elif args.signal and args.sample:
+        elif args.signal and args.sample and analyzer == 'htt_signal_reweight':
             cfname = '%s/%s_%s_%s_%s.test.coffea' % (outdir, args.signal, args.sample, args.year, analyzer) if not args.signal == parser.get_default('signal') else '%s/AHtoTT_%s_%s_%s.test.coffea' % (outdir, args.sample, args.year, analyzer)
         elif args.sample:
             cfname = '%s/%s_%s_%s.test.coffea' % (outdir, args.sample, args.year, analyzer)
