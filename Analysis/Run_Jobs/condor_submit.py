@@ -49,7 +49,7 @@ def base_condor_jdl():
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-+MaxRuntime = 36000
++JobFlavour = "testmatch"
 requirements = (OpSysAndVer =?= "CentOS7")
 Proxy_path = {PROXYPATH}
 """.format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
@@ -89,7 +89,7 @@ for sample in samples_to_use:
         # add output, error, log, arguments for each job splitting
     sfiles = open(sample, 'r')
     file_inds = [idx for idx, fname in enumerate([fname.strip('\n') for fname in sfiles if not fname.startswith('#')])]
-    splitting = tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
+    splitting = tools.get_file_splitting('AtoTT') if analyzer == 'htt_signal_reweight' else tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
     if analyzer == 'htt_signal_reweight':
             ## make batch_job.sh file
