@@ -5,7 +5,7 @@
     "QCD*" : 10,
     "data*" : 5,
     "single*" : 5,
-    "[AH]toTTM*" : 10,
+    "[AH]toTT*" : 1,
     "WJets" : 5,
     "ZJets" : 5,
     "[WZ][WZ]" : 5
