@@ -19,6 +19,7 @@ if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, args.jobdir)):
     print('Combined output file %s/%s_TOT.coffea already exists' % (jobdir, args.jobdir))
     import sys; sys.exit()
 
+orig_dir = os.getcwd()
 samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % (jobdir, dirname))]
 
 def check_correctness(jobdir, dump_rescue = False):
@@ -127,8 +128,9 @@ while not escape:
     for sample, (status, sample_njobs) in samples_status.items():
             ## if status is 'RESUB', resubmit jobs to condor
         if status == 'RESUB':
-            os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
+            os.system('cd %s/%s && condor_submit condor.rescue.jdl && cd %s' % (jobdir, sample, orig_dir))
             samples_status[sample] = ('RUNNING', sample_njobs)
+            njobs += sample_njobs
 
             ## if status is 'RUNNING' do nothing, jobs are already running
         elif status == 'RUNNING':
@@ -147,7 +149,7 @@ while not escape:
             isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
             if isCorrect == False: 
                 failed_samples.append(sample)
-                os.system('condor_submit %s/%s/condor.rescue.jdl' % (jobdir, sample))
+                os.system('cd %s/%s && condor_submit condor.rescue.jdl && cd %s' % (jobdir, sample, orig_dir))
             else:
                 finished_samples.append(sample)
         if finished_samples:
