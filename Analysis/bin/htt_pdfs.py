@@ -54,8 +54,6 @@ isTTbar_ = samplename.startswith('ttJets')
 isNominal_ttJets_ = samplename in Nominal_ttJets
 if not isNominal_ttJets_:
     raise ValueError("Only nominal ttJets samples are to be run with this analyzer.")
-#isTTShift_ = isTTbar_ and (samplename.endswith('UP') or samplename.endswith('DOWN') or 'mtop' in samplename)
-#isData_ = samplename.startswith('data')
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
