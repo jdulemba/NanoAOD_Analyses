@@ -20,17 +20,16 @@ sys_mask = re.compile('(?!nosys)')
 
 for hname in ttPS_dict.keys():
     if 'cutflow' in hname: continue
+    print(hname)
     histo = output_dict[hname]
-    #set_trace()
     ps_histo = ttPS_dict[hname]
 
-    #    ## get ttJets_PS hists for nosys
-    #tt_ps_nosys_dict = ps_histo['ttJets_PS*', 'nosys', :, :,:, :]
         ## get ttJets_PS hists for systematic variations
     tt_ps_sys_dict = ps_histo['ttJets_PS*', sys_mask, :, :, :, :]
         ## get all non ttJets_PS hists
     nonTTPS_dict = ps_histo[nonTTPS_mask, :, :, :, :, :]
 
+    #set_trace()
         # add hists to ttJets hist
     histo.add(nonTTPS_dict)
     histo.add(tt_ps_sys_dict)
