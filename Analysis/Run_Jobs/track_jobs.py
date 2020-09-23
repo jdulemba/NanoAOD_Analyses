@@ -11,16 +11,17 @@ proj_dir = os.environ['PROJECT_DIR']
 user = os.environ['USER']
 
 ## once jobs are finished, merge all output coffea files for each sample into one
-jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else '%s/%s' % (proj_dir, args.jobdir)
+jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else os.path.join(proj_dir, args.jobdir)
+jobdir = jobdir[:-1] if jobdir.endswith('/') else jobdir
 if not os.path.isdir(jobdir):
     raise IOError('Directory: %s does not exist' % jobdir)
 
-if os.path.isfile('%s/%s_TOT.coffea' % (jobdir, args.jobdir)):
+if os.path.isfile(os.path.join(jobdir, '%s_TOT.coffea' % args.jobdir)):
     print('Combined output file %s/%s_TOT.coffea already exists' % (jobdir, args.jobdir))
     import sys; sys.exit()
 
 orig_dir = os.getcwd()
-samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir('%s/%s' % (jobdir, dirname))]
+samples = [dirname for dirname in os.listdir(jobdir) if os.path.isdir(os.path.join(jobdir, dirname))]
 
 def check_correctness(jobdir, dump_rescue = False):
     isCorrect = True
@@ -93,7 +94,6 @@ while not escape:
     njobs = 0
     samples_status = {}
 
-    #set_trace()
         ## this loop is just to check how many jobs are still running for each sample
     for sample in samples:
         if sample in finished_samples: continue
@@ -166,5 +166,6 @@ while not escape:
 ## merge all TOT files from each sample into one
 if list(set(tot_files.keys())) == list(set(samples)):
     tot_acc = plot_tools.add_coffea_files(list(tot_files.values()))
-    plot_tools.save_accumulator(tot_acc, '%s/%s_TOT.coffea' % (jobdir, args.jobdir))
+    tot_outname = '%s_TOT.coffea' % args.jobdir.strip('/')
+    plot_tools.save_accumulator(tot_acc, '%s/%s' % (jobdir, tot_outname))
 
