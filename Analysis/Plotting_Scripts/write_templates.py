@@ -1,4 +1,4 @@
-from coffea.util import load
+from coffea.util import load, save
 from pdb import set_trace
 import os
 import Utilities.plot_tools as plt_tools
@@ -9,7 +9,8 @@ import fnmatch
 import Utilities.Plotter as Plotter
 import uproot
 from rootpy.io import root_open
-    
+import coffea.processor as processor    
+import Utilities.systematics as systematics
     
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,23 +33,58 @@ if args.smooth:
     import statsmodels.nonparametric.smoothers_lowess as sm
     LOWESS = sm.lowess
 
-def smoothing(histo, nbinsx, nbinsy):
+
+def smoothing(nominal, template, nbinsx, nbinsy, debug=False):
+    if debug: set_trace()
         # np array of original bin values
-    histvals = histo.values()[()]
+    nom_vals = nominal.values()[()]
+    template_vals = template.values()[()]
     xin = np.arange(nbinsx)
     total_array = np.zeros(nbinsx*nbinsy)
 
         # loop over each bin of cos theta
     for ybin in range(nbinsy):
-        yin = histvals[ybin*nbinsx:(ybin+1)*nbinsx]
+        yin = (template_vals[ybin*nbinsx:(ybin+1)*nbinsx] - nom_vals[ybin*nbinsx:(ybin+1)*nbinsx])/nom_vals[ybin*nbinsx:(ybin+1)*nbinsx] # relative deviation from nominal
+        #yin = template_vals[ybin*nbinsx:(ybin+1)*nbinsx]
         total_array[ybin*nbinsx:(ybin+1)*nbinsx] = LOWESS(yin, xin, frac=2./3, it=1, return_sorted=False)
 
+    if debug: set_trace()
         # substitute smoothed array into copy of original hist
-    smoothed_histo = histo.copy()
+    smoothed_histo = template.copy()
     for idx in range(nbinsx*nbinsy):
-        smoothed_histo.values()[()][idx] = total_array[idx]
+        smoothed_histo.values()[()][idx] = (1+total_array[idx])*nom_vals[idx]
+        #smoothed_histo.values()[()][idx] = total_array[idx]
 
+    if debug: set_trace()
     return smoothed_histo
+
+
+def scale_mtop3gev(nominal, template):
+    ratio_vals = (template.values()[()] - nominal.values()[()])/nominal.values()[()]
+    scaled_vals = ratio_vals*(1./6.)
+    interped_vals = (scaled_vals+1)*nominal.values()[()]
+    interped_histo = nominal.copy()
+    for idx in range(len(interped_vals)):
+        interped_histo.values()[()][idx]  = interped_vals[idx]
+
+    return interped_histo
+
+
+
+def substitute_ttJets(sys_histo, ttJets_histo, ttJets_PS_histo):
+    sys_vals = sys_histo.values()[()]
+    ttJets_vals = ttJets_histo.values()[()]
+    ttJetsPS_vals = ttJets_PS_histo.values()[()]
+
+        # find (sys-ttJets)/ttJets relative deviation and then scale by ttJets_PS
+    scaled_vals = ((sys_vals-ttJets_vals)/ttJets_vals + 1)*ttJetsPS_vals
+    scaled_histo = sys_histo.copy()
+    for idx in range(len(scaled_vals)):
+        scaled_histo.values()[()][idx]  = scaled_vals[idx]
+
+    #set_trace()
+    return scaled_histo
+
 
 
 def get_bkg_templates(tmp_rname):
@@ -85,18 +121,36 @@ def get_bkg_templates(tmp_rname):
     
     nbins = (len(xrebinning)-1)*(len(yrebinning)-1)
     
-        
         ## scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
     ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
     names = [dataset for dataset in sorted(set([key[0] for key in hdict[hname_to_use].values().keys()]))] # get dataset names in hists
     ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
-    
+
+        # use ttJets events that don't have PS weights for dedicated sys samples in 2016    
+    if bkg_ttJets_fname is not None:
+        ttJets_hdict = load(bkg_ttJets_fname)
+        ttJets_histo = ttJets_hdict[hname_to_use] # process, sys, jmult, leptype, btag, lepcat
+        
+            ## rebin x axis
+        ttJets_histo = ttJets_histo.rebin(xaxis_name, new_xbins)
+            ## rebin y axis
+        ttJets_histo = ttJets_histo.rebin(yaxis_name, new_ybins)
+        
+        only_ttJets_names = [dataset for dataset in sorted(set([key[0] for key in ttJets_hdict[hname_to_use].values().keys()]))] # get dataset names in hists
+        only_ttJets_cats = [name for name in only_ttJets_names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
+
+
         ## make groups based on process
     process = hist.Cat("process", "Process", sorting='placement')
     process_cat = "dataset"
 
         # need to save coffea hist objects to file so they can be opened by uproot in the proper format
     upfout = uproot.recreate(tmp_rname, compression=uproot.ZLIB(4)) if os.path.isfile(tmp_rname) else uproot.create(tmp_rname)
+
+    if '3Jets' in njets_to_run:
+        histo_dict_3j = processor.dict_accumulator({'Muon' : {}, 'Electron' :{}})
+    if '4PJets' in njets_to_run:
+        histo_dict_4pj = processor.dict_accumulator({'Muon' : {}, 'Electron' :{}})
 
     for lep in ['Muon', 'Electron']:
         lepdir = 'mujets' if lep == 'Muon' else 'ejets'
@@ -116,17 +170,32 @@ def get_bkg_templates(tmp_rname):
         histo.scale(lumi_correction, axis='dataset')
         histo = histo.group(process_cat, process, process_groups)[:, :, :, lep, :, :].integrate('leptype')
 
+            # use ttJets events that don't have PS weights for dedicated sys samples in 2016    
+        if bkg_ttJets_fname is not None:
+            if len(only_ttJets_cats) > 0:
+                for tt_cat in only_ttJets_cats:
+                    ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+                    ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
+                    lumi_correction.update({tt_cat: ttJets_eff_lumi})
+
+            tt_histo = ttJets_histo.copy()
+            tt_histo.scale(lumi_correction, axis='dataset')
+            tt_histo = tt_histo.group(process_cat, process, {'TT' : ['ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other']})[:, :, :, lep, :, :].integrate('leptype')
+
+
         for jmult in njets_to_run:
             iso_sb    = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
             btag_sb   = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
             double_sb = Plotter.linearize_hist(histo[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag'))
             sig_histo = Plotter.linearize_hist(histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
         
-            for sys in systematics.keys():
+            for sys in sys_to_use.keys():
                 if sys not in histo.axis('sys')._sorted:
                     print('\n\n   Systematic %s not available, skipping\n\n' % sys)
                     continue
-                sysname, onlyTT = systematics[sys]
+
+                #set_trace()
+                sysname, onlyTT = sys_to_use[sys]
                 if 'LEP' in sysname: sysname = sysname.replace('LEP', lepdir[0])
         
                 qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type='Sideband', shape_region='BTAG', norm_region='BTAG', sys=sys)
@@ -139,9 +208,37 @@ def get_bkg_templates(tmp_rname):
                     print(lep, jmult, sys, name)
                     outhname = '_'.join([jmult, lepdir, name]) if sys == 'nosys' else '_'.join([jmult, lepdir, name, sysname])
                     template_histo = qcd_est_histo[proc].integrate('process')
-                    if (sys != 'nosys') and (args.smooth):
-                        template_histo = smoothing(template_histo, nbinsx=len(xrebinning)-1, nbinsy=len(yrebinning)-1)
+                    if (('ue' in sys) or ('hdamp' in sys) or ('mtop' in sys)) and (bkg_ttJets_fname is not None):
+                        tt_lin_histo = Plotter.linearize_hist(tt_histo['TT', 'nosys', jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
+                        tt_lin_histo = tt_lin_histo['TT', 'nosys'].integrate('process').integrate('sys')
+                        template_histo = substitute_ttJets(sys_histo=template_histo, ttJets_histo=tt_lin_histo, ttJets_PS_histo=sig_histo['TT', 'nosys'].integrate('process').integrate('sys'))
+
+                    if ((sys == 'mtop1695') or (sys == 'mtop1755')) and (templates_to_smooth[proc]):
+                        template_histo = scale_mtop3gev(nominal=histo_dict_3j[lep][proc] if jmult == '3Jets' else histo_dict_4pj[lep][proc], template=template_histo)
+                        #set_trace()
+
+                    if (sys != 'nosys') and (args.smooth) and (templates_to_smooth[proc]):
+                        template_histo = smoothing(nominal=histo_dict_3j[lep][proc] if jmult == '3Jets' else histo_dict_4pj[lep][proc], template=template_histo, nbinsx=len(xrebinning)-1, nbinsy=len(yrebinning)-1)#, debug=True if proc=='VV' else False)
+                        #set_trace()
+
+                        ## save template histos to coffea dict
+                    if jmult == '3Jets':
+                        histo_dict_3j[lep][proc if sys == 'nosys' else '%s_%s' % (proc, sys)] = template_histo
+                    if jmult == '4PJets':
+                        histo_dict_4pj[lep][proc if sys == 'nosys' else '%s_%s' % (proc, sys)] = template_histo
+
+                        ## save template histo to root file
                     upfout[outhname] = hist.export1d(template_histo)
+
+    if '3Jets' in njets_to_run:
+        coffea_out_3j = '%s/templates_lj_3Jets_bkg_smoothed_%s_QCD_Est_%s.coffea' % (outdir, jobid, args.year) if args.smooth else '%s/templates_lj_3Jets_bkg_%s_QCD_Est_%s.coffea' % (outdir, jobid, args.year)
+        save(histo_dict_3j, coffea_out_3j)
+        print("%s written" % coffea_out_3j)
+    if '4PJets' in njets_to_run:
+        coffea_out_4pj = '%s/templates_lj_4PJets_bkg_smoothed_%s_QCD_Est_%s.coffea' % (outdir, jobid, args.year) if args.smooth else '%s/templates_lj_4PJets_bkg_%s_QCD_Est_%s.coffea' % (outdir, jobid, args.year)
+        save(histo_dict_4pj, coffea_out_4pj)
+        print("%s written" % coffea_out_4pj)
+
     
     upfout.close()
     print('%s written' % tmp_rname)
@@ -213,8 +310,8 @@ def get_sig_templates(tmp_rname):
                     sub_name = '%s_%s-%s-%s-%s' % (bostype, wt, samtype, widthTOname(width).split('W')[-1]+'pc', mass) if pI == 'Int' else '%s_pos-%s-%s-%s' % (bostype, samtype, widthTOname(width).split('W')[-1]+'pc', mass)
     
                     #set_trace()
-                    for sys in systematics.keys():
-                        sysname, onlyTT = systematics[sys]
+                    for sys in sys_to_use.keys():
+                        sysname, onlyTT = sys_to_use[sys]
                         if onlyTT: continue
                         if sys not in histo.axis('sys')._sorted:
                             print('\n\n   Systematic %s not available, skipping\n\n' % sys)
@@ -331,40 +428,32 @@ if __name__ == '__main__':
     bkg_analyzer = 'htt_btag_iso_cut'
     bkg_input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), bkg_analyzer])
     bkg_fnames = sorted(['%s/%s' % (bkg_input_dir, fname) for fname in os.listdir(bkg_input_dir) if fname.endswith(f_ext)])
+    if args.year == '2016':
+        bkg_ttJets_fname = os.path.join(bkg_input_dir, 'only_ttJets.coffea')
+        #bkg_ttJets_fname = os.path.join(bkg_input_dir, 'BATCH_httBIC_2016_jpt30_ljpt50_MT40_cutBasedEl_only_TTJETS.coffea')
+        if not os.path.isfile(bkg_ttJets_fname):
+            raise ValueError("File %s with ttJets events not found" % bkg_ttJets_fname)
+    else:
+        bkg_ttJets_fname = None
     
     outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), bkg_analyzer, 'Templates'])
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
-        # (name, only TT)
-    systematics = {
-        'nosys' : ('', False),
-        'JES_UP' : ('CMS_scale_j_13TeVUp', False),
-        'JES_DW' : ('CMS_scale_j_13TeVDown', False),
-        'JER_UP' : ('CMS_res_j_13TeVUp', False),
-        'JER_DW' : ('CMS_res_j_13TeVDown', False),
-        'btag_bc_UP' : ('CMS_eff_b_13TeVUp', False),
-        'btag_bc_DW' : ('CMS_eff_b_13TeVDown', False),
-        'btag_l_UP' : ('CMS_fake_b_13TeVUp', False),
-        'btag_l_DW' : ('CMS_fake_b_13TeVDown', False),
-        'Lep_RECOUp' : ('CMS_eff_reco_LEPUp', False),
-        'Lep_RECODown' : ('CMS_eff_reco_LEPDown', False),
-        'Lep_TRIGUp' : ('CMS_eff_trigger_LEPUp', False),
-        'Lep_TRIGDown' : ('CMS_eff_trigger_LEPDown', False),
-        'PileupUp' : ('CMS_pileupUp', False),
-        'PileupDown' : ('CMS_pileupDown', False),
-        'MET_UP' : ('CMS_METunclustered_13TeVUp', False),
-        'MET_DW' : ('CMS_METunclustered_13TeVDown', False),
-        'RENORMUp' : ('QCDscaleMERenorm_TTUp', True),
-        'RENORMDown' : ('QCDscaleMERenorm_TTDown', True),
-        'FACTORUp' : ('QCDscaleMEFactor_TTUp', True),
-        'FACTORDown' : ('QCDscaleMEFactor_TTDown', True),
-        'RENORM_FACTOR_SAMEUp' : ('QCDscaleMERenormFactor_TTUp', True),
-        'RENORM_FACTOR_SAMEDown' : ('QCDscaleMERenormFactor_TTDown', True),
-        'hdampUP' : ('Hdamp_TTUp', True),
-        'hdampDOWN' : ('Hdamp_TTDown', True),
-        'mtopUP' : ('TMassUp', True),
-        'mtopDOWN' : ('TMassDown', True),
+    # get systematics to run
+    sys_to_use = systematics.template_sys_to_name[args.year]
+    # get systematics to smooth
+    templates_to_smooth = {
+        'QCD' : False,
+        'TT' : True,
+        'VV' : False,
+        'TTV' : False,
+        'WJets' : False,
+        'ZJets' : False,
+        'sChannel' : True,
+        'tChannel' : True,
+        'tWChannel' : True,
+        'data_obs' : False,
     }
     
     
