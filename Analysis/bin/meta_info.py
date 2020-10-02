@@ -9,74 +9,26 @@ from Utilities.make_variables import ctstar as ctstar
 from coffea.util import load, save
 import numpy as np
 import coffea.lumi_tools.lumi_tools as lumi_tools
+import Utilities.prettyjson as prettyjson
+import python.MCWeights as MCWeights
 
 parser = ArgumentParser()
-parser.add_argument('frange', type=str, help='Specify start:stop indices for files')
+parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('--sample', type=str, help='Use specific sample')
-parser.add_argument('--fname', type=str, help='Specify output filename')
+parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
 args = parser.parse_args()
 
+# convert input string of fileset dictionary to actual dictionary
+fdict = (args.fset).replace("\'", "\"")
+fileset = prettyjson.loads(fdict)
+
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-analyzer = 'meta_info'
-
-    ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
-if args.sample:
-        ## sample specified
-    if not os.path.isfile('%s/%s.txt' % (indir, args.sample)):
-        raise IOError("File with samples %s.txt not found" % args.sample)
-
-    samples = [args.sample]
-    if args.fname:
-        print("  --- Sample name %s will be overridden by fname %s ---  \n" % (args.sample, args.fname))
-
-else:
-        ## get file that has names for all datasets to use
-    fpath = '/'.join([indir, '%s_inputs.txt' % analyzer])
-    if not os.path.isfile(fpath):
-        raise IOError("File with samples %s_inputs.txt not found" % analyzer)
-    
-    txt_file = open(fpath, 'r')
-    samples = [sample.strip('\n') for sample in txt_file if not sample.startswith('#')]
-    if not samples:
-        raise IOError("No samples found as inputs")
-
-    ## add files to fileset
-fileset = {}
-for sample in samples:
-
-    spath = '/'.join([indir, '%s.txt' % sample])
-    if not os.path.isfile(spath):
-        raise IOError("Sample file %s.txt not found" % sample)
-
-    sfiles = open(spath, 'r')
-    files_to_use = [fname.strip('\n') for fname in sfiles if not fname.startswith('#')]
-
-    if ':' in args.frange:
-        file_start, file_stop = int((args.frange).split(':')[0]), int((args.frange).split(':')[1])
-    else:
-        file_start = 0
-        file_stop = len(files_to_use) if (args.frange).lower() == 'all' else int(args.frange)
-
-    if file_start >= 0 and file_stop <= len(files_to_use):
-        files_to_use = files_to_use[file_start:file_stop]
-    else:
-        raise IOError("The number of root files available for the %s sample is %i. args.frange must be less than or equal to this." % (sample, len(files_to_use) ) )
-
-    #set_trace()
-    fileset[sample] = files_to_use
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
-    def __init__(self, columns=[]):
-
-        #if args.debug: set_trace()
-        ## only get columns that are used
-        self._columns = columns
+    def __init__(self):
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
@@ -92,7 +44,8 @@ class Meta_Analyzer(processor.ProcessorABC):
 
         #set_trace()        
             ## construct dictionary of dictionaries to hold meta info for each sample
-        for sample in samples:
+        #for sample in samples:
+        for sample in fileset.keys():
             histo_dict[sample] = processor.defaultdict_accumulator(int)
             histo_dict['%s_runs_to_lumis' % sample] = processor.value_accumulator(list)
 
@@ -106,10 +59,6 @@ class Meta_Analyzer(processor.ProcessorABC):
     @property
     def accumulator(self):
         return self._accumulator
-
-    @property
-    def columns(self):
-        return self._columns
 
     def process(self, df):
         output = self.accumulator.identity()
@@ -151,10 +100,10 @@ class Meta_Analyzer(processor.ProcessorABC):
             if self.sample_name in self.Nominal_ttJets:
                 genParts = genpsel.process_genParts(df)
 
-                    ## pick gen particles whose mother index == 0
-                gps = genParts[(genParts.momIdx == 0)]
-                tops = gps[(gps.pdgId == 6)]
-                antitops = gps[(gps.pdgId == -6)]
+                #set_trace()
+                    # same requirements as in GenParticleSelector
+                tops = genParts[((genParts.status > 21) & (genParts.status < 30) & (genParts.momIdx != -1) & (genParts.pdgId == 6))]
+                antitops = genParts[((genParts.status > 21) & (genParts.status < 30) & (genParts.momIdx != -1) & (genParts.pdgId == -6))]
 
                 mtt = (tops+antitops).p4.mass.flatten()
                 top_ctstar, tbar_ctstar = ctstar(tops.p4, antitops.p4)
@@ -164,17 +113,11 @@ class Meta_Analyzer(processor.ProcessorABC):
                     output[self.sample_name]['nWeightedEvts_%s' % idx] += (genWeights[(events % 10) == idx] != 0).sum()
 
             if 'LHEPdfWeight' in df.columns:
-                    ## check if there's the same number of pdf weights in every event
-                pdf_wt_list = list(set(df.nLHEPdfWeight))
-                if len(pdf_wt_list) > 1:
-                    print(pdf_wt_list)
-                    return output
-                #set_trace()
-                LHEpdfWeights = df.LHEPdfWeight
-                    ## reshape because it's just a single fucking array instead of array of weights per event
-                LHEpdfWeights = LHEpdfWeights.reshape((df.nLHEPdfWeight[0], events.size))
+                MCWeights.get_pdf_weights(df) # add pdf weights to df
+                LHEpdfWeights = df.PDFWeights
+                pdfwts = np.array(LHEpdfWeights) # convert to numpy so summing of each weight is easier
                     ## get sum of each pdf weight over all events
-                sumLHEpdfWeights = LHEpdfWeights.sum(axis=1)
+                sumLHEpdfWeights = pdfwts.sum()
                 output[self.sample_name]['sumLHEpdfWeights'] += sumLHEpdfWeights
 
 
@@ -184,61 +127,22 @@ class Meta_Analyzer(processor.ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
-# define columns to use (not working currently)
-columns = [
-    'event', 'dataset', 'Pileup_nTrueInt',
-    'genWeight', 'nLHEPdfWeight', 'LHEPdfWeight',
-    'nGenPart', 'GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_mass', 'GenPart_genPartIdxMother', 'GenPart_pdgId'
-]
-
 #set_trace()
 proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
 output = processor.run_uproot_job(fileset,
     treename='Events',
-    processor_instance=Meta_Analyzer(columns=columns),
+    processor_instance=Meta_Analyzer(),
     executor=proc_executor,
     executor_args={
         'workers': 8,
-        #'workers': 4,
         'flatten' : True,
-        'processor_compression' : 5,
+        'compression' : 5,
     },
-    chunksize=50000,
-    #chunksize=500000,
+    chunksize=10000 if args.debug else 100000,
 )
 
 if args.debug: print(output)
 #print(output)
 
-    ## save output to coffea pkl file
-if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-    if args.fname:
-        cfname = '%s/%s.coffea' % (outdir, args.fname)
-    elif args.sample:
-        cfname = '%s/%s.coffea' % (outdir, args.sample)
-    else:
-        cfname = '%s/test_%s.coffea' % (outdir, analyzer)
-else:
-    if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
-        if args.fname:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.fname, file_start, file_stop)
-        elif args.sample:
-            cfname = '%s/%s_%sto%s.coffea' % (outdir, args.sample, file_start, file_stop)
-        else:
-            cfname = '%s/test_%sto%s.coffea' % (outdir, file_start, file_stop)
-    else:
-        outdir = proj_dir
-        if args.fname:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.fname, analyzer)
-        elif args.sample:
-            cfname = '%s/%s_%s.test.coffea' % (outdir, args.sample, analyzer)
-        else:
-            cfname = '%s/%s.test.coffea' % (outdir, analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
-save(output, cfname)
-print('%s has been written' % cfname)
-
+save(output, args.outfname)
+print('%s has been written' % args.outfname)
