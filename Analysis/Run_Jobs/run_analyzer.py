@@ -112,8 +112,7 @@ if analyzer == 'htt_signal_reweight':
             OUTFNAME=cfname,
             OPTS=opts
     )
-
-else:
+elif analyzer == 'htt_btag_iso_cut':
     opts += " --evt_sys={EVTSYS} --rewt_sys={REWTSYS}".format(
             EVTSYS=args.evt_sys.upper(),
             REWTSYS=args.rewt_sys.upper(),
@@ -127,4 +126,15 @@ else:
             OUTFNAME=cfname,
             OPTS=opts
     )
+else:
+    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
+            PROJDIR=proj_dir,
+            ANALYZER=analyzer,
+            FSET=fileset,
+            YEAR=args.year,
+            OUTFNAME=cfname,
+            OPTS=opts
+    )
+
+print('Running command: %s' % run_cmd)
 os.system(run_cmd)
