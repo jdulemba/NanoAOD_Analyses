@@ -44,11 +44,11 @@ hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0
 blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
 
 alpha_corrections = {
-    'E_All' : ('$\\alpha_{E}$ All', '#e41a1c'), ## red,
-    'E_Mtt' : ('$\\alpha_{E}$ Mtt', '#377eb8'), ## blue,
-    'P_All' : ('$\\alpha_{P}$ All', '#4daf4a'), ## green,
-    'P_Mtt' : ('$\\alpha_{P}$ Mtt', '#ff7f00'), ## orange
-    'Uncorrected' : ('Uncorrected', 'black'),
+    'E_All' : ('$\\alpha_{E}$ All', '#e41a1c', 5), ## red,
+    'E_Mtt' : ('$\\alpha_{E}$ Mtt', '#377eb8', 1), ## blue,
+    'P_All' : ('$\\alpha_{P}$ All', '#4daf4a', 1), ## green,
+    'P_Mtt' : ('$\\alpha_{P}$ Mtt', '#ff7f00', 1), ## orange
+    'Uncorrected' : ('Uncorrected', 'black', 1),
 }
 
 
@@ -143,6 +143,7 @@ for hname in variables.keys():
             for idx, label in enumerate(labels):
                 labels[idx] = alpha_corrections[label][0]
                 handles[idx].set_color(alpha_corrections[label][1])
+                handles[idx].set_linewidth(alpha_corrections[label][2])
             # call ax.legend() with the new values
             ax.legend(handles,labels, loc='upper right')
 
