@@ -698,66 +698,26 @@
         "DBSName": "/SingleMuon/Run2017B-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleMuon_2017B",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgMuPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleMuon/Run2017C-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleMuon_2017C",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgMuPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleMuon/Run2017D-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleMuon_2017D",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgMuPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleMuon/Run2017E-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleMuon_2017E",
         "lumimask": "EOY2017ReReco_Collisions17_Part1.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgMuPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleMuon/Run2017F-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleMuon_2017F",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgMuPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
 
 
@@ -766,65 +726,25 @@
         "DBSName": "/SingleElectron/Run2017B-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleElectron_2017B",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgElPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleElectron/Run2017C-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleElectron_2017C",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgElPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleElectron/Run2017D-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleElectron_2017D",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgElPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleElectron/Run2017E-Nano25Oct2019-v1/NANOAOD",
-        "name": "data_SingleElectron_2017E_Part2",
+        "name": "data_SingleElectron_2017E",
         "lumimask": "EOY2017ReReco_Collisions17_Part2.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgElPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     },
     {
         "DBSName": "/SingleElectron/Run2017F-Nano25Oct2019-v1/NANOAOD",
         "name": "data_SingleElectron_2017F",
         "lumimask": "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
-		"splitting" : 500,
-        "options": {
-            "computeWeighted": false,
-            "skims": "trgElPlus3Jets",
-            "globalTag": "94X_dataRun2_v11",
-            "runJEC": true,
-            "isMC": false
-        }
     }
 ]
