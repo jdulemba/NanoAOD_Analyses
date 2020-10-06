@@ -17,7 +17,6 @@ import Utilities.systematics as systematics
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
-#parser.add_argument('--smooth', action='store_true', help='Use lowess for template smoothing.')
 parser.add_argument('--njets', default='all', nargs='?', choices=['3', '4+', 'all'], help='Specify which jet multiplicity to use.')
 parser.add_argument('--only_bkg', action='store_true', help='Make background templates only.')
 parser.add_argument('--only_sig', action='store_true', help='Make signal templates only.')
@@ -31,34 +30,6 @@ if (args.njets == '3') or (args.njets == 'all'):
 if (args.njets == '4+') or (args.njets == 'all'):
     njets_to_run += ['4PJets']
 
-#if args.smooth:
-#    import statsmodels.nonparametric.smoothers_lowess as sm
-#    LOWESS = sm.lowess
-
-
-def smoothing(nominal, template, nbinsx, nbinsy, debug=False):
-    if debug: set_trace()
-        # np array of original bin values
-    nom_vals = nominal.values()[()]
-    template_vals = template.values()[()]
-    xin = np.arange(nbinsx)
-    total_array = np.zeros(nbinsx*nbinsy)
-
-        # loop over each bin of cos theta
-    for ybin in range(nbinsy):
-        yin = (template_vals[ybin*nbinsx:(ybin+1)*nbinsx] - nom_vals[ybin*nbinsx:(ybin+1)*nbinsx])/nom_vals[ybin*nbinsx:(ybin+1)*nbinsx] # relative deviation from nominal
-        #yin = template_vals[ybin*nbinsx:(ybin+1)*nbinsx]
-        total_array[ybin*nbinsx:(ybin+1)*nbinsx] = LOWESS(yin, xin, frac=2./3, it=1, return_sorted=False)
-
-    if debug: set_trace()
-        # substitute smoothed array into copy of original hist
-    smoothed_histo = template.copy()
-    for idx in range(nbinsx*nbinsy):
-        smoothed_histo.values()[()][idx] = (1+total_array[idx])*nom_vals[idx]
-        #smoothed_histo.values()[()][idx] = total_array[idx]
-
-    if debug: set_trace()
-    return smoothed_histo
 
 
 def scale_mtop3gev(nominal, template):
@@ -206,30 +177,23 @@ def get_bkg_templates(tmp_rname):
                     if (proc == 'data_obs') and not (sys == 'nosys'): continue
                     name = proc+lepdir if proc == 'QCD' else proc
                     print(lep, jmult, sys, name)
-                    outhname = '_'.join([jmult, lepdir, name, sys])# if sys == 'nosys' else '_'.join([jmult, lepdir, name, sys])
-                    #outhname = '_'.join([jmult, lepdir, name]) if sys == 'nosys' else '_'.join([jmult, lepdir, name, sysname])
+                    outhname = '_'.join([jmult, lepdir, name, sys])
+
                     template_histo = qcd_est_histo[proc].integrate('process')
                     if (('ue' in sys) or ('hdamp' in sys) or ('mtop' in sys)) and (bkg_ttJets_fname is not None):
                         tt_lin_histo = Plotter.linearize_hist(tt_histo['TT', 'nosys', jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
                         tt_lin_histo = tt_lin_histo['TT', 'nosys'].integrate('process').integrate('sys')
                         template_histo = substitute_ttJets(sys_histo=template_histo, ttJets_histo=tt_lin_histo, ttJets_PS_histo=sig_histo['TT', 'nosys'].integrate('process').integrate('sys'))
 
-                    if ((sys == 'mtop1695') or (sys == 'mtop1755')):# and (templates_to_smooth[proc]):
+                    if ((sys == 'mtop1695') or (sys == 'mtop1755')):
                         template_histo = scale_mtop3gev(nominal=histo_dict_3j[lep]['%s_nosys' % proc] if jmult == '3Jets' else histo_dict_4pj[lep]['%s_nosys' % proc], template=template_histo)
-                        #template_histo = scale_mtop3gev(nominal=histo_dict_3j[lep][proc] if jmult == '3Jets' else histo_dict_4pj[lep][proc], template=template_histo)
                         #set_trace()
-
-                    #if (sys != 'nosys') and (args.smooth) and (templates_to_smooth[proc]):
-                    #    template_histo = smoothing(nominal=histo_dict_3j[lep][proc] if jmult == '3Jets' else histo_dict_4pj[lep][proc], template=template_histo, nbinsx=len(xrebinning)-1, nbinsy=len(yrebinning)-1)#, debug=True if proc=='VV' else False)
-                    #    #set_trace()
 
                         ## save template histos to coffea dict
                     if jmult == '3Jets':
                         histo_dict_3j[lep]['%s_%s' % (proc, sys)] = template_histo
-                        #histo_dict_3j[lep][proc if sys == 'nosys' else '%s_%s' % (proc, sys)] = template_histo
                     if jmult == '4PJets':
                         histo_dict_4pj[lep]['%s_%s' % (proc, sys)] = template_histo
-                        #histo_dict_4pj[lep][proc if sys == 'nosys' else '%s_%s' % (proc, sys)] = template_histo
 
                         ## save template histo to root file
                     upfout[outhname] = hist.export1d(template_histo)
@@ -435,21 +399,21 @@ if __name__ == '__main__':
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
-    # get systematics to run
-    sys_to_use = systematics.template_sys_to_name[args.year]
-    # get systematics to smooth
-    templates_to_smooth = {
-        'QCD' : False,
-        'TT' : True,
-        'VV' : False,
-        'TTV' : False,
-        'WJets' : False,
-        'ZJets' : False,
-        'sChannel' : True,
-        'tChannel' : True,
-        'tWChannel' : True,
-        'data_obs' : False,
-    }
+    ## get systematics to run
+    #sys_to_use = systematics.template_sys_to_name[args.year]
+    ## get systematics to smooth
+    #templates_to_smooth = {
+    #    'QCD' : False,
+    #    'TT' : True,
+    #    'VV' : False,
+    #    'TTV' : False,
+    #    'WJets' : False,
+    #    'ZJets' : False,
+    #    'sChannel' : True,
+    #    'tChannel' : True,
+    #    'tWChannel' : True,
+    #    'data_obs' : False,
+    #}
     
     
     linearize_binning = (
