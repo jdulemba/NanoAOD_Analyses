@@ -418,7 +418,7 @@ def get_ylimits(histo, x_range, mask_zero=True):
     return np.array([min_yval, max_yval])
 
 
-def linearize_hist(histo):
+def linearize_hist(histo, overflow=False):
     from coffea import hist
 
     if histo.dense_dim() != 2:
@@ -444,35 +444,42 @@ def linearize_hist(histo):
         else:
             output_hist.fill(process=key[0], sys=key[1], mtt_ctstar_abs=np.zeros(0), weight=np.zeros(0))
 
-        sumw_2D, sumw2_2D = histo.values(sumw2=True, overflow='all')[key]
+        sumw_2D, sumw2_2D = histo.values(sumw2=True, overflow='all')[key] if overflow else histo.values(sumw2=True)[key]
         sumw_array = sumw_2D.T
         sumw2_array = sumw2_2D.T
 
-            ## combine over and under flow bins from ctstar dim with bins next to them
-        sumw_comb_ct_overflow = np.zeros((sumw_array.shape[0]-2, sumw_array.shape[1]))
-        sumw_comb_ct_overflow[0] = np.add(sumw_array[0], sumw_array[1])
-        sumw_comb_ct_overflow[-1] = np.add(sumw_array[-2], sumw_array[-1])
-        sumw_comb_ct_overflow[1:-1] = sumw_array[2:-2]
+        if overflow:
+                ## combine over and under flow bins from ctstar dim with bins next to them
+            sumw_comb_ct_overflow = np.zeros((sumw_array.shape[0]-2, sumw_array.shape[1]))
+            sumw_comb_ct_overflow[0] = np.add(sumw_array[0], sumw_array[1])
+            sumw_comb_ct_overflow[-1] = np.add(sumw_array[-2], sumw_array[-1])
+            sumw_comb_ct_overflow[1:-1] = sumw_array[2:-2]
+    
+            sumw2_comb_ct_overflow = np.zeros((sumw2_array.shape[0]-2, sumw2_array.shape[1]))
+            sumw2_comb_ct_overflow[0] = np.add(sumw2_array[0], sumw2_array[1])
+            sumw2_comb_ct_overflow[-1] = np.add(sumw2_array[-2], sumw2_array[-1])
+            sumw2_comb_ct_overflow[1:-1] = sumw2_array[2:-2]
+    
+                ## combine over and under flow bins from mtt dim with bins next to them
+            sumw_comb_mtt_overflow = np.zeros((nbinsx, nbinsy))
+            sumw_comb_mtt_overflow[0] = np.add(sumw_comb_ct_overflow.T[0], sumw_comb_ct_overflow.T[1])
+            sumw_comb_mtt_overflow[-1] = np.add(sumw_comb_ct_overflow.T[-2], sumw_comb_ct_overflow.T[-1])
+            sumw_comb_mtt_overflow[1:-1] = sumw_comb_ct_overflow.T[2:-2]
+    
+            sumw2_comb_mtt_overflow = np.zeros((nbinsx, nbinsy))
+            sumw2_comb_mtt_overflow[0] = np.add(sumw2_comb_ct_overflow.T[0], sumw2_comb_ct_overflow.T[1])
+            sumw2_comb_mtt_overflow[-1] = np.add(sumw2_comb_ct_overflow.T[-2], sumw2_comb_ct_overflow.T[-1])
+            sumw2_comb_mtt_overflow[1:-1] = sumw2_comb_ct_overflow.T[2:-2]
+    
+                ## fill bins
+            for ybin in range(nbinsy):
+                output_hist.values(sumw2=True)[key][0][nbinsx*ybin:nbinsx*(ybin+1)] = sumw_comb_mtt_overflow.T[ybin]
+                output_hist.values(sumw2=True)[key][1][nbinsx*ybin:nbinsx*(ybin+1)] = sumw2_comb_mtt_overflow.T[ybin]
 
-        sumw2_comb_ct_overflow = np.zeros((sumw2_array.shape[0]-2, sumw2_array.shape[1]))
-        sumw2_comb_ct_overflow[0] = np.add(sumw2_array[0], sumw2_array[1])
-        sumw2_comb_ct_overflow[-1] = np.add(sumw2_array[-2], sumw2_array[-1])
-        sumw2_comb_ct_overflow[1:-1] = sumw2_array[2:-2]
-
-            ## combine over and under flow bins from mtt dim with bins next to them
-        sumw_comb_mtt_overflow = np.zeros((nbinsx, nbinsy))
-        sumw_comb_mtt_overflow[0] = np.add(sumw_comb_ct_overflow.T[0], sumw_comb_ct_overflow.T[1])
-        sumw_comb_mtt_overflow[-1] = np.add(sumw_comb_ct_overflow.T[-2], sumw_comb_ct_overflow.T[-1])
-        sumw_comb_mtt_overflow[1:-1] = sumw_comb_ct_overflow.T[2:-2]
-
-        sumw2_comb_mtt_overflow = np.zeros((nbinsx, nbinsy))
-        sumw2_comb_mtt_overflow[0] = np.add(sumw2_comb_ct_overflow.T[0], sumw2_comb_ct_overflow.T[1])
-        sumw2_comb_mtt_overflow[-1] = np.add(sumw2_comb_ct_overflow.T[-2], sumw2_comb_ct_overflow.T[-1])
-        sumw2_comb_mtt_overflow[1:-1] = sumw2_comb_ct_overflow.T[2:-2]
-
-            ## fill bins
-        for ybin in range(nbinsy):
-            output_hist.values(sumw2=True)[key][0][nbinsx*ybin:nbinsx*(ybin+1)] = sumw_comb_mtt_overflow.T[ybin]
-            output_hist.values(sumw2=True)[key][1][nbinsx*ybin:nbinsx*(ybin+1)] = sumw2_comb_mtt_overflow.T[ybin]
+        else:
+                ## fill bins
+            for ybin in range(nbinsy):
+                output_hist.values(sumw2=True)[key][0][nbinsx*ybin:nbinsx*(ybin+1)] = sumw_array[ybin]
+                output_hist.values(sumw2=True)[key][1][nbinsx*ybin:nbinsx*(ybin+1)] = sumw2_array[ybin]
 
     return output_hist
