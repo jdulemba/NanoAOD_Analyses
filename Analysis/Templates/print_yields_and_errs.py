@@ -1,30 +1,19 @@
 #! /bin/env python
 
-from coffea.util import load#, save
+from coffea.util import load
 from pdb import set_trace
 import os
 import Utilities.prettyjson as prettyjson
 import numpy as np
-#import fnmatch
-#import Utilities.systematics as systematics
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
-parser.add_argument('--njets', default='all', nargs='?', choices=['3', '4+', 'all'], help='Specify which jet multiplicity to use.')
-parser.add_argument('--only_bkg', action='store_true', help='Make background templates only.')
-parser.add_argument('--only_sig', action='store_true', help='Make signal templates only.')
 
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-
-njets_to_run = []
-if (args.njets == '3') or (args.njets == 'all'):
-    njets_to_run += ['3Jets']
-if (args.njets == '4+') or (args.njets == 'all'):
-    njets_to_run += ['4PJets']
 
 
 input_dir = os.path.join(proj_dir, 'Templates', 'results', jobid, args.year)
@@ -59,8 +48,8 @@ proc_to_names = {
     'data_obs_nosys' : 'Data'
 }
 
-yields_out = "& \multicolumn{2}{c}{Muon Channel} & \multicolumn{2}{c}{Electron Channel} \\\ \n\hline\hline \n"
-yields_out += "Process & 3 jets & 4+ jets & 3 jets & 4+ jets \\\ \n\hline \n"
+yields_out = "\multirow{2}{*}{Process} & \multicolumn{2}{c}{Muon Channel} & \multicolumn{2}{c}{Electron Channel} \\\ \n"
+yields_out += " & 3 jets & 4+ jets & 3 jets & 4+ jets \\\ \n\hline\hline \n"
 
 yields = {}
 sumw2s = {}
