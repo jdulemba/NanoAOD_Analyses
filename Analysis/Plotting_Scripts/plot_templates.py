@@ -37,8 +37,8 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'htt_btag_iso_cut'
 
-input_dir = '/'.join([proj_dir, 'plots', '%s_%s/' % (args.year, jobid), analyzer, 'Templates'])
-outdir = '/'.join([input_dir, 'plots', args.lepton])
+input_dir = os.path.join(proj_dir, 'Templates', 'results', jobid, args.year)
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Templates', 'plots', args.lepton)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -57,11 +57,11 @@ baseSys = lambda sys : '_'.join(sys.split('_')[:-1])
 
 templates_names = {
     '3Jets' : {
-        'bkg' : (load('%s/templates_lj_3Jets_bkg_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year)), load('%s/templates_lj_3Jets_bkg_smoothed_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year))),
+        'bkg' : (load(os.path.join(input_dir, 'raw_templates_lj_3Jets_bkg_%s_%s.coffea' % (jobid, args.year))), load(os.path.join(input_dir, 'templates_lj_3Jets_bkg_smoothed_%s_%s.coffea' % (jobid, args.year)))),
         #'sig' : (load('%s/templates_lj_3Jets_sig_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year))),
     },
     '4PJets' : {
-        'bkg' : (load('%s/templates_lj_4PJets_bkg_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year)), load('%s/templates_lj_4PJets_bkg_smoothed_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year))),
+        'bkg' : (load(os.path.join(input_dir, 'raw_templates_lj_4PJets_bkg_%s_%s.coffea' % (jobid, args.year))), load(os.path.join(input_dir, 'templates_lj_4PJets_bkg_smoothed_%s_%s.coffea' % (jobid, args.year)))),
         #'sig' : (load('%s/templates_lj_4PJets_sig_%s_QCD_Est_%s.coffea' % (input_dir, jobid, args.year))),
     },
 }
@@ -84,8 +84,9 @@ for jmult in templates_names.keys():
     if diff:
         raise ValueError("Input templates for smoothed and original distributions not the same for %s" % jmult)
 
-    topologies = sorted(set([key.split('_')[0] for key in orig_keys if not key == 'data_obs']))
-    systs = sorted(set(['_'.join(key.split('_')[1:]) for key in orig_keys if not (key == 'data_obs' or len(key.split('_')) == 1)]))
+    topologies = sorted(set([key.split('_')[0] for key in orig_keys if not ('data_obs' in key)]))
+    systs = sorted(set(['_'.join(key.split('_')[1:]) for key in orig_keys if not ('data_obs' in key or len(key.split('_')) == 1)]))
+    if 'nosys' in systs: systs.remove('nosys')
 
     #set_trace()
     if args.indiv:
@@ -100,7 +101,7 @@ for jmult in templates_names.keys():
                 if not os.path.isdir(pltdir):
                     os.makedirs(pltdir)
     
-                nominal = orig_dict[topo]
+                nominal = orig_dict['%s_nosys' % topo]
                 orig_sys = orig_dict['%s_%s' % (topo, sys)]
                 smooth_sys = smoothed_dict['%s_%s' % (topo, sys)]
                 #set_trace()
@@ -173,6 +174,8 @@ for jmult in templates_names.keys():
         #for sys in ['HDAMP', 'MTOP', 'MTOP3GeV', 'UE']:
         #for sys in ['MTOP3GeV']:
         for sys in systypes:
+            if (sys == 'RENORM_DW_FACTOR') or (sys == 'RENORM_UP_FACTOR'): continue
+            if 'sample' in sys: continue
             up_sys = '%s_UP' % sys
             dw_sys = '%s_DW' % sys
             for topo in topologies:
@@ -186,7 +189,7 @@ for jmult in templates_names.keys():
                 up_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == up_sys][0]
                 dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == dw_sys][0]
 
-                nominal = orig_dict[topo]
+                nominal = orig_dict['%s_nosys' % topo]
                 orig_up = orig_dict['%s_%s' % (topo, up_sysname)]
                 orig_dw = orig_dict['%s_%s' % (topo, dw_sysname)]
                 smooth_up = smoothed_dict['%s_%s' % (topo, up_sysname)]
