@@ -77,7 +77,7 @@ class Meta_Analyzer(processor.ProcessorABC):
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
             output[self.sample_name]['nEvents'] += events[LumiMask].size
-            output[self.sample_name]['nWeightedEvts'] += events[LumiMask].size
+            output[self.sample_name]['sumGenWeights'] += events[LumiMask].size
 
             if events[LumiMask].size > 0:
                 valid_runs_lumis = np.unique(np.stack((runs[LumiMask], lumis[LumiMask]), axis=1), axis=0) ## make 2D array of uniqe valid [[run, lumi], [run, lumi]...] pairs
@@ -93,7 +93,6 @@ class Meta_Analyzer(processor.ProcessorABC):
             output[self.sample_name]['nEvents'] += events.size
 
             genWeights = df.genWeight
-            output[self.sample_name]['nWeightedEvts'] += (genWeights != 0).sum()
             output[self.sample_name]['sumGenWeights'] += genWeights.sum()
 
                 ## create mtt vs cos theta* dists for nominal ttJets
@@ -110,7 +109,7 @@ class Meta_Analyzer(processor.ProcessorABC):
 
                 for idx in range(10):
                     output['mtt_topctstar'].fill(dataset=self.sample_name, evtIdx='%s' % idx, mtt=mtt[(events % 10) == idx], ctstar=top_ctstar[(events % 10) == idx])
-                    output[self.sample_name]['nWeightedEvts_%s' % idx] += (genWeights[(events % 10) == idx] != 0).sum()
+                    output[self.sample_name]['sumGenWeights_%s' % idx] += (genWeights[(events % 10) == idx]).sum()
 
             if 'LHEPdfWeight' in df.columns:
                 MCWeights.get_pdf_weights(df) # add pdf weights to df
