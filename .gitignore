@@ -12,4 +12,4 @@ Analysis/BATCH*
 Analysis/con_*
 Analysis/signal_scripts/results
 Analysis/signal_scripts/inputs/ttJets_inputs
-Analysis/signal_scripts/inputs/signal/signal_dists*
+Analysis/signal_scripts/inputs/signal/signal_*
