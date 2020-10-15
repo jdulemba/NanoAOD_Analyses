@@ -37,10 +37,6 @@ ttWlnu
 ttWqq
 ttZll
 ttZqq
-#W1Jets
-#W2Jets
-#W3Jets
-#W4Jets
 WJets
 WW
 WZ
@@ -70,3 +66,7 @@ ttJetsSL_mtopDOWN
 ttJetsSL_mtopUP
 ttJetsSL_ueDOWN
 ttJetsSL_ueUP
+#W1Jets
+#W2Jets
+#W3Jets
+#W4Jets
