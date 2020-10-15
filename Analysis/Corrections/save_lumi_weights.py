@@ -6,11 +6,11 @@ import Utilities.prettyjson as prettyjson
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 
-outdir = '%s/Corrections/%s' % (proj_dir, jobid)
+outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-data_lumi =  prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read()) # file with integrated luminosity for all three years
+data_lumi = prettyjson.loads(open(os.path.join(proj_dir,'inputs', 'lumis_data.json')).read()) # file with integrated luminosity for all three years
 
 lumi_weights = {
     '2016' : {
@@ -28,45 +28,37 @@ lumi_weights = {
 }
 
 proj_dir = os.environ['PROJECT_DIR']
-signal_fname = '%s/signal_scripts/results/signal_effLumi_inds12.coffea' % proj_dir
-signalExists = os.path.isfile(signal_fname)
-if signalExists:
-    signal = load(signal_fname)
 
-# for each year, read nWeightedEvts from all meta.json files
+# for each year, read sumGenWeights from all meta.json files
 for year in ['2016', '2017', '2018']:
+    print(year)
     if year == '2016':
         Nominal_ttJets = ['ttJets_PS']#, 'ttJets']
     else:
         Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
-    xsec_file = prettyjson.loads(open('%s/inputs/samples_%s.json' % (proj_dir, year)).read()) # file with cross sections
-    samples = sorted([fname.split('.')[0] for fname in os.listdir('%s/inputs/%s_%s/' % (proj_dir, year, jobid)) if fname.endswith('.meta.json')])
+    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year)).read()) # file with cross sections
+    samples = sorted([fname.split('.')[0] for fname in os.listdir(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid))) if fname.endswith('.meta.json')])
     for sample in samples:
+        print('    %s' % sample)
         if sample in Nominal_ttJets:
-            meta_json = prettyjson.loads(open('%s/inputs/%s_%s/%s.meta.json' % (proj_dir, year, jobid, sample)).read())
-            nWeightedEvts = sum([meta_json["nWeightedEvts_%i" % idx] for idx in range(3, 10)])
+            #set_trace()
+            meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())
+            sumGenWeights_nominal = sum([meta_json["sumGenWeights_%i" % idx] for idx in range(3, 10)]) # get evtIdx 3-9
+            sumGenWeights_signal = sum([meta_json["sumGenWeights_%i" % idx] for idx in [1, 2]])
         else:
-            nWeightedEvts = prettyjson.loads(open('%s/inputs/%s_%s/%s.meta.json' % (proj_dir, year, jobid, sample)).read())["nWeightedEvts"]
+            sumGenWeights = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())["sumGenWeights"]
         xsec = [info['xsection'] for info in xsec_file if info['name'] == sample ][0]
         for lep in ['Electrons', 'Muons']:
-            lumi_weights[year][lep][sample] = data_lumi[year][lep]/(nWeightedEvts/xsec)
-
-    if signalExists:
-        for sig in signal[year].keys():
-            effLumi_pos = signal[year][sig]['pos']
-            if 'Int' in sig:
-                effLumi_neg = signal[year][sig]['neg']
-                for lep in ['Electrons', 'Muons']:
-                    lumi_weights[year][lep]['%s_neg' % sig] = data_lumi[year][lep]/effLumi_neg
-                    lumi_weights[year][lep]['%s_pos' % sig] = data_lumi[year][lep]/effLumi_pos
+            if sample in Nominal_ttJets:
+                lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights_nominal/xsec)
+                lumi_weights[year][lep]['signal'] = data_lumi[year][lep]/(sumGenWeights_signal/xsec)
             else:
-                for lep in ['Electrons', 'Muons']:
-                    lumi_weights[year][lep]['%s_pos' % sig] = data_lumi[year][lep]/effLumi_pos
-            
+                lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
     print("%s calculated" % year)
 
+#set_trace()
     # save files
-mcweights_name = '%s/MC_LumiWeights_IgnoreSigEvts.coffea' % outdir
+mcweights_name = os.path.join(outdir, 'MC_LumiWeights_IgnoreSigEvts.coffea')
 save(lumi_weights, mcweights_name)
 print('\n', mcweights_name, 'written')
