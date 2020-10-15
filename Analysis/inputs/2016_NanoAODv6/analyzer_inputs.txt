@@ -58,3 +58,13 @@ ttJets_fsrUP
 ttJets_fsrDOWN
 ttJets_mtop1695
 ttJets_mtop1755
+#singletbar_tchannel
+#singletbar_tW
+#singlet_schannel
+#singlet_tchannel
+#singlet_tW
+#ttJets
+#W1Jets
+#W2Jets
+#W3Jets
+#W4Jets
