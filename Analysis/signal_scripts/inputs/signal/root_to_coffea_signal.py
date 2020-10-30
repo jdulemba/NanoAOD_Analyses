@@ -2,10 +2,16 @@ from coffea.lookup_tools.root_converters import convert_histo_root_file
 from coffea.lookup_tools.dense_lookup import dense_lookup
 from pdb import set_trace
 from coffea.util import save
+import os
 
-#fname = 'signal_dists'
-fname = 'signal_genweights'
-rfile = '%s.root' % fname
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('input', help='Name of input root file')
+parser.add_argument('--outname', help='Name of output coffea file')
+args = parser.parse_args()
+
+rfile = args.input if args.input.endswith('.root') else '%s.root' % args.input
+if not os.path.isfile(rfile): raise ValueError('%s not found' % rfile)
 
 signals = convert_histo_root_file(rfile)
 
@@ -45,7 +51,6 @@ for topo in topologies:
     output_dict.update(topo_dict)
 
 #set_trace()
-outname = '%s.coffea' % fname
-#outname = 'signal_dists.coffea'
+outname = '%s.coffea' % args.outname if args.outname else 'signal_%s.coffea' % rfile.split('.')[0]
 save(output_dict, outname)
 print('%s written' % outname)
