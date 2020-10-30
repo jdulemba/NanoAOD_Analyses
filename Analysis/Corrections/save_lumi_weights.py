@@ -30,12 +30,14 @@ lumi_weights = {
 proj_dir = os.environ['PROJECT_DIR']
 
 # for each year, read sumGenWeights from all meta.json files
+#for year in ['2017']: only for testing NanoAODv7
 for year in ['2016', '2017', '2018']:
     print(year)
     if year == '2016':
         Nominal_ttJets = ['ttJets_PS']#, 'ttJets']
     else:
         Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+    #xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_NanoAODv7.json' % year)).read()) # file with cross sections, only for testing NanoAODv7
     xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year)).read()) # file with cross sections
     samples = sorted([fname.split('.')[0] for fname in os.listdir(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid))) if fname.endswith('.meta.json')])
     for sample in samples:
@@ -45,13 +47,17 @@ for year in ['2016', '2017', '2018']:
             meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())
             sumGenWeights_nominal = sum([meta_json["sumGenWeights_%i" % idx] for idx in range(3, 10)]) # get evtIdx 3-9
             sumGenWeights_signal = sum([meta_json["sumGenWeights_%i" % idx] for idx in [1, 2]])
+            sumGenWeights_nominal_inds12 = sum([meta_json["sumGenWeights_%i" % idx] for idx in [1, 2]])
+            sumGenWeights_nominal_inds0 = sum([meta_json["sumGenWeights_%i" % idx] for idx in [0]])
         else:
             sumGenWeights = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())["sumGenWeights"]
         xsec = [info['xsection'] for info in xsec_file if info['name'] == sample ][0]
         for lep in ['Electrons', 'Muons']:
             if sample in Nominal_ttJets:
                 lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights_nominal/xsec)
-                lumi_weights[year][lep]['signal'] = data_lumi[year][lep]/(sumGenWeights_signal/xsec)
+                lumi_weights[year][lep]['%s_inds12' % sample] = data_lumi[year][lep]/(sumGenWeights_nominal_inds12/xsec)
+                lumi_weights[year][lep]['%s_inds0' % sample] = data_lumi[year][lep]/(sumGenWeights_nominal_inds0/xsec)
+                lumi_weights[year][lep]['%s_signal' % sample] = data_lumi[year][lep]/(sumGenWeights_signal/xsec)
             else:
                 lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
