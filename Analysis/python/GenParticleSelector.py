@@ -29,7 +29,8 @@ def process_lheParts(df):
         eta=df.LHEPart_eta,
         phi=df.LHEPart_phi,
         mass=df.LHEPart_mass,
-        pdgId=df.LHEPart_pdgId
+        pdgId=df.LHEPart_pdgId,
+        #status=df.LHEPart_status,
     )
 
     return lheParts
