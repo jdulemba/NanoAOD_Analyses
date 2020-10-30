@@ -91,7 +91,7 @@ for sample in samples_to_use:
     file_inds = [idx for idx, fname in enumerate([fname.strip('\n') for fname in sfiles if not fname.startswith('#')])]
     splitting = tools.get_file_splitting('AtoTT') if analyzer == 'htt_signal_reweight' else tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
-    if analyzer == 'htt_signal_reweight':
+    if (analyzer == 'htt_signal_reweight') or (analyzer == 'signal_validation'):
             ## make batch_job.sh file
         batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, args.signal) if not args.signal == parser.get_default('signal') else '%s/%s/%s_AHtoTT' % (proj_dir, jobdir, sample_name)
         if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
