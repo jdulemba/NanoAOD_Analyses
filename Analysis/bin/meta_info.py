@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from coffea import hist
 import coffea.processor as processor
 from pdb import set_trace
