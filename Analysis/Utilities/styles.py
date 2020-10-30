@@ -164,12 +164,12 @@ styles = {
     'AtoTT' : {
         'color' : '#377eb8', # blue
         'linewidth' : 2,
-        'name' : "A $\\rightarrow \mathrm{t\\bar t}$",
+        'name' : "$\mathsf{A \\rightarrow t\\bar t}$",
     },
     'HtoTT' : {
         'color' : '#e41a1c', # red
         'linewidth' : 2,
-        'name' : "H $\\rightarrow \mathrm{t\\bar t}$",
+        'name' : "$\mathsf{H \\rightarrow t\\bar t}$",
     },
     'M400' : { 
         'color' : '#e41a1c', # red
@@ -194,22 +194,22 @@ styles = {
     'W2p5' : { 
         'color' : '#e41a1c', # red
         'linewidth' : 2,
-        'name' : "$\mathrm{\Gamma}$/m=2.5%",
+        'name' : "$\mathsf{\Gamma}$/m=2.5%",
     },
     'W5' : { 
         'color' : '#377eb8', # blue
         'linewidth' : 2,
-        'name' : "$\mathrm{\Gamma}$/m=5%",
+        'name' : "$\mathsf{\Gamma}$/m=5%",
     },
     'W10' : { 
         'color' : 'k', # black
         'linewidth' : 2,
-        'name' : "$\mathrm{\Gamma}$/m=10%",
+        'name' : "$\mathsf{\Gamma}$/m=10%",
     },
     'W25' : { 
         'color' : '#4daf4a', # green
         'linewidth' : 2,
-        'name' : "$\mathrm{\Gamma}$/m=25%",
+        'name' : "$\mathsf{\Gamma}$/m=25%",
     },
 
         ## systematic variations
