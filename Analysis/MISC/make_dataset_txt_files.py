@@ -31,8 +31,8 @@ if not os.path.isfile(args.json):
    raise ValueError('file %s does not exist' % args.json)
 
 outdir = os.path.join(proj_dir, 'inputs', '_'.join(os.path.basename(args.json).split('.')[0].split('_')[1:])) # get name of json file except for 'samples_'
-if not os.path.isdir(outdir): os.path.makedirs(outdir)
 #set_trace()
+if not os.path.isdir(outdir): os.makedirs(outdir)
 
 all_samples = prettyjson.loads(open(args.json).read())
 samples_to_run = list(filter(
@@ -42,10 +42,14 @@ samples_to_run = list(filter(
 if not len(samples_to_run):
     raise RuntimeError('Could not find any sample matching the pattern')
 
+analyzer_inputs = []
 for sample in samples_to_run:
     #set_trace()
     
     if 'DBSName' in sample:
+        if sample['DBSName'] == 'NOT PRESENT': continue
+        if 'Ext' in sample['name']: print("Must combine %s with non-extenstion dataset!" % sample['name'])
+
         txtname = os.path.join(outdir, '%s_tmp.txt' % sample['name']) if args.test else os.path.join(outdir, '%s.txt' % sample['name'])
 
         flist = das.query('file dataset=%s' % sample['DBSName'])#, True)
@@ -56,6 +60,12 @@ for sample in samples_to_run:
         txt_out.write(fnames)
         txt_out.close()
         print("%s written" % txtname)
+        analyzer_inputs.append(sample['name'])
     else:
         raise ValueError("No DBSName found for sample: %s" % sample['name'])
-    
+
+analyzer_inputs_name = os.path.join(outdir, 'analyzer_inputs.txt')
+analyzer_inputs_out = open(analyzer_inputs_name, 'w')
+analyzer_inputs_out.write('\n'.join(analyzer_inputs))
+analyzer_inputs_out.close()
+print("%s written" % analyzer_inputs_name)
