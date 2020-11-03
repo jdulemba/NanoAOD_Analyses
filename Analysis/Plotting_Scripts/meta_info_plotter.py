@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # matplotlib
 import matplotlib.pyplot as plt
 import mplhep as hep
