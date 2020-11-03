@@ -220,14 +220,12 @@
 
     {
         "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": 6077.22,
-        "xsection": 6225.42,
+        "xsection": 6077.22,
         "name": "ZJets"
     },
     {
         "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection_old": 6077.22,
-        "xsection": 6225.42,
+        "xsection": 6077.22,
         "name": "ZJets_Madgraph"
     },
     {
@@ -260,14 +258,12 @@
 
     {
         "DBSName": "/WZ_TuneCP5_13TeV-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": 49.98,
         "xsection": 27.6,
         "name": "WZ"
     },
     {
         "DBSName": "/WW_TuneCP5_13TeV-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": 118.7,
-        "xsection": 75.8,
+        "xsection": 118.7,
         "name": "WW"
     },
     {
@@ -315,8 +311,7 @@
     },
     {
         "DBSName": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 642.508923313466,
+        "xsection": 619.3,
         "name": "QCD_Mu_300to470"
     },
     {
@@ -326,40 +321,38 @@
     },
     {
         "DBSName": "/QCD_Pt-600to800_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 20.347861926081798,
+        "xsection": 18.21,
         "name": "QCD_Mu_600to800"
     },
     {
         "DBSName": "/QCD_Pt-800to1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 3.8060575000746266,
+        "xsection": 3.275,
         "name": "QCD_Mu_800to1000"
     },
     {
         "DBSName": "/QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 1.2998455955156412,
+        "xsection": 1.078,
         "name": "QCD_Mu_1000toInf"
     },
+
     {
         "DBSName": "/QCD_Pt-15to20_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection": 4897000.0,
+        "xsection": 1327000.0,
         "name": "QCD_EM_15to20"
     },
     {
         "DBSName": "/QCD_Pt-20to30_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection": 4897000.0,
+        "xsection": 4908000.0,
         "name": "QCD_EM_20to30"
     },
     {
         "DBSName": "/QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection": 6379000.0,
+        "xsection": 6396000.0,
         "name": "QCD_EM_30to50"
     },
     {
         "DBSName": "/QCD_Pt-50to80_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection": 1984000.0,
+        "xsection": 1989000.0,
         "name": "QCD_EM_50to80"
     },
     {
@@ -379,7 +372,7 @@
     },
     {
         "DBSName": "/QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
-        "xsection": 1097.0,
+        "xsection": 1099.0,
         "name": "QCD_EM_300toInf"
     },
 

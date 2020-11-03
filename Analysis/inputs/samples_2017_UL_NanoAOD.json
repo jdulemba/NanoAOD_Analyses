@@ -172,7 +172,7 @@
 
     {
         "DBSName": "/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
-        "xsection": 0.2198,
+        "xsection": 0.2149,
         "name": "ttWlnu"
     },
     {
@@ -226,14 +226,12 @@
 
     {
         "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v2/NANOAODSIM",
-        "xsection_old": 6077.22,
-        "xsection": 6225.42,
+        "xsection": 6077.22,
         "name": "ZJets"
     },
     {
         "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v2/NANOAODSIM",
-        "xsection_old": 6077.22,
-        "xsection": 6225.42,
+        "xsection": 6077.22,
         "name": "ZJets_Madgraph"
     },
     {
@@ -271,7 +269,7 @@
     },
     {
         "DBSName": "NOT PRESENT",
-        "xsection": 75.8,
+        "xsection": 118.7,
         "name": "WW"
     },
     {
@@ -319,8 +317,7 @@
     },
     {
         "DBSName": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 642.508923313466,
+        "xsection": 619.3,
         "name": "QCD_Mu_300to470"
     },
     {
@@ -330,20 +327,17 @@
     },
     {
         "DBSName": "/QCD_Pt-600to800_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 20.347861926081798,
+        "xsection": 18.21,
         "name": "QCD_Mu_600to800"
     },
     {
         "DBSName": "/QCD_Pt-800to1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 3.8060575000746266,
+        "xsection": 3.275,
         "name": "QCD_Mu_800to1000"
     },
     {
         "DBSName": "/QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v2/NANOAODSIM",
-        "xsection_old": "missing",
-        "xsection": 1.2998455955156412,
+        "xsection": 1.078,
         "name": "QCD_Mu_1000toInf"
     },
 
