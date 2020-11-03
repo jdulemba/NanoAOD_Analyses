@@ -36,7 +36,7 @@ fileset = prettyjson.loads(fdict)
 if args.year == '2016':
     Nominal_ttJets = ['ttJets_PS', 'ttJets']
 else:
-    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+    Nominal_ttJets = ['ttJetsSL']#, 'ttJetsHad', 'ttJetsDiLep']
 isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
@@ -180,7 +180,7 @@ class permProbComputer(processor.ProcessorABC):
         }
 
             ## object selection
-        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
         output['cutflow']['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
         selection.add('jets_3', df['Jet'].counts == 3)
         selection.add('jets_4p', df['Jet'].counts > 3)
@@ -189,16 +189,6 @@ class permProbComputer(processor.ProcessorABC):
         selection.add('jets_6p', df['Jet'].counts >= 6)
         selection.add('objselection', objsel_evts)
         selection.add('btag_pass', df['Jet'][btag_wp].sum() >= 2)
-
-        # don't use ttbar events with indices % 10 == 0, 1, 2
-        if self.sample_name in Nominal_ttJets:
-            events = df.event
-            selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1)) 
-            for lepton in regions.keys():
-                for lepcat in regions[lepton].keys():
-                    for jmult in regions[lepton][lepcat].keys():
-                        sel = regions[lepton][lepcat][jmult]
-                        sel.update({'keep_ttbar'})
 
             # sort jets by btag value
         df['Jet'] = df['Jet'][df['Jet']['btagDeepB'].argsort(ascending=False)] if btagger == 'DeepCSV' else df['Jet'][df['Jet']['btagDeepFlavB'].argsort(ascending=False)]
@@ -218,12 +208,33 @@ class permProbComputer(processor.ProcessorABC):
         if 'LeptonSF' in corrections.keys():
             tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-            evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
+            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
                 pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
+            mu_reco_cen = np.ones(df.size)
+            mu_reco_err = np.zeros(df.size)
+            mu_trig_cen = np.ones(df.size)
+            mu_trig_err = np.zeros(df.size)
+            mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
+            mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
+            mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
+            mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
+            evt_weights.add('Muon_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+            evt_weights.add('Muon_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+
             tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-            evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
+            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
                 pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
+            el_reco_cen = np.ones(df.size)
+            el_reco_err = np.zeros(df.size)
+            el_trig_cen = np.ones(df.size)
+            el_trig_err = np.zeros(df.size)
+            el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
+            el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
+            el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
+            el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
+            evt_weights.add('Electron_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+            evt_weights.add('Electron_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
 
             # find gen level particles for ttbar system
         #set_trace()
@@ -260,18 +271,17 @@ class permProbComputer(processor.ProcessorABC):
                         test_perms = tperm.find_permutations(jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], MET=df['MET'][cut], btagWP=btag_wp)
                         matched_perm = ttmatcher.best_match(gen_hyp=GenTTbar[cut], jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], met=df['MET'][cut])
 
-                        evt_weights_to_use = evt_weights.weight()
                         ## apply lepton SFs to MC (only applicable to tight leptons)
                         if 'LeptonSF' in corrections.keys():
-                            evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
+                            wts = evt_weights.partial_weight(exclude=['Electron_RECO', 'Electron_TRIG']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_RECO', 'Muon_TRIG']) # exclude SF from other lepton
 
                         #set_trace()
                         if jmult == '3Jets':
-                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=df['Jet'][cut][MTHigh], tps=test_perms[MTHigh], mp=matched_perm[MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
-                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=df['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
+                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=df['Jet'][cut][MTHigh], tps=test_perms[MTHigh], mp=matched_perm[MTHigh], evt_weights=wts[cut][MTHigh])
+                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=df['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[cut][~MTHigh])
                         else:
-                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=df['Jet'][cut][MTHigh], tps=test_perms[MTHigh], mp=matched_perm[MTHigh], evt_weights=evt_weights_to_use[cut][MTHigh])
-                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow', jets=df['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=evt_weights_to_use[cut][~MTHigh])
+                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=df['Jet'][cut][MTHigh], tps=test_perms[MTHigh], mp=matched_perm[MTHigh], evt_weights=wts[cut][MTHigh])
+                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow', jets=df['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[cut][~MTHigh])
 
         return output
 
@@ -362,8 +372,6 @@ output = processor.run_uproot_job(fileset,
 
 if args.debug:
     print(output)
-#set_trace()
-#print(output['cutflow'])
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
