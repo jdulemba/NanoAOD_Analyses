@@ -1,6 +1,7 @@
 from coffea.util import load, save
 from pdb import set_trace
 import os
+from fnmatch import fnmatch
 import Utilities.prettyjson as prettyjson
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -30,41 +31,32 @@ lumi_weights = {
 proj_dir = os.environ['PROJECT_DIR']
 
 # for each year, read sumGenWeights from all meta.json files
-#for year in ['2017']: only for testing NanoAODv7
-for year in ['2016', '2017', '2018']:
+for year in ['2017', '2018']: # only for testing UL NanoAOD
+#for year in ['2016', '2017', '2018']:
     print(year)
-    if year == '2016':
-        Nominal_ttJets = ['ttJets_PS']#, 'ttJets']
-    else:
-        Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
-    #xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_NanoAODv7.json' % year)).read()) # file with cross sections, only for testing NanoAODv7
-    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year)).read()) # file with cross sections
-    samples = sorted([fname.split('.')[0] for fname in os.listdir(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid))) if fname.endswith('.meta.json')])
-    for sample in samples:
+    #set_trace()
+    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_%s.json' % (year, jobid))).read()) # file with cross sections
+    datasets = list(filter(lambda x: fnmatch(x['name'], '*'), xsec_file))
+    for dataset in datasets:
+        sample = dataset['name']
+        if sample.startswith('data_Single'): continue
+        if dataset['DBSName'] == 'NOT PRESENT':
+            print("Dataset %s not present, will be skipped" % sample)
+            continue
+        if not os.path.isfile(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)):
+            print("No meta.json file found for dataset %s, skipping" % sample)
+            continue
         print('    %s' % sample)
-        if sample in Nominal_ttJets:
-            #set_trace()
-            meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())
-            sumGenWeights_nominal = sum([meta_json["sumGenWeights_%i" % idx] for idx in range(3, 10)]) # get evtIdx 3-9
-            sumGenWeights_signal = sum([meta_json["sumGenWeights_%i" % idx] for idx in [1, 2]])
-            sumGenWeights_nominal_inds12 = sum([meta_json["sumGenWeights_%i" % idx] for idx in [1, 2]])
-            sumGenWeights_nominal_inds0 = sum([meta_json["sumGenWeights_%i" % idx] for idx in [0]])
-        else:
-            sumGenWeights = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())["sumGenWeights"]
-        xsec = [info['xsection'] for info in xsec_file if info['name'] == sample ][0]
+        meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid), '%s.meta.json' % sample)).read())
+        sumGenWeights = meta_json["sumGenWeights"]
+        xsec = dataset['xsection']
         for lep in ['Electrons', 'Muons']:
-            if sample in Nominal_ttJets:
-                lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights_nominal/xsec)
-                lumi_weights[year][lep]['%s_inds12' % sample] = data_lumi[year][lep]/(sumGenWeights_nominal_inds12/xsec)
-                lumi_weights[year][lep]['%s_inds0' % sample] = data_lumi[year][lep]/(sumGenWeights_nominal_inds0/xsec)
-                lumi_weights[year][lep]['%s_signal' % sample] = data_lumi[year][lep]/(sumGenWeights_signal/xsec)
-            else:
-                lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
+            lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
     print("%s calculated" % year)
 
 #set_trace()
     # save files
-mcweights_name = os.path.join(outdir, 'MC_LumiWeights_IgnoreSigEvts.coffea')
+mcweights_name = os.path.join(outdir, 'MC_LumiWeights.coffea')
 save(lumi_weights, mcweights_name)
 print('\n', mcweights_name, 'written')
