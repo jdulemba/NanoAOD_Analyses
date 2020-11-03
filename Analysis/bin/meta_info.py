@@ -27,6 +27,7 @@ fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
 proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
@@ -75,7 +76,7 @@ class Meta_Analyzer(processor.ProcessorABC):
         if self.sample_name.startswith('data_Single'):
             runs = df.run
             lumis = df.luminosityBlock
-            Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year))
+            Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson_%s.txt' % (proj_dir, args.year, jobid))
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
             output[self.sample_name]['nEvents'] += events[LumiMask].size
