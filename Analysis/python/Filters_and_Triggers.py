@@ -72,8 +72,7 @@ met_filters["2017"] = [
     "Flag_HBHENoiseIsoFilter",
     "Flag_EcalDeadCellTriggerPrimitiveFilter",
     "Flag_BadPFMuonFilter",
-    #"Flag_ecalBadCalibReducedMINIAODFilter"
-    "Flag_ecalBadCalibFilterV2"
+    #"Flag_ecalBadCalibFilter", ## should not be used now
 ]
 met_filters["2018"] = [
     "Flag_goodVertices",
@@ -82,8 +81,7 @@ met_filters["2018"] = [
     "Flag_HBHENoiseIsoFilter",
     "Flag_EcalDeadCellTriggerPrimitiveFilter",
     "Flag_BadPFMuonFilter",
-    #"Flag_ecalBadCalibReducedMINIAODFilter"
-    "Flag_ecalBadCalibFilterV2"
+    #"Flag_ecalBadCalibFilter", ## should not be used now
 ]
 
 def get_filters(df, year, accumulator=None):
