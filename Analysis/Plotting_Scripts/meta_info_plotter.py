@@ -30,11 +30,6 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'meta_info'
 
-variables = {
-    'mtt' : '$\mathrm{m_{t\\bart}}$ [GeV]',
-    'ctstar' : 'cos($\\theta_{t}^{*}$)'
-}
-
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
 outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer)
@@ -45,11 +40,10 @@ fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir)
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 #set_trace()
 
-isSample = lambda x: ('runs_to_lumis' not in x) and ('mtt_topctstar' not in x) and ('PUDistribution' not in x)
+isSample = lambda x: ('runs_to_lumis' not in x) and ('PUDistribution' not in x)
 samples = sorted([key for key in hdict.keys() if isSample(key)])
 
     # get hists
-mtt_ctstar_histo = hdict['mtt_topctstar']
 PU_histo = hdict['PUDistribution']
 
 if args.dump_lumi:
@@ -112,35 +106,6 @@ for sample in samples:
         fig_pu.savefig(figname_pu)
         print('%s written' % figname_pu)
         plt.close(fig_pu)
-
-                ## mtt vs ctstar
-        if sample not in sorted(set([key[0] for key in mtt_ctstar_histo.values().keys()])): continue
-        xvar, yvar = mtt_ctstar_histo.axes()[-2].name, mtt_ctstar_histo.axes()[-1].name
-        sample_histo = mtt_ctstar_histo[sample].project('evtIdx', xvar, yvar)
-
-            ## plot x projection
-        fig_xproj = plt.figure()
-        x_proj_histo = sample_histo.sum(yvar)
-        x_ax = plot.plot1d(x_proj_histo)
-        x_ax.set_xlabel(variables[xvar])
-        x_ax.set_ylabel('Events')
-        x_ax.legend(fontsize=10, title='%s %s' % (sample, x_proj_histo.axes()[0].label))
-        xfigname = os.path.join(outdir, '%s_%s.png' % (sample, xvar))
-        fig_xproj.savefig(xfigname)
-        print('%s written' % xfigname)
-        plt.close(fig_xproj)
-
-            ## plot y projection
-        fig_yproj = plt.figure()
-        y_proj_histo = sample_histo.sum(xvar)
-        y_ax = plot.plot1d(y_proj_histo)
-        y_ax.set_xlabel(variables[yvar])
-        y_ax.set_ylabel('Events')
-        y_ax.legend(fontsize=10, title='%s %s' % (sample, y_proj_histo.axes()[0].label))
-        yfigname = os.path.join(outdir, '%s_%s.png' % (sample, yvar))
-        fig_yproj.savefig(yfigname)
-        print('%s written' % yfigname)
-        plt.close(fig_yproj)
 
 if args.dump_lumi:
     #set_trace()

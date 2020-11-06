@@ -7,7 +7,6 @@ import os
 from argparse import ArgumentParser
 import coffea.processor.dataframe
 import python.GenParticleSelector as genpsel
-from Utilities.make_variables import ctstar as ctstar
 from coffea.util import load, save
 import numpy as np
 import coffea.lumi_tools.lumi_tools as lumi_tools
@@ -35,29 +34,20 @@ class Meta_Analyzer(processor.ProcessorABC):
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
-        self.evtIdx_axis = hist.Cat("evtIdx", "Event Index % 10")
         self.pu_axis = hist.Bin("pu", "nTrueInt", 200, 0, 200)
-        self.mtt_axis = hist.Bin("mtt", r"$m_{t\\bart}$ [GeV]", 340, 300., 2000.)
-        self.ctstar_axis = hist.Bin("ctstar", r"cos($\theta^{*}$)", 200, -1., 1.)
 
             ## make dictionary of hists
         histo_dict = {}
-        histo_dict['mtt_topctstar'] = hist.Hist("mtt_vs_ctstar", self.dataset_axis, self.evtIdx_axis, self.mtt_axis, self.ctstar_axis)
         histo_dict['PUDistribution'] = hist.Hist("PUDistribution", self.dataset_axis, self.pu_axis)
 
         #set_trace()        
             ## construct dictionary of dictionaries to hold meta info for each sample
-        #for sample in samples:
         for sample in fileset.keys():
             histo_dict[sample] = processor.defaultdict_accumulator(int)
             histo_dict['%s_runs_to_lumis' % sample] = processor.value_accumulator(list)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
-        if args.year == '2016':
-            self.Nominal_ttJets = ['ttJets_PS', 'ttJets']
-        else:
-            self.Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
     
     @property
     def accumulator(self):
@@ -90,29 +80,12 @@ class Meta_Analyzer(processor.ProcessorABC):
                 output['%s_runs_to_lumis' % self.sample_name].add(list(lumi_map.items()))
 
         else:
-
             output['PUDistribution'].fill(dataset=self.sample_name, pu=df.Pileup_nTrueInt)
 
             output[self.sample_name]['nEvents'] += events.size
 
             genWeights = df.genWeight
             output[self.sample_name]['sumGenWeights'] += genWeights.sum()
-
-                ## create mtt vs cos theta* dists for nominal ttJets
-            if self.sample_name in self.Nominal_ttJets:
-                genParts = genpsel.process_genParts(df)
-
-                #set_trace()
-                    # same requirements as in GenParticleSelector
-                tops = genParts[((genParts.status > 21) & (genParts.status < 30) & (genParts.momIdx != -1) & (genParts.pdgId == 6))]
-                antitops = genParts[((genParts.status > 21) & (genParts.status < 30) & (genParts.momIdx != -1) & (genParts.pdgId == -6))]
-
-                mtt = (tops+antitops).p4.mass.flatten()
-                top_ctstar, tbar_ctstar = ctstar(tops.p4, antitops.p4)
-
-                for idx in range(10):
-                    output['mtt_topctstar'].fill(dataset=self.sample_name, evtIdx='%s' % idx, mtt=mtt[(events % 10) == idx], ctstar=top_ctstar[(events % 10) == idx])
-                    output[self.sample_name]['sumGenWeights_%s' % idx] += (genWeights[(events % 10) == idx]).sum()
 
             if 'LHEPdfWeight' in df.columns:
                 MCWeights.get_pdf_weights(df) # add pdf weights to df
