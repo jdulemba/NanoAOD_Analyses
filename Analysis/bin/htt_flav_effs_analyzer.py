@@ -51,12 +51,6 @@ wps_to_use = list(set([jet_pars['permutations']['tightb'], jet_pars['permutation
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
 
-    ## specify ttJets samples
-if args.year == '2016':
-    Nominal_ttJets = ['ttJets_PS', 'ttJets']
-else:
-    Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
-
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Htt_Flav_Effs(processor.ProcessorABC):
@@ -128,7 +122,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         }
 
             ## object selection
-        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, accumulator=output)
+        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
         output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts.sum()
         selection.add('objselection', objsel_evts)
 
@@ -147,12 +141,33 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         if 'LeptonSF' in corrections.keys():
             tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-            evt_weights._weights['Muon_SF'][tight_mu_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
+            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
                 pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
+            mu_reco_cen = np.ones(df.size)
+            mu_reco_err = np.zeros(df.size)
+            mu_trig_cen = np.ones(df.size)
+            mu_trig_err = np.zeros(df.size)
+            mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
+            mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
+            mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
+            mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
+            evt_weights.add('Muon_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+            evt_weights.add('Muon_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+
             tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-            evt_weights._weights['Electron_SF'][tight_el_cut] = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
+            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
                 pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
+            el_reco_cen = np.ones(df.size)
+            el_reco_err = np.zeros(df.size)
+            el_trig_cen = np.ones(df.size)
+            el_trig_err = np.zeros(df.size)
+            el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
+            el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
+            el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
+            el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
+            evt_weights.add('Electron_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+            evt_weights.add('Electron_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
 
         if isTTbar:
             ## add 4+ jets categories for ttbar events
@@ -163,15 +178,6 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             regions['Electron'].update({
                 '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_EL'}
             })
-
-            # don't use ttbar events with indices % 10 == 0, 1, 2
-            if self.sample_name in Nominal_ttJets:
-                events = df.event
-                selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
-                for lepton in regions.keys():
-                    for jmult in regions[lepton].keys():
-                        sel = regions[lepton][jmult]
-                        sel.update({'keep_ttbar'})
 
 
         btag_wps = [wp for wp in df['Jet'].columns if wps_to_use[0] in wp]
