@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser('submit analyzer to the batch queues')
 parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('frange', type=str, help='Specify start:stop indices for files, inclusive. 0:1 means valid files in indices 0 and 1 will be used')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='String used to specify which samples to run, can be name or regex.')
 parser.add_argument('--outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')

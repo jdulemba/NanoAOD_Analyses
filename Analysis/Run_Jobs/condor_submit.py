@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser('submit analyzer to the batch queues')
 parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('jobdir', help='Directory name to be created in nobackup area.')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
 parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex')
