@@ -34,11 +34,13 @@ class Meta_Analyzer(processor.ProcessorABC):
 
             ## make binning for hists
         self.dataset_axis = hist.Cat("dataset", "Event Process")
-        self.pu_axis = hist.Bin("pu", "nTrueInt", 200, 0, 200)
+        self.pu_nTrueInt_axis = hist.Bin("pu_nTrueInt", "nTrueInt", 100, 0, 100)
+        self.pu_nPU_axis = hist.Bin("pu_nPU", "nPU", 100, 0, 100)
 
             ## make dictionary of hists
         histo_dict = {}
-        histo_dict['PUDistribution'] = hist.Hist("PUDistribution", self.dataset_axis, self.pu_axis)
+        histo_dict['PU_nTrueInt'] = hist.Hist("PU_nTrueInt", self.dataset_axis, self.pu_nTrueInt_axis)
+        histo_dict['PU_nPU'] = hist.Hist("PU_nPU", self.dataset_axis, self.pu_nPU_axis)
 
         #set_trace()        
             ## construct dictionary of dictionaries to hold meta info for each sample
@@ -59,7 +61,7 @@ class Meta_Analyzer(processor.ProcessorABC):
         if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
             raise IOError("This function only works for LazyDataFrame objects")
 
-        #if args.debug: set_trace()
+        if args.debug: set_trace()
         events = df.event
         self.sample_name = df.dataset
 
@@ -80,7 +82,8 @@ class Meta_Analyzer(processor.ProcessorABC):
                 output['%s_runs_to_lumis' % self.sample_name].add(list(lumi_map.items()))
 
         else:
-            output['PUDistribution'].fill(dataset=self.sample_name, pu=df.Pileup_nTrueInt)
+            output['PU_nTrueInt'].fill(dataset=self.sample_name, pu_nTrueInt=df.Pileup_nTrueInt)
+            output['PU_nPU'].fill(dataset=self.sample_name, pu_nPU=df.Pileup_nPU)
 
             output[self.sample_name]['nEvents'] += events.size
 
