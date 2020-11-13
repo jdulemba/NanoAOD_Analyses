@@ -19,9 +19,10 @@ import os
 import Utilities.prettyjson as prettyjson
 import Utilities.plot_tools as plt_tools
 from argparse import ArgumentParser
+import numpy as np
 
 parser = ArgumentParser()
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--dump_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
 
 args = parser.parse_args()
@@ -40,11 +41,13 @@ fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir)
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 #set_trace()
 
-isSample = lambda x: ('runs_to_lumis' not in x) and ('PUDistribution' not in x)
+isSample = lambda x: ('runs_to_lumis' not in x) and ('PU_nTrueInt' not in x) and ('PU_nPU' not in x)
+#isSample = lambda x: ('runs_to_lumis' not in x) and ('PUDistribution' not in x)
 samples = sorted([key for key in hdict.keys() if isSample(key)])
 
     # get hists
-PU_histo = hdict['PUDistribution']
+PU_nTrueInt_histo = hdict['PU_nTrueInt']
+PU_nPU_histo = hdict['PU_nPU']
 
 if args.dump_lumi:
     el_lumimask_check_comb = {}
@@ -83,6 +86,7 @@ for sample in samples:
     else: 
         #if args.dump_lumi: continue
 
+        #set_trace()
             ## write meta info to json
         meta_dict = {}
         for key, val in hdict[sample].items():
@@ -96,16 +100,31 @@ for sample in samples:
         print('%s written' % meta_fname)
     
             ## plot histograms
-                ## pileup distribution
-        pu_histo = PU_histo[sample].integrate('dataset')
-        pu_bins = pu_histo.axis('pu').edges()
-        fig_pu, ax_pu = plt.subplots()
-        Plotter.plot_1D(pu_histo.values()[()], pu_bins, (pu_bins.min(), pu_bins.max()), xlabel=('$\mathrm{%s}$' % pu_histo.axes()[-1].label), ax=ax_pu, label=sample, histtype='step')
-        ax_pu.legend(loc='upper right')
-        figname_pu = os.path.join(outdir, '%s_PUDistribution.png' % sample)
-        fig_pu.savefig(figname_pu)
-        print('%s written' % figname_pu)
-        plt.close(fig_pu)
+                ## pileup nTrueInt distribution
+        pu_nTrueInt_histo = PU_nTrueInt_histo[sample].integrate('dataset')
+        pu_nTrueInt_histo = pu_nTrueInt_histo.rebin(pu_nTrueInt_histo.dense_axes()[0].name, 2)
+        pu_nTrueInt_bins = pu_nTrueInt_histo.axis('pu_nTrueInt').edges()
+        fig_nTrueInt, ax_nTrueInt = plt.subplots()
+        Plotter.plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, (0., 100.), xlabel=('$\mathsf{%s}$' % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=sample, histtype='step')
+        ax_nTrueInt.legend(loc='upper right')
+        hep.cms.cmslabel(ax=ax_nTrueInt, rlabel=args.year)
+        figname_nTrueInt = os.path.join(outdir, '%s_PU_nTrueInt.png' % sample)
+        fig_nTrueInt.savefig(figname_nTrueInt)
+        print('%s written' % figname_nTrueInt)
+        plt.close(fig_nTrueInt)
+
+                ## pileup nPU distribution
+        pu_nPU_histo = PU_nPU_histo[sample].integrate('dataset')
+        pu_nPU_histo = pu_nPU_histo.rebin(pu_nPU_histo.dense_axes()[0].name, 2)
+        pu_nPU_bins = pu_nPU_histo.axis('pu_nPU').edges()
+        fig_nPU, ax_nPU = plt.subplots()
+        Plotter.plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, (0., 100.), xlabel=('$\mathsf{%s}$' % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=sample, histtype='step')
+        ax_nPU.legend(loc='upper right')
+        hep.cms.cmslabel(ax=ax_nPU, rlabel=args.year)
+        figname_nPU = os.path.join(outdir, '%s_PU_nPU.png' % sample)
+        fig_nPU.savefig(figname_nPU)
+        print('%s written' % figname_nPU)
+        plt.close(fig_nPU)
 
 if args.dump_lumi:
     #set_trace()
