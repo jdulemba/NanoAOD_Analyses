@@ -94,7 +94,10 @@ class Meta_Analyzer(processor.ProcessorABC):
 
             output[self.sample_name]['nEvents'] += events.size
 
-            genWeights = df.genWeight
+                # normalize genWeights to just +/- 1
+            genWeights = np.ones(df.genWeight.size)
+            genWeights[df.genWeight < 0] = -1.
+            genWeights[df.genWeight == 0] = 0.
             output[self.sample_name]['sumGenWeights'] += genWeights.sum()
 
                 ## create mtt vs cos theta* dists for nominal ttJets
