@@ -30,14 +30,12 @@ lumi_weights = {
 proj_dir = os.environ['PROJECT_DIR']
 
 # for each year, read sumGenWeights from all meta.json files
-#for year in ['2017']: only for testing NanoAODv7
 for year in ['2016', '2017', '2018']:
     print(year)
     if year == '2016':
         Nominal_ttJets = ['ttJets_PS']#, 'ttJets']
     else:
         Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
-    #xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_NanoAODv7.json' % year)).read()) # file with cross sections, only for testing NanoAODv7
     xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year)).read()) # file with cross sections
     samples = sorted([fname.split('.')[0] for fname in os.listdir(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, jobid))) if fname.endswith('.meta.json')])
     for sample in samples:
