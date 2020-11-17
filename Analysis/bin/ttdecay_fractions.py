@@ -7,7 +7,7 @@ from pdb import set_trace
 import os, sys
 import numpy as np
 import Utilities.prettyjson as prettyjson
-import Utilities.make_variables as make_vars
+#import Utilities.make_variables as make_vars
 import python.GenParticleSelector as genpsel
 import re
 import awkward
@@ -49,25 +49,12 @@ if not is_ttJets_:
 class ttdecay_fractions(processor.ProcessorABC):
     def __init__(self):
 
-            ## make binning for hists
-                ## binning made to be compatible with hists provided by DESY group for validation
-        self.dataset_axis = hist.Cat("dataset", "Event Process")
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
-        self.rapidity_axis = hist.Bin("rap", "rapidity", 200, -5., 5.)
-        self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
-        self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
-        self.mtop_axis = hist.Bin("mtop", "m(top) [GeV]", 100, 150, 200)
-        self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 170, 250, 1500)
-        self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 24, -1., 1.)
-        #self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 360, 200, 2000)
-        #self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 40, -1., 1.)
-
             ## make dictionary of hists
         histo_dict = {}
-                ## make selection plots
-        selection_hists = self.make_selection_hists()
-        histo_dict.update(selection_hists)        
+        for sample in fileset.keys():
+            histo_dict['%s_SL' % sample] = processor.defaultdict_accumulator(int)
+            histo_dict['%s_Had' % sample] = processor.defaultdict_accumulator(int)
+            histo_dict['%s_DiLep' % sample] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
 
@@ -77,197 +64,152 @@ class ttdecay_fractions(processor.ProcessorABC):
         return self._accumulator
 
 
-
-    def make_selection_hists(self):
-        histo_dict = {}
-        histo_dict['mtt']      = hist.Hist("Events", self.dataset_axis, self.mtt_axis)
-        histo_dict['top_mass']    = hist.Hist("Events", self.dataset_axis, self.mtop_axis)
-        histo_dict['antitop_mass']    = hist.Hist("Events", self.dataset_axis, self.mtop_axis)
-        histo_dict['top_pt']  = hist.Hist("Events", self.dataset_axis, self.pt_axis)
-        histo_dict['antitop_pt']  = hist.Hist("Events", self.dataset_axis, self.pt_axis)
-        histo_dict['ttbar_pt']    = hist.Hist("Events", self.dataset_axis, self.pt_axis)
-        histo_dict['top_eta'] = hist.Hist("Events", self.dataset_axis, self.eta_axis)
-        histo_dict['antitop_eta'] = hist.Hist("Events", self.dataset_axis, self.eta_axis)
-        histo_dict['ttbar_eta']   = hist.Hist("Events", self.dataset_axis, self.eta_axis)
-        histo_dict['top_rapidity'] = hist.Hist("Events", self.dataset_axis, self.rapidity_axis)
-        histo_dict['antitop_rapidity'] = hist.Hist("Events", self.dataset_axis, self.rapidity_axis)
-        histo_dict['ttbar_rapidity']   = hist.Hist("Events", self.dataset_axis, self.rapidity_axis)
-
-        histo_dict['top_ctstar']     = hist.Hist("Events", self.dataset_axis, self.ctstar_axis)
-        histo_dict['antitop_ctstar']     = hist.Hist("Events", self.dataset_axis, self.ctstar_axis)
-        #histo_dict['tlep_ctstar_abs'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.ctstar_abs_axis)
-
-        #histo_dict['mtt_vs_tlep_ctstar_abs'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.mtt_axis, self.ctstar_abs_axis)
-        histo_dict['top_rap_vs_ctstar'] = hist.Hist("Events", self.dataset_axis, self.ctstar_axis, self.rapidity_axis)
-
-        return histo_dict
-
     def process(self, df):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
         genparts = genpsel.process_genParts(df)
-        #genparts = df['GenParts']
-        #GenTTbar = genpsel.select(df, systype='FINAL', mode='NORMAL')
 
         #set_trace()
+            # get tops, defined as last copy
+        is_last_copy = genparts.statusFlags >> 13 & 1 == 1
+        gen_tops = genparts[(is_last_copy) & (genparts.pdgId == 6)]
+        gen_tbars = genparts[(is_last_copy) & (genparts.pdgId == -6)]
+
+
+            # get direct top decay products (will be first copy)
         is_first_copy = genparts.statusFlags >> 12 & 1 == 1
         is_hard_process = genparts.statusFlags >> 7 & 1 == 1
         hard_gps = genparts[is_first_copy & is_hard_process]
         abspdg = abs(hard_gps.pdgId)
         sgn = np.sign(hard_gps.pdgId)
 
-        gen_top = hard_gps[(hard_gps.pdgId == 6)]
-        gen_tbar = hard_gps[(hard_gps.pdgId == -6)]
-        gen_b = hard_gps[(hard_gps.pdgId == 5) & (hard_gps.mompdgId == 6)]
-        gen_bbar = hard_gps[(hard_gps.pdgId == -5) & (hard_gps.mompdgId == -6)]
+        gen_bs = hard_gps[(hard_gps.pdgId == 5) & (hard_gps.mompdgId == 6)]
+        gen_bbars = hard_gps[(hard_gps.pdgId == -5) & (hard_gps.mompdgId == -6)]
         gen_wplus = hard_gps[(hard_gps.pdgId == 24) & (hard_gps.mompdgId == 6)]
         gen_wminus = hard_gps[(hard_gps.pdgId == -24) & (hard_gps.mompdgId == -6)]
 
         gen_wpartons_up = hard_gps[(np.mod(hard_gps.pdgId, 2) == 0) & (abspdg < 6) & (hard_gps.mompdgId == sgn * 24)]
         gen_wpartons_dw = hard_gps[(np.mod(hard_gps.pdgId, 2) == 1) & (abspdg < 6) & (hard_gps.mompdgId == sgn * -24)]
 
-        gen_charged_leptons = hard_gps[((abspdg == 11) | (abspdg == 13)) & (hard_gps.mompdgId == sgn * -24)]
-        gen_neutral_leptons = hard_gps[((abspdg == 12) | (abspdg == 14)) & (hard_gps.mompdgId == sgn * 24)]
+        gen_els = hard_gps[(abspdg == 11) & (hard_gps.mompdgId == sgn * -24)]
+        gen_nu_els = hard_gps[(abspdg == 12) & (hard_gps.mompdgId == sgn * 24)]
+        gen_mus = hard_gps[(abspdg == 13) & (hard_gps.mompdgId == sgn * -24)]
+        gen_nu_mus = hard_gps[(abspdg == 14) & (hard_gps.mompdgId == sgn * 24)]
         gen_taus = hard_gps[(abspdg == 15) & (hard_gps.mompdgId == sgn * -24)]
+        gen_nu_taus = hard_gps[(abspdg == 16) & (hard_gps.mompdgId == sgn * 24)]
+
+                # get direct tau decay products from hard processes (subset of gen_taus events above)
+        isDirectHardProcessTauDecayProduct = genparts.statusFlags >> 10 & 1 == 1
+        tau_decay_prods = genparts[isDirectHardProcessTauDecayProduct]
+
+        tau_charged_kaons = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 321]
+        tau_charged_pions = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 211]
+        tau_neutral_pions = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 111]
+        tau_tau_nu = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 16]
+        tau_electron = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 11]
+        tau_electron_nu = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 12]
+        tau_muon = tau_decay_prods[(np.abs(tau_decay_prods.pdgId) == 13)]
+        tau_muon_nu = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 14]
+
 
             # set charge
-        gen_top.charge = gen_top.charge.ones_like()*(2./3.)
-        gen_tbar.charge = gen_tbar.charge.ones_like()*(-2./3.)
-        gen_b.charge = gen_b.charge.ones_like()*(-1./3.)
-        gen_bbar.charge = gen_bbar.charge.ones_like()*(1./3.)
+        gen_tops.charge = gen_tops.charge.ones_like()*(2./3.)
+        gen_tbars.charge = gen_tbars.charge.ones_like()*(-2./3.)
+        gen_bs.charge = gen_bs.charge.ones_like()*(-1./3.)
+        gen_bbars.charge = gen_bbars.charge.ones_like()*(1./3.)
         gen_wplus.charge = gen_wplus.charge.ones_like()
         gen_wminus.charge = gen_wminus.charge.ones_like()*(-1.)
 
         gen_wpartons_up.charge = sgn[(np.mod(hard_gps.pdgId, 2) == 0) & (abspdg < 6) & (hard_gps.mompdgId == sgn * 24)]*(2./3.)
         gen_wpartons_dw.charge = sgn[(np.mod(hard_gps.pdgId, 2) == 1) & (abspdg < 6) & (hard_gps.mompdgId == sgn * -24)]*(-1./3.)
 
-        gen_charged_leptons.charge = sgn[((abspdg == 11) | (abspdg == 13)) & (hard_gps.mompdgId == sgn * -24)]* -1
-        gen_neutral_leptons.charge = gen_neutral_leptons.charge.zeros_like()
+        gen_els.charge = sgn[(abspdg == 11) & (hard_gps.mompdgId == sgn * -24)]* -1
+        gen_nu_els.charge = gen_nu_els.charge.zeros_like()
+        gen_mus.charge = sgn[(abspdg == 13) & (hard_gps.mompdgId == sgn * -24)]* -1
+        gen_nu_els.charge = gen_nu_mus.charge.zeros_like()
         gen_taus.charge = sgn[(abspdg == 15) & (hard_gps.mompdgId == sgn * -24)]* -1
+        gen_nu_taus.charge = gen_nu_mus.charge.zeros_like()
 
-        GenObjs = genpsel.select_normal(df, 24)
-        set_trace()
-        selection = processor.PackedSelection()
-        selection.add('isLastCopy', ((genparts.statusFlags & 8192) == 8192).flatten() )
-        selection.add('top_quarks_pdgId', (np.abs(genparts.pdgId) == 6).flatten())
-        #selection.add('Wbosons_pdgId', (np.abs(genparts.pdgId) == 24).flatten())
-        #selection.add('top_quarks', selection.require(isLastCopy=True, top_quarks_pdgId=True) )
-        #selection.add('Wbosons', ( ((genparts[genparts.momIdx].statusFlags & 8192) == 8192) & ( np.abs(genparts[genparts.momIdx].pdgId) == 6 ) & (np.abs(genparts.pdgId) == 24) ).flatten())
-        selection.add('W_comes_from_top', ( ((genparts[genparts.momIdx].statusFlags & 8192) == 8192) & ( np.abs(genparts[genparts.momIdx].pdgId) == 6 ) & (np.abs(genparts.pdgId) == 24) ).flatten())
-        selection.add('comes_from_W', ( (np.abs(genparts[genparts.momIdx].pdgId) == 24) & (np.abs(genparts.pdgId) != 24) ).flatten())
-        selection.add('electron_pdgId', (np.abs(genparts.pdgId) == 11).flatten())
-        selection.add('el_nu_pdgId', (np.abs(genparts.pdgId) == 12).flatten())
-        selection.add('muon_pdgId', (np.abs(genparts.pdgId) == 13).flatten())
-        selection.add('mu_nu_pdgId', (np.abs(genparts.pdgId) == 14).flatten())
-        selection.add('tau_pdgId', (np.abs(genparts.pdgId) == 15).flatten())
-        selection.add('tau_nu_pdgId', (np.abs(genparts.pdgId) == 16).flatten())
-        selection.add('comes_from_tau', ( (np.abs(genparts[genparts.momIdx].pdgId) == 15) & (np.abs(genparts.pdgId) != 15) ).flatten())
-        tau_decays = processor.PackedSelection()
-        tau_decays.add('chargedPion_neutralPion_tauNu', ( (np.abs(genparts[genparts.momIdx].pdgId) == 15) & (np.abs(genparts.pdgId) != 15) ).flatten())
+            # same number of electrons and electron nus
+        if not (gen_els.counts == gen_nu_els.counts).all(): raise ValueError("Different number of electrons and electron neutrinos in events")
+            # same number of muons and muon nus
+        if not (gen_mus.counts == gen_nu_mus.counts).all(): raise ValueError("Different number of muons and muon neutrinos in events")
+            # same number of taus and tau nus
+        if not (gen_taus.counts == gen_nu_taus.counts).all(): raise ValueError("Different number of taus and tau neutrinos in events")
 
-        top_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(isLastCopy=True, top_quarks_pdgId=True) )
-        top_quarks = genparts[top_sel]
-        Wbos_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(W_comes_from_top=True))
-        w_bosons = genparts[Wbos_sel]
+        # event classification
+            # semilep evts
+        el_jets_evts = (gen_els.counts == 1) & (gen_wpartons_up.counts == 1) & (gen_wpartons_dw.counts == 1)
+        mu_jets_evts = (gen_mus.counts == 1) & (gen_wpartons_up.counts == 1) & (gen_wpartons_dw.counts == 1)
+        tau_jets_evts = (gen_taus.counts == 1) & (gen_wpartons_up.counts == 1) & (gen_wpartons_dw.counts == 1)
+        semilep_evts = (el_jets_evts | mu_jets_evts | tau_jets_evts)
+                # tau decays
+        semilep_tau_to_tauNu_el_elNu = (tau_electron[tau_jets_evts].counts == 1) & (tau_electron_nu[tau_jets_evts].counts == 1) & (tau_tau_nu[tau_jets_evts].counts == 1)
+        semilep_tau_to_tauNu_mu_muNu = (tau_muon[tau_jets_evts].counts == 1) & (tau_muon_nu[tau_jets_evts].counts == 1) & (tau_tau_nu[tau_jets_evts].counts == 1)
+        semilep_tau_leptonic_decay = semilep_tau_to_tauNu_el_elNu | semilep_tau_to_tauNu_mu_muNu
+        semilep_tau_hadronic_decay = ~semilep_tau_leptonic_decay
 
-        electron_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, electron_pdgId=True))
-        electrons = genparts[electron_sel]
-        el_nu_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, el_nu_pdgId=True))
-        el_nus = genparts[el_nu_sel]
+        output['%s_SL' % df.dataset]['e'] += el_jets_evts.sum()
+        output['%s_SL' % df.dataset]['mu'] += mu_jets_evts.sum()
+        output['%s_SL' % df.dataset]['tau->l'] += semilep_tau_leptonic_decay.sum()
+        output['%s_SL' % df.dataset]['tau->h'] += semilep_tau_hadronic_decay.sum()
+        output['%s_SL' % df.dataset]['Total'] += semilep_evts.sum()
 
-        muon_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, muon_pdgId=True))
-        muons = genparts[muon_sel]
-        mu_nu_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, mu_nu_pdgId=True))
-        mu_nus = genparts[mu_nu_sel]
 
-        tau_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, tau_pdgId=True))
-        taus = genparts[tau_sel]
-        tau_nu_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True, tau_nu_pdgId=True))
-        tau_nus = genparts[tau_nu_sel]
-        tau_decay_prods_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_tau=True))
-        tau_decay_prods = genparts[tau_decay_prods_sel]
+            # all hadronic evts
+        #set_trace()
+        hadronic_evts = ((gen_els.counts + gen_mus.counts + gen_taus.counts) == 0) & (gen_wpartons_up.counts == 2) & (gen_wpartons_dw.counts == 2)
+        output['%s_Had' % df.dataset]['Total'] += hadronic_evts.sum()
 
-        all_electron_nu_pairs = electrons.cross(el_nus)
-        valid_e_nu_pairs = all_electron_nu_pairs[(all_electron_nu_pairs.i0.momIdx == all_electron_nu_pairs.i1.momIdx)]
-        all_muon_nu_pairs = muons.cross(mu_nus)
-        valid_mu_nu_pairs = all_muon_nu_pairs[(all_muon_nu_pairs.i0.momIdx == all_muon_nu_pairs.i1.momIdx)]
-        all_tau_nu_pairs = taus.cross(tau_nus)
-        valid_tau_nu_pairs = all_tau_nu_pairs[(all_tau_nu_pairs.i0.momIdx == all_tau_nu_pairs.i1.momIdx)]
-        set_trace()
-        
-            # dict of requirements for each parton
-        leptons = {
-            'electrons' : {'comes_from_W', 'electron_pdgId'},
-            'muons' : {'comes_from_W', 'muon_pdgId'},
-            'taus' : {'comes_from_W', 'tau_pdgId'},
-            #'top' : {'isLastCopy', 'top_pdgId'},
-            #'antitop' : {'isLastCopy', 'antitop_pdgId'},
-            #'Wboson' : {'isLastCopy'
-            ##'top' : {'quarks', 'top_pdgId'},
-            ##'antitop' : {'quarks', 'antitop_pdgId'},
-        }
+            # dilep evts
+        el_el_evts = (gen_els.counts == 2) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        el_mu_evts = (gen_els.counts == 1) & (gen_mus.counts == 1) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        el_tau_evts = (gen_els.counts == 1) & (gen_taus.counts == 1) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        mu_mu_evts = (gen_mus.counts == 2) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        mu_tau_evts = (gen_mus.counts == 1) & (gen_taus.counts == 1) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        tau_tau_evts = (gen_taus.counts == 2) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+        dilep_evts = (el_el_evts | el_mu_evts | el_tau_evts | mu_mu_evts | mu_tau_evts | tau_tau_evts)
+                # tau decays
+                    # tau tau
+                        # tau tau -> ll
+        dilep_TauTau_to_ElEl = (tau_electron[tau_tau_evts].counts == 2) & (tau_electron_nu[tau_tau_evts].counts == 2) & (tau_tau_nu[tau_tau_evts].counts == 2)
+        dilep_TauTau_to_MuMu = (tau_muon[tau_tau_evts].counts == 2) & (tau_muon_nu[tau_tau_evts].counts == 2) & (tau_tau_nu[tau_tau_evts].counts == 2)
+        dilep_TauTau_to_ElMu = (tau_electron[tau_tau_evts].counts == 1) & (tau_electron_nu[tau_tau_evts].counts == 1) & (tau_muon[tau_tau_evts].counts == 1) & (tau_muon_nu[tau_tau_evts].counts == 1) & (tau_tau_nu[tau_tau_evts].counts == 2)
+        dilep_TauTau_ll_decay = (dilep_TauTau_to_ElEl | dilep_TauTau_to_MuMu | dilep_TauTau_to_ElMu)
+                        # tau tau -> hh
+        dilep_TauTau_hh_decay = ((tau_electron[tau_tau_evts].counts + tau_electron_nu[tau_tau_evts].counts + tau_muon[tau_tau_evts].counts + tau_muon_nu[tau_tau_evts].counts) == 0) & (tau_tau_nu[tau_tau_evts].counts == 2)
+                        # tau tau -> lh
+        dilep_TauTau_lh_decay = ~(dilep_TauTau_ll_decay | dilep_TauTau_hh_decay)
 
-        comes_from_W_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.require(comes_from_W=True))
-        electron_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.all(*leptons['electrons']))
-        muon_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.all(*leptons['muons']))
-        tau_sel = awkward.JaggedArray.fromcounts(genparts.counts, selection.all(*leptons['taus']))
+                # e tau
+        dilep_el_tau_to_El = (tau_electron[el_tau_evts].counts == 1) & (tau_electron_nu[el_tau_evts].counts == 1) & (tau_tau_nu[el_tau_evts].counts == 1)
+        dilep_el_tau_to_Mu = (tau_muon[el_tau_evts].counts == 1) & (tau_muon_nu[el_tau_evts].counts == 1) & (tau_tau_nu[el_tau_evts].counts == 1)
+        dilep_el_tau_leptonic_decay = (dilep_el_tau_to_El | dilep_el_tau_to_Mu)
+        dilep_el_tau_hadronic_decay =  ~dilep_el_tau_leptonic_decay
 
-        electrons = genparts[electron_sel]
-        muons = genparts[muon_sel]
-        taus = genparts[tau_sel]
+                # mu tau
+        dilep_mu_tau_to_El = (tau_electron[mu_tau_evts].counts == 1) & (tau_electron_nu[mu_tau_evts].counts == 1) & (tau_tau_nu[mu_tau_evts].counts == 1)
+        dilep_mu_tau_to_Mu = (tau_muon[mu_tau_evts].counts == 1) & (tau_muon_nu[mu_tau_evts].counts == 1) & (tau_tau_nu[mu_tau_evts].counts == 1)
+        dilep_mu_tau_leptonic_decay = (dilep_mu_tau_to_El | dilep_mu_tau_to_Mu)
+        dilep_mu_tau_hadronic_decay =  ~dilep_mu_tau_leptonic_decay
 
-        top_partons = genparts[top_sel]
-        antitop_partons = genparts[antitop_sel]
+        output['%s_DiLep' % df.dataset]['e e'] += el_el_evts.sum()
+        output['%s_DiLep' % df.dataset]['e mu'] += el_mu_evts.sum()
+        output['%s_DiLep' % df.dataset]['e tau->l'] += dilep_el_tau_leptonic_decay.sum()
+        output['%s_DiLep' % df.dataset]['e tau->h'] += dilep_el_tau_hadronic_decay.sum()
+        output['%s_DiLep' % df.dataset]['mu mu'] += mu_mu_evts.sum()
+        output['%s_DiLep' % df.dataset]['mu tau->l'] += dilep_mu_tau_leptonic_decay.sum()
+        output['%s_DiLep' % df.dataset]['mu tau->h'] += dilep_mu_tau_hadronic_decay.sum()
+        output['%s_DiLep' % df.dataset]['tau tau->ll'] += dilep_TauTau_ll_decay.sum()
+        output['%s_DiLep' % df.dataset]['tau tau->lh'] += dilep_TauTau_lh_decay.sum()
+        output['%s_DiLep' % df.dataset]['tau tau->hh'] += dilep_TauTau_hh_decay.sum()
+        output['%s_DiLep' % df.dataset]['Total'] += dilep_evts.sum()
 
-        gen_mtt = (top_partons.p4+antitop_partons.p4).mass.flatten()
-        gen_top_ctstar, gen_antitop_ctstar = make_vars.ctstar_flat(top_partons.p4.flatten(), antitop_partons.p4.flatten())
 
         #set_trace()
-            # fill plots for SM ttbar
-        output = self.fill_selection_hists(acc=output, dname=df.dataset, top=top_partons.flatten(), antitop=antitop_partons.flatten(), evt_weights=evt_wts)
-        output['top_ctstar'].fill(dataset=df.dataset, ctstar=gen_top_ctstar, weight=evt_wts)
-        output['antitop_ctstar'].fill(dataset=df.dataset, ctstar=gen_antitop_ctstar, weight=evt_wts)
-        output['top_rap_vs_ctstar'].fill(dataset=df.dataset, ctstar=gen_top_ctstar, rap=top_partons.flatten().p4.rapidity, weight=evt_wts)
-        
-        ##set_trace()
-        #    ### get signal weights and fill hists
-        #for signal in self.signals_to_run:
-        #    #set_trace()
-        #    pos_wts = self.corrections['Signal'][signal]['pos']['Central'](gen_mtt, gen_top_ctstar)
-        #    output = self.fill_selection_hists(acc=output, dname='%s_%s_pos' % (df.dataset, signal), top=top_partons.flatten(), antitop=antitop_partons.flatten(), evt_weights=pos_wts*evt_wts)
-        #    output['top_ctstar'].fill(dataset='%s_%s_pos' % (df.dataset, signal), ctstar=gen_top_ctstar, weight=pos_wts*evt_wts)
-        #    output['antitop_ctstar'].fill(dataset='%s_%s_pos' % (df.dataset, signal), ctstar=gen_antitop_ctstar, weight=pos_wts*evt_wts)
-        #    output['top_rap_vs_ctstar'].fill(dataset='%s_%s_pos' % (df.dataset, signal), ctstar=gen_top_ctstar, rap=top_partons.flatten().p4.rapidity, weight=pos_wts*evt_wts)
-        #    if 'Int' in signal:
-        #        neg_wts = self.corrections['Signal'][signal]['neg']['Central'](gen_mtt, gen_top_ctstar)
-        #        output = self.fill_selection_hists(acc=output, dname='%s_%s_neg' % (df.dataset, signal), top=top_partons.flatten(), antitop=antitop_partons.flatten(), evt_weights=neg_wts*evt_wts)
-        #        output['top_ctstar'].fill(dataset='%s_%s_neg' % (df.dataset, signal), ctstar=gen_top_ctstar, weight=neg_wts*evt_wts)
-        #        output['antitop_ctstar'].fill(dataset='%s_%s_neg' % (df.dataset, signal), ctstar=gen_antitop_ctstar, weight=neg_wts*evt_wts)
-        #        output['top_rap_vs_ctstar'].fill(dataset='%s_%s_neg' % (df.dataset, signal), ctstar=gen_top_ctstar, rap=top_partons.flatten().p4.rapidity, weight=neg_wts*evt_wts)
 
         return output
-
-
-
-    def fill_selection_hists(self, acc, dname, top, antitop, evt_weights):
-        acc['mtt'].fill(         dataset=dname, mtt=(top.p4 + antitop.p4).mass, weight=evt_weights)
-        acc['top_mass'].fill(    dataset=dname, mtop=top.p4.mass, weight=evt_weights)
-        acc['top_pt'].fill(      dataset=dname, pt=top.p4.pt, weight=evt_weights)
-        acc['top_eta'].fill(     dataset=dname, eta=top.p4.eta, weight=evt_weights)
-        acc['antitop_mass'].fill(dataset=dname, mtop=antitop.p4.mass, weight=evt_weights)
-        acc['antitop_pt'].fill(  dataset=dname, pt=antitop.p4.pt, weight=evt_weights)
-        acc['antitop_eta'].fill( dataset=dname, eta=antitop.p4.eta, weight=evt_weights)
-        acc['ttbar_pt'].fill(    dataset=dname, pt=(top.p4 + antitop.p4).pt, weight=evt_weights)
-        acc['ttbar_eta'].fill(   dataset=dname, eta=(top.p4 + antitop.p4).eta, weight=evt_weights)
-        acc['top_rapidity'].fill(dataset=dname, rap=top.p4.rapidity, weight=evt_weights)
-        acc['antitop_rapidity'].fill(dataset=dname, rap=antitop.p4.rapidity, weight=evt_weights)
-        acc['ttbar_rapidity'].fill(dataset=dname, rap=(top.p4 + antitop.p4).rapidity, weight=evt_weights)
-
-        #acc['tlep_ctstar_abs'].fill(dataset=dname, ctstar_abs=np.abs(tlep_ctstar), weight=evt_weights)
-        #acc['mtt_vs_tlep_ctstar_abs'].fill(dataset=dname, mtt=(top.p4 + antitop.p4).mass, ctstar_abs=np.abs(lep_ctstar), weight=evt_weights)
-
-        return acc        
 
 
 
@@ -285,7 +227,6 @@ output = processor.run_uproot_job(fileset,
         'workers': 8,
         'flatten' : True,
         'compression': 5,
-        #'nano': True,
     },
     chunksize=10000 if args.debug else 100000,
     #chunksize=10000 if args.debug else 50000,
