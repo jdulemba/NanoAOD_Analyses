@@ -40,7 +40,7 @@ samplename = list(fileset.keys())[0]
 # get dataset classification, used for corrections/systematics
     ## specify ttJets samples
 
-is_ttJets_ = samplename in ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+is_ttJets_ = samplename in ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep', 'ttJets_PS']
 if not is_ttJets_:
     raise ValueError("This should only be run on nominal ttbar events!")
 
