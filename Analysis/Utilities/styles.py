@@ -78,6 +78,10 @@ styles = {
         'facecolor' : '#ffff33', ## yellow
         'name' : "$t\\bart$ unmatchable",
     },
+    'ttJets_sl_tau' : {
+        'facecolor' : 'b',
+        'name' : "$t\\bart$, SL $\\tau$",
+    },
     'ttJets_other' : {
         'facecolor' : '#a65628', ## brown
         'name' : "$t\\bart$ other",
@@ -229,5 +233,70 @@ styles = {
         'linestyle' : '--',
         'label' : 'Down',
     },
+
+
+        ## ttbar decays
+    'SL e' : {
+        'facecolor' : '#FFFF33', # yellow
+        'name' : '$e$',
+    },
+    'SL mu' : {
+        'facecolor' : '#FF8000', # orange
+        'name' : '$\mu$',
+    },
+    'SL tau->l' : {
+        'facecolor' : '#FF3333', # red
+        'name' : '$\\tau \\rightarrow l$',
+    },
+    'SL tau->h' : {
+        'facecolor' : '#990000', # dark red
+        'name' : '$\\tau \\rightarrow h$',
+    },
+    'Had Total' : {
+        'facecolor' : '#b15928', # brown
+        'name' : 'All Had',
+    },
+    'DL e e' : {
+        'facecolor' : '#4C9900', # dark green
+        'name' : '$e e$',
+    },
+    'DL e mu' : {
+        'facecolor' : '#00FF00', # green
+        'name' : '$e \mu$',
+    },
+    'DL e tau->l' : {
+        'facecolor' : '#003366', # dark blue
+        'name' : '$e \\tau \\rightarrow l$',
+    },
+    'DL e tau->h' : {
+        'facecolor' : '#0000FF', # blue
+        'name' : '$e \\tau \\rightarrow h$',
+    },
+    'DL mu mu' : {
+        'facecolor' : '#33FFFF', # light blue
+        'name' : '$\mu \mu$',
+    },
+    'DL mu tau->l' : {
+        'facecolor' : '#4C0099', # purple
+        'name' : '$\mu \\tau \\rightarrow l$',
+    },
+    'DL mu tau->h' : {
+        'facecolor' : '#9933FF', # light purple
+        'name' : '$\mu \\tau \\rightarrow h$',
+    },
+    'DL tau tau->ll' : {
+        'facecolor' : '#990099', # violet
+        'name' : '$\\tau \\tau \\rightarrow ll$',
+    },
+    'DL tau tau->lh' : {
+        'facecolor' : '#FF66FF', # pink
+        'name' : '$\\tau \\tau \\rightarrow lh$',
+    },
+    'DL tau tau->hh' : {
+        'facecolor' : '#606060', # grey
+        'name' : '$\\tau \\tau \\rightarrow hh$',
+    },
+
+
 
 }
