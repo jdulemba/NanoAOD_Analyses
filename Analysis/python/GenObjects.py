@@ -8,8 +8,10 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
     #set_trace()
     dilep_evts = ( (charged_leps.counts == 2) & (charged_leps.counts == neutral_leps.counts) & (charged_leps.charge.sum() == 0) )
     dihad_evts = ( (wpartons_up.counts == 2) & (wpartons_up.counts == wpartons_dw.counts) )
-    semilep_evts = ( (charged_leps.counts == 1) & (charged_leps.counts == neutral_leps.counts) & (wpartons_up.counts == 1) & (wpartons_up.counts == wpartons_dw.counts) )
+    semilep_evts = ( (charged_leps.counts == 1) & (neutral_leps.counts == 1) & (wpartons_up.counts == 1) & (wpartons_dw.counts == 1) )
     valid_evts = (dilep_evts | dihad_evts | semilep_evts)
+    if not (valid_evts.sum() == tbars.size):
+        raise ValueError("Not all ttbar events are valid!")
     dl_array = np.repeat(dilep_evts, valid_evts.astype(int)*2)
     dh_array = np.repeat(dihad_evts, valid_evts.astype(int)*2)
     sl_array = np.repeat(semilep_evts, valid_evts.astype(int)*2)
