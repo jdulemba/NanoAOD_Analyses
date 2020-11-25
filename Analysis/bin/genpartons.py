@@ -120,22 +120,18 @@ class GenPartons(processor.ProcessorABC):
         evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
 
 
-        GenTTbar = genpsel.select(df, systype='FINAL', mode='NORMAL')
-        #GenTTbar = genpsel.select(df, systype='', mode='NORMAL')
-        #genpsel.select(df, mode='LHE')
+        GenTTbar = genpsel.select(df, mode='NORMAL')
 
         #set_trace()
         for ttdecay in GenTTbar.columns:
             evt_weights_to_use = evt_weights.weight()[GenTTbar[ttdecay]['TTbar'].counts > 0]
             for gen_obj in GenTTbar[ttdecay].columns:
                 output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, obj=GenTTbar[ttdecay][gen_obj], evt_weights=evt_weights_to_use)
-                #output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, wdecaymode=, obj=GenTTbar[ttdecay][gen_obj], evt_weights=evt_weights_to_use)
                 
 
         return output
 
     def fill_genp_hists(self, accumulator, genp_type, ttdecaymode, obj, evt_weights):
-    #def fill_genp_hists(self, accumulator, genp_type, ttdecaymode, wdecaymode, obj, evt_weights):
         #set_trace()
         accumulator['pt'].fill(    dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, pt=obj.p4.pt.flatten(), weight=evt_weights)
         accumulator['eta'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, eta=obj.p4.eta.flatten(), weight=evt_weights)
