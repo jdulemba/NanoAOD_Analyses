@@ -229,7 +229,7 @@
         "name": "ZJets_Madgraph"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
         "xsection": 61526.7,
         "name": "WJets"
     },
