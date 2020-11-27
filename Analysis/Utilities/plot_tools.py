@@ -10,6 +10,7 @@ dataset_groups['2016'] = {
     'ttJets_right' : ['ttJets*_right'],
     'ttJets_matchable' : ['ttJets*_matchable'],
     'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
     'ttJets_other' : ['ttJets*_other'],
     'ttJets' : ['ttJets', 'ttJets_PS'],
     'ttJets_Sys' : ['ttJets_*DOWN', 'ttJets_*UP'],
