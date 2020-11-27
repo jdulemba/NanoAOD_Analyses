@@ -19,13 +19,9 @@ analyzer = 'ttdecay_fractions'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV','2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--signal', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-parser.add_argument('--evt_sys', type=str, help='Specify event systematics to run. Default is (NONE,NONE) and all opts are capitalized through run_analyzer')
-parser.add_argument('--rewt_sys', type=str, help='Specify reweighting systematics to run. Default is (NONE,NONE) and all opts are capitalized through run_analyzer')
-parser.add_argument('--only_sys', type=int, help='Only run specified systematics and not nominal weights (nosys)')
 
 args = parser.parse_args()
 
@@ -48,7 +44,6 @@ if not is_ttJets_:
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class ttdecay_fractions(processor.ProcessorABC):
     def __init__(self):
-
 
         self.dataset_axis = hist.Cat("dataset", "Event Process")
         self.ttdecay_axis = hist.Cat("ttdecay", "tt Decay Type")
