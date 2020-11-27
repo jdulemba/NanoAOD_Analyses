@@ -237,7 +237,7 @@
     {
         "DBSName": "/W1JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL16NanoAODAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/NANOAODSIM",
         "xsection_old": 11917.5,
-        "xsection": 8690.0,
+        "xsection": 8873.0,
         "name": "W1Jets"
     },
     {
@@ -246,12 +246,12 @@
         "name": "W2Jets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL16NanoAODAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/NANOAODSIM",
         "xsection": 992.5,
         "name": "W3Jets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL16NanoAODAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/NANOAODSIM",
         "xsection": 544.3,
         "name": "W4Jets"
     },
