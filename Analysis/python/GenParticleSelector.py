@@ -5,6 +5,8 @@ import awkward
 import python.GenObjects as genobj
 from coffea.analysis_objects import JaggedCandidateArray
 
+remove_fast = lambda x : x.split('fast_')[-1]
+
 def process_genParts(df):
     genParts = JaggedCandidateArray.candidatesfromcounts(
         df.nGenPart,
@@ -32,7 +34,8 @@ def process_genParts(df):
     inds_list = [np.arange(count) for count in df.nGenPart]
     part_inds = np.concatenate(inds_list, axis=None)
     genParts['Idx'] = awkward.JaggedArray.fromcounts(df.nGenPart, part_inds)
-
+        # add decaytype (0 is INVALID, 1 is LEPTONIC, 2 is HADRONIC) as placeholder
+    genParts['decaytype'] = genParts.momIdx.zeros_like()
 
     return genParts
 
@@ -71,74 +74,188 @@ def select_normal(df, w_decay_momid):
     if 'genParts' not in df.columns:
         df['genParts'] = process_genParts(df)
 
-    categories = processor.PackedSelection()
-    categories.add('quarks', ( (df['genParts'].status > 21) & (df['genParts'].status < 30) & (df['genParts'].momIdx != -1) ).flatten())
-    categories.add('leptons', ( (df['genParts'].momIdx != -1) & (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == w_decay_momid) ).flatten())
-    categories.add('final_leptons', ( (df['genParts'].status == 1) & (df['genParts'].momIdx != -1) & ( (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == 24) | (df['genParts'].pdgId == df['genParts'][df['genParts'].momIdx].pdgId) ) ).flatten())
+    genparts = df.genParts
 
-    fermions = processor.PackedSelection()
-    fermions.add('top',  categories.require(quarks=True) & (df['genParts'].pdgId == 6).flatten())
-    fermions.add('tbar', categories.require(quarks=True) & (df['genParts'].pdgId == -6).flatten())
-    fermions.add('b',    categories.require(quarks=True) & ( (df['genParts'].pdgId == 5) & (df['genParts'][df['genParts'].momIdx].pdgId == 6) ).flatten())
-    fermions.add('bbar', categories.require(quarks=True) & ( (df['genParts'].pdgId == -5) & (df['genParts'][df['genParts'].momIdx].pdgId == -6) ).flatten())
-    fermions.add('wpartons_up', categories.require(quarks=True) & ( (np.mod(df['genParts'].pdgId, 2) == 0) & (np.abs(df['genParts'].pdgId) < 6) & (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == w_decay_momid) ).flatten())
-    fermions.add('wpartons_dw', categories.require(quarks=True) & ( (np.mod(df['genParts'].pdgId, 2) == 1) & (np.abs(df['genParts'].pdgId) < 6) & (np.abs(df['genParts'][df['genParts'].momIdx].pdgId) == w_decay_momid) ).flatten())
+        # get tops, defined as last copy
+    is_last_copy = genparts.statusFlags >> 13 & 1 == 1
+    gen_tops = genparts[(is_last_copy) & (genparts.pdgId == 6)]
+    gen_tbars = genparts[(is_last_copy) & (genparts.pdgId == -6)]
 
-    fermions.add('charged_leps', categories.require(leptons=True) & ( (np.abs(df['genParts'].pdgId) == 11) | (np.abs(df['genParts'].pdgId) == 13) ).flatten())
-    fermions.add('neutral_leps', categories.require(leptons=True) & ( (np.abs(df['genParts'].pdgId) == 12) | (np.abs(df['genParts'].pdgId) == 14) ).flatten())
-    #fermions.add('tau_decay',    categories.require(leptons=True) & ( np.abs(df['genParts'].pdgId) == 15 ).flatten())
-    fermions.add('final_charged_leps', categories.require(final_leptons=True) & ( (np.abs(df['genParts'].pdgId) == 11) | (np.abs(df['genParts'].pdgId) == 13) ).flatten())
 
-    jagged_top_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(top=True))
-    jagged_tbar_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(tbar=True))
-    jagged_b_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(b=True))
-    jagged_bbar_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(bbar=True))
-    jagged_wpartons_up_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(wpartons_up=True))
-    jagged_wpartons_dw_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(wpartons_dw=True))
+        # get direct top decay products (will be first copy)
+    is_first_copy = genparts.statusFlags >> 12 & 1 == 1
+    is_hard_process = genparts.statusFlags >> 7 & 1 == 1
+    hard_gps = genparts[is_first_copy & is_hard_process]
+    abspdg = abs(hard_gps.pdgId)
+    sgn = np.sign(hard_gps.pdgId)
 
-    jagged_chargedLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(charged_leps=True))
-    jagged_neutralLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(neutral_leps=True))
-    #jagged_Tau_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(tau_decay=True))
-    jagged_FinalChargedLeps_sel = awkward.JaggedArray.fromcounts(df['genParts'].counts, fermions.require(final_charged_leps=True))
+    gen_bs = hard_gps[(hard_gps.pdgId == 5) & (hard_gps.mompdgId == 6)]
+    gen_bbars = hard_gps[(hard_gps.pdgId == -5) & (hard_gps.mompdgId == -6)]
+    gen_wplus = hard_gps[(hard_gps.pdgId == 24) & (hard_gps.mompdgId == 6)]
+    gen_wminus = hard_gps[(hard_gps.pdgId == -24) & (hard_gps.mompdgId == -6)]
 
-    df['genParts']['charge'][jagged_top_sel] = df['genParts'][jagged_top_sel]['pdgId'].ones_like()*(2./3.)
-    df['genParts']['charge'][jagged_tbar_sel] = df['genParts'][jagged_tbar_sel]['pdgId'].ones_like()*(-2./3.)
-    df['genParts']['charge'][jagged_b_sel] = df['genParts'][jagged_b_sel]['pdgId'].ones_like()*(-1./3.)
-    df['genParts']['charge'][jagged_bbar_sel] = df['genParts'][jagged_bbar_sel]['pdgId'].ones_like()*(1./3.)
-    df['genParts']['charge'][jagged_wpartons_up_sel] = np.fmod(df['genParts'][jagged_wpartons_up_sel].pdgId+1, 2)*(2./3.)
-    df['genParts']['charge'][jagged_wpartons_dw_sel] = np.fmod(df['genParts'][jagged_wpartons_dw_sel].pdgId, 2)*(-1./3.)
-    df['genParts']['charge'][jagged_chargedLeps_sel] = np.fmod(df['genParts'][jagged_chargedLeps_sel].pdgId, 2)*(-1.)
-    df['genParts']['charge'][jagged_neutralLeps_sel] = df['genParts'][jagged_neutralLeps_sel].pdgId.zeros_like()
-    df['genParts']['charge'][jagged_FinalChargedLeps_sel] = np.fmod(df['genParts'][jagged_FinalChargedLeps_sel].pdgId, 2)*(-1.)
+    gen_wpartons_up = hard_gps[(np.mod(hard_gps.pdgId, 2) == 0) & (abspdg < 6) & (hard_gps.mompdgId == sgn * 24)]
+    gen_wpartons_dw = hard_gps[(np.mod(hard_gps.pdgId, 2) == 1) & (abspdg < 6) & (hard_gps.mompdgId == sgn * -24)]
+
+    gen_charged_leps = hard_gps[( (abspdg == 11) | (abspdg == 13) | (abspdg == 15) ) & (hard_gps.mompdgId == sgn * -24)]
+    gen_neutral_leps = hard_gps[( (abspdg == 12) | (abspdg == 14) | (abspdg == 16) ) & (hard_gps.mompdgId == sgn * 24)]
+    gen_taus = hard_gps[(abspdg == 15) & (hard_gps.mompdgId == sgn * -24)]
+    gen_nu_taus = hard_gps[(abspdg == 16) & (hard_gps.mompdgId == sgn * 24)]
+
+
+            # get direct tau decay products from hard processes (subset of gen_taus events above)
+    isDirectHardProcessTauDecayProduct = genparts.statusFlags >> 10 & 1 == 1
+    tau_decay_prods = genparts[isDirectHardProcessTauDecayProduct]
+
+        # only need decays to leptons (e/mu, tau nu) for event classification
+    tau_TO_tau_nu = tau_decay_prods[np.abs(tau_decay_prods.pdgId) == 16]
+    tau_TO_charged_lep = tau_decay_prods[(np.abs(tau_decay_prods.pdgId) == 11) | (np.abs(tau_decay_prods.pdgId) == 13)]
+    tau_TO_neutral_lep = tau_decay_prods[(np.abs(tau_decay_prods.pdgId) == 12) | (np.abs(tau_decay_prods.pdgId) == 14)]
 
     #set_trace()
-    tops = df['genParts'][jagged_top_sel]
-    tbars = df['genParts'][jagged_tbar_sel]
-    bs = df['genParts'][jagged_b_sel]
-    bbars = df['genParts'][jagged_bbar_sel]
-    wpartons_up = df['genParts'][jagged_wpartons_up_sel]
-    wpartons_dw = df['genParts'][jagged_wpartons_dw_sel]
-    charged_leps = df['genParts'][jagged_chargedLeps_sel]
-    neutral_leps = df['genParts'][jagged_neutralLeps_sel]
-    #tau_leps = df['genParts'][jagged_Tau_sel]
-    final_charged_leps = df['genParts'][jagged_FinalChargedLeps_sel]
+        # set decaytype for gen taus
+    charged_lep_decaytype_array = gen_charged_leps.decaytype.content
+
+            # semilep evts
+    lep_jets_evts = (gen_charged_leps.counts == 1) & (gen_taus.counts == 0) & (gen_wpartons_up.counts == 1) & (gen_wpartons_dw.counts == 1)
+    tau_jets_evts = (gen_charged_leps.counts == 1) & (gen_taus.counts == 1) & (gen_wpartons_up.counts == 1) & (gen_wpartons_dw.counts == 1)
+    semilep_evts = (lep_jets_evts | tau_jets_evts)
+    sl_evts_mask = np.repeat(semilep_evts, gen_charged_leps.counts)
+    semilep_decaytype_array = np.zeros(semilep_evts.sum(), dtype=int)
+                # tau -> l
+    semilep_tau_leptonic_decay = (tau_jets_evts) &  (tau_TO_charged_lep.counts == 1) & (tau_TO_neutral_lep.counts == 1) & (tau_TO_tau_nu.counts == 1)
+    semilep_tau_hadronic_decay = (tau_jets_evts) & (~semilep_tau_leptonic_decay)
+    semilep_decaytype_array[semilep_tau_leptonic_decay[semilep_evts]] = np.ones(semilep_tau_leptonic_decay.sum(), dtype=int)
+    semilep_decaytype_array[semilep_tau_hadronic_decay[semilep_evts]] = np.ones(semilep_tau_hadronic_decay.sum(), dtype=int)*2
+
+        # set charged_lep_decatype_array for semileptonic events
+    charged_lep_decaytype_array[sl_evts_mask] = semilep_decaytype_array
+
+
+            # dilep evts
+    lep_lep_evts = (gen_charged_leps.counts == 2) & (gen_taus.counts == 0) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+    lep_tau_evts = (gen_charged_leps.counts == 2) & (gen_taus.counts == 1) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+    tau_tau_evts = (gen_charged_leps.counts == 2) & (gen_taus.counts == 2) & (gen_wpartons_up.counts == 0) & (gen_wpartons_dw.counts == 0)
+    dilep_evts = (lep_lep_evts | lep_tau_evts | tau_tau_evts)
+    dl_evts_mask = np.repeat(dilep_evts, gen_charged_leps.counts)
+    dilep_decaytype_array = np.zeros((dilep_evts.sum(), 2), dtype=int)
+                # tau + tau
+                    # tau + tau -> ll
+    dilep_TauTau_ll_decay = (tau_tau_evts) & (tau_TO_charged_lep.counts == 2) & (tau_TO_neutral_lep.counts == 2) & (tau_TO_tau_nu.counts == 2)
+    dilep_decaytype_array[dilep_TauTau_ll_decay[dilep_evts]] = np.ones((dilep_TauTau_ll_decay.sum(), 2), dtype=int)
+                    # tau + tau -> hh
+    dilep_TauTau_hh_decay = (tau_tau_evts) & ((tau_TO_charged_lep.counts + tau_TO_neutral_lep.counts) == 0) & (tau_TO_tau_nu.counts == 2)
+    dilep_decaytype_array[dilep_TauTau_hh_decay[dilep_evts]] = np.ones((dilep_TauTau_hh_decay.sum(), 2), dtype=int)*2
+                    # tau + tau -> lh
+    dilep_TauTau_lh_decay = (tau_tau_evts) & ~(dilep_TauTau_ll_decay | dilep_TauTau_hh_decay)
+                        # set index corresponding to leptonically decaying tau to 1, default array is set to 2
+    dl_TauTau_to_lh_decaytype_array = np.ones(dilep_TauTau_lh_decay.sum()*2, dtype=int)*2
+    lep_tau_mask = (np.repeat(tau_TO_charged_lep[dilep_TauTau_lh_decay].mompdgId.flatten(), 2) == gen_charged_leps[dilep_TauTau_lh_decay].pdgId.flatten())
+    dl_TauTau_to_lh_decaytype_array[lep_tau_mask] = np.ones(lep_tau_mask.sum(), dtype=int)
+    dilep_decaytype_array[dilep_TauTau_lh_decay[dilep_evts]] = dl_TauTau_to_lh_decaytype_array.reshape(dilep_TauTau_lh_decay.sum(), 2)
+
+                # lep + tau
+                    # tau -> l
+    dilep_LepTau_l_decay = (lep_tau_evts) & (tau_TO_charged_lep.counts == 1) & (tau_TO_neutral_lep.counts == 1) & (tau_TO_tau_nu.counts == 1)
+                        # set index corresponding to tau to 1
+    dl_LepTau_to_Lep_decaytype_array = np.zeros(dilep_LepTau_l_decay.sum()*2, dtype=int)
+    dl_LepTau_to_Lep_decaytype_array[(np.abs(gen_charged_leps[dilep_LepTau_l_decay].pdgId) == 15).flatten()] = np.ones(dilep_LepTau_l_decay.sum(), dtype=int)
+    dilep_decaytype_array[dilep_LepTau_l_decay[dilep_evts]] = dl_LepTau_to_Lep_decaytype_array.reshape(dilep_LepTau_l_decay.sum(), 2)
+                    # tau -> h
+    dilep_LepTau_h_decay = (lep_tau_evts) & ~(dilep_LepTau_l_decay)
+                        # set index corresponding to tau to 2
+    dl_LepTau_to_Had_decaytype_array = np.zeros(dilep_LepTau_h_decay.sum()*2, dtype=int)
+    dl_LepTau_to_Had_decaytype_array[(np.abs(gen_charged_leps[dilep_LepTau_h_decay].pdgId) == 15).flatten()] = np.ones(dilep_LepTau_h_decay.sum(), dtype=int)*2
+    dilep_decaytype_array[dilep_LepTau_h_decay[dilep_evts]] = dl_LepTau_to_Had_decaytype_array.reshape(dilep_LepTau_h_decay.sum(), 2)
+
+        # set charged_lep_decatype_array for semileptonic events
+    charged_lep_decaytype_array[dl_evts_mask] = dilep_decaytype_array.flatten()
+
+
+
+
+    # reconstruct gen objects with new charges
+        # tops
+    gen_tops_dict = {remove_fast(key) : gen_tops[key].flatten() for key in gen_tops.columns if key != 'p4'}
+    gen_tops_dict['charge'] = (gen_tops.charge.ones_like()*(2./3.)).flatten()
+    gen_tops = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_tops.counts,
+        **gen_tops_dict
+    )
+        # tbars
+    gen_tbars_dict = {remove_fast(key) : gen_tbars[key].flatten() for key in gen_tbars.columns if key != 'p4'}
+    gen_tbars_dict['charge'] = (gen_tbars.charge.ones_like()*(-2./3.)).flatten()
+    gen_tbars = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_tbars.counts,
+        **gen_tbars_dict
+    )
+        # bs
+    gen_bs_dict = {remove_fast(key) : gen_bs[key].flatten() for key in gen_bs.columns if key != 'p4'}
+    gen_bs_dict['charge'] = (gen_bs.charge.ones_like()*(-1./3.)).flatten()
+    gen_bs = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_bs.counts,
+        **gen_bs_dict
+    )
+        # bbars
+    gen_bbars_dict = {remove_fast(key) : gen_bbars[key].flatten() for key in gen_bbars.columns if key != 'p4'}
+    gen_bbars_dict['charge'] = (gen_bbars.charge.ones_like()*(1./3.)).flatten()
+    gen_bbars = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_bbars.counts,
+        **gen_bbars_dict
+    )
+
+        # wpartons up
+    gen_wpartons_up_dict = {remove_fast(key) : gen_wpartons_up[key].flatten() for key in gen_wpartons_up.columns if key != 'p4'}
+    gen_wpartons_up_dict['charge'] = (sgn[(np.mod(hard_gps.pdgId, 2) == 0) & (abspdg < 6) & (hard_gps.mompdgId == sgn * 24)]*(2./3.)).flatten()
+    gen_wpartons_up = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_wpartons_up.counts,
+        **gen_wpartons_up_dict
+    )
+
+        # wpartons dw
+    gen_wpartons_dw_dict = {remove_fast(key) : gen_wpartons_dw[key].flatten() for key in gen_wpartons_dw.columns if key != 'p4'}
+    gen_wpartons_dw_dict['charge'] = (sgn[(np.mod(hard_gps.pdgId, 2) == 1) & (abspdg < 6) & (hard_gps.mompdgId == sgn * -24)]*(-1./3.)).flatten()
+    gen_wpartons_dw = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_wpartons_dw.counts,
+        **gen_wpartons_dw_dict
+    )
+
+        # neutral leps
+    gen_neutral_leps_dict = {remove_fast(key) : gen_neutral_leps[key].flatten() for key in gen_neutral_leps.columns if key != 'p4'}
+    gen_neutral_leps_dict['charge'] = (gen_neutral_leps.charge.zeros_like()).flatten()
+    gen_neutral_leps = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_neutral_leps.counts,
+        **gen_neutral_leps_dict
+    )
+
+        # reconstruct gen_charged_leps with new decaytype values and charge
+    gen_charged_leps_dict = {remove_fast(key) : gen_charged_leps[key].flatten() for key in gen_charged_leps.columns if key != 'p4'}
+    gen_charged_leps_dict['decaytype'] = charged_lep_decaytype_array
+    gen_charged_leps_dict['charge'] = (sgn[( (abspdg == 11) | (abspdg == 13) | (abspdg == 15) ) & (hard_gps.mompdgId == sgn * -24)]* -1).flatten()
+    gen_charged_leps = JaggedCandidateArray.candidatesfromcounts(
+        counts = gen_charged_leps.counts,
+        **gen_charged_leps_dict
+    )
+
+
 
     #set_trace()
+    #ttbar = genobj.from_collections(wpartons_up=gen_wpartons_up, wpartons_dw=gen_wpartons_dw, charged_leps=gen_els, neutral_leps=gen_el_nus, bs=gen_bs, bbars=gen_bbars, tops=gen_tops, tbars=gen_tbars)
     GenObjects = awkward.Table(
-        GenTop = tops,
-        GenTbar = tbars,
-        GenB = bs,
-        GenBbar = bbars,
-        GenWPartsUp = wpartons_up,
-        GenWPartsDw = wpartons_dw,
-        ChargedLeps = charged_leps,
-        NeutralLeps = neutral_leps,
-        FinalChargedLeps = final_charged_leps,
+        GenTop = gen_tops,
+        GenTbar = gen_tbars,
+        GenB = gen_bs,
+        GenBbar = gen_bbars,
+        GenWPartsUp = gen_wpartons_up,
+        GenWPartsDw = gen_wpartons_dw,
+        ChargedLeps = gen_charged_leps,
+        NeutralLeps = gen_neutral_leps,
     )
 
     return GenObjects
 
-def select(df, systype='', mode='NORMAL'):
+def select(df, mode='NORMAL'):
+#def select(df, systype='', mode='NORMAL'):
     modes_to_choose = {
         'NORMAL' : select_normal,
         'LHE' : select_lhe,
@@ -151,9 +268,7 @@ def select(df, systype='', mode='NORMAL'):
 
     GenObjs = modes_to_choose[mode](df, w_decay_momid)
 
-    charged_leps_to_use = GenObjs['FinalChargedLeps'] if systype == 'FINAL' else GenObjs['ChargedLeps']
-    neutral_leps_to_use = GenObjs['NeutralLeps']
-    ttbar = genobj.from_collections(wpartons_up=GenObjs['GenWPartsUp'], wpartons_dw=GenObjs['GenWPartsDw'], charged_leps=charged_leps_to_use, neutral_leps=neutral_leps_to_use, bs=GenObjs['GenB'], bbars=GenObjs['GenBbar'], tops=GenObjs['GenTop'], tbars=GenObjs['GenTbar'])
+    ttbar = genobj.from_collections(wpartons_up=GenObjs['GenWPartsUp'], wpartons_dw=GenObjs['GenWPartsDw'], charged_leps=GenObjs['ChargedLeps'], neutral_leps=GenObjs['NeutralLeps'], bs=GenObjs['GenB'], bbars=GenObjs['GenBbar'], tops=GenObjs['GenTop'], tbars=GenObjs['GenTbar'])
 
     return ttbar
 

@@ -31,11 +31,11 @@ lumi_weights = {
 proj_dir = os.environ['PROJECT_DIR']
 
 # for each year, read sumGenWeights from all meta.json files
-for year in ['2017', '2018']: # only for testing UL NanoAOD
-#for year in ['2016', '2017', '2018']:
+for year in ['2016', '2017', '2018']:
     print(year)
     #set_trace()
-    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_%s.json' % (year, jobid))).read()) # file with cross sections
+    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year)).read()) # file with cross sections
+    #xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_%s.json' % (year, jobid))).read()) # file with cross sections
     datasets = list(filter(lambda x: fnmatch(x['name'], '*'), xsec_file))
     for dataset in datasets:
         sample = dataset['name']
