@@ -5,5 +5,5 @@
 #export jobid=jpt30_ljpt0_leppt30_mvaEl
 #export jobid=jpt30_ljpt50_MT40_cutBasedEl
 #export jobid=UL_NanoAOD
-#export jobid=ULnanoAOD_jpt30_ljpt50_MT40_cutBasedEl
-jobid=NanoAODv6_Testing
+export jobid=ULnanoAOD_jpt30_ljpt50_MT40_cutBasedEl
+#jobid=NanoAODv6_Testing
