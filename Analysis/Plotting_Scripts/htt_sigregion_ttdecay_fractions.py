@@ -23,7 +23,6 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
-#parser.add_argument('--nosys', action='store_true', help='Make plots without systematics and no qcd estimation')
 
 args = parser.parse_args()
 
@@ -43,10 +42,6 @@ fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir)
 
 #set_trace()
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
-
-ttdecay_frac_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), 'ttdecay_fractions')
-ttdecay_fnames = sorted([os.path.join(ttdecay_frac_dir, fname) for fname in os.listdir(ttdecay_frac_dir) if fname.endswith(f_ext)])
-tt_decay_dict = load(ttdecay_fnames[0])
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -80,31 +75,31 @@ linearize_binning = (
 variables = {
     #'mtt_vs_tlep_ctstar_abs' : ('m($t\\bar{t}$)', '|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[0], linearize_binning[1], (linearize_binning[0][0], linearize_binning[0][-1]), (linearize_binning[1][0], linearize_binning[1][-1]), True),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
-    ####'mtt' : ('m($t\\bar{t}$) [GeV]', linearize_binning[0], (200., 2000.), True),
-    ####'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[1], (0., 1.), True),
-    #'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
-    #'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
-    #'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
-    #'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
-    #'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 500.), True),
-    #'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 500.), True),
-    #'eta_thad' : ('$\\eta$($t_{h}$)', 2, (-4., 4.), True),
-    #'eta_tlep' : ('$\\eta$($t_{l}$)', 2, (-4., 4.), True),
-    #'eta_tt' : ('$\\eta$($t\\bar{t}$)', 2, (-4., 4.), True),
-    #'tlep_ctstar' : ('cos($\\theta^{*}_{t_{l}}$)', 2, (-1., 1.), True),
-    #'full_disc' : ('$\\lambda_{C}$', 2, (5, 25.), True),
-    #'mass_disc' : ('$\\lambda_{M}$', 2, (0, 20.), True),
-    #'ns_disc' : ('$\\lambda_{NS}$', 2, (3., 10.), True),
-    #'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
-    #'Jets_eta' : ('$\\eta$(jets)', 2, (-2.6, 2.6), True),
-    #'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
-    #'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 2, (-2.6, 2.6), True),
-    #'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
-    #'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 2, (-2.6, 2.6), True),
-    #'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
-    #'MT' : ('$M_{T}$ [GeV]', 1, (0., 300.), True),
-    #'MET_pt' : ('$p_{T}$(MET) [GeV]', 1, (0., 300.), True),
-    #'MET_phi' : ('$\phi$(MET)', 1, (-3.2, 3.2), True),
+    ###'mtt' : ('m($t\\bar{t}$) [GeV]', linearize_binning[0], (200., 2000.), True),
+    ###'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[1], (0., 1.), True),
+    'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
+    'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
+    'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
+    'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
+    'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 500.), True),
+    'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 500.), True),
+    'eta_thad' : ('$\\eta$($t_{h}$)', 2, (-4., 4.), True),
+    'eta_tlep' : ('$\\eta$($t_{l}$)', 2, (-4., 4.), True),
+    'eta_tt' : ('$\\eta$($t\\bar{t}$)', 2, (-4., 4.), True),
+    'tlep_ctstar' : ('cos($\\theta^{*}_{t_{l}}$)', 2, (-1., 1.), True),
+    'full_disc' : ('$\\lambda_{C}$', 2, (5, 25.), True),
+    'mass_disc' : ('$\\lambda_{M}$', 2, (0, 20.), True),
+    'ns_disc' : ('$\\lambda_{NS}$', 2, (3., 10.), True),
+    'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
+    'Jets_eta' : ('$\\eta$(jets)', 2, (-2.6, 2.6), True),
+    'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
+    'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 2, (-2.6, 2.6), True),
+    'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
+    'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 2, (-2.6, 2.6), True),
+    'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
+    'MT' : ('$M_{T}$ [GeV]', 1, (0., 300.), True),
+    'MET_pt' : ('$p_{T}$(MET) [GeV]', 1, (0., 300.), True),
+    'MET_phi' : ('$\phi$(MET)', 1, (-3.2, 3.2), True),
     'tt_decay' : ('$t\\bar{t}$ decay', 1, (1, 3), False),
 }
 
@@ -135,7 +130,7 @@ process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=n
 for hname in hdict.keys():
     if 'cutflow' in hname: continue
     #set_trace()
-    hdict[hname] = hdict[hname].group(process_cat, process, {'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad']}) if (hname == 'tt_decay') else hdict[hname].group(process_cat, process, process_groups)
+    hdict[hname] = hdict[hname].group(process_cat, process, {'ttJets' : plt_tools.dataset_groups[args.year]['ttJets']}) if (hname == 'tt_decay') else hdict[hname].group(process_cat, process, process_groups)
 
 
 tt_decay_possibilities = {
