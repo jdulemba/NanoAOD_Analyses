@@ -205,7 +205,7 @@
         "name": "singletbar_tchannel"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/ST_t-channel_top_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection": 136.02,
         "name": "singlet_tchannel"
     },
@@ -216,7 +216,7 @@
         "name": "singlet_tW"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection_old": 35.85,
         "xsection": 19.466,
         "name": "singletbar_tW"
@@ -291,7 +291,7 @@
         "name": "QCD_Mu_30to50"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection": 376600.0,
         "name": "QCD_Mu_50to80"
     },
@@ -367,7 +367,7 @@
         "name": "QCD_EM_120to170"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-170to300_EMEnriched_TuneCP5_13TeV_pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection": 16480.0,
         "name": "QCD_EM_170to300"
     },
