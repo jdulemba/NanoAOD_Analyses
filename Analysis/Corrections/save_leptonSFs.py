@@ -6,8 +6,10 @@ from pdb import set_trace
 import os
 
 proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
+base_jobid = jobid.split('_')[0]
 
-outdir = '%s/Corrections' % proj_dir
+outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -20,9 +22,9 @@ leptons = {
         },
         'eta' : 'eta_ElTOT',
         'fnames' : {
-            '2016' : 'SF_El_V16010b.root',
-            '2017' : 'SF_El_V170301b.root',
-            '2018' : 'SF_El_V180301b.root',
+            #'2016' : 'SF_El_V16010b.root',
+            '2017' : 'SF_El_V170400b.root',
+            '2018' : 'SF_El_V180400b.root',
         }
     },
     'Muons' : {
@@ -32,36 +34,36 @@ leptons = {
         },
         'eta' : 'eta_MuTOT',
         'fnames' : {
-            '2016' : 'SF_Mu_V16010.root', 
-            '2017' : 'SF_Mu_V170301.root',
-            '2018' : 'SF_Mu_V180301.root',
+            #'2016' : 'SF_Mu_V16010.root', 
+            '2017' : 'SF_Mu_V170400.root',
+            '2018' : 'SF_Mu_V180400.root',
         }
     }
 }
 
 sf_output = {
-    '2016' : {
-        'Electrons' : {
-            'Reco_ID' : {
-                'Central' : {},
-                'Error' : {},
-            },
-            'Trig' : {
-                'Central' : {},
-                'Error' : {},
-            },
-        },
-        'Muons' : {
-            'Reco_ID' : {
-                'Central' : {},
-                'Error' : {},
-            },
-            'Trig' : {
-                'Central' : {},
-                'Error' : {},
-            },
-        },
-    },
+    #'2016' : {
+    #    'Electrons' : {
+    #        'Reco_ID' : {
+    #            'Central' : {},
+    #            'Error' : {},
+    #        },
+    #        'Trig' : {
+    #            'Central' : {},
+    #            'Error' : {},
+    #        },
+    #    },
+    #    'Muons' : {
+    #        'Reco_ID' : {
+    #            'Central' : {},
+    #            'Error' : {},
+    #        },
+    #        'Trig' : {
+    #            'Central' : {},
+    #            'Error' : {},
+    #        },
+    #    },
+    #},
     '2017' : {
         'Electrons' : {
             'Reco_ID' : {
@@ -110,13 +112,12 @@ sf_output = {
 
 for lep in leptons.keys():
     for year, fname in leptons[lep]['fnames'].items():
-        sf_file = convert_histo_root_file('%s/inputs/data/%s' % (proj_dir, fname))
+        sf_file = convert_histo_root_file(os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'lepSFs', fname))
         eta_binning = sf_file[(leptons[lep]['eta'], 'dense_lookup')][1]
 
         #if lep == 'Muons': set_trace()
         sf_output[year][lep]['eta_ranges'] = [(eta_binning[idx], eta_binning[idx+1]) for idx in range(len(eta_binning)-1)]
         for idx in range(len(eta_binning)-1):
-            #set_trace()
                 # reco/ID SFs
             sf_output[year][lep]['Reco_ID']['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(leptons[lep]['pt']['reco_id'][idx], 'dense_lookup')])
             sf_output[year][lep]['Reco_ID']['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % leptons[lep]['pt']['reco_id'][idx], 'dense_lookup')])
@@ -124,6 +125,6 @@ for lep in leptons.keys():
             sf_output[year][lep]['Trig']['Central']['eta_bin%i' % idx] = dense_lookup(*sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')])
             sf_output[year][lep]['Trig']['Error']['eta_bin%i' % idx] = dense_lookup(*sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')])
 
-lepSF_name = '%s/leptonSFs.coffea' % outdir
+lepSF_name = os.path.join(outdir, 'leptonSFs.coffea')
 save(sf_output, lepSF_name)    
 print('%s written' % lepSF_name)
