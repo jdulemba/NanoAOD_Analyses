@@ -20,14 +20,14 @@ btag_values["2016"] = {
 }
 btag_values["2017"] = {
     'btagDeepB' : {
-        'DeepCSVLoose' : 0.1522,
-        'DeepCSVMedium': 0.4941,
-        'DeepCSVTight' : 0.8001,
+        'DeepCSVLoose' : 0.1355,
+        'DeepCSVMedium': 0.4506,
+        'DeepCSVTight' : 0.7738,
     },
     'btagDeepFlavB' : {
-        'DeepJetLoose' : 0.0521,
-        'DeepJetMedium': 0.3033,
-        'DeepJetTight' : 0.7489
+        'DeepJetLoose' : 0.0532,
+        'DeepJetMedium': 0.3040,
+        'DeepJetTight' : 0.7476
     }
 }
 btag_values["2018"] = {
