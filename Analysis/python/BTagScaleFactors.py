@@ -12,18 +12,18 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 
 btag_csvFiles = {
-    '2016' : {
-        'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
-        'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
-    },
+    #'2016' : {
+    #    'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
+    #    'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+    #},
     '2017' : {
-        'DeepJet' : 'DeepJet_2017SF_V4_B_F_used.csv',
-        'DeepCSV' : 'DeepCSV_2017SF_V5_B_F_used.csv',
+        'DeepJet' : 'DeepJet_106XUL17SF_used.csv',
+        'DeepCSV' : 'DeepCSV_106XUL17SF_used.csv',
     },
-    '2018' : {
-        'DeepJet' : 'DeepJet_2018SF_V1_used.csv',
-        'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
-    },
+    #'2018' : {
+    #    'DeepJet' : 'DeepJet_2018SF_V1_used.csv',
+    #    'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
+    #},
 }
 
 wp_lookup = [
