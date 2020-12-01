@@ -10,114 +10,131 @@ parser.add_argument('--split_uncs', action='store_true', help='Use individual je
 
 args = parser.parse_args()
 
+jobid = os.environ['jobid']
 proj_dir = os.environ['PROJECT_DIR']
-
-def tag_to_DataTag(tag, era):
-    campaign, reco_ver, version = tag.split('_')
-    reco_ver = reco_ver+era
-    return '_'.join([campaign, reco_ver, version])
 
 jet_type = 'AK4PFchs'
 jec_levels_MC = ['L1FastJet', 'L2Relative', 'L3Absolute']
 jec_levels_Data = ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']
 
+split_by_era = {
+    'jec' : True,
+    'junc' : True,
+    'jr' : False,
+    'jersf' : False,
+}
+
 jecfiles = {
     'Unc' : 'UncertaintySources' if args.split_uncs else 'Uncertainty', # or UncertaintySources for splitting
-    '2016' : {
-        'tag' : 'Summer16_07Aug2017_V11',
-        'DATA' : ['BCD', 'EF', 'GH']
-    },
+    #'2016' : {
+    #    'tag' : 'Summer16_07Aug2017_V11',
+    #    'DATA' : ['BCD', 'EF', 'GH']
+    #},
     '2017' : {
-        'tag' : 'Fall17_17Nov2017_V32',
-        'DATA' : ['B', 'C', 'DE', 'F'],
+        'tag' : 'Summer19UL17',
+        'v' : 'V5',
+        'DATA' : ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'],
     },
     '2018' : {
-        'tag' : 'Autumn18_V19',
-        'DATA' : ['A', 'B', 'C', 'D']
+        'tag' : 'Summer19UL18',
+        'v' : 'V5',
+        'DATA' : ['RunA', 'RunB', 'RunC', 'RunD']
     },
 }
 
 jerfiles = {
-    '2016' : {
-        'tag' : 'Summer16_25nsV1',
-        'JER' : 'PtResolution',
-        'JERSF' : 'SF',
-    },
+    #'2016' : {
+    #    'tag' : 'Summer16_25nsV1',
+    #    'JER' : 'PtResolution',
+    #    'JERSF' : 'SF',
+    #},
     '2017' : {
-        'tag' : 'Fall17_V3',
+        'tag' : 'Summer19UL17_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2018' : {
-        'tag' : 'Autumn18_V7',
+        'tag' : 'Summer19UL18_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
 }
 
+#set_trace()
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
-    for dtype in ['MC']:
-    #for dtype in ['DATA', 'MC']:
-        print(dirid, dtype)
-        #if dirid == 'jersf' and dtype == 'DATA': set_trace()#continue
-        directory = '%s/inputs/data/%s/%s' % (proj_dir, dirid, dtype)
-        for filename in os.listdir(directory):
-            if 'AK4PFchs' not in filename: continue
-            filename = directory+'/'+filename
-            Jetext.add_weight_sets(['* * '+filename])
-            print('%s added to weights' % filename)
+    for dtype in ['DATA', 'MC']:
+        for year in ['2017', '2018']:
+        #for year in ['2016APV', '2016', '2017', '2018']:
+            runs = jecfiles[year][dtype] if ( (dtype == 'DATA') and (split_by_era[dirid]) ) else ['']
+            for run in runs:
+                print(dirid, dtype, year, run)
+                directory = os.path.join(proj_dir, 'inputs', 'data', jobid, dirid, dtype, year, run)
+                for filename in os.listdir(directory):
+                    if jet_type not in filename: continue
+                    fname = os.path.join(directory, filename)
+                    Jetext.add_weight_sets(['* * '+fname])
+                    print('%s added to weights' % fname)
 Jetext.finalize()
 Jetevaluator = Jetext.make_evaluator()
 
 jet_corrections = {
-    '2016' : {
-        'MC' : {},
-#        'DATA': {},
-    },
+    #'2016APV' : {
+    #    'MC' : {},
+    #    'DATA': {},
+    #},
+    #'2016' : {
+    #    'MC' : {},
+    #    'DATA': {},
+    #},
     '2017' : {
         'MC' : {},
-#        'DATA': {},
+        'DATA': {},
     },
     '2018' : {
         'MC' : {},
-#        'DATA': {},
+        'DATA': {},
     },
 }
 
-for year in ['2016', '2017', '2018']:
-    jec_tag = jecfiles[year]['tag']
+#set_trace()
+for year in ['2017', '2018']:
+#for year in ['2016APV', '2016', '2017', '2018']:
+    jec_mc_tag = '_'.join([jecfiles[year]['tag'], jecfiles[year]['v'], 'MC'])
     jer_tag = jerfiles[year]['tag']
 
-    #for era in jecfiles[year]['DATA']:
-    #    data_tag = tag_to_DataTag(jec_tag, era)
-    #    JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (data_tag, level, jet_type) for level in jec_levels_Data]})
-    #    JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (data_tag, jecfiles['Unc'], jet_type)]})
-    #    JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
-    #    JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
-    #    Jet_transformer = JetTransformer(jec=JECcorrector, junc=JECuncertainties, jer=JER, jersf=JERsf)
-    #    jec_corrections[year]['DATA'][era] = {
-    #        'JEC' : JECcorrector,
-    #        'JECUnc' : JECuncertainties,
-    #        'JER' : JER,
-    #        'JERsf' : JERsf,
-    #        'JT' : Jet_transformer,
-    #    }
+        # DATA
+    data_JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
+    data_JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
+    for era in jecfiles[year]['DATA']:
+        jec_data_tag = '_'.join([jecfiles[year]['tag'], era, jecfiles[year]['v'], 'DATA'])
+        data_JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_%s_%s' % (jec_data_tag, level, jet_type) for level in jec_levels_Data]})
+        data_JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_%s_%s' % (jec_data_tag, jecfiles['Unc'], jet_type))})
+        data_Jet_transformer = JetTransformer(jec=data_JECcorrector, junc=data_JECuncertainties, jer=data_JER, jersf=data_JERsf)
+        jet_corrections[year]['DATA'][era] = {
+            'JEC' : data_JECcorrector,
+            'JECUnc' : data_JECuncertainties,
+            'JER' : data_JER,
+            'JERsf' : data_JERsf,
+            'JT' : data_Jet_transformer,
+        }
 
-    JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jec_tag, level, jet_type) for level in jec_levels_MC]})
-    JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_MC_%s_%s' % (jec_tag, jecfiles['Unc'], jet_type))})
-    JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
-    JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
-    Jet_transformer = JetTransformer(jec=JECcorrector, junc=JECuncertainties, jer=JER, jersf=JERsf)
+        # MC
+    MC_JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_%s_%s' % (jec_mc_tag, level, jet_type) for level in jec_levels_MC]})
+    MC_JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_%s_%s' % (jec_mc_tag, jecfiles['Unc'], jet_type))})
+    MC_JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
+    MC_JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
+    MC_Jet_transformer = JetTransformer(jec=MC_JECcorrector, junc=MC_JECuncertainties, jer=MC_JER, jersf=MC_JERsf)
     jet_corrections[year]['MC'] = {
-        'JEC' : JECcorrector,
-        'JECUnc' : JECuncertainties,
-        'JER' : JER,
-        'JERsf' : JERsf,
-        'JT' : Jet_transformer,
+        'JEC' : MC_JECcorrector,
+        'JECUnc' : MC_JECuncertainties,
+        'JER' : MC_JER,
+        'JERsf' : MC_JERsf,
+        'JT' : MC_Jet_transformer,
     }
+    print('Jet corrections for %s saved' % year)
 
 #set_trace()
-fname = 'JetCorrections_UncSources.coffea' if args.split_uncs else 'JetCorrections.coffea'
-save(jet_corrections, '%s/Corrections/%s' % (proj_dir, fname))
-print('\n%s/Corrections/%s written' % (proj_dir, fname))
+fname = os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections.coffea')
+save(jet_corrections, fname)
+print('\n%s written' % fname)
