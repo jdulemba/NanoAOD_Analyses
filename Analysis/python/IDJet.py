@@ -143,12 +143,19 @@ def process_jets(df, year, corrections=None, shift=None):
     for bdiscr in btag_values[year].keys():
         for wp in btag_values[year][bdiscr].keys():
             Jet[wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
-    
-    if not df.dataset.startswith('data_Single'):
-        Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
-            ## apply JER
-        if (jet_pars['applyJER'] == 1) and corrections is not None:
-                ## create gen jets for matching
+
+        ## apply jet corrections
+    if (jet_pars['applyJER'] == 1) and corrections is not None:
+        if df.dataset.startswith('data_Single'):
+            era = 'Run%s' % df.dataset.split(year)[-1]
+            JER = corrections['DATA'][era]['JER']
+            Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
+            Jet_transformer = corrections['DATA'][era]['JT']
+
+        else:
+            Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
+                ## apply JER
+                    ## create gen jets for matching
             import python.GenParticleSelector as genpsel
             df['genJets'] = genpsel.process_genJets(df)
 
@@ -157,10 +164,11 @@ def process_jets(df, year, corrections=None, shift=None):
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
             get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
             Jet_transformer = corrections['MC']['JT']
-            import python.JetMET_corrections as JETMET_corr
-            JETMET_corr.transform(Jet_transformer, jet=Jet, met=df['MET'], shift=shift)
-            #Jet_transformer.transform(Jet, met=df['MET'])
             #set_trace()
+
+        import python.JetMET_corrections as JETMET_corr
+        JETMET_corr.transform(Jet_transformer, jet=Jet, met=df['MET'], shift=shift)
+        #Jet_transformer.transform(Jet, met=df['MET'])
 
     return Jet
 
