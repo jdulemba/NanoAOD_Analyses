@@ -22,7 +22,7 @@ analyzer = 'permProbComputer'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -33,18 +33,15 @@ fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
     ## run on correct samples
-if args.year == '2016':
-    Nominal_ttJets = ['ttJets_PS', 'ttJets']
-else:
-    Nominal_ttJets = ['ttJetsSL']#, 'ttJetsHad', 'ttJetsDiLep']
+Nominal_ttJets = ['ttJetsSL']
 isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
 
 ## load corrections for event weights
-pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
-lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
-jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
+pu_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_PU_Weights.coffea'))
+lepSF_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'leptonSFs.coffea'))
+jet_corrections = load(os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections.coffea'))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
@@ -53,7 +50,7 @@ corrections = {
     'JetCor' : jet_corrections,
 }
 
-cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
+cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
     ## parameters for b-tagging
 jet_pars = cfg_pars['Jets']
 btagger = jet_pars['btagger']
@@ -239,8 +236,7 @@ class permProbComputer(processor.ProcessorABC):
             # find gen level particles for ttbar system
         #set_trace()
         genp_mode = 'NORMAL'
-        GenTTbar = genpsel.select(df, systype='FINAL', mode=genp_mode)
-        #genpsel.select(df, mode='LHE')
+        GenTTbar = genpsel.select(df, mode=genp_mode)
         #set_trace()
         selection.add('semilep', GenTTbar['SL']['TTbar'].counts > 0)
 
