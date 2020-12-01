@@ -20,6 +20,6 @@ Create pileup files for each year by running make_nanoAOD_data_pileup.sh from CM
 ```
 Lepton Scale Factors:
 
-Files used are from Otto. Which files to use are found in his cfg files (/uscms_data/d3/ohindric/RunAnalyzer/config_1[678].cfg)
-and the files are then copied from /uscms_data/d1/ohindric/RunAnalyzer/IN1[678]/INPUT/
+Files used are from Otto. Which files to use are found in his cfg files (/uscms_data/d3/ohindric/RunAnalyzer/config_1[678]UL.cfg)
+and the files are then copied from /uscms_data/d1/ohindric/RunAnalyzer/INUL1[678]/INPUT/
 ```
