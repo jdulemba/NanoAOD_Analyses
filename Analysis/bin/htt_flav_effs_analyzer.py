@@ -19,7 +19,7 @@ analyzer = 'htt_flav_effs'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -35,9 +35,9 @@ for fname in fileset.keys():
         raise IOError("Sample %s not valid for finding btag efficiencies. Only %s are allowed" % (fname, allowed_samples))
 
 ## load corrections for event weights
-pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
-lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
-jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
+pu_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_PU_Weights.coffea'))
+lepSF_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'leptonSFs.coffea'))
+jet_corrections = load(os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections.coffea'))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
@@ -46,7 +46,7 @@ corrections = {
     'BTagSF' : False,
 }
 
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['Jets']
+jet_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())['Jets']
 wps_to_use = list(set([jet_pars['permutations']['tightb'], jet_pars['permutations']['looseb']]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
