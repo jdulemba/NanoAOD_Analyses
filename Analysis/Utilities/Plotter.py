@@ -155,11 +155,13 @@ def plot_sys_variations(ax, rax, nom, up, dw, xlabel='', ylabel='', xlimits=None
 
 
 
-def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_opts):
+def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_styles=None, **mc_opts):
 
     #set_trace()
     mcorder = mc_opts.get('mcorder')
     stack = mc_opts.get('stack', True)
+    normalize = mc_opts.get('normalize', False)
+    err_opts = mc_opts.get('error_opts', stack_error_opts)
 
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
@@ -169,11 +171,13 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
         stack=stack,
         line_opts=None,
         fill_opts=stack_fill_opts,
-        error_opts=stack_error_opts,
+        error_opts=err_opts,
         order=mcorder,
+        density=normalize,
     )
     ax.autoscale(axis='x', tight=True)
-    ax.set_ylim(0, ylimits)
+    ax.set_ylim(ylimits)
+    ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_xlim(xlimits)
     
@@ -181,7 +185,7 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, **mc_
     handles, labels = ax.get_legend_handles_labels()
     for idx, sample in enumerate(labels):
         if sample == 'data' or sample == 'Observed': continue
-        facecolor, legname = plt_tools.get_styles(sample, hstyles)
+        facecolor, legname = plt_tools.get_styles(sample, hstyles) if hist_styles is None else plt_tools.get_styles(sample, hist_styles)
         handles[idx].set_facecolor(facecolor)
         labels[idx] = legname
     # call ax.legend() with the new values
