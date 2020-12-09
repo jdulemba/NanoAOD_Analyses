@@ -9,7 +9,7 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'meta_info'
 
-outdir = '%s/Corrections' % proj_dir
+outdir = os.path.join(proj_dir, 'Corrections') 
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -24,24 +24,24 @@ data_pu_dists = {
     '2018' : {},
 }
 
-pu_path = '%s/inputs/data/Pileup' % proj_dir
+pu_path = os.path.join(proj_dir, 'inputs', 'data', 'Pileup')
 
 for year in ['2016', '2017', '2018']:
-    input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
-    fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('.coffea')]
+    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
+    fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('.coffea')]
 
         # get nominal distribution
-    data_pu_central = convert_histo_root_file('%s/%s_data.meta.pu.root' % (pu_path, year))
+    data_pu_central = convert_histo_root_file(os.path.join(pu_path, '%s_data.meta.pu.root' % year))
     central_hist = dense_lookup(*data_pu_central[('pileup', 'dense_lookup')])
     central_hist._values = central_hist._values/sum(central_hist._values) # normalize values
     data_pu_dists[year]['central'] = central_hist
         # get up variation
-    data_pu_up = convert_histo_root_file('%s/%s_data.meta.pu_up.root' % (pu_path, year))
+    data_pu_up = convert_histo_root_file(os.path.join(pu_path, '%s_data.meta.pu_up.root' % year))
     up_hist = dense_lookup(*data_pu_up[('pileup', 'dense_lookup')])
     up_hist._values = up_hist._values/sum(up_hist._values) # normalize values
     data_pu_dists[year]['up'] = up_hist
         # get down variation
-    data_pu_dw = convert_histo_root_file('%s/%s_data.meta.pu_down.root' % (pu_path, year))
+    data_pu_dw = convert_histo_root_file(os.path.join(pu_path, '%s_data.meta.pu_down.root' % year))
     dw_hist = dense_lookup(*data_pu_dw[('pileup', 'dense_lookup')])
     dw_hist._values = dw_hist._values/sum(dw_hist._values) # normalize values
     data_pu_dists[year]['down'] = dw_hist
@@ -64,11 +64,11 @@ for year in ['2016', '2017', '2018']:
             mc_pu_weights[year][histo.axes()[0]._sorted[0]][sys_var] = dense_lookup(mc_weights, edges)
         
     # save files
-mcweights_name = '%s/MC_PU_Weights.coffea' % outdir
+mcweights_name = os.path.join(outdir, 'MC_PU_Weights.coffea')
 save(mc_pu_weights, mcweights_name)
 print('\n', mcweights_name, 'written')
 
-data_pu_name = '%s/data_PU_dists.coffea' % outdir
+data_pu_name = os.path.join(outdir, 'data_PU_dists.coffea')
 save(data_pu_dists, data_pu_name)
 print('\n', data_pu_name, 'written')
 
