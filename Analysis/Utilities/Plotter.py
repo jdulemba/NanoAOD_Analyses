@@ -483,3 +483,49 @@ def linearize_hist(histo, overflow=False):
                 output_hist.values(sumw2=True)[key][1][nbinsx*ybin:nbinsx*(ybin+1)] = sumw2_array[ybin]
 
     return output_hist
+
+
+
+def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=False):
+    '''
+    Inputs:
+        dict : dictionary made from coffea 'convert_histo_root_file'
+        vars : list of variables to make histograms from
+        sparse_axes_list : list of dictionaries with info to create sparse axes
+
+    Output:
+        dictionary of {var: coffea histogram objects}, each with 1 dense axis
+    '''
+    from coffea import hist
+
+    output_histos = {}
+    for var in vars:
+        if not (var, 'dense_lookup') in dict.keys():
+            raise ValueError("%s not found in dense_lookup_dict" % var)
+        sumw = dict[(var, 'dense_lookup')][0]
+        sumw2 = dict[('%s_error' % var, 'dense_lookup')][0]
+        edges = dict[(var, 'dense_lookup')][1]
+
+        sparse_axes = [hist.Cat(sparse_axis['name'], sparse_axis['label']) for sparse_axis in sparse_axes_list]
+        output_hist = hist.Hist(
+            'Events',
+            *sparse_axes,
+            hist.Bin('xaxis', var, len(edges)-1, edges[0], edges[-1])
+        )
+
+        fill_dict = {sparse_axis['name'] : sparse_axis['fill'] for sparse_axis in sparse_axes_list}
+        fill_dict.update({'xaxis' : np.zeros(0), 'weight' : np.zeros(0)})
+            ## initialize output_hist to have empty bins
+        output_hist.fill(**fill_dict)
+
+            ## fill bins
+        for cat in output_hist.values().keys():
+            for xbin in range(len(edges)-1):
+                output_hist.values(sumw2=True)[cat][0][xbin] = sumw[xbin]
+                output_hist.values(sumw2=True)[cat][1][xbin] = sumw2[xbin]
+
+        output_histos[var] = output_hist
+
+    return output_histos
+
+
