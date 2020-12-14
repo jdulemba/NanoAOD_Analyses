@@ -11,7 +11,7 @@ import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 from matplotlib import rcParams
-rcParams['font.size'] = 18
+rcParams['font.size'] = 20
 rcParams["savefig.format"] = 'png'
 rcParams["savefig.bbox"] = 'tight'
 import Utilities.styles as styles
@@ -25,10 +25,10 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-analyzer = 'htt_flav_effs_analyzer'
+analyzer = 'htt_flav_effs'
 
 jobid = os.environ['jobid']
-outdir = '%s/Corrections/%s' % (proj_dir, jobid)
+outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -76,7 +76,7 @@ jet_mults = {
 
 flav_to_name = {'bjet' : 'bottom', 'cjet' : 'charm', 'ljet' : 'light'}
 hname = 'Jets_pt_eta'
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))
 
 #pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
 #eta_binning = np.array([-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5])
@@ -97,7 +97,7 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
     ax.add_collection(pc)
     if clear:
-        fig.colorbar(pc, ax=ax, label='%s Efficiency, %s %s' % (flav_to_name[flav], btagger, wp))
+        fig.colorbar(pc, ax=ax, label='%s Efficiency, %s %s' % (flav_to_name[flav], btagger, wp), pad=0.)
     ax.autoscale(axis='x', tight=True)
     ax.set_xlim(xedges[0], xedges[-1])
     ax.set_ylim(yedges[0], yedges[-1])
@@ -108,26 +108,25 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
         # add lepton/jet multiplicity label
     ax.text(
         0.02, 0.95, "%s" % (jet_mults[jmult]),
-        fontsize=18,
-        horizontalalignment='left',
-        verticalalignment='bottom',
-        transform=ax.transAxes
+        fontsize=rcParams['font.size'],
+        #fontsize=18,
+        horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
     )
-    ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+    hep.cms.cmslabel(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
     #set_trace()
     #figname = 'test.png'    
-    figname = '%s/%s_Efficiency' % (plotdir, '_'.join([btagger, wp, jmult, flav]))
+    figname = os.path.join(plotdir, '%s_Efficiency' % '_'.join([btagger, wp, jmult, flav]))
     fig.savefig(figname)
     print('%s written' % figname)
     plt.close()
     #set_trace()
 
 
-data_lumi_dict = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())
+data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())
 
 for year in ['2016', '2017', '2018']:
-    input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
+    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
     fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('TOT.coffea')]
     if len(fnames) > 1:
         raise ValueError("Only one TOT file should be used")
@@ -154,7 +153,7 @@ for year in ['2016', '2017', '2018']:
         ## get data lumi and scale MC by lumi
     lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
 
-    pltdir = '/'.join([proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer])
+    pltdir = os.path.join(proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer)
     if not os.path.isdir(pltdir):
         os.makedirs(pltdir)
 
@@ -187,7 +186,7 @@ for year in ['2016', '2017', '2018']:
 #set_trace()
 wp_name = list(set(working_points))[0]
     # save files
-flav_effs_name = '%s/htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (outdir, wp_name, jobid)
+flav_effs_name = os.path.join(outdir, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp_name, jobid))
 save(flav_effs, flav_effs_name)
 print('\n', flav_effs_name, 'written')
 
@@ -195,12 +194,13 @@ print('\n', flav_effs_name, 'written')
 if args.construct_btag:
     import Utilities.prettyjson as prettyjson
     import python.BTagScaleFactors as btagSF
+    base_jobid = os.environ['base_jobid']
 
-    cfg_file = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
+    cfg_file = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
 
     for year in flav_effs.keys():
         for btagger in flav_effs[year].keys():
-            csv_path = '/'.join([proj_dir, 'inputs', 'data', btagSF.btag_csvFiles[year][btagger]])
+            csv_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'btagSFs', btagSF.btag_csvFiles[year][btagger])
             if not os.path.isfile(csv_path):
                 raise IOError('BTagging csv file %s not found.' % csv_path)
 
@@ -216,6 +216,6 @@ if args.construct_btag:
                 btag_contructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
 
         # save files
-    btagSFs_name = '%s/htt_3PJets_%s_btag_scalefactors_%s.coffea' % (outdir, wp_name, jobid)
+    btagSFs_name = os.path.join(outdir, 'htt_3PJets_%s_btag_scalefactors_%s.coffea' % (wp_name, jobid))
     save(btag_contructs_dict, btagSFs_name)
     print('\n', btagSFs_name, 'written')
