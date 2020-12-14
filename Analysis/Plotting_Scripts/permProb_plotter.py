@@ -6,19 +6,20 @@ import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend('agg')
 from matplotlib import rcParams
-rcParams['font.size'] = 18
+rcParams['font.size'] = 20
 rcParams["savefig.format"] = 'png'
 rcParams["savefig.bbox"] = 'tight'
+
 from coffea.util import load, save
 from pdb import set_trace
 import os
-import styles
+from Utilities import styles
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 from coffea import hist
 from coffea.lookup_tools.dense_lookup import dense_lookup
 import numpy as np
-import Plotter as Plotter
+from Utilities import Plotter as Plotter
 from scipy import interpolate
 
 from argparse import ArgumentParser
@@ -88,10 +89,10 @@ perm_cats = {
 variables_3jets = {
     'Lost_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True),
     'Lost_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True),
-    'Lost_mbpjet' : ('m(b+j) [GeV]', 1, (0., 500.), True),
+    'Lost_mbpjet' : ('m($t_{h}$) [GeV]', 1, (0., 500.), True),
     'Merged_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True),
     'Merged_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 2, (0., 150.), True),
-    'Merged_mbpjet_vs_maxmjet' : ('max m(jet) [GeV]', 'm(b+j) [GeV]', 2, (0., 150.), 2, (0., 500.), True),
+    'Merged_mbpjet_vs_maxmjet' : ('max m(jet) [GeV]', 'm($t_{h}$) [GeV]', 2, (0., 150.), 2, (0., 500.), True),
 }
 
 variables_4pjets = {
@@ -111,12 +112,8 @@ lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' %
 pcat = hist.Cat("permcat", "Perm Category", sorting='placement')
 pcat_cat = "permcat"
 
-    ## make groups based on process
-process = hist.Cat("process", "Process", sorting='placement')
-process_cat = "dataset"
 
 for year in years_to_run:
-#for year in ['2016']:#, '2017', '2018']:
     input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
     f_ext = 'TOT.coffea'
     outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer])
@@ -130,12 +127,6 @@ for year in years_to_run:
     
     lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
 
-        ## make groups based on process
-    process_groups = plt_tools.make_dataset_groups('Muon', year) # works when only MC present
-    for hname in hdict.keys():
-        if hname == 'cutflow': continue
-        hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
-
 
     if '3' in njets_to_run:
             ## make 3 jets plots
@@ -148,12 +139,13 @@ for year in years_to_run:
             histo = hdict[hname]
                 ## rescale hist by lumi for muons and electrons separately and then combine
             h_mu = histo[:, :, 'Muon', :, :, :].integrate('leptype')
-            h_mu.scale(lumi_correction[year]['Muons'], axis='process')
+            h_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
             h_el = histo[:, :, 'Electron', :, :, :].integrate('leptype')
-            h_el.scale(lumi_correction[year]['Electrons'], axis='process')
+            h_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
             h_tot = h_mu+h_el
-            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('process').integrate('mtregion')
+            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('dataset').integrate('mtregion')
         
+            #set_trace()
             if h_tot.dense_dim() == 1:
                 xtitle, rebinning, x_lims, save_dist = variables_3jets[hname]
         
@@ -196,9 +188,13 @@ for year in years_to_run:
                         ax.set_ylabel(None)
                         ax.set_xlabel(None)
                         ax.set_xlim(x_lims)
-        
+
+                        #set_trace()        
                            ## set legend and corresponding colors
-                        h_opts = {key: hstyles['%s_BLep' % key if 'nusolver' in hname else key] for key in pcat_groups.keys()}
+                        if hname == 'Lost_mbpjet':
+                            h_opts = {key: hstyles['%s_THad' % key] for key in pcat_groups.keys()}
+                        else:
+                            h_opts = {key: hstyles['%s_BLep' % key if 'nusolver' in hname else key] for key in pcat_groups.keys()}
                         handles, labels = ax.get_legend_handles_labels()
                         for idx, cat in enumerate(labels):
                             labels[idx] = h_opts[cat]['name']
@@ -210,14 +206,11 @@ for year in years_to_run:
                             # add lep category
                         ax.text(
                             0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                            fontsize=18, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
+                            fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
                             ## set axes labels and titles
                         plt.xlabel(xtitle)
-                        ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                        hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         #set_trace()
                         figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname]))
@@ -295,15 +288,12 @@ for year in years_to_run:
                                 # add lep category
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
         
                                 ## set axes labels and titles
                             plt.xlabel(ytitle) if dax == 0 else plt.xlabel(xtitle)
-                            ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                            hep.cms.cmslabel(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
        
                             #set_trace() 
                             #figname = 'test.png'
@@ -334,23 +324,18 @@ for year in years_to_run:
                                 # add lep category
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 # add perm category
                             ax.text(
                                 1., 0.95, cat,#hstyles[cat]['name'],
-                                fontsize=18, 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 ## set axes labels and titles
                             plt.xlabel(xtitle)
                             plt.ylabel(ytitle)
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
        
                             #set_trace() 
                             figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
@@ -373,21 +358,17 @@ for year in years_to_run:
                             ax.text(
                                 0.98, 0.02, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
                                 #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
+                                fontsize=rcParams['font.size'], 
                                 #horizontalalignment='left', 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 # add perm category
                             ax.text(
                                 1, 0.95, cat,
-                                fontsize=18, 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
         
                             figname = '%s/%s_norm' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
                             fig.savefig(figname)
@@ -420,12 +401,10 @@ for year in years_to_run:
                             # add lep category
                         ax.text(
                             0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                            fontsize=18, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
+                            fontsize=rcParams['font.size'], 
+                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                        hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         figname = '%s/%s_massdisc' % (pltdir, '_'.join([jmult, lepcat, hname]))
                         fig.savefig(figname)
@@ -442,16 +421,16 @@ for year in years_to_run:
         for hname in variables_4pjets.keys():
             if not hname in hdict.keys():
                 raise ValueError("Hist %s not found" % hname)
-        
+
             histo = hdict[hname]
                 ## rescale hist by lumi for muons and electrons separately and then combine
             h_mu = histo[:, :, 'Muon', :, :, :].integrate('leptype')
-            h_mu.scale(lumi_correction[year]['Muons'], axis='process')
+            h_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
             h_el = histo[:, :, 'Electron', :, :, :].integrate('leptype')
-            h_el.scale(lumi_correction[year]['Electrons'], axis='process')
+            h_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
             h_tot = h_mu+h_el
-            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('process').integrate('mtregion')
-        
+            h_tot = h_tot[:, :, :, 'MTHigh', :].integrate('dataset').integrate('mtregion')
+
             if h_tot.dense_dim() == 1:
                 xtitle, rebinning, x_lims, save_dist = variables_4pjets[hname]
         
@@ -510,14 +489,12 @@ for year in years_to_run:
                             # add lep category
                         ax.text(
                             0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                            fontsize=18, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
+                            fontsize=rcParams['font.size'], 
+                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
                             ## set axes labels and titles
                         plt.xlabel(xtitle)
-                        ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                        hep.cms.cmslabel(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         #set_trace()
                         figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname]))
@@ -585,15 +562,13 @@ for year in years_to_run:
                                 # add lep category
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
         
                                 ## set axes labels and titles
                             plt.xlabel(ytitle) if dax == 0 else plt.xlabel(xtitle)
-                            ax = hep.cms.cmslabel(ax=ax, fontsize=18, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                            hep.cms.cmslabel(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                             #figname = 'test.png'
                             figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname.split('_vs_')[1] if dax == 0 else hname.split('_vs_')[0]]))
@@ -624,24 +599,20 @@ for year in years_to_run:
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
                                 #fontsize=rcParams['font.size']*0.75, 
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 # add perm category
                             ax.text(
                                 0.98, 0.95, hstyles[cat]['name'],
                                 #fontsize=rcParams['font.size']*0.75, 
-                                fontsize=18, 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 ## set axes labels and titles
                             plt.xlabel(xtitle)
                             plt.ylabel(ytitle)
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
         
                             figname = '%s/%s' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
                             fig.savefig(figname)
@@ -663,20 +634,16 @@ for year in years_to_run:
                                 # add lep category
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 # add perm category
                             ax.text(
                                 0.95, 0.95, hstyles[cat]['name'],
-                                fontsize=18, 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
         
                             figname = '%s/%s_norm_orig' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
                             fig.savefig(figname)
@@ -710,20 +677,16 @@ for year in years_to_run:
                                 # add lep category
                             ax.text(
                                 0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                                fontsize=18, 
-                                horizontalalignment='left', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
                                 # add perm category
                             ax.text(
                                 0.95, 0.95, hstyles[cat]['name'],
-                                fontsize=18, 
-                                horizontalalignment='right', 
-                                verticalalignment='bottom', 
-                                transform=ax.transAxes
+                                fontsize=rcParams['font.size'], 
+                                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
         
                             figname = '%s/%s_norm_interp' % (pltdir, '_'.join([jmult, lepcat, hname, cat]))
                             fig.savefig(figname)
@@ -757,12 +720,10 @@ for year in years_to_run:
                             # add lep category
                         ax.text(
                             0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults[jmult]),
-                            fontsize=18, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
+                            fontsize=rcParams['font.size'], 
+                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+                        hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
         
                         figname = '%s/%s_massdisc' % (pltdir, '_'.join([jmult, lepcat, hname]))
                         fig.savefig(figname)
