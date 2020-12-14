@@ -15,11 +15,12 @@ import fnmatch
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'htt_flav_effs'
+base_jobid = os.environ['base_jobid']
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
