@@ -17,12 +17,13 @@ import python.Test_Permutator as tperm
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'permProbComputer'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -33,7 +34,7 @@ fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
     ## run on correct samples
-Nominal_ttJets = ['ttJetsSL']
+Nominal_ttJets = ['ttJetsSL'] if base_jobid == 'ULnanoAOD' else ['ttJetsSL', 'ttJets_PS']
 isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
