@@ -12,6 +12,7 @@ args = parser.parse_args()
 
 jobid = os.environ['jobid']
 proj_dir = os.environ['PROJECT_DIR']
+base_jobid = os.environ['base_jobid']
 
 jet_type = 'AK4PFchs'
 jec_levels_MC = ['L1FastJet', 'L2Relative', 'L3Absolute']
@@ -26,50 +27,57 @@ split_by_era = {
 
 jecfiles = {
     'Unc' : 'UncertaintySources' if args.split_uncs else 'Uncertainty', # or UncertaintySources for splitting
-    #'2016' : {
-    #    'tag' : 'Summer16_07Aug2017_V11',
-    #    'DATA' : ['BCD', 'EF', 'GH']
-    #},
+        #2016 only defined for NanoAODv6
+    '2016' : {
+        'tag' : 'Summer16_07Aug2017',
+        'v' : 'V11',
+        'DATA' : ['BCD', 'EF', 'GH'],
+        'eras' : ['BCD', 'EF', 'GH'],
+    },
     '2017' : {
-        'tag' : 'Summer19UL17',
-        'v' : 'V5',
-        'DATA' : ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'],
+        'tag' : 'Summer19UL17' if base_jobid == 'ULnanoAOD' else 'Fall17_17Nov2017',
+        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V32',
+        'DATA' : ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
+        'eras' : ['B', 'C', 'D', 'E', 'F'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
     },
     '2018' : {
-        'tag' : 'Summer19UL18',
-        'v' : 'V5',
-        'DATA' : ['RunA', 'RunB', 'RunC', 'RunD']
+        'tag' : 'Summer19UL18' if base_jobid == 'ULnanoAOD' else 'Autumn18',
+        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V19',
+        'DATA' : ['RunA', 'RunB', 'RunC', 'RunD'],
+        'eras' : ['A', 'B', 'C', 'D'],
     },
 }
 
 jerfiles = {
-    #'2016' : {
-    #    'tag' : 'Summer16_25nsV1',
-    #    'JER' : 'PtResolution',
-    #    'JERSF' : 'SF',
-    #},
+        #2016 only defined for NanoAODv6
+    '2016' : {
+        'tag' : 'Summer16_25nsV1',
+        'JER' : 'PtResolution',
+        'JERSF' : 'SF',
+    },
     '2017' : {
-        'tag' : 'Summer19UL17_JRV2',
+        'tag' : 'Summer19UL17_JRV2' if base_jobid == 'ULnanoAOD' else 'Fall17_V3',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2018' : {
-        'tag' : 'Summer19UL18_JRV2',
+        'tag' : 'Summer19UL18_JRV2' if base_jobid == 'ULnanoAOD' else 'Autumn18_V7',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
 }
 
 #set_trace()
+years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+#years_to_run = ['2018']
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
     for dtype in ['DATA', 'MC']:
-        for year in ['2017', '2018']:
-        #for year in ['2016APV', '2016', '2017', '2018']:
+        for year in years_to_run:
             runs = jecfiles[year][dtype] if ( (dtype == 'DATA') and (split_by_era[dirid]) ) else ['']
             for run in runs:
                 print(dirid, dtype, year, run)
-                directory = os.path.join(proj_dir, 'inputs', 'data', jobid, dirid, dtype, year, run)
+                directory = os.path.join(proj_dir, 'inputs', 'data', base_jobid, dirid, dtype, year, run)
                 for filename in os.listdir(directory):
                     if jet_type not in filename: continue
                     fname = os.path.join(directory, filename)
@@ -83,10 +91,10 @@ jet_corrections = {
     #    'MC' : {},
     #    'DATA': {},
     #},
-    #'2016' : {
-    #    'MC' : {},
-    #    'DATA': {},
-    #},
+    '2016' : {
+        'MC' : {},
+        'DATA': {},
+    },
     '2017' : {
         'MC' : {},
         'DATA': {},
@@ -98,16 +106,15 @@ jet_corrections = {
 }
 
 #set_trace()
-for year in ['2017', '2018']:
-#for year in ['2016APV', '2016', '2017', '2018']:
+for year in years_to_run:
     jec_mc_tag = '_'.join([jecfiles[year]['tag'], jecfiles[year]['v'], 'MC'])
     jer_tag = jerfiles[year]['tag']
 
         # DATA
     data_JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
     data_JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_DATA_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
-    for era in jecfiles[year]['DATA']:
-        jec_data_tag = '_'.join([jecfiles[year]['tag'], era, jecfiles[year]['v'], 'DATA'])
+    for idx, era in enumerate(jecfiles[year]['eras']):
+        jec_data_tag = '_'.join([jecfiles[year]['tag']+jecfiles[year]['DATA'][idx], jecfiles[year]['v'], 'DATA']) if '_' in jecfiles[year]['tag'] else '_'.join([jecfiles[year]['tag'], jecfiles[year]['DATA'][idx], jecfiles[year]['v'], 'DATA'])
         data_JECcorrector = FactorizedJetCorrector(**{name: Jetevaluator[name] for name in ['%s_%s_%s' % (jec_data_tag, level, jet_type) for level in jec_levels_Data]})
         data_JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_%s_%s' % (jec_data_tag, jecfiles['Unc'], jet_type))})
         data_Jet_transformer = JetTransformer(jec=data_JECcorrector, junc=data_JECuncertainties, jer=data_JER, jersf=data_JERsf)
