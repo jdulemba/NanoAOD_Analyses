@@ -7,6 +7,8 @@ if [ -e $whereIam/jobid.sh ]
 then
         source $whereIam/jobid.sh
         echo "set jobid: $jobid"
+        source $whereIam/nanoTag.sh
+        echo "set nanoAOD version: $base_jobid"
 else
         echo "I did not find jobid.sh, are you sure you do not want to set the jobid and leave it to $jobid?"
 fi
