@@ -37,10 +37,10 @@ elif base_jobid == 'ULnanoAOD':
             'DeepJet' : 'DeepJet_106XUL17SF_used.csv',
             'DeepCSV' : 'DeepCSV_106XUL17SF_used.csv',
         },
-        #'2018' : {
-        #    'DeepJet' : 'DeepJet_2018SF_V1_used.csv',
-        #    'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
-        #},
+        '2018' : {
+            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_used.csv',
+            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_used.csv',
+        },
     }
 else:
     raise ValueError("%s not currently supported" % base_jobid)
