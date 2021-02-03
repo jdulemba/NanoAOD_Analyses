@@ -1,22 +1,14 @@
 #!/usr/bin/env python
 
 from coffea import hist
-from coffea.util import save, load
+from coffea.util import save
 import coffea.processor as processor
 from pdb import set_trace
-import os, sys
-import python.ObjectSelection as objsel
-import coffea.processor.dataframe
-import Utilities.plot_tools as plt_tools
+import os
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
-import coffea.lumi_tools.lumi_tools as lumi_tools
 import python.GenParticleSelector as genpsel
-
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-analyzer = 'GenPartons'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,21 +24,9 @@ fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
 ## load corrections for event weights
-pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
-lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
-jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
 corrections = {
-    'Pileup' : pu_correction,
-    'Prefire' : True,
-    'LeptonSF' : lepSF_correction,
-    'BTagSF' : False,
-    'JetCor' : jet_corrections,
+    'Prefire' : False,
 }
-
-if corrections['BTagSF'] == True:
-    import python.BTagScaleFactors as btagSF
-    threejets_btagSFs = btagSF.create_btag_sf_computer(args.year, '3')
-    fourPlusjets_btagSFs = btagSF.create_btag_sf_computer(args.year, '4+')
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -69,8 +49,6 @@ class GenPartons(processor.ProcessorABC):
                 ## make jet hists
         gen_hists = self.genpartons_hists()
         histo_dict.update(gen_hists)
-
-        histo_dict['cutflow'] = processor.defaultdict_accumulator(int)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
@@ -96,11 +74,6 @@ class GenPartons(processor.ProcessorABC):
         histo_dict['mass']  = hist.Hist("Events", self.dataset_axis, self.object_axis, self.ttdecaymode_axis, self.mass_axis)
         histo_dict['energy']= hist.Hist("Events", self.dataset_axis, self.object_axis, self.ttdecaymode_axis, self.energy_axis)
 
-        #histo_dict['pt']    = hist.Hist("Events", self.dataset_axis, self.objtype_axis, self.ttdecaymode_axis, self.wdecaymode_axis, self.pt_axis)
-        #histo_dict['eta']   = hist.Hist("Events", self.dataset_axis, self.objtype_axis, self.ttdecaymode_axis, self.wdecaymode_axis, self.eta_axis)
-        #histo_dict['phi']   = hist.Hist("Events", self.dataset_axis, self.objtype_axis, self.ttdecaymode_axis, self.wdecaymode_axis, self.phi_axis)
-        #histo_dict['mass']  = hist.Hist("Events", self.dataset_axis, self.objtype_axis, self.ttdecaymode_axis, self.wdecaymode_axis, self.mass_axis)
-        #histo_dict['energy']= hist.Hist("Events", self.dataset_axis, self.objtype_axis, self.ttdecaymode_axis, self.wdecaymode_axis, self.energy_axis)
         return histo_dict
 
 
@@ -109,23 +82,20 @@ class GenPartons(processor.ProcessorABC):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-            raise IOError("This function only works for LazyDataFrame objects")
-
-        #if args.debug: set_trace()
         self.sample_name = df.dataset
 
             ## make event weights
                 # data or MC distinction made internally
         evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
 
-
         GenTTbar = genpsel.select(df, mode='NORMAL')
 
         #set_trace()
         for ttdecay in GenTTbar.columns:
+            if args.debug: print(ttdecay)
             evt_weights_to_use = evt_weights.weight()[GenTTbar[ttdecay]['TTbar'].counts > 0]
             for gen_obj in GenTTbar[ttdecay].columns:
+                if args.debug: print(gen_obj)
                 output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, obj=GenTTbar[ttdecay][gen_obj], evt_weights=evt_weights_to_use)
                 
 
@@ -156,15 +126,12 @@ output = processor.run_uproot_job(fileset,
         'flatten' : True,
         'compression': 5,
     },
-    chunksize=10000,
-    #chunksize=500000,
+    chunksize=10000 if args.debug else 100000,
 )
 
 
 if args.debug:
     print(output)
-#set_trace()
-#print(output['cutflow'])
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
