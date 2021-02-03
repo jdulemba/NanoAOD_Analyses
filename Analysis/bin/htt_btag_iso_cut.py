@@ -21,6 +21,7 @@ import Utilities.systematics as systematics
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'htt_btag_iso_cut'
 
 from argparse import ArgumentParser
@@ -54,15 +55,19 @@ isTTbar_ = samplename.startswith('ttJets')
 isNominal_ttJets_ = samplename in Nominal_ttJets
 isTTShift_ = isTTbar_ and (samplename.endswith('UP') or samplename.endswith('DOWN') or 'mtop' in samplename)
 isData_ = samplename.startswith('data')
+if isData_:
+    lumiMask_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'LumiMasks', '%s_GoldenJson_%s.txt' % (args.year, base_jobid))
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
 
 ## load lumimask for data and corrections for event weights
-pu_correction = load('%s/Corrections/%s/MC_PU_Weights.coffea' % (proj_dir, jobid))
-lepSF_correction = load('%s/Corrections/leptonSFs.coffea' % proj_dir)
-jet_corrections = load('%s/Corrections/JetCorrections.coffea' % proj_dir)[args.year]
-alpha_corrections = load('%s/Corrections/%s/alpha_correction_%s.coffea' % (proj_dir, jobid, jobid))[args.year]['E']['All'] # E, All determined by post application plots
+pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))
+lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))
+jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetCorrections.coffea'))[args.year]
+alpha_fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'alpha_correction_%s.coffea' % jobid) if os.path.isfile(os.path.join(proj_dir, 'Corrections', base_jobid, 'alpha_correction_%s.coffea' % jobid)) else os.path.join(proj_dir, 'Corrections', base_jobid, 'alpha_correction_%s.coffea' % base_jobid)
+alpha_corrections = load(alpha_fname)[args.year]['E']['All_2D'] # E, All_2D determined by post application plots
+nnlo_reweighting = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
@@ -70,9 +75,12 @@ corrections = {
     'BTagSF' : not isData_,
     'JetCor' : jet_corrections,
     'Alpha' : alpha_corrections,
+    #'Kin_Rewt' : {'Var' : 'thad_pt', 'Correction' : nnlo_reweighting},
+    #'Kin_Rewt' : {'Var' : 'mtt_vs_thad_ctstar', 'Correction' : nnlo_reweighting},
+    'Kin_Rewt' : {'Var' : 'mtt_vs_thad_ctstar_Interp', 'Correction' : nnlo_reweighting},
 }
 
-cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())
+cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
     ## parameters for b-tagging
 jet_pars = cfg_pars['Jets']
 btaggers = ['DeepCSV']
@@ -83,7 +91,7 @@ if not( len(wps_to_use) == 1):
 btag_wps = ['DeepCSVMedium']
 
 if corrections['BTagSF'] == True:
-    sf_file = '%s/Corrections/%s/%s' % (proj_dir, jobid, jet_pars['btagging']['btagSF_file'])
+    sf_file = os.path.join(proj_dir, 'Corrections', base_jobid, jet_pars['btagging']['btagSF_file'])
     if not os.path.isfile(sf_file):
         raise IOError("BTag SF file %s doesn't exist" % sf_file)
 
@@ -97,13 +105,14 @@ if corrections['BTagSF'] == True:
 
 MTcut = jet_pars['MT']
 
-# 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'other' (not semilep)
+# 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'other' (not semilep)
 perm_cats = {
     0 : '',
     1 : 'right',
     2 : 'matchable',
     3 : 'unmatchable',
-    4 : 'other'
+    4 : 'sl_tau',
+    5 : 'other',
 }
 
 # get systematics to run
@@ -365,7 +374,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                 isSM_Data = self.sample_name.startswith('data_SingleMuon')
                 runs = df.run
                 lumis = df.luminosityBlock
-                Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson.txt' % (proj_dir, args.year))
+                Golden_Json_LumiMask = lumi_tools.LumiMask(lumiMask_path)
                 LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
                 selection.add('lumimask', LumiMask)
    
@@ -464,20 +473,14 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                         'DeepCSV_l_DW' : deepcsv_l_dw,
                     }
 
-                # don't use ttbar events with indices % 10 == 0, 1, 2
-                if isNominal_ttJets_:
-                    events = df.event
-                    selection.add('keep_ttbar', ~np.stack([((events % 10) == idx) for idx in [0, 1, 2]], axis=1).any(axis=1))
-                    for lepton in regions.keys():
-                        for leptype in regions[lepton].keys():
-                            for btagregion in regions[lepton][leptype].keys():
-                                for jmult in regions[lepton][leptype][btagregion].keys():
-                                    sel = regions[lepton][leptype][btagregion][jmult]
-                                    sel.update({'keep_ttbar'})
-
                 if isTTbar_:
-                    genp_mode = 'NORMAL'
-                    GenTTbar = genpsel.select(df, systype='FINAL', mode=genp_mode)
+                    GenTTbar = genpsel.select(df, mode='NORMAL')
+                    if 'Kin_Rewt' in self.corrections.keys():
+                        kin_wts = MCWeights.get_kin_weights(self.corrections['Kin_Rewt'], GenTTbar)
+                        mu_evt_weights.add('%s_reweighting' % corrections['Kin_Rewt']['Var'], kin_wts)
+                        el_evt_weights.add('%s_reweighting' % corrections['Kin_Rewt']['Var'], kin_wts)
+                        #mu_evt_weights._weights['%s_reweighting' % self.corrections['Kin_Rewt']['Var']] = kin_wts
+                        #el_evt_weights._weights['%s_reweighting' % self.corrections['Kin_Rewt']['Var']] = kin_wts
 
 
             #set_trace()
@@ -514,7 +517,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                     # get matched permutation (semilep ttbar only)
                                 if isTTbar_:
                                     semilep_evts = GenTTbar['SL']['TTbar'].counts > 0
-                                    bp_status[~semilep_evts] = 4
+                                    bp_status[~semilep_evts] = 5
                                     #if (cut & semilep_evts).sum() == 0:
                                     #    continue
                                     if 'loose_or_tight_%s' % ltype in regions[lepton][leptype][btagregion][jmult]:
@@ -528,7 +531,9 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                     mp = ttmatcher.best_match(gen_hyp=GenTTbar[(cut & semilep_evts)], jets=df['Jet'][(cut & semilep_evts)], leptons=df[lepton][(cut & semilep_evts)][sl_lep_mask], met=df['MET'][(cut & semilep_evts)])
                                     perm_cat_array = compare_matched_best_perms(mp, best_perms, njets=jmult, bp_mask=semilep_evts[cut])
                                     bp_status[(cut & semilep_evts)] = perm_cat_array
-
+                                        # consider tau events as separate
+                                    sl_tau_evts = (np.abs(GenTTbar['SL']['Lepton'].pdgId) == 15).pad(1).fillna(False).flatten() # fillna to make sure array is same size as df.size
+                                    bp_status[sl_tau_evts] = 4
 
                                     ## calculate MT
                                 MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
@@ -542,7 +547,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                     for rewt_sys in self.reweight_systematics_to_run:
                                         if args.debug: print('    sysname:', rewt_sys)
 
-                                        #set_trace()
+                                        if args.debug: set_trace()
                                             ## only fill plots in signal region if systematic variation being used
                                         if (rewt_sys != 'nosys') and ('%s_%s' % (leptype, btagregion) != 'Tight_btagPass'): continue
 
