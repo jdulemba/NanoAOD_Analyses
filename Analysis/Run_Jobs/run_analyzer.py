@@ -22,10 +22,11 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer=args.analyzer
 
     ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
+indir = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, base_jobid))
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
 
 fileset = {}
@@ -59,7 +60,7 @@ print(fileset)
     ## save output to coffea pkl file
 #set_trace()
 if (args.frange).lower() == 'all':
-    outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+    outdir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
     if args.outfname:
         cfname = args.outfname
     elif args.sample:
@@ -68,7 +69,7 @@ if (args.frange).lower() == 'all':
         cfname = '%s/test_%s.coffea' % (outdir, analyzer)
 else:
     if ':' in args.frange:
-        outdir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+        outdir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
         if args.outfname:
             cfname = args.outfname
         elif args.signal and args.sample and ((analyzer == 'htt_signal_reweight') or (analyzer == 'signal_validation')):
@@ -121,6 +122,18 @@ elif analyzer == 'htt_btag_iso_cut':
             REWTSYS=args.rewt_sys.upper(),
         )
     opts += " --only_sys=%i" % args.only_sys
+    run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
+            PROJDIR=proj_dir,
+            ANALYZER=analyzer,
+            FSET=fileset,
+            YEAR=args.year,
+            OUTFNAME=cfname,
+            OPTS=opts
+    )
+elif analyzer == 'ttbar_post_alpha_reco':
+    opts += " --evt_sys={EVTSYS}".format(
+            EVTSYS=args.evt_sys.upper(),
+        )
     run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} {OPTS}""".format(
             PROJDIR=proj_dir,
             ANALYZER=analyzer,
