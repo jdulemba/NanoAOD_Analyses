@@ -57,6 +57,7 @@ for year in ['2016', '2017', '2018']:
 
 #set_trace()
     # save files
+#mcweights_name = os.path.join(outdir, 'MC_LumiWeights_Test.coffea')
 mcweights_name = os.path.join(outdir, 'MC_LumiWeights.coffea')
 save(lumi_weights, mcweights_name)
 print('\n', mcweights_name, 'written')
