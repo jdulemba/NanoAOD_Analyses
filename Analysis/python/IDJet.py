@@ -6,43 +6,85 @@ import numpy as np
 import os
 
 btag_values = {}
-btag_values["2016"] = {
-    'btagDeepB' : {
-        'DeepCSVLoose' : 0.2217,
-        'DeepCSVMedium': 0.6321,
-        'DeepCSVTight' : 0.8953,
-    },
-    'btagDeepFlavB' : {
-        'DeepJetLoose' : 0.0614,
-        'DeepJetMedium': 0.3093,
-        'DeepJetTight' : 0.7221
+if os.environ['base_jobid'] == 'NanoAODv6':
+    btag_values["2016"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.2217,
+            'DeepCSVMedium': 0.6321,
+            'DeepCSVTight' : 0.8953,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0614,
+            'DeepJetMedium': 0.3093,
+            'DeepJetTight' : 0.7221,
+        }
     }
-}
-btag_values["2017"] = {
-    'btagDeepB' : {
-        'DeepCSVLoose' : 0.1355,
-        'DeepCSVMedium': 0.4506,
-        'DeepCSVTight' : 0.7738,
-    },
-    'btagDeepFlavB' : {
-        'DeepJetLoose' : 0.0532,
-        'DeepJetMedium': 0.3040,
-        'DeepJetTight' : 0.7476
+    btag_values["2017"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.1522,
+            'DeepCSVMedium': 0.4941,
+            'DeepCSVTight' : 0.8001,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0521,
+            'DeepJetMedium': 0.3033,
+            'DeepJetTight' : 0.7489,
+        }
     }
-}
-btag_values["2018"] = {
-    'btagDeepB' : {
-        'DeepCSVLoose' : 0.1241,
-        'DeepCSVMedium': 0.4184,
-        'DeepCSVTight' : 0.7527,
-    },
-    'btagDeepFlavB' : {
-        'DeepJetLoose' : 0.0494,
-        'DeepJetMedium': 0.2770,
-        'DeepJetTight' : 0.7264
+    btag_values["2018"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.1241,
+            'DeepCSVMedium': 0.4184,
+            'DeepCSVTight' : 0.7527,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0494,
+            'DeepJetMedium': 0.2770,
+            'DeepJetTight' : 0.7264,
+        }
     }
-}
+    
+elif os.environ['base_jobid'] == 'ULnanoAOD':
+    #btag_values["2016"] = {
+    #    'btagDeepB' : {
+    #        'DeepCSVLoose' : 0.2217,
+    #        'DeepCSVMedium': 0.6321,
+    #        'DeepCSVTight' : 0.8953,
+    #    },
+    #    'btagDeepFlavB' : {
+    #        'DeepJetLoose' : 0.0614,
+    #        'DeepJetMedium': 0.3093,
+    #        'DeepJetTight' : 0.7221
+    #    }
+    #}
+    btag_values["2017"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.1355,
+            'DeepCSVMedium': 0.4506,
+            'DeepCSVTight' : 0.7738,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0532,
+            'DeepJetMedium': 0.3040,
+            'DeepJetTight' : 0.7476,
+        }
+    }
+    btag_values["2018"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.1208,
+            'DeepCSVMedium': 0.4168,
+            'DeepCSVTight' : 0.7665,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0490,
+            'DeepJetMedium': 0.2783,
+            'DeepJetTight' : 0.7100,
+        }
+    }
 
+else:
+    raise ValueError("base_jobid not set")
+    
 jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DeepCSV', 'DeepJet']
@@ -147,10 +189,12 @@ def process_jets(df, year, corrections=None, shift=None):
         ## apply jet corrections
     if (jet_pars['applyJER'] == 1) and corrections is not None:
         if df.dataset.startswith('data_Single'):
-            era = 'Run%s' % df.dataset.split(year)[-1]
-            JER = corrections['DATA'][era]['JER']
+            era = [key for key in corrections['DATA'].keys() if df.dataset.split(year)[-1] in key]
+            if (year == '2016') and ('Bv2' in df.dataset): era = ['BCD']
+            if len(era) != 1: raise ValueError("Only one era should be used for %s" % df.dataset)
+            JER = corrections['DATA'][era[0]]['JER']
             Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
-            Jet_transformer = corrections['DATA'][era]['JT']
+            Jet_transformer = corrections['DATA'][era[0]]['JT']
 
         else:
             Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
