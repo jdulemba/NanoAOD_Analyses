@@ -4,6 +4,7 @@ import numpy as np
 import coffea.processor as processor
 import Utilities.systematics as systematics
 import awkward
+import Utilities.make_variables as make_vars
 
 def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
     weights = processor.Weights(df.size, storeIndividual=True)# store individual variations
@@ -19,10 +20,7 @@ def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
             )
 
             ## Generator Weights (normalize them)
-        genWeights = np.ones(df.genWeight.size)
-        genWeights[df.genWeight < 0] = -1.
-        genWeights[df.genWeight == 0] = 0.
-        weights.add('genweight', genWeights)
+        weights.add('genweight', df.genWeight)
     
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
@@ -31,7 +29,7 @@ def get_event_weights(df, year: str, corrections, BTagSFs=[], isTTbar=False):
                 corrections['Pileup'][year][df['dataset']]['up'](df['Pileup_nTrueInt']),
                 corrections['Pileup'][year][df['dataset']]['down'](df['Pileup_nTrueInt'])
             )
-    
+
         ## PS and LHE weights for ttbar events
         if isTTbar:
             ## PS Weight variations
@@ -80,6 +78,50 @@ def get_pdf_weights(df):
         raise ValueError('Differing number of PDF weights for events')
     pdfweights = awkward.JaggedArray.fromcounts(df['nLHEPdfWeight'], df['LHEPdfWeight'])
     df['PDFWeights'] = pdfweights
+    
+
+def get_kin_weights(correction, genttbar):
+    sl_evts = genttbar['SL']['TTbar'].counts > 0
+    dl_evts = genttbar['DL']['TTbar'].counts > 0
+    had_evts = genttbar['Had']['TTbar'].counts > 0
+
+    np.random.seed(10) # sets seed so values from random distributions are reproducible (same as JER corrections)
+    which_top_to_use = np.random.randint(2, size=genttbar.size) # top is 0, tbar is 1 
+    var = correction['Var']
+    dist = correction['Correction']
+
+    wts = np.ones(genttbar.size)
+    if 'thad_pt' in var:
+            # set wts for semilep evts
+        wts[sl_evts] = dist(genttbar['SL']['THad'].p4.pt[sl_evts].flatten())
+            # set wts for dilep evts
+        dl_pt = np.where(which_top_to_use[dl_evts], genttbar['DL']['Top'].p4.pt[dl_evts].flatten(), genttbar['DL']['Tbar'].p4.pt[dl_evts].flatten())
+        wts[dl_evts] = dist(dl_pt)
+            # set wts for had evts
+        had_pt = np.where(which_top_to_use[had_evts], genttbar['Had']['Top'].p4.pt[had_evts].flatten(), genttbar['Had']['Tbar'].p4.pt[had_evts].flatten())
+        wts[had_evts] = dist(had_pt)
+
+    elif 'mtt_vs_thad_ctstar' in var:
+            # set wts for semilep evts
+        thad_p4, tlep_p4 = genttbar['SL']['THad'].p4[sl_evts].flatten(), genttbar['SL']['TLep'].p4[sl_evts].flatten()
+        thad_ctstar, tlep_ctstar = make_vars.ctstar_flat(thad_p4, tlep_p4)
+        wts[sl_evts] = dist(genttbar['SL']['TTbar'].p4.mass[sl_evts].flatten(), thad_ctstar)
+            # set wts for dilep evts
+        dl_top_p4, dl_tbar_p4 = genttbar['DL']['Top'].p4[dl_evts].flatten(), genttbar['DL']['Tbar'].p4[dl_evts].flatten()
+        dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar_flat(dl_top_p4, dl_tbar_p4)
+        dl_ctstar = np.where(which_top_to_use[dl_evts], dl_top_ctstar, dl_tbar_ctstar)
+        wts[dl_evts] = dist(genttbar['DL']['TTbar'].p4.mass[dl_evts].flatten(), dl_ctstar)
+            # set wts for had evts
+        had_top_p4, had_tbar_p4 = genttbar['Had']['Top'].p4[had_evts].flatten(), genttbar['Had']['Tbar'].p4[had_evts].flatten()
+        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar_flat(had_top_p4, had_tbar_p4)
+        had_ctstar = np.where(which_top_to_use[had_evts], had_top_ctstar, had_tbar_ctstar)
+        wts[had_evts] = dist(genttbar['Had']['TTbar'].p4.mass[had_evts].flatten(), had_ctstar)
+
+    else:
+        raise ValueError("%s not supported for NNLO kinematic reweighting" % var)
+
+    return wts
+
     
 
 
