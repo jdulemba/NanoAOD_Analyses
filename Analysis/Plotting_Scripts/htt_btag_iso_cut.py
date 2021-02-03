@@ -34,12 +34,13 @@ sys_to_name = systematics.sys_to_name[args.year]
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'htt_btag_iso_cut'
 
-input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
 #outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'ttJets'])
-outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -113,15 +114,17 @@ stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
 stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
-data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))[args.year]['%ss' % args.lepton]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())[args.year]
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights_Test.coffea'))[args.year]['%ss' % args.lepton]
+#lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))[args.year]['%ss' % args.lepton]
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
-ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
+ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
 names = [dataset for dataset in sorted(set([key[0] for key in hdict[sorted(variables.keys())[0]].values().keys()]))] # get dataset names in hists
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
     for tt_cat in ttJets_cats:
-        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        #ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
         ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
         lumi_correction.update({tt_cat: ttJets_eff_lumi})
 for hname in hdict.keys():
