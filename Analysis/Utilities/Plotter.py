@@ -229,12 +229,12 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', mask=Non
     return ax
 
 
-def plot_1D(values, bins, xlimits, xlabel='', ylabel='Events', linestyle='-', color='k', density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
+def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-', color='k', density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
     if ax is None:
         ax = plt.gca()
 
     ax = hep.plot.histplot(values, bins, weights=weights, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
-    ax.set_xlim(xlimits)
+    ax.set_xlim(min(bins), max(bins)) if xlimits is None else ax.set_xlim(xlimits)
     xtitle = kwargs.get('xtitle', xlabel)
     ytitle = kwargs.get('ytitle', ylabel)
     ax.set_xlabel(xtitle)
@@ -418,7 +418,7 @@ def get_ylimits(histo, x_range, mask_zero=True):
     return np.array([min_yval, max_yval])
 
 
-def linearize_hist(histo, overflow=False):
+def linearize_hist(histo, overflow=False, no_transpose=False, debug=False):
     from coffea import hist
 
     if histo.dense_dim() != 2:
@@ -426,6 +426,7 @@ def linearize_hist(histo, overflow=False):
     if histo.sparse_dim() > 2:
         raise ValueError("Hist can have at most 2 sparse axes!")
 
+    if debug: set_trace()
     xaxis = histo.dense_axes()[0]
     nbinsx = len(xaxis.edges())-1
     yaxis = histo.dense_axes()[1]
@@ -434,20 +435,26 @@ def linearize_hist(histo, overflow=False):
     output_hist = hist.Hist(
         'Events',
         *histo.sparse_axes(),
-        hist.Bin('%s_%s' % (xaxis.name, yaxis.name),'%s_%s' % (xaxis.name, yaxis.name), nbins, 0., nbins)
+        hist.Bin('x_y','x_y', nbins, 0., nbins)
+        #hist.Bin('%s_%s' % (xaxis.name, yaxis.name),'%s_%s' % (xaxis.name, yaxis.name), nbins, 0., nbins)
     )
 
         ## initialize hist to have empty bins for each key in histo.values().keys()
     for key in histo.values().keys():
-        if len(key) == 1:
-            output_hist.fill(process=key[0], mtt_ctstar_abs=np.zeros(0), weight=np.zeros(0))
+        if len(key) == 0:
+            output_hist.fill(x_y=np.zeros(0), weight=np.zeros(0))
+        elif len(key) == 1:
+            output_hist.fill(process=key[0], x_y=np.zeros(0), weight=np.zeros(0))
+            #output_hist.fill(process=key[0], mtt_ctstar_abs=np.zeros(0), weight=np.zeros(0))
         else:
-            output_hist.fill(process=key[0], sys=key[1], mtt_ctstar_abs=np.zeros(0), weight=np.zeros(0))
+            output_hist.fill(process=key[0], sys=key[1], x_y=np.zeros(0), weight=np.zeros(0))
+            #output_hist.fill(process=key[0], sys=key[1], mtt_ctstar_abs=np.zeros(0), weight=np.zeros(0))
 
         sumw_2D, sumw2_2D = histo.values(sumw2=True, overflow='all')[key] if overflow else histo.values(sumw2=True)[key]
-        sumw_array = sumw_2D.T
-        sumw2_array = sumw2_2D.T
+        sumw_array = sumw_2D if no_transpose else sumw_2D.T
+        sumw2_array = sumw2_2D if no_transpose else sumw2_2D.T
 
+        if debug: set_trace()
         if overflow:
                 ## combine over and under flow bins from ctstar dim with bins next to them
             sumw_comb_ct_overflow = np.zeros((sumw_array.shape[0]-2, sumw_array.shape[1]))
@@ -510,7 +517,8 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=Fa
         output_hist = hist.Hist(
             'Events',
             *sparse_axes,
-            hist.Bin('xaxis', var, len(edges)-1, edges[0], edges[-1])
+            hist.Bin('xaxis', var, edges)
+            #hist.Bin('xaxis', var, len(edges)-1, edges[0], edges[-1])
         )
 
         fill_dict = {sparse_axis['name'] : sparse_axis['fill'] for sparse_axis in sparse_axes_list}
@@ -528,4 +536,16 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=Fa
 
     return output_histos
 
+
+def get_ratio_arrays(num_vals, denom_vals, input_bins):
+    '''
+    Function that computes the ratio of two numpy arrays and returns the correctly formatted array to be used with step histogram
+    '''
+    first_valid_bin, last_valid_bin = np.where(~np.isnan(num_vals/denom_vals))[0][0], np.where(~np.isnan(num_vals/denom_vals))[0][-1]+1
+    ratio_masked_vals = np.ma.masked_where(np.isnan( (num_vals/denom_vals) [first_valid_bin:last_valid_bin]), (num_vals/denom_vals)[first_valid_bin:last_valid_bin])
+
+    ratio_vals = np.r_[ratio_masked_vals, ratio_masked_vals[-1]]
+    ratio_bins = input_bins[first_valid_bin:last_valid_bin+1]
+
+    return ratio_vals, ratio_bins
 
