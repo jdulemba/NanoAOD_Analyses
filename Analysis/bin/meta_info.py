@@ -6,16 +6,19 @@ from pdb import set_trace
 import os
 from argparse import ArgumentParser
 import coffea.processor.dataframe
-import python.GenParticleSelector as genpsel
 from coffea.util import load, save
 import numpy as np
 import coffea.lumi_tools.lumi_tools as lumi_tools
 import Utilities.prettyjson as prettyjson
 import python.MCWeights as MCWeights
 
+proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
+
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -25,8 +28,13 @@ args = parser.parse_args()
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
+if len(fileset.keys()) > 1:
+    raise ValueError("Only one topology run at a time in order to determine which corrections and systematics to run")
+samplename = list(fileset.keys())[0]
+
+isData_ = samplename.startswith('data')
+if isData_:
+    lumiMask_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'LumiMasks', '%s_GoldenJson_%s.txt' % (args.year, base_jobid))
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
@@ -65,10 +73,10 @@ class Meta_Analyzer(processor.ProcessorABC):
         events = df.event
         self.sample_name = df.dataset
 
-        if self.sample_name.startswith('data_Single'):
+        if isData_:
             runs = df.run
             lumis = df.luminosityBlock
-            Golden_Json_LumiMask = lumi_tools.LumiMask('%s/inputs/data/LumiMasks/%s_GoldenJson_%s.txt' % (proj_dir, args.year, jobid))
+            Golden_Json_LumiMask = lumi_tools.LumiMask(lumiMask_path)
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
             output[self.sample_name]['nEvents'] += events[LumiMask].size
@@ -97,7 +105,6 @@ class Meta_Analyzer(processor.ProcessorABC):
                     ## get sum of each pdf weight over all events
                 sumLHEpdfWeights = pdfwts.sum()
                 output[self.sample_name]['sumLHEpdfWeights'] += sumLHEpdfWeights
-
 
         return output
 
