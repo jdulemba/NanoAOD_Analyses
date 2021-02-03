@@ -21,15 +21,16 @@ import Utilities.plot_tools as plt_tools
 from argparse import ArgumentParser
 import numpy as np
 
+proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
+analyzer = 'meta_info'
+
 parser = ArgumentParser()
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--dump_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
 
 args = parser.parse_args()
-
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-analyzer = 'meta_info'
 
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
@@ -62,9 +63,10 @@ if args.dump_lumi:
             return [l[0], l[0]]
 
 for sample in samples:
-    print("    %s is being analyzed" % sample)
+    #print("    %s is being analyzed" % sample)
     if 'data_Single' in sample:
         if not args.dump_lumi: continue
+        print("    %s is being analyzed" % sample)
         #set_trace()
         run_lumi_list = hdict['%s_runs_to_lumis' % sample].value
         lumi_map = {}
@@ -84,7 +86,7 @@ for sample in samples:
         continue
 
     else: 
-        #if args.dump_lumi: continue
+        print("    %s is being analyzed" % sample)
 
         #set_trace()
             ## write meta info to json
@@ -125,6 +127,7 @@ for sample in samples:
         fig_nPU.savefig(figname_nPU)
         print('%s written' % figname_nPU)
         plt.close(fig_nPU)
+
 
 if args.dump_lumi:
     #set_trace()
