@@ -3,7 +3,7 @@ from pdb import set_trace
 import awkward
 from coffea.analysis_objects import JaggedCandidateArray
 
-def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neutral_leps=None, bs=None, bbars=None, tops=None, tbars=None):
+def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neutral_leps=None, bs=None, bbars=None, wbosons=None, tops=None, tbars=None):
 
     #set_trace()
     dilep_evts = ( (charged_leps.counts == 2) & (charged_leps.counts == neutral_leps.counts) & (charged_leps.charge.sum() == 0) )
@@ -25,63 +25,6 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
     if (tbars[valid_evts].counts != 1).any():
         raise ValueError("Number of tbar partons in valid events != 1")
 
-        # initialize variables to become attributes of GenW objecs
-    Wpt       = np.ones(valid_evts.sum()*2)
-    Weta      = np.ones(valid_evts.sum()*2)
-    Wphi      = np.ones(valid_evts.sum()*2)
-    Wmass     = np.ones(valid_evts.sum()*2)
-    Wcharge   =np.zeros(valid_evts.sum()*2)
-    Wdecaytype=np.zeros(valid_evts.sum()*2)
-
-        # set values for fully leptonic evts
-    dlW_p4 = (charged_leps[dilep_evts].p4 + neutral_leps[dilep_evts].p4)
-    Wpt[dl_array]       = dlW_p4.pt.flatten()
-    Weta[dl_array]      = dlW_p4.eta.flatten()
-    Wphi[dl_array]      = dlW_p4.phi.flatten()
-    Wmass[dl_array]     = dlW_p4.mass.flatten()
-    Wcharge[dl_array]   = (charged_leps[dilep_evts].charge + neutral_leps[dilep_evts].charge).flatten()
-    Wdecaytype[dl_array]= dlW_p4.pt.ones_like().flatten() # 0 is INVALID (shouldn't happen), 1 is LEPTONIC, 2 is HADRONIC
- 
-        # set values for fully hadronic evts
-    dhW_p4 = (wpartons_up[dihad_evts].p4 + wpartons_dw[dihad_evts].p4)
-    Wpt[dh_array]       = dhW_p4.pt.flatten()
-    Weta[dh_array]      = dhW_p4.eta.flatten()
-    Wphi[dh_array]      = dhW_p4.phi.flatten()
-    Wmass[dh_array]     = dhW_p4.mass.flatten()
-    Wcharge[dh_array]   = (wpartons_up[dihad_evts].charge + wpartons_dw[dihad_evts].charge).flatten()
-    Wdecaytype[dh_array]= (dhW_p4.pt.ones_like()*2).flatten() # 0 is INVALID (shouldn't happen), 1 is LEPTONIC, 2 is HADRONIC
- 
-        # set values for semileptonic evts
-    sl_inds = np.where(sl_array)[0]
-    sl_had_inds = sl_inds[np.mod(sl_inds, 2) == 0] # hadronic decays are defined as first W
-    sl_lep_inds = sl_inds[np.mod(sl_inds, 2) == 1] # leptonic decays are defined as second W
-            ## leptonic decays
-    slWlep_p4 = (charged_leps[semilep_evts].p4 + neutral_leps[semilep_evts].p4)
-    Wpt[sl_lep_inds]       = slWlep_p4.pt.flatten()
-    Weta[sl_lep_inds]      = slWlep_p4.eta.flatten()
-    Wphi[sl_lep_inds]      = slWlep_p4.phi.flatten()
-    Wmass[sl_lep_inds]     = slWlep_p4.mass.flatten()
-    Wcharge[sl_lep_inds]   = (charged_leps[semilep_evts].charge + neutral_leps[semilep_evts].charge).flatten()
-    Wdecaytype[sl_lep_inds]= (slWlep_p4.pt.ones_like()).flatten() # 0 is INVALID (shouldn't happen), 1 is LEPTONIC, 2 is HADRONIC
-            ## hadronic decays
-    slWhad_p4 = (wpartons_up[semilep_evts].p4 + wpartons_dw[semilep_evts].p4)
-    Wpt[sl_had_inds]       = slWhad_p4.pt.flatten()
-    Weta[sl_had_inds]      = slWhad_p4.eta.flatten()
-    Wphi[sl_had_inds]      = slWhad_p4.phi.flatten()
-    Wmass[sl_had_inds]     = slWhad_p4.mass.flatten()
-    Wcharge[sl_had_inds]   = (wpartons_up[semilep_evts].charge + wpartons_dw[semilep_evts].charge).flatten()
-    Wdecaytype[sl_had_inds]= (slWhad_p4.pt.ones_like()*2).flatten() # 0 is INVALID (shouldn't happen), 1 is LEPTONIC, 2 is HADRONIC
-
-        # create W
-    GenW = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int)*2,
-        pt       = Wpt,
-        eta      = Weta,
-        phi      = Wphi,
-        mass     = Wmass,
-        charge   = Wcharge,
-        decaytype= Wdecaytype,
-    )
 
         # create leading/subleading objects from wpartons
             # init vars
@@ -135,8 +78,8 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         decaytype= Ldecaytype,
     )
 
+    #set_trace()
         # make objects from top/tbar decays
-    Wplus = GenW[GenW.charge == 1]
     GenB = JaggedCandidateArray.candidatesfromcounts(
         counts = valid_evts.astype(int),
         pt       = bs[valid_evts].pt.flatten(),
@@ -144,7 +87,7 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         phi      = bs[valid_evts].phi.flatten(),
         mass     = bs[valid_evts].mass.flatten(),
         charge   = bs[valid_evts].charge.flatten(),
-        decaytype= GenW[GenW.charge == 1].decaytype.flatten(),
+        decaytype= wbosons[wbosons.charge == 1].decaytype.flatten(),
     )
     GenTop = JaggedCandidateArray.candidatesfromcounts(
         counts = valid_evts.astype(int),
@@ -153,9 +96,8 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         phi      = tops[valid_evts].phi.flatten(),
         mass     = tops[valid_evts].mass.flatten(),
         charge   = tops[valid_evts].charge.flatten(),
-        decaytype= GenW[GenW.charge == 1].decaytype.flatten(),
+        decaytype= wbosons[wbosons.charge == 1].decaytype.flatten(),
     )
-    Wminus = GenW[GenW.charge == -1]
     GenBbar = JaggedCandidateArray.candidatesfromcounts(
         counts = valid_evts.astype(int),
         pt       = bbars[valid_evts].pt.flatten(),
@@ -163,7 +105,7 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         phi      = bbars[valid_evts].phi.flatten(),
         mass     = bbars[valid_evts].mass.flatten(),
         charge   = bbars[valid_evts].charge.flatten(),
-        decaytype= GenW[GenW.charge == -1].decaytype.flatten(),
+        decaytype= wbosons[wbosons.charge == -1].decaytype.flatten(),
     )
     GenTbar = JaggedCandidateArray.candidatesfromcounts(
         counts = valid_evts.astype(int),
@@ -172,7 +114,7 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         phi      = tbars[valid_evts].phi.flatten(),
         mass     = tbars[valid_evts].mass.flatten(),
         charge   = tbars[valid_evts].charge.flatten(),
-        decaytype= GenW[GenW.charge == -1].decaytype.flatten(),
+        decaytype= wbosons[wbosons.charge == -1].decaytype.flatten(),
     )
 
     ttbars = (GenTop.p4 + GenTbar.p4)
@@ -182,7 +124,7 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         eta      = ttbars.eta.flatten(),
         phi      = ttbars.phi.flatten(),
         mass     = ttbars.mass.flatten(),
-        decaytype= GenW[valid_evts].decaytype.sum(), # 0 is for INVALID, 2 for DILEP, 3 for SEMILEP, 4 for HADRONIC
+        decaytype = wbosons[valid_evts].decaytype.sum(), # 0 is for INVALID, 2 for DILEP, 3 for SEMILEP, 4 for HADRONIC
     )    
 
 
@@ -194,8 +136,8 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         Tbar  = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenTbar[dilep_evts].flatten()),
         B     = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenB[dilep_evts].flatten()),
         Bbar  = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenBbar[dilep_evts].flatten()),
-        Wplus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenW[GenW.charge == 1][dilep_evts].flatten()),
-        Wminus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), GenW[GenW.charge == -1][dilep_evts].flatten()),
+        Wplus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), wbosons[wbosons.charge == 1][dilep_evts].flatten()),
+        Wminus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), wbosons[wbosons.charge == -1][dilep_evts].flatten()),
         First_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()), # charged lepton always made leading
         Second_plus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), neutral_leps[dilep_evts][charged_leps[dilep_evts].charge > 0].flatten()), # neutral lepton always made subleading
         First_minus = awkward.JaggedArray.fromcounts(dilep_evts.astype(int), charged_leps[dilep_evts][charged_leps[dilep_evts].charge < 0].flatten()), # charged lepton always made leading
@@ -212,8 +154,8 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         Tbar  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenTbar[dihad_evts].flatten()),
         B     = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenB[dihad_evts].flatten()),
         Bbar  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenBbar[dihad_evts].flatten()),
-        Wplus = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenW[GenW.charge == 1][dihad_evts].flatten()),
-        Wminus= awkward.JaggedArray.fromcounts(dihad_evts.astype(int), GenW[GenW.charge == -1][dihad_evts].flatten()),
+        Wplus = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wbosons[wbosons.charge == 1][dihad_evts].flatten()),
+        Wminus= awkward.JaggedArray.fromcounts(dihad_evts.astype(int), wbosons[wbosons.charge == -1][dihad_evts].flatten()),
         First_plus   = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), First[First.charge > 0][dihad_evts].flatten()),
         Second_plus  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), Second[Second.charge > 0][dihad_evts].flatten()),
         First_minus  = awkward.JaggedArray.fromcounts(dihad_evts.astype(int), First[First.charge < 0][dihad_evts].flatten()),
@@ -269,8 +211,8 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         TLep   = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Lep_Top.flatten()),
         BHad     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Had_B.flatten()),
         BLep     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), Lep_B.flatten()),
-        WHad     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), GenW[GenW.decaytype == 2][semilep_evts].flatten()),
-        WLep     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), GenW[GenW.decaytype == 1][semilep_evts].flatten()),
+        WHad     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wbosons[wbosons.decaytype == 2][semilep_evts].flatten()),
+        WLep     = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wbosons[wbosons.decaytype == 1][semilep_evts].flatten()),
         Lepton    = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), charged_leps[semilep_evts].flatten()),
         Nu        = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), neutral_leps[semilep_evts].flatten()),
         WJa = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), First[semilep_evts].flatten()),
@@ -278,7 +220,6 @@ def from_collections(wpartons_up=None, wpartons_dw=None, charged_leps=None, neut
         Up_Had    = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wpartons_up[semilep_evts].flatten()),
         Down_Had  = awkward.JaggedArray.fromcounts(semilep_evts.astype(int), wpartons_dw[semilep_evts].flatten()),
     )
-
 
     GenTTbar = awkward.Table(
         SL = SEMILEP_evts,
