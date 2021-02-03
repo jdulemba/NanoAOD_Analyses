@@ -16,9 +16,10 @@ class TTSolver(object):
         print('TTBarSolver:', year)
         proj_dir = os.environ['PROJECT_DIR']
         jobid = os.environ['jobid']
-        cfg_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (proj_dir, jobid)).read())['ttsolver']
+        base_jobid = os.environ['base_jobid']
+        cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())['ttsolver']
         
-        probs = load('%s/Corrections/%s/%s' % (proj_dir, jobid, cfg_pars['filename']))[year]
+        probs = load(os.path.join(proj_dir, 'Corrections', base_jobid, cfg_pars['filename']))[year]
 
             ## create arrays for binning and values separately for each dist because njit can't handle constant dictionaries currently
         self.USEMASS = cfg_pars['USEMASS']
