@@ -19,6 +19,7 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 nano_dir = os.environ['NANODIR']
 jobdir = args.jobdir
 analyzer=args.analyzer
@@ -78,7 +79,7 @@ Queue
     return condorfile
 
     ## get samples to use
-indir = '/'.join([proj_dir, 'inputs', '%s_%s' % (args.year, jobid)])
+indir = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, base_jobid))
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
 for sample in samples_to_use:
     if not os.path.isfile(sample):
