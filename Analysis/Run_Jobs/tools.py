@@ -18,9 +18,9 @@ def get_sample_list(indir, sample=None, text_file=None):
 
     else:
             ## get file that has names for all datasets to use
-        fpath = '/'.join([indir, text_file])
+        fpath = os.path.join(indir, text_file)
         if not os.path.isfile(fpath):
-            raise IOError("File %s not found" % text_file)
+            raise IOError("File %s not found" % fpath)
     
         txt_file = open(fpath, 'r')
         samples = ['%s/%s.txt' % (indir, sample.strip('\n')) for sample in txt_file if not sample.startswith('#')]
