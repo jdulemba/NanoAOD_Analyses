@@ -7,6 +7,7 @@ from matplotlib import rcParams
 rcParams['font.size'] = 20
 rcParams["savefig.format"] = 'png'
 rcParams["savefig.bbox"] = 'tight'
+
 from coffea.util import load, save
 from pdb import set_trace
 import os
@@ -23,6 +24,7 @@ from equal_split import partition_list
 from scipy import stats
 from scipy import interpolate
 from coffea.lookup_tools.dense_lookup import dense_lookup
+from scipy.optimize import curve_fit
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -36,7 +38,8 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 analyzer = 'ttbar_alpha_reco'
 
-blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
+#blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
+blurb = 'tight $e/\mu$\n$n_{jets}$=3\n$n_{btags} \geq$ 2'
 
 
 alpha_corrections = {
@@ -56,8 +59,8 @@ alpha_corrections = {
 
 
 variables = {
-    'Alpha_THad_P' : ('172.5/m($t_{h}$)', 10, (0., 5.), '$\\alpha_{P}$=Gen P($t_{h}$)/Reco P($t_{h}$)', 5, (0., 10.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
-    'Alpha_THad_E' : ('172.5/m($t_{h}$)', 10, (0., 5.), '$\\alpha_{E}$=Gen E($t_{h}$)/Reco E($t_{h}$)', 5, (0., 10.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_P' : ('172.5/Reco m($t_{h}$)', 10, (0., 5.), 'Gen P($t_{h}$)/Reco P($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_E' : ('172.5/Reco m($t_{h}$)', 10, (0., 5.), 'Gen E($t_{h}$)/Reco E($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
 }
 
 
@@ -68,7 +71,7 @@ stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
 data_lumi_dict = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))
 
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
 ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
@@ -79,6 +82,14 @@ process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 
 
+# define sigmoid function for fitting
+def sigmoid(x, L ,x0, k, b):
+    y = L / (1 + np.exp(-k*(x-x0)))+b
+    return y
+
+def sqrt_x(x, a, b, c):
+    y = a*np.sqrt(x-b)+c
+    return y
 
 def get_mtt_bins(histo):
     mtt_vals = histo.axis('bp_mtt').edges(overflow='all')
@@ -99,23 +110,19 @@ def FindMedianAndMedianError(histo):
     if histo.dense_dim() != 1:
         raise ValueError("Hist must be 1D in order to find median")
 
+    #set_trace()
     vals = histo.values()[()]
     vals[vals < 0] = 0 # set bins with negative contents = 0
-    bin_centers = histo.dense_axes()[0].centers()
-    if np.sum(vals) <= 0.:
-        median, median_error = -10., -10.
+    if np.sum(vals) <= 100.:
+        median = -10.
     else:
-        #print('max:', max(vals), ', min:', min(vals[vals > 0]), ', integral:', np.sum(vals))
-        if np.sum(vals) <= 100.:
-            multiplier = 1e5
-        else:
-            multiplier = 1e4 if max(vals) <= 100. else 100
-        pseudo_bincounts = np.repeat(bin_centers, (vals*multiplier).astype(int)) ## "recreate" number of counts populating each bin to caluculate median and error on median
-        median = round(np.median(pseudo_bincounts)*100, 2)/100
-        median_error = 1.2533*stats.sem(pseudo_bincounts) if stats.sem(pseudo_bincounts) != 0. else 1e-10
+        norm_vals = vals/np.sum(histo.values(overflow='all')[()])
+        cdf = np.cumsum(norm_vals)
+        bin_centers = histo.dense_axes()[0].centers()
+        median = bin_centers[np.where(cdf > 0.5)[0][0]]
 
         #set_trace()
-    return median, median_error
+    return median
 
 
 def get_median_from_2d(histo, xaxis_name, xmin=None, xmax=None):
@@ -131,23 +138,60 @@ def get_median_from_2d(histo, xaxis_name, xmin=None, xmax=None):
 
         #print(bin_min)
         hslice = histo[bin_min:bin_max, :].integrate(xaxis_name)
-        median, median_error = FindMedianAndMedianError(hslice)
+        median = FindMedianAndMedianError(hslice)
+        #median, median_error = FindMedianAndMedianError(hslice)
 
         medians.append(median)
-        median_errors.append(median_error)
+        #median_errors.append(median_error)
 
     #print('  medians:', medians, '  errors:', median_errors)
-    return medians, median_errors    
+    return medians    
+    #return medians, median_errors    
 
-def find_alpha_correction(medians, errors, xbins, output_xbins, ybins=None, output_ybins=None):
+def find_alpha_correction(medians, xbins, output_xbins, errors=None, ybins=None, output_ybins=None, degree=None, Fit=None):
 
     #set_trace()
     if np.ndim(medians) == 1:
         if (medians < 0).sum() > 0:
-            raise ValueError("Not all median input values are valid!")
-        np_fit = np.polyfit(xbins, medians, 1, w=np.reciprocal(errors))
-        fitvals = np.poly1d(np_fit)(output_xbins)
-        lookup = dense_lookup(*(fitvals, output_xbins))
+            print("Not all median input values are valid!")
+        #    raise ValueError("Not all median input values are valid!")
+        #set_trace()
+        valid_medians = medians[medians != -10.]
+        valid_xbins = xbins[medians != -10.]
+        if Fit is None:
+            deg = 1 if degree is None else degree
+            #set_trace()
+            np_fit = np.polyfit(valid_xbins, valid_medians, deg, w=np.reciprocal(errors[medians != -10.]), full=True) if errors is not None else np.polyfit(valid_xbins, valid_medians, deg, full=True)
+            chisq_ndof = np_fit[1]/(len(valid_xbins)-(deg+1))
+            fitvals = np.poly1d(np_fit[0])(output_xbins)
+            lookup = dense_lookup(*(fitvals, output_xbins))
+
+            return lookup, fitvals, chisq_ndof
+
+        elif Fit == 'Sqrt':
+            #set_trace()
+            p0 = [0.5, 0.5, 0.5]
+            popt, pcov = curve_fit(sqrt_x, valid_xbins, valid_medians, p0, method='dogbox')
+            #popt, pcov = curve_fit(sqrt_x, xbins, medians, p0, method='dogbox')
+            #popt, pcov = curve_fit(sqrt_x, xbins, medians, p0, bounds=(xbins[0], xbins[-1]), method='dogbox')
+            fitvals = sqrt_x(output_xbins, *popt)
+            lookup = dense_lookup(*(fitvals, output_xbins))
+
+            return lookup, fitvals
+
+        elif Fit == 'Sigmoid':
+            #set_trace()
+            set_trace()
+            p0 = [1., 1., 1., 0.5] # this is an mandatory initial guess
+            #p0 = [max(medians), min(xbins), 1, min(medians)] # this is an mandatory initial guess
+            #p0 = [max(medians), np.median(xbins), 1, min(medians)] # this is an mandatory initial guess
+            
+            popt, pcov = curve_fit(sigmoid, xbins, medians, method='dogbox')
+            #popt, pcov = curve_fit(sigmoid, xbins, medians, p0, bounds=(xbins[0], xbins[-1]), method='dogbox')
+            fitvals = sigmoid(output_xbins, *popt)
+            lookup = dense_lookup(*(fitvals, output_xbins))
+
+            return lookup, fitvals
 
     else:
             # get x bincenter range by finding first and last bin that has valid medians for all mtt bins
@@ -155,17 +199,18 @@ def find_alpha_correction(medians, errors, xbins, output_xbins, ybins=None, outp
         fit_ybins = np.array( [(ybins[i+1]+ybins[i])/2 for i in range(len(ybins)-1)] ) # ybins to be used in interpolation
         valid_medians = medians[:, first_xbin:last_xbin+1]
 
-        fit = interpolate.interp2d(xbins, fit_ybins, valid_medians, kind='linear')
+        deg = 'linear' if degree is None else degree
+        fit = interpolate.interp2d(xbins, fit_ybins, valid_medians, kind=deg)
         fitvals = fit(output_xbins, output_ybins)
         lookup = dense_lookup(*(fitvals, (output_xbins, output_ybins)))
 
-    return lookup, fitvals
+        return lookup, fitvals
 
     
 for year in years_to_run:
-    input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (year, jobid), analyzer])
+    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
     f_ext = 'TOT.coffea'
-    outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer])
+    outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer)
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
 
@@ -188,12 +233,10 @@ for year in years_to_run:
 
         ## make groups based on process
     process_groups = plt_tools.make_dataset_groups('Muon', year, samples=names) # works when only MC present
-    for hname in hdict.keys():
-        if hname == 'cutflow': continue
-        hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
 
 
-    mthad_fit_range = (0.9, 3.5)
+    mthad_fit_range = (0.9, 2.2) ## chosen because ~95% of events fall in this range
+    #mthad_fit_range = (0.9, 3.5)
     for hname in variables.keys():
         if not hname in hdict.keys():
             raise ValueError("Hist %s not found" % hname)
@@ -202,10 +245,11 @@ for year in years_to_run:
         histo = hdict[hname]
              ## rescale hist by lumi for muons and electrons separately and then combine
         h_mu = histo[:, 'Muon'].integrate('leptype')
-        h_mu.scale(lumi_correction[year]['Muons'], axis='process')
+        h_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
         h_el = histo[:, 'Electron'].integrate('leptype')
-        h_el.scale(lumi_correction[year]['Electrons'], axis='process')
+        h_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
         h_tot = h_mu+h_el
+        h_tot = h_tot.group(process_cat, process, process_groups)
 
         alpha_axis_name = [h_tot.dense_axes()[idx].name for idx in range(len(h_tot.dense_axes())) if 'alpha' in h_tot.dense_axes()[idx].name][0]
         mthad_title, mthad_rebinning, mthad_lims, alpha_title, alpha_rebinning, alpha_lims, mtt_title, mtt_rebinning, mtt_lims = variables[hname]
@@ -232,7 +276,7 @@ for year in years_to_run:
             #set_trace()
 
             mthad_edges = histo.axis('norm_mthad').edges()
-            mthad_bins = mthad_edges[np.where(mthad_edges == mthad_fit_range[0])[0][0]:np.where(mthad_edges == mthad_fit_range[1])[0][0]+1]
+            mthad_bins = mthad_edges[np.where(np.around(mthad_edges, 5) == mthad_fit_range[0])[0][0]:np.where(np.around(mthad_edges, 5) == mthad_fit_range[1])[0][0]+1]
             output_mthad_bins = np.linspace(mthad_bins[0], mthad_bins[-1], (mthad_bins.size-1)*10+1)
             mtt_bins = np.unique(np.array(list(set(mtt_bin_ranges))))
             output_mtt_bins = np.linspace(mtt_bins[0], mtt_bins[-1], int((mtt_bins[-1]-mtt_bins[0])/10+1) )
@@ -248,10 +292,13 @@ for year in years_to_run:
 
                 hslice = histo[bin_min:bin_max, :, :].integrate('bp_mtt')
                 if cat == 'ttJets_right':
-                    alpha_median, alpha_median_errs = get_median_from_2d(hslice, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
-                    alpha_medians, alpha_errors = np.array(alpha_median), np.array(alpha_median_errs)
+                    #alpha_median, alpha_median_errs = get_median_from_2d(hslice, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
+                    #alpha_medians, alpha_errors = np.array(alpha_median), np.array(alpha_median_errs)
+                    #binned_mtt_medians[idx] = alpha_medians
+                    #binned_mtt_errors[idx] = alpha_errors
+                    alpha_median = get_median_from_2d(hslice, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
+                    alpha_medians = np.array(alpha_median)
                     binned_mtt_medians[idx] = alpha_medians
-                    binned_mtt_errors[idx] = alpha_errors
 
                 ax = Plotter.plot_2d_norm(hslice, xaxis_name='norm_mthad', yaxis_name=alpha_axis_name,
                     values=np.ma.masked_where(hslice.values()[()] <= 0., hslice.values()[()]),
@@ -259,42 +306,43 @@ for year in years_to_run:
 
                    # add lepton/jet multiplicity label
                 ax.text(
-                    0.02, 0.90, blurb,
-                    fontsize=rcParams['font.size']*0.75, 
-                    horizontalalignment='left', 
-                    verticalalignment='bottom', 
-                    transform=ax.transAxes
+                    0.02, 0.85, blurb,
+                    fontsize=rcParams['font.size'], 
+                    horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
                     # add perm category and mtt region
-                mtt_label = 'm($t\\bar{t}$) $\geq$ %s' % bin_min if idx == len(mtt_bin_ranges)-1 else '%s $\leq$ m($t\\bar{t}$) $<$ %s' % (bin_min, bin_max)
+                mtt_label = 'Reco m($t\\bar{t}$) $\geq$ %s' % bin_min if idx == len(mtt_bin_ranges)-1 else '%s $\leq$ Reco m($t\\bar{t}$) $<$ %s' % (bin_min, bin_max)
                 ax.text(
                     0.98, 0.90, '%s\n%s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_label),
-                    fontsize=rcParams['font.size']*0.75,
-                    horizontalalignment='right',
-                    verticalalignment='bottom',
-                    transform=ax.transAxes
+                    fontsize=rcParams['font.size'],
+                    horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                 )
                     ## add lumi/cms label
-                ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
 
                 #set_trace()
-                figname = '%s/%s' % (pltdir, '_'.join([hname, 'Mtt%sto%s' % (int(bin_min), int(bin_max))]))
+                figname = os.path.join(pltdir, '_'.join([hname, 'Mtt%sto%s' % (int(bin_min), int(bin_max))]))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
 
                 ## make 2d interpolated fit
             if cat == 'ttJets_right':
-                lookup_mtt, fitvals_mtt = find_alpha_correction(medians=binned_mtt_medians, errors=binned_mtt_errors, xbins=mthad_bins, output_xbins=output_mthad_bins, ybins=mtt_bins, output_ybins=output_mtt_bins)
+                #set_trace()
+                valid_binned_mtt_medians = binned_mtt_medians[np.where((binned_mtt_medians == -10.).sum(axis=1) == 0)]
+                valid_mtt_bins = mtt_bins[np.where((binned_mtt_medians == -10.).sum(axis=1) == 0)]
+                valid_mtt_bins = np.array(valid_mtt_bins.tolist()+[mtt_bins[np.where((binned_mtt_medians == -10.).sum(axis=1) == 0)[0][-1]+1]]) # add next bin for bin edges
+                lookup_mtt, fitvals_mtt = find_alpha_correction(medians=valid_binned_mtt_medians, xbins=mthad_bins, output_xbins=output_mthad_bins, ybins=valid_mtt_bins, output_ybins=output_mtt_bins)
+                #lookup_mtt, fitvals_mtt = find_alpha_correction(medians=binned_mtt_medians, errors=binned_mtt_errors, xbins=mthad_bins, output_xbins=output_mthad_bins, ybins=mtt_bins, output_ybins=output_mtt_bins)
                 alpha_corrections[year][hname.split('_')[-1]].update({'Mtt' : lookup_mtt})
                     # plot alpha correction
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
 
-                ax = Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='m($t\\bar{t}$) [GeV]', ax=ax,
+                ax = Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='Reco m($t\\bar{t}$) [GeV]', ax=ax,
                     values=fitvals_mtt.T, xbins=lookup_mtt._axes[0], ybins=lookup_mtt._axes[1], **{'cmap_label' : '%s Fit Values' % alpha_title.split('=')[0]})
-                ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
-                figname = '%s/%s_Mtt_FitVals' % (pltdir, hname)
+                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                figname = os.path.join(pltdir, '%s_Mtt_FitVals' % hname)
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -303,20 +351,34 @@ for year in years_to_run:
                 # plots over entire mttbar range
             all_mtt = histo.integrate('bp_mtt')
             if cat == 'ttJets_right':
-                alpha_median_all, alpha_median_errs_all = get_median_from_2d(all_mtt, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
-                alpha_medians_all, alpha_errors_all = np.array(alpha_median_all), np.array(alpha_median_errs_all)
-                lookup_all, fitvals_all = find_alpha_correction(medians=alpha_medians_all, errors=alpha_errors_all, xbins=mthad_bins, output_xbins=output_mthad_bins)
-                alpha_corrections[year][hname.split('_')[-1]].update({'All' : lookup_all})
+                #set_trace()
+                #alpha_median_all = get_median_from_2d(all_mtt, 'norm_mthad')
+                alpha_median_all = get_median_from_2d(all_mtt, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
+                #alpha_median_all, alpha_median_errs_all = get_median_from_2d(all_mtt, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
+                #alpha_medians_all, alpha_errors_all = np.array(alpha_median_all), np.array(alpha_median_errs_all)
+                alpha_medians_all = np.array(alpha_median_all)
+                valid_medians_all = alpha_medians_all[alpha_medians_all != -10.]
+                valid_mthad_bins = mthad_bins[alpha_medians_all != -10.]
+                    # linear fit
+                lookup_all_1d, fitvals_all_1d, chisq_1d = find_alpha_correction(medians=valid_medians_all, xbins=valid_mthad_bins, output_xbins=output_mthad_bins)
+                alpha_corrections[year][hname.split('_')[-1]].update({'All_1D' : lookup_all_1d})
+                    # quadratic fit
+                lookup_all_2d, fitvals_all_2d, chisq_2d = find_alpha_correction(medians=valid_medians_all, xbins=valid_mthad_bins, output_xbins=output_mthad_bins, degree=2)
+                alpha_corrections[year][hname.split('_')[-1]].update({'All_2D' : lookup_all_2d})
+
                     # plot alpha correction
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
 
                 #set_trace()
-                plt.plot(lookup_all._axes, fitvals_all, color='black')
+                plt.plot(lookup_all_1d._axes, fitvals_all_1d, color='r', label='Linear Fit, $\\chi^2$/ndof=%.4f' % chisq_1d)
+                plt.plot(lookup_all_2d._axes, fitvals_all_2d, color='b', label='Quadratic Fit, $\\chi^2$/ndof=%.4f' % chisq_2d)
+                plt.errorbar(valid_mthad_bins, valid_medians_all, marker='o', color='black', fmt='.', label='Medians')
+                ax.legend(loc='upper right')
                 ax.set_xlabel(mthad_title)
-                ax.set_ylabel('%s Fit Values' % alpha_title.split('=')[0])
-                ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
-                figname = '%s/%s_All_FitVals' % (pltdir, hname)
+                ax.set_ylabel(alpha_title.split('=')[0])
+                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                figname = os.path.join(pltdir, '%s_All_FitVals' % hname)
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -332,25 +394,21 @@ for year in years_to_run:
 
                # add lepton/jet multiplicity label
             ax.text(
-                0.02, 0.90, blurb,
-                fontsize=rcParams['font.size']*0.75, 
-                horizontalalignment='left', 
-                verticalalignment='bottom', 
-                transform=ax.transAxes
+                0.02, 0.85, blurb,
+                fontsize=rcParams['font.size'], 
+                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
                 # add perm category and mtt region
             ax.text(
-                0.98, 0.90, '%s\nm($t\\bar{t}$) $\geq$ %s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_range),
-                fontsize=rcParams['font.size']*0.75,
-                horizontalalignment='right',
-                verticalalignment='bottom',
-                transform=ax.transAxes
+                0.98, 0.90, '%s\nReco m($t\\bar{t}$) $\geq$ %s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_range),
+                fontsize=rcParams['font.size'],
+                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
             )
                 ## add lumi/cms label
-            ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=18)
+            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
 
             #set_trace()
-            figname = '%s/%s' % (pltdir, '_'.join([hname, 'All']))
+            figname = os.path.join(pltdir, '_'.join([hname, 'All']))
             fig.savefig(figname)
             print('%s written' % figname)
             plt.close()
@@ -358,10 +416,10 @@ for year in years_to_run:
 
     ## save corrections
 if len(years_to_run) == 3:
-    corrdir = '%s/Corrections/%s' % (proj_dir, jobid)
+    corrdir = os.path.join(proj_dir, 'Corrections', jobid)
     if not os.path.isdir(corrdir):
         os.makedirs(corrdir)
 
-    alpha_corr_name = '%s/alpha_correction_%s.coffea' % (corrdir, jobid)
+    alpha_corr_name = os.path.join(corrdir, 'alpha_correction_%s.coffea' % jobid)
     save(alpha_corrections, alpha_corr_name)
     print('\n', alpha_corr_name, 'written')
