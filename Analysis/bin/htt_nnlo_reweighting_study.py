@@ -73,15 +73,6 @@ corrections = {
     'Alpha' : alpha_corrections,
     'Kin_Rewt' : nnlo_reweighting,
 }
-##set_trace()
-#if cfg_pars['NNLO']['Var'] is not None:
-#    corrections.update({'Kin_Rewt' : nnlo_reweighting})
-#    #corrections.update({
-#    #    'Kin_Rewt' : {'Var' : cfg_pars['NNLO']['Var'], 'Correction' : nnlo_reweighting[cfg_pars['NNLO']['Var']]},
-#    #    #'Kin_Rewt' : {'Var' : 'thad_pt', 'Correction' : nnlo_reweighting},
-#    #    #'Kin_Rewt' : {'Var' : 'mtt_vs_thad_ctstar', 'Correction' : nnlo_reweighting},
-#    #    #'Kin_Rewt' : {'Var' : 'mtt_vs_thad_ctstar_Interp', 'Correction' : nnlo_reweighting},
-#    #})
 
     ## parameters for b-tagging
 jet_pars = cfg_pars['Jets']
@@ -403,10 +394,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
 
         GenTTbar = genpsel.select(df, mode='NORMAL')
         if 'Kin_Rewt' in self.corrections.keys():
-            ##kin_wts = MCWeights.get_kin_weights(self.corrections['Kin_Rewt'], GenTTbar)
-            #mu_evt_weights.add('%s_reweighting' % corrections['Kin_Rewt']['Var'], kin_wts)
-            #el_evt_weights.add('%s_reweighting' % corrections['Kin_Rewt']['Var'], kin_wts)
-            #set_trace()
             nnlo_weights = {var : MCWeights.get_kin_weights({'Var': var, 'Correction' : self.corrections['Kin_Rewt'][var]}, GenTTbar) for var in self.corrections['Kin_Rewt'].keys()}
             nnlo_weights.update({'Nominal' : np.ones(df.size)})
 
@@ -470,7 +457,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
 
                                 # make final objects/values after applying all cuts
                             evt_wts = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
-                            #final_evt_wts = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
                             final_gentt = GenTTbar[cut][valid_perms][MTHigh]
                             final_bps = best_perms[valid_perms][MTHigh]
                             final_bp_status = bp_status[cut][valid_perms][MTHigh]
@@ -479,7 +465,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
                             dl_evts = final_gentt['DL']['TTbar'].counts > 0
                             had_evts = final_gentt['Had']['TTbar'].counts > 0
 
-                            #set_trace()
                             for rewt_type in nnlo_weights.keys():
                                 #set_trace()
                                 final_nnlo_wts = nnlo_weights[rewt_type][cut][valid_perms][MTHigh]
@@ -487,13 +472,10 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
                                     # fill hists
                                 if sl_evts.sum() > 0:
                                     output = self.fill_semilep_hists(acc=output, rewt_type=rewt_type, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=final_bp_status[sl_evts], perm=final_bps[sl_evts], gentt=final_gentt[sl_evts], evt_weights=final_evt_wts[sl_evts], nnlo_weights=final_nnlo_wts[sl_evts])
-                                    #output = self.fill_semilep_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=final_bp_status[sl_evts], perm=final_bps[sl_evts], gentt=final_gentt[sl_evts], evt_weights=final_evt_wts[sl_evts])
                                 if dl_evts.sum() > 0:
                                     output = self.fill_dilep_had_hists(acc=output, rewt_type=rewt_type, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, ttdecay='DL', permarray=final_bp_status[dl_evts], perm=final_bps[dl_evts], gentt=final_gentt[dl_evts], evt_weights=final_evt_wts[dl_evts], nnlo_weights=final_nnlo_wts[dl_evts])
-                                    #output = self.fill_dilep_had_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, ttdecay='DL', permarray=final_bp_status[dl_evts], perm=final_bps[dl_evts], gentt=final_gentt[dl_evts], evt_weights=final_evt_wts[dl_evts])
                                 if had_evts.sum() > 0:
                                     output = self.fill_dilep_had_hists(acc=output, rewt_type=rewt_type, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, ttdecay='Had', permarray=final_bp_status[had_evts], perm=final_bps[had_evts], gentt=final_gentt[had_evts], evt_weights=final_evt_wts[had_evts], nnlo_weights=final_nnlo_wts[had_evts])
-                                    #output = self.fill_dilep_had_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, ttdecay='Had', permarray=final_bp_status[had_evts], perm=final_bps[had_evts], gentt=final_gentt[had_evts], evt_weights=final_evt_wts[had_evts])
 
 
         return output
@@ -501,7 +483,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
 
 
     def fill_semilep_hists(self, acc, rewt_type, jetmult, leptype, lepcat, btagregion, permarray, perm, gentt, evt_weights, nnlo_weights):
-    #def fill_semilep_hists(self, acc, jetmult, leptype, lepcat, btagregion, permarray, perm, gentt, evt_weights):
             ## apply alpha correction for 3Jets
         if jetmult == '3Jets':
             orig_thad_p4, reco_tlep_p4 = perm['THad'].p4.flatten(), perm['TLep'].p4.flatten()
@@ -524,7 +505,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
             dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
 
                 ## fill reco-level quantities
-            #acc['mtt'].fill(     dataset=dataset_name, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=reco_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mtt'].fill(     dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=reco_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mthad'].fill(   dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=reco_thad_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['pt_thad'].fill( dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=reco_thad_p4.pt[perm_inds], weight=evt_weights[perm_inds])
@@ -543,7 +523,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
             acc['Nominal_mtt'].fill(        dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=reco_ttbar_p4.mass[perm_inds], weight=(evt_weights/nnlo_weights)[perm_inds])
 
                 ## fill gen-level quantities
-            #acc['mtt'].fill(     dataset=dataset_name, evt_type='GEN', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=gen_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mtt'].fill(     dataset=dataset_name, rewt=rewt_type, evt_type='GEN', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=gen_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mthad'].fill(   dataset=dataset_name, rewt=rewt_type, evt_type='GEN', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=gen_thad_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['pt_thad'].fill( dataset=dataset_name, rewt=rewt_type, evt_type='GEN', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=gen_thad_p4.pt[perm_inds], weight=evt_weights[perm_inds])
@@ -580,7 +559,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
         return acc        
 
     def fill_dilep_had_hists(self, acc, rewt_type, jetmult, leptype, lepcat, btagregion, ttdecay, permarray, perm, gentt, evt_weights, nnlo_weights):
-    #def fill_dilep_had_hists(self, acc, jetmult, leptype, lepcat, btagregion, ttdecay, permarray, perm, gentt, evt_weights):
             ## apply alpha correction for 3Jets
         if jetmult == '3Jets':
             orig_thad_p4, reco_tlep_p4 = perm['THad'].p4.flatten(), perm['TLep'].p4.flatten()
@@ -613,7 +591,6 @@ class htt_nnlo_reweighting_study(processor.ProcessorABC):
             dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
 
                 ## fill reco-level quantities
-            #acc['mtt'].fill(     dataset=dataset_name, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=reco_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mtt'].fill(     dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtt=reco_ttbar_p4.mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mtop'].fill(    dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=reco_top_mass[perm_inds], weight=evt_weights[perm_inds])
             acc['mtbar'].fill(   dataset=dataset_name, rewt=rewt_type, evt_type='RECO', jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mtop=reco_tbar_mass[perm_inds], weight=evt_weights[perm_inds])
@@ -691,6 +668,7 @@ output = processor.run_uproot_job(fileset,
     processor_instance=htt_nnlo_reweighting_study(),
     executor=proc_executor,
     executor_args={
+        #'workers': 4,
         'workers': 8,
         'flatten' : True,
         'compression': 8,
@@ -704,8 +682,6 @@ output = processor.run_uproot_job(fileset,
 
 if args.debug:
     print(output)
-#set_trace()
-#print(output['cutflow'])
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
