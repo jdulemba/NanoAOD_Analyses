@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-from coffea import hist
-from coffea.util import save, load
-import coffea.processor as processor
+from coffea import hist, processor
+from coffea.nanoevents import NanoAODSchema
 from pdb import set_trace
-import os, sys
+import os
+from coffea.util import save, load
+import Utilities.prettyjson as prettyjson
+import numpy as np
 import python.ObjectSelection as objsel
 import python.MCWeights as MCWeights
-import numpy as np
-import Utilities.prettyjson as prettyjson
-import coffea.lumi_tools.lumi_tools as lumi_tools
 import fnmatch
+from coffea.analysis_tools import PackedSelection
+import awkward as ak
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -36,9 +37,9 @@ for fname in fileset.keys():
         raise IOError("Sample %s not valid for finding btag efficiencies. Only %s are allowed" % (fname, allowed_samples))
 
 ## load corrections for event weights
-pu_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_PU_Weights.coffea'))
-lepSF_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'leptonSFs.coffea'))
-jet_corrections = load(os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections.coffea'))[args.year]
+pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
+lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
+jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
@@ -97,18 +98,20 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
 
 
-    def process(self, df):
+    def process(self, events):
         output = self.accumulator.identity()
 
-        self.sample_name = df.dataset
+        self.sample_name = events.metadata['dataset']
         isTTbar = self.sample_name.startswith('ttJets')
 
             ## make event weights
                 # data or MC distinction made internally
-        evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+        #evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
 
             ## initialize selections and regions
-        selection = processor.PackedSelection()
+        selection = PackedSelection()
         regions = {
             'Muon' : {
                 '3Jets'  : {
@@ -123,56 +126,57 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         }
 
             ## object selection
-        objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
-        output['cutflow']['nEvts passing jet and muon obj selection'] += objsel_evts.sum()
+        #set_trace()
+        objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
+        output['cutflow']['nEvts passing jet and muon obj selection'] += ak.sum(objsel_evts)
         selection.add('objselection', objsel_evts)
 
         ## add different selections
-        selection.add('jets_3', df['Jet'].counts == 3)
+        selection.add('jets_3', ak.num(events['Jet']) == 3)
 
                 ## muons
-        selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
-        selection.add('loose_or_tight_MU', (df['Muon']['LOOSEMU'] | df['Muon']['TIGHTMU']).sum() == 1) # one muon passing LOOSE or TIGHT criteria
+        selection.add('tight_MU', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing TIGHT criteria
+        selection.add('loose_or_tight_MU', ak.sum(events['Muon']['LOOSEMU'] | events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
 
                 ## electrons
-        selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-        selection.add('loose_or_tight_EL', (df['Electron']['LOOSEEL'] | df['Electron']['TIGHTEL']).sum() == 1) # one electron passing LOOSE or TIGHT criteria
+        selection.add('tight_EL', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing TIGHT criteria
+        selection.add('loose_or_tight_EL', ak.sum(events['Electron']['LOOSEEL'] | events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
 
         ## apply lepton SFs to MC (only applicable to tight leptons)
         if 'LeptonSF' in corrections.keys():
             tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
-            tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
-                pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
-            mu_reco_cen = np.ones(df.size)
-            mu_reco_err = np.zeros(df.size)
-            mu_trig_cen = np.ones(df.size)
-            mu_trig_err = np.zeros(df.size)
+            tight_muons = events['Muon'][tight_mu_cut][(events['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
+            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=self.corrections['LeptonSF'],
+                pt=ak.flatten(tight_muons['pt']), eta=ak.flatten(tight_muons['eta']))
+            mu_reco_cen = np.ones(len(events))
+            mu_reco_err = np.zeros(len(events))
+            mu_trig_cen = np.ones(len(events))
+            mu_trig_err = np.zeros(len(events))
             mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
             mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
             mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
             mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
-            evt_weights.add('Muon_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
-            evt_weights.add('Muon_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+            mu_evt_weights.add('RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+            mu_evt_weights.add('TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
 
             tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
-            tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
-                pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
-            el_reco_cen = np.ones(df.size)
-            el_reco_err = np.zeros(df.size)
-            el_trig_cen = np.ones(df.size)
-            el_trig_err = np.zeros(df.size)
+            tight_electrons = events['Electron'][tight_el_cut][(events['Electron'][tight_el_cut]['TIGHTEL'] == True)]
+            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=self.corrections['LeptonSF'],
+                pt=ak.flatten(tight_electrons['pt']), eta=ak.flatten(tight_electrons['etaSC']))
+            el_reco_cen = np.ones(len(events))
+            el_reco_err = np.zeros(len(events))
+            el_trig_cen = np.ones(len(events))
+            el_trig_err = np.zeros(len(events))
             el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
             el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
             el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
             el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
-            evt_weights.add('Electron_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
-            evt_weights.add('Electron_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
+            el_evt_weights.add('RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+            el_evt_weights.add('TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
 
         if isTTbar:
             ## add 4+ jets categories for ttbar events
-            selection.add('jets_4+', df['Jet'].counts > 3)
+            selection.add('jets_4+', ak.num(events['Jet']) > 3)
             regions['Muon'].update({
                 '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_MU'}
             })
@@ -181,24 +185,21 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             })
 
 
-        btag_wps = [wp for wp in df['Jet'].columns if wps_to_use[0] in wp]
+        btag_wps = [wp for wp in events['Jet'].fields if wps_to_use[0] in wp]
         #set_trace()
         ## fill hists for each region
         for btag_wp in btag_wps:
             for lepton in regions.keys():
+                evt_weights = mu_evt_weights if lepton == 'Muon' else el_evt_weights
                 for jmult in regions[lepton].keys():
                     cut = selection.all(*regions[lepton][jmult])
  
                     evt_weights_to_use = evt_weights.weight()
-                    ## apply lepton SFs to MC (only applicable to tight leptons)
-                    if 'LeptonSF' in corrections.keys():
-                        evt_weights_to_use = evt_weights.partial_weight(exclude=['Electron_SF']) if lepton == 'Muon' else evt_weights.partial_weight(exclude=['Muon_SF']) # exclude SF from other lepton
-                    #set_trace()
-                    jets = df['Jet'][cut]
+                    jets = events['Jet'][cut]
                         ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
-                    bjets = jets[(jets['hadronFlav'] == 5)]
-                    cjets = jets[(jets['hadronFlav'] == 4)]
-                    ljets = jets[(jets['hadronFlav'] == 0)]
+                    bjets = jets[(jets['hadronFlavour'] == 5)]
+                    cjets = jets[(jets['hadronFlavour'] == 4)]
+                    ljets = jets[(jets['hadronFlavour'] == 0)]
 
                     output = self.fill_jet_hists_all( acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='bjet', obj=bjets, evt_weights=evt_weights_to_use[cut])
                     output = self.fill_jet_hists_pass(acc=output, btag_wp=btag_wp, jetmult=jmult, leptype=lepton, hadFlav='bjet', obj=bjets[(bjets[btag_wp])], evt_weights=evt_weights_to_use[cut])
@@ -212,43 +213,37 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
     def fill_jet_hists_all(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #acc['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        #acc['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        acc['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_pt_all'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj['pt']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
+        #acc['Jets_eta_all'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=ak.flatten(obj['eta']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
+        acc['Jets_pt_eta_all'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj['pt']), eta=ak.flatten(obj['eta']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
         return acc        
 
     def fill_jet_hists_pass(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #acc['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        #acc['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
-        acc['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=obj.pt.flatten(), eta=obj.eta.flatten(), weight=(obj.pt.ones_like()*evt_weights).flatten())
+        #acc['Jets_pt_pass'].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj['pt']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
+        #acc['Jets_eta_pass'].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=ak.flatten(obj['eta']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
+        acc['Jets_pt_eta_pass'].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj['pt']), eta=ak.flatten(obj['eta']), weight=ak.flatten((ak.ones_like(obj['pt'])*evt_weights)))
         return acc        
 
 
     def postprocess(self, accumulator):
         return accumulator
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
 
-output = processor.run_uproot_job(fileset,
-    treename='Events',
+proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+output = processor.run_uproot_job(
+    fileset,
+    treename="Events",
     processor_instance=Htt_Flav_Effs(),
     executor=proc_executor,
-    executor_args={
-        'workers': 8,
-        'flatten' : True,
-        'compression': 5,
-    },
-    chunksize=10000 if args.debug else 100000,
-    #chunksize=10000 if args.debug else 50000,
-    #chunksize=10000,
+    executor_args=proc_exec_args,
+    chunksize=100000,
 )
 
 
 if args.debug:
     print(output)
-#set_trace()
-#print(output['cutflow'])
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
