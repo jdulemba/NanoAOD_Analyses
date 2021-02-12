@@ -1,5 +1,4 @@
-import coffea.processor.dataframe
-import awkward
+import awkward as ak
 from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import numpy as np
@@ -85,7 +84,8 @@ elif os.environ['base_jobid'] == 'ULnanoAOD':
 else:
     raise ValueError("base_jobid not set")
     
-jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
+jet_pars = prettyjson.loads(open(os.path.join(os.environ['PROJECT_DIR'], 'cfg_files', 'cfg_pars_%s.json' % os.environ['jobid'])).read())['Jets']
+#jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DeepCSV', 'DeepJet']
 valid_WPs = ['Loose', 'Medium', 'Tight']
@@ -111,30 +111,16 @@ _signature_map = {
 
 
 def make_pt_eta_cuts(jets):
-    if isinstance(jets, awkward.array.base.AwkwardArray):
-        pt_cut = (jets.pt >= jet_pars['ptmin'])
-        eta_cut = (np.abs(jets.eta) <= jet_pars['etamax'])
-        kin_cuts = (pt_cut & eta_cut)
-
-    else:
-        raise ValueError("Only AwkwardArrays are supported")
-
-    return kin_cuts
+    pt_cut = (jets['pt'] >= jet_pars['ptmin'])
+    eta_cut = (np.abs(jets['eta']) <= jet_pars['etamax'])
+    return (pt_cut & eta_cut)
 
 def make_leadjet_pt_cut(jets):
-    if isinstance(jets, awkward.array.base.AwkwardArray):
-        leadpt_cut = (jets.pt.max() >= jet_pars['lead_ptmin'])
-    else:
-        raise ValueError("Only AwkwardArrays are supported")
-
+    leadpt_cut = (ak.max(jets['pt'], axis=1) >= jet_pars['lead_ptmin'])
     return leadpt_cut
 
 def HEM_15_16_issue(jets):
-    if isinstance(jets, awkward.array.base.AwkwardArray):
-        hem_region = ((jets.eta > -3.2) & (jets.eta < -1.3) & (jets.phi > -1.57) & (jets.phi < -0.87))
-    else:
-        raise ValueError("Only AwkwardArrays are supported")
-
+    hem_region = ((jets['eta'] > -3.2) & (jets['eta'] < -1.3) & (jets['phi'] > -1.57) & (jets['phi'] < -0.87))
     return hem_region
 
 
@@ -155,64 +141,34 @@ def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
     jets['ptGenJet'] =  ptGenJet
 
 
-def process_jets(df, year, corrections=None, shift=None):
+def process_jets(events, year, corrections=None):
 
-    if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-        raise IOError("This function only works for LazyDataFrame objects")
-
-    from coffea.analysis_objects import JaggedCandidateArray
-    
-    Jet = JaggedCandidateArray.candidatesfromcounts(
-        counts=df['nJet'],
-        pt=df['Jet_pt'],
-        eta=df['Jet_eta'],
-        phi=df['Jet_phi'],
-        mass=df['Jet_mass'],
-        btagDeepB=df['Jet_btagDeepB'],
-        btagDeepFlavB=df['Jet_btagDeepFlavB'],
-        Id=df['Jet_jetId'],
-        #cleanmask=df['Jet_cleanmask'],
-        #genJetIdx=df['Jet_genJetIdx'],
-        area=df['Jet_area'],
-        rawFactor=df['Jet_rawFactor'],
-    )
-
-    Jet['rho'] = Jet.pt.ones_like()*df['fixedGridRhoFastjetAll']
-    Jet['ptRaw'] = Jet.pt*(1.-Jet['rawFactor'])
-    Jet['massRaw'] = Jet.mass*(1.-Jet['rawFactor'])
+    jets = events['Jet']
+    jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
+    jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
+    jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+    if not events.metadata['dataset'].startswith('data_Single'): jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
 
        ## add btag wps
     for bdiscr in btag_values[year].keys():
         for wp in btag_values[year][bdiscr].keys():
-            Jet[wp] = (Jet[bdiscr] > btag_values[year][bdiscr][wp])
+            jets[wp] = (jets[bdiscr] > btag_values[year][bdiscr][wp])
 
         ## apply jet corrections
     if (jet_pars['applyJER'] == 1) and corrections is not None:
-        if df.dataset.startswith('data_Single'):
-            era = [key for key in corrections['DATA'].keys() if df.dataset.split(year)[-1] in key]
-            if (year == '2016') and ('Bv2' in df.dataset): era = ['BCD']
-            if len(era) != 1: raise ValueError("Only one era should be used for %s" % df.dataset)
-            JER = corrections['DATA'][era[0]]['JER']
-            Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
-            Jet_transformer = corrections['DATA'][era[0]]['JT']
+        if events.metadata['dataset'].startswith('data_Single'):
+            era = [key for key in corrections['DATA'].keys() if events.metadata['dataset'].split(year)[-1] in key]
+            if (year == '2016') and ('Bv2' in events.metadata['dataset']): era = ['BCD']
+            if len(era) != 1: raise ValueError("Only one era should be used for %s" % events.metadata['dataset'])
+            jet_factory = corrections['DATA'][era[0]]['JetsFactory']
+            met_factory = corrections['DATA'][era[0]]['METFactory']
 
         else:
-            Jet['hadronFlav'] = awkward.JaggedArray.fromcounts(Jet.counts, df['Jet_hadronFlavour'])
-                ## apply JER
-                    ## create gen jets for matching
-            import python.GenParticleSelector as genpsel
-            df['genJets'] = genpsel.process_genJets(df)
+            jet_factory = corrections['MC']['JetsFactory']
+            met_factory = corrections['MC']['METFactory']
 
-                # match jets to genJets to get ptGenJet
-            JER = corrections['MC']['JER']
-            Jet['JER'] = JER.getResolution(JetEta=Jet.eta, JetPt=Jet.pt, Rho=Jet.rho)
-            get_ptGenJet(Jet, df['genJets'], dr_max=0.4, pt_max_factor=3)
-            Jet_transformer = corrections['MC']['JT']
-            #set_trace()
+        events_cache = events.caches[0]
+        corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
+        corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
 
-        import python.JetMET_corrections as JETMET_corr
-        JETMET_corr.transform(Jet_transformer, jet=Jet, met=df['MET'], shift=shift)
-        #Jet_transformer.transform(Jet, met=df['MET'])
-
-    return Jet
-
+    return corrected_jets, corrected_met
