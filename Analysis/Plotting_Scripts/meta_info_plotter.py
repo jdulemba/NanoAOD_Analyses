@@ -10,15 +10,14 @@ rcParams['font.size'] = 20
 rcParams["savefig.format"] = 'png'
 rcParams["savefig.bbox"] = 'tight'
 
-import Utilities.Plotter as Plotter
+from Utilities.Plotter import plot_1D
 from coffea.hist import plot
 import coffea
-from coffea.util import load, save
+from coffea.util import load#, save
 from pdb import set_trace
 import os
 import Utilities.prettyjson as prettyjson
 import Utilities.plot_tools as plt_tools
-from argparse import ArgumentParser
 import numpy as np
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -26,9 +25,10 @@ jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'meta_info'
 
+from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('--dump_lumi', action='store_true', help='Crosscheck resulting lumi map from data to golden json.')
+parser.add_argument('data_mc', choices=['Data', 'MC', 'All'], help='Make plots for MC (MC), make meta.json files for Data (Data), or both (All).')
 
 args = parser.parse_args()
 
@@ -43,14 +43,15 @@ hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0
 #set_trace()
 
 isSample = lambda x: ('runs_to_lumis' not in x) and ('PU_nTrueInt' not in x) and ('PU_nPU' not in x)
-#isSample = lambda x: ('runs_to_lumis' not in x) and ('PUDistribution' not in x)
 samples = sorted([key for key in hdict.keys() if isSample(key)])
 
-    # get hists
-PU_nTrueInt_histo = hdict['PU_nTrueInt']
-PU_nPU_histo = hdict['PU_nPU']
 
-if args.dump_lumi:
+if (args.data_mc == 'MC') or (args.data_mc == 'All'):
+    # get hists
+    PU_nTrueInt_histo = hdict['PU_nTrueInt']
+    PU_nPU_histo = hdict['PU_nPU']
+
+if (args.data_mc == 'Data') or (args.data_mc == 'All'):
     el_lumimask_check_comb = {}
     el_lumimask_check_ind = {}
     mu_lumimask_check_comb = {}
@@ -65,7 +66,7 @@ if args.dump_lumi:
 for sample in samples:
     #print("    %s is being analyzed" % sample)
     if 'data_Single' in sample:
-        if not args.dump_lumi: continue
+        if not ((args.data_mc == 'Data') or (args.data_mc == 'All')): continue
         print("    %s is being analyzed" % sample)
         #set_trace()
         run_lumi_list = hdict['%s_runs_to_lumis' % sample].value
@@ -86,6 +87,7 @@ for sample in samples:
         continue
 
     else: 
+        if not ((args.data_mc == 'MC') or (args.data_mc == 'All')): continue
         print("    %s is being analyzed" % sample)
 
         #set_trace()
@@ -104,12 +106,11 @@ for sample in samples:
             ## plot histograms
                 ## pileup nTrueInt distribution
         pu_nTrueInt_histo = PU_nTrueInt_histo[sample].integrate('dataset')
-        pu_nTrueInt_histo = pu_nTrueInt_histo.rebin(pu_nTrueInt_histo.dense_axes()[0].name, 2)
         pu_nTrueInt_bins = pu_nTrueInt_histo.axis('pu_nTrueInt').edges()
         fig_nTrueInt, ax_nTrueInt = plt.subplots()
-        Plotter.plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, (0., 100.), xlabel=('$\mathsf{%s}$' % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=sample, histtype='step')
+        plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=sample, histtype='step')
         ax_nTrueInt.legend(loc='upper right')
-        hep.cms.cmslabel(ax=ax_nTrueInt, rlabel=args.year)
+        hep.cms.label(ax=ax_nTrueInt, rlabel=args.year)
         figname_nTrueInt = os.path.join(outdir, '%s_PU_nTrueInt.png' % sample)
         fig_nTrueInt.savefig(figname_nTrueInt)
         print('%s written' % figname_nTrueInt)
@@ -117,19 +118,18 @@ for sample in samples:
 
                 ## pileup nPU distribution
         pu_nPU_histo = PU_nPU_histo[sample].integrate('dataset')
-        pu_nPU_histo = pu_nPU_histo.rebin(pu_nPU_histo.dense_axes()[0].name, 2)
         pu_nPU_bins = pu_nPU_histo.axis('pu_nPU').edges()
         fig_nPU, ax_nPU = plt.subplots()
-        Plotter.plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, (0., 100.), xlabel=('$\mathsf{%s}$' % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=sample, histtype='step')
+        plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=sample, histtype='step')
         ax_nPU.legend(loc='upper right')
-        hep.cms.cmslabel(ax=ax_nPU, rlabel=args.year)
+        hep.cms.label(ax=ax_nPU, rlabel=args.year)
         figname_nPU = os.path.join(outdir, '%s_PU_nPU.png' % sample)
         fig_nPU.savefig(figname_nPU)
         print('%s written' % figname_nPU)
         plt.close(fig_nPU)
 
 
-if args.dump_lumi:
+if (args.data_mc == 'Data') or (args.data_mc == 'All'):
     #set_trace()
         ## save individual run.json files for each data period
     for period in sorted(el_lumimask_check_ind.keys()):
