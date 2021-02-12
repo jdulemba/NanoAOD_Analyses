@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 
-from coffea import hist
-import coffea.processor as processor
+import awkward as ak
+from coffea import hist, processor
+from coffea.nanoevents import NanoAODSchema
 from pdb import set_trace
 import os
-from argparse import ArgumentParser
-import coffea.processor.dataframe
-from coffea.util import load, save
+from coffea.util import save
+import Utilities.prettyjson as prettyjson
 import numpy as np
 import coffea.lumi_tools.lumi_tools as lumi_tools
-import Utilities.prettyjson as prettyjson
-import python.MCWeights as MCWeights
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 
+from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
@@ -63,71 +62,60 @@ class Meta_Analyzer(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
-    def process(self, df):
+    def process(self, events):
         output = self.accumulator.identity()
 
-        if not isinstance(df, coffea.processor.dataframe.LazyDataFrame):
-            raise IOError("This function only works for LazyDataFrame objects")
-
         if args.debug: set_trace()
-        events = df.event
-        self.sample_name = df.dataset
+        event_nums = events.event
+        self.sample_name = events.metadata['dataset']
 
         if isData_:
-            runs = df.run
-            lumis = df.luminosityBlock
+            runs = events.run
+            lumis = events.luminosityBlock
             Golden_Json_LumiMask = lumi_tools.LumiMask(lumiMask_path)
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
-            output[self.sample_name]['nEvents'] += events[LumiMask].size
-            output[self.sample_name]['sumGenWeights'] += events[LumiMask].size
+            output[self.sample_name]['nEvents'] += ak.size(event_nums[LumiMask])
+            output[self.sample_name]['sumGenWeights'] += ak.size(event_nums[LumiMask])
 
-            if events[LumiMask].size > 0:
-                valid_runs_lumis = np.unique(np.stack((runs[LumiMask], lumis[LumiMask]), axis=1), axis=0) ## make 2D array of uniqe valid [[run, lumi], [run, lumi]...] pairs
+            if ak.size(event_nums[LumiMask]) > 0:
+                valid_runs_lumis = np.unique(np.stack((ak.to_numpy(runs[LumiMask]), ak.to_numpy(lumis[LumiMask])), axis=1), axis=0) ## make 2D array of uniqe valid [[run, lumi], [run, lumi]...] pairs
                     # make dictionary of valid runs: sorted list of unique lumisections for each valid run
                 lumi_map = {str(valid_run):sorted(list(set(valid_runs_lumis[:, 1][valid_runs_lumis[:, 0] == valid_run]))) for valid_run in list(set(valid_runs_lumis[:, 0]))}
 
                 output['%s_runs_to_lumis' % self.sample_name].add(list(lumi_map.items()))
 
         else:
-            output['PU_nTrueInt'].fill(dataset=self.sample_name, pu_nTrueInt=df.Pileup_nTrueInt)
-            output['PU_nPU'].fill(dataset=self.sample_name, pu_nPU=df.Pileup_nPU)
+            genWeights = events['genWeight']
+            output[self.sample_name]['sumGenWeights'] += sum(genWeights)
 
-            output[self.sample_name]['nEvents'] += events.size
+            output['PU_nTrueInt'].fill(dataset=self.sample_name, pu_nTrueInt=events['Pileup']['nTrueInt'], weight=genWeights)
+            output['PU_nPU'].fill(dataset=self.sample_name, pu_nPU=events['Pileup']['nPU'], weight=genWeights)
 
-            genWeights = df.genWeight
-            output[self.sample_name]['sumGenWeights'] += genWeights.sum()
+            output[self.sample_name]['nEvents'] += ak.size(event_nums)
 
-            if 'LHEPdfWeight' in df.columns:
-                MCWeights.get_pdf_weights(df) # add pdf weights to df
-                LHEpdfWeights = df.PDFWeights
-                pdfwts = np.array(LHEpdfWeights) # convert to numpy so summing of each weight is easier
+            if 'LHEPdfWeight' in events.fields:
+                LHEpdfWeights = events['LHEPdfWeight']
                     ## get sum of each pdf weight over all events
-                sumLHEpdfWeights = pdfwts.sum()
-                output[self.sample_name]['sumLHEpdfWeights'] += sumLHEpdfWeights
+                sumLHEpdfWeights = ak.sum(LHEpdfWeights, axis=0)
+                output[self.sample_name]['sumLHEpdfWeights'] += ak.to_numpy(sumLHEpdfWeights)
 
         return output
-
 
     def postprocess(self, accumulator):
         return accumulator
 
-#set_trace()
 proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-output = processor.run_uproot_job(fileset,
-    treename='Events',
+proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+output = processor.run_uproot_job(
+    fileset,
+    treename="Events",
     processor_instance=Meta_Analyzer(),
     executor=proc_executor,
-    executor_args={
-        'workers': 8,
-        'flatten' : True,
-        'compression' : 5,
-    },
-    chunksize=10000 if args.debug else 100000,
+    executor_args=proc_exec_args,
+    chunksize=100000,
+    #chunksize=10000 if args.debug else 100000,
 )
-
-if args.debug: print(output)
-#print(output)
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
