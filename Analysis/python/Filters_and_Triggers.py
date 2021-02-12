@@ -1,55 +1,50 @@
-from coffea.util import save
-import numpy as np
-
+import awkward as ak
 from pdb import set_trace
 
 single_el_trigger_paths = {
     '2016' : {
-        'Iso' : ["HLT_Ele27_WPTight_Gsf"],
-        'noIso' : ["HLT_Ele27_WPLoose_Gsf"],
+        'Iso' : ["Ele27_WPTight_Gsf"],
+        'noIso' : ["Ele27_WPLoose_Gsf"],
     },
     '2017' : {
-        'Iso' : ["HLT_Ele27_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf"],
-        'noIso' : ["HLT_Ele20_WPLoose_Gsf"],
+        'Iso' : ["Ele27_WPTight_Gsf", "Ele32_WPTight_Gsf"],
+        'noIso' : ["Ele20_WPLoose_Gsf"],
     },
     '2018' : {
-        'Iso' : ["HLT_Ele32_WPTight_Gsf"],
-        'noIso' : ["HLT_Ele20_WPLoose_Gsf"],
+        'Iso' : ["Ele32_WPTight_Gsf"],
+        'noIso' : ["Ele20_WPLoose_Gsf"],
     },
 }
 
 single_mu_trigger_paths = {
     '2016' : {
-        'Iso' : ["HLT_IsoMu24", "HLT_IsoTkMu24"],
-        'noIso' : ["HLT_Mu50"],
+        'Iso' : ["IsoMu24", "IsoTkMu24"],
+        'noIso' : ["Mu50"],
     },
     '2017' : {
-        'Iso' : ["HLT_IsoMu27"],
-        'noIso' : ["HLT_Mu50"],
+        'Iso' : ["IsoMu27"],
+        'noIso' : ["Mu50"],
     },
     '2018' : {
-        'Iso' : ["HLT_IsoMu24"],
-        'noIso' : ["HLT_Mu50"],
+        'Iso' : ["IsoMu24"],
+        'noIso' : ["Mu50"],
     },
 }
 
-def get_triggers(df, leptype, year, noIso=False, accumulator=None):
+def get_triggers(HLT, leptype, year, noIso=False, accumulator=None):
     ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
 
+    _allowed_leptypes = ['Muon', 'Electron']
+    _err_message = f"Select 'leptype' from {_allowed_leptypes}"
+    assert leptype in _allowed_leptypes, _err_message
+
+    #set_trace()
     iso_cat = 'noIso' if noIso else 'Iso'
-    if leptype == 'Muon':
-        triggers = [df[i] for i in single_mu_trigger_paths[year][iso_cat] if i in df.columns]
-        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
-
-    elif leptype == 'Electron':
-        triggers = [df[i] for i in single_el_trigger_paths[year][iso_cat] if i in df.columns]
-        pass_triggers = np.stack(triggers, axis = 1).any(axis = 1)
-
-    else:
-        raise ValueError("Only events analyzing muons OR electrons supported right now")
+    pass_triggers = ak.all((HLT[i] for i in single_mu_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0) if leptype == 'Muon'\
+                     else ak.all((HLT[i] for i in single_el_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0)
 
     if accumulator:
-        accumulator['cutflow']['nEvts pass %s pass_triggers' % leptype] += pass_triggers.sum()
+        accumulator['cutflow']['nEvts pass %s pass_triggers' % leptype] += ak.sum(pass_triggers)
         return pass_triggers, accumulator
     else:
         return pass_triggers
@@ -58,39 +53,38 @@ def get_triggers(df, leptype, year, noIso=False, accumulator=None):
 ## Supported filters found here: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
 met_filters = {}
 met_filters["2016"] = [
-    "Flag_goodVertices",
-    "Flag_globalSuperTightHalo2016Filter",
-    "Flag_HBHENoiseFilter",
-    "Flag_HBHENoiseIsoFilter",
-    "Flag_EcalDeadCellTriggerPrimitiveFilter",
-    "Flag_BadPFMuonFilter"
+    "goodVertices",
+    "globalSuperTightHalo2016Filter",
+    "HBHENoiseFilter",
+    "HBHENoiseIsoFilter",
+    "EcalDeadCellTriggerPrimitiveFilter",
+    "BadPFMuonFilter"
 ]
 met_filters["2017"] = [
-    "Flag_goodVertices",
-    "Flag_globalSuperTightHalo2016Filter",
-    "Flag_HBHENoiseFilter",
-    "Flag_HBHENoiseIsoFilter",
-    "Flag_EcalDeadCellTriggerPrimitiveFilter",
-    "Flag_BadPFMuonFilter",
-    #"Flag_ecalBadCalibFilter", ## should not be used now
+    "goodVertices",
+    "globalSuperTightHalo2016Filter",
+    "HBHENoiseFilter",
+    "HBHENoiseIsoFilter",
+    "EcalDeadCellTriggerPrimitiveFilter",
+    "BadPFMuonFilter",
+    #"ecalBadCalibFilter", ## should not be used now
 ]
 met_filters["2018"] = [
-    "Flag_goodVertices",
-    "Flag_globalSuperTightHalo2016Filter",
-    "Flag_HBHENoiseFilter",
-    "Flag_HBHENoiseIsoFilter",
-    "Flag_EcalDeadCellTriggerPrimitiveFilter",
-    "Flag_BadPFMuonFilter",
-    #"Flag_ecalBadCalibFilter", ## should not be used now
+    "goodVertices",
+    "globalSuperTightHalo2016Filter",
+    "HBHENoiseFilter",
+    "HBHENoiseIsoFilter",
+    "EcalDeadCellTriggerPrimitiveFilter",
+    "BadPFMuonFilter",
+    #"ecalBadCalibFilter", ## should not be used now
 ]
 
-def get_filters(df, year, accumulator=None):
+def get_filters(Flags, year, accumulator=None):
 
-    filters = [df[i] for i in met_filters[year]]
-    pass_filters = np.stack(filters, axis = 1).all(axis = 1)
+    pass_filters = ak.all((Flags[i] for i in met_filters[year]), axis=0)
 
     if accumulator:
-        accumulator['cutflow']['pass filters'] += pass_filters.sum()
+        accumulator['cutflow']['pass filters'] += ak.sum(pass_filters)
         return pass_filters, accumulator
     else:
         return pass_filters
