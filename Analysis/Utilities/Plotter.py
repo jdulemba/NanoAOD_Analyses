@@ -233,12 +233,14 @@ def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-
     if ax is None:
         ax = plt.gca()
 
-    ax = hep.plot.histplot(values, bins, weights=weights, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
+    hep.plot.histplot(values, bins, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
     ax.set_xlim(min(bins), max(bins)) if xlimits is None else ax.set_xlim(xlimits)
     xtitle = kwargs.get('xtitle', xlabel)
     ytitle = kwargs.get('ytitle', ylabel)
     ax.set_xlabel(xtitle)
     ax.set_ylabel(ytitle)
+    ax.autoscale(axis='x', tight=True)
+    ax.set_ylim(0, None)
 
     return ax
 
