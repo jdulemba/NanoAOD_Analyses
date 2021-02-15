@@ -13,7 +13,7 @@ parser.add_argument('--split_uncs', action='store_true', help='Use individual je
 
 args = parser.parse_args()
 
-jobid = os.environ['jobid']
+#jobid = os.environ['jobid']
 proj_dir = os.environ['PROJECT_DIR']
 base_jobid = os.environ['base_jobid']
 
@@ -93,8 +93,8 @@ def make_name_map(jstack, isMC):
     return name_map
 
 
-#years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-years_to_run = ['2017']
+years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+#years_to_run = ['2017']
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
     for dtype in ['DATA', 'MC']:
@@ -111,26 +111,8 @@ for dirid in ['jec', 'junc', 'jr', 'jersf']:
 Jetext.finalize()
 Jetevaluator = Jetext.make_evaluator()
 
-jet_corrections = {
-    #'2016APV' : {
-    #    'MC' : {},
-    #    'DATA': {},
-    #},
-    '2016' : {
-        'MC' : {},
-        'DATA': {},
-    },
-    '2017' : {
-        'MC' : {},
-        'DATA': {},
-    },
-    '2018' : {
-        'MC' : {},
-        'DATA': {},
-    },
-}
 
-#set_trace()
+jet_corrections = {year:{'MC' : {}, 'DATA' : {}} for year in years_to_run}
 for year in years_to_run:
     jec_mc_tag = '_'.join([jecfiles[year]['tag'], jecfiles[year]['v'], 'MC'])
     jer_tag = jerfiles[year]['tag']
@@ -174,6 +156,6 @@ for year in years_to_run:
     print('Jet corrections for %s saved' % year)
 
 #set_trace()
-fname = os.path.join(proj_dir, 'Corrections', jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', jobid, 'JetMETCorrections.coffea')
+fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea')
 save(jet_corrections, fname)
 print('\n%s written' % fname)
