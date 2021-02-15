@@ -513,14 +513,13 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=Fa
             raise ValueError("%s not found in dense_lookup_dict" % var)
         sumw = dict[(var, 'dense_lookup')][0]
         sumw2 = dict[('%s_error' % var, 'dense_lookup')][0]
-        edges = dict[(var, 'dense_lookup')][1]
+        edges = dict[(var, 'dense_lookup')][1][0]
 
         sparse_axes = [hist.Cat(sparse_axis['name'], sparse_axis['label']) for sparse_axis in sparse_axes_list]
         output_hist = hist.Hist(
             'Events',
             *sparse_axes,
             hist.Bin('xaxis', var, edges)
-            #hist.Bin('xaxis', var, len(edges)-1, edges[0], edges[-1])
         )
 
         fill_dict = {sparse_axis['name'] : sparse_axis['fill'] for sparse_axis in sparse_axes_list}
