@@ -7,9 +7,10 @@ import os
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'meta_info'
 
-outdir = os.path.join(proj_dir, 'Corrections') 
+outdir = os.path.join(proj_dir, 'Corrections', base_jobid) 
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -24,9 +25,10 @@ data_pu_dists = {
     '2018' : {},
 }
 
-pu_path = os.path.join(proj_dir, 'inputs', 'data', 'Pileup')
+pu_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'Pileup')
 
-for year in ['2016', '2017', '2018']:
+years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+for year in years_to_run:
     input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
     fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('.coffea')]
 
@@ -51,17 +53,19 @@ for year in ['2016', '2017', '2018']:
             raise IOError("%s not found" % fname)
         hists = load(fname)
     
-        if 'data_Single' in fname: continue
-        histo = hists['PUDistribution']
-        mc_vals = [val for val in histo.values().values()][0]
-        mc_vals = mc_vals/sum(mc_vals)
-        edges = histo.axes()[-1].edges()
-        mc_pu_weights[year][histo.axes()[0]._sorted[0]] = {}
-        for sys_var in ['central', 'up', 'down']:
-            mc_weights = data_pu_dists[year][sys_var]._values/mc_vals
-            mc_weights[mc_weights == np.inf] = np.nan
-            mc_weights = np.nan_to_num(mc_weights)
-            mc_pu_weights[year][histo.axes()[0]._sorted[0]][sys_var] = dense_lookup(mc_weights, edges)
+        pu_histo = hists['PU_nTrueInt']
+        for dataset in sorted(pu_histo.values().keys()):
+            if 'data_Single' in dataset[0]: continue
+            histo = pu_histo[dataset].integrate('dataset')
+            mc_vals = histo.values()[()]
+            mc_vals = mc_vals/sum(mc_vals) # normalize values
+            edges = histo.axes()[-1].edges()
+            mc_pu_weights[year][dataset[0]] = {}
+            for sys_var in ['central', 'up', 'down']:
+                mc_weights = data_pu_dists[year][sys_var]._values/mc_vals
+                mc_weights[mc_weights == np.inf] = np.nan
+                mc_weights = np.nan_to_num(mc_weights)
+                mc_pu_weights[year][dataset[0]][sys_var] = dense_lookup(mc_weights, edges)
         
     # save files
 mcweights_name = os.path.join(outdir, 'MC_PU_Weights.coffea')
