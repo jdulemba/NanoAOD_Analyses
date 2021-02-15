@@ -25,6 +25,7 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'htt_flav_effs'
 
 jobid = os.environ['jobid']
@@ -76,7 +77,7 @@ jet_mults = {
 
 flav_to_name = {'bjet' : 'bottom', 'cjet' : 'charm', 'ljet' : 'light'}
 hname = 'Jets_pt_eta'
-lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights.coffea'))
 
 #pt_binning = np.array([30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 125.0, 150.0,170.0, 200.0, 250.0, 1000.0])
 #eta_binning = np.array([-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5])
@@ -112,7 +113,7 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
         #fontsize=18,
         horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
     )
-    hep.cms.cmslabel(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+    hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
     #set_trace()
     #figname = 'test.png'    
@@ -123,9 +124,10 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     #set_trace()
 
 
-data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())
+data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
 
-for year in ['2016', '2017', '2018']:
+years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+for year in years_to_run:
     input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
     fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('TOT.coffea')]
     if len(fnames) > 1:
