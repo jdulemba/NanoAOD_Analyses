@@ -1,13 +1,15 @@
-#export jobid=NanoAODv6
-#export jobid=Testing
-#export jobid=jpt30_ljpt0_leppt30
-#export jobid=jpt30_ljpt0_leppt30_cutBasedEl
-#export jobid=jpt30_ljpt0_leppt30_mvaEl
+export jobid=NanoAODv6
+#export jobid=NanoAODv6_jpt30_ljpt50_MT40_cutBasedEl
 #export jobid=NanoAODv6_newJCs
-#export jobid=ULnanoAOD
-#export jobid=ULnanoAOD_jpt30_ljpt50_MT40_cutBasedEl
-#jobid=NanoAODv6_Testing
-export jobid=NanoAODv6_jpt30_ljpt50_MT40_cutBasedEl
 #export jobid=NanoAODv6_pt_thad_reweighting
 #export jobid=NanoAODv6_mtt_thadctstar_reweighting
 #export jobid=NanoAODv6_mtt_thadctstar_Interp_reweighting
+
+#export jobid=ULnanoAOD
+#export jobid=ULnanoAOD_jpt30_ljpt50_MT40_cutBasedEl
+
+if [[ $jobid == *"NanoAODv6"* ]]; then
+    export base_jobid=NanoAODv6
+else
+    export base_jobid=ULnanoAOD
+fi
