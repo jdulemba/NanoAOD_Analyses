@@ -1,11 +1,9 @@
 from pdb import set_trace
-import awkward
-from coffea.analysis_objects import JaggedCandidateArray
+import awkward as ak
 import numpy as np
 import compiled.pynusolver as pynusolver
 from python.Permutations import make_perm_table
 
-remove_fast = lambda x : x.split('fast_')[-1]
 
 def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
     if gen_hyp is None:
@@ -17,90 +15,76 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
     if met is None:
         raise ValueError("Reco met needed for matching")
 
-    if (gen_hyp['SL']['TTbar'].counts != 1).any():
+    if not ak.all(ak.num(gen_hyp) == 1):
         raise ValueError("Not all events for matching are semileptonic")
 
-        # init dicts of counts and variables
-    matched_dict_counts = {}
-    matched_dict_vars ={}
+    jets_ak = ak.with_name(jets[["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
 
+        # init dict of objects
+    matched_objects = {}
 
+    #set_trace()
         # match jet closest to gen objects 
     for genobj in ['BHad', 'BLep', 'WJa', 'WJb']:
-        deltaRs = jets.p4.delta_r(gen_hyp['SL'][genobj].p4.flatten())
-        indexOfMin = deltaRs.argmin()
+        genobj_ak = ak.with_name(gen_hyp[genobj][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
+        jets_akc, genobj_akc = ak.unzip(ak.cartesian([jets_ak, genobj_ak], nested=False))
+        deltaRs = ak.flatten(jets_akc.delta_r(genobj_akc), axis=2)  # find deltaRs between jets and gen object
+        indexOfMin = ak.unflatten(ak.argmin(deltaRs, axis=1), ak.num(genobj_ak))
         passing_inds = deltaRs[indexOfMin] < 0.4
+
         matched_jets_inds = indexOfMin[passing_inds]
         matched_jets = jets[matched_jets_inds]
 
-        matched_dict_counts.update({genobj : matched_jets.counts})
-        matched_dict_vars.update({genobj : {
-            'pt' : matched_jets.pt.flatten(),
-            'eta' : matched_jets.eta.flatten(),
-            'phi' : matched_jets.phi.flatten(),
-            'mass' : matched_jets.mass.flatten(),
-            #'hadronFlav' : matched_jets.hadronFlav.flatten(),
-            'jetIdx' : matched_jets_inds.flatten(), # index of jet that the gen object is matched to in the event
-            
-        }})
-
+        ## add matched perm objects
+        matched_objects[genobj] = ak.Array({
+            'pt' : matched_jets.pt,
+            'eta' : matched_jets.eta,
+            'phi' : matched_jets.phi,
+            'mass' : matched_jets.mass,
+            'jetIdx' : matched_jets_inds, # index of jet that the gen object is matched to in the event
+        }, with_name="PtEtaPhiMLorentzVector")
+        
+    #set_trace()
         # match lepton closest to gen lepton
-    lepDRs = leptons.p4.delta_r(gen_hyp['SL']['Lepton'].p4.flatten())
-    lepIdxOfMin = lepDRs.argmin()
+    lepDRs = ak.flatten(leptons.delta_r(gen_hyp['Lepton']), axis=2)
+    lepIdxOfMin = ak.unflatten(ak.argmin(lepDRs, axis=1), ak.num(gen_hyp['Lepton']))
     passing_inds = lepDRs[lepIdxOfMin] < 0.4
     matched_leps_inds = lepIdxOfMin[passing_inds]
     matched_leps = leptons[matched_leps_inds]
-
-    matched_dict_counts.update({'Lepton' : matched_leps.counts})
-    matched_dict_vars.update({'Lepton' : {remove_fast(key) : matched_leps[key].flatten() for key in matched_leps.columns if key != 'p4'}})
-
-        ## create matched perm objects
-    matched_BHad = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['BHad'],
-        **matched_dict_vars['BHad']
-    )#.pad(1)
-    matched_BLep = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['BLep'],
-        **matched_dict_vars['BLep']
-    )#.pad(1)
-    matched_WJa = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['WJa'],
-        **matched_dict_vars['WJa']
-    )#.pad(1)
-    matched_WJb = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['WJb'],
-        **matched_dict_vars['WJb']
-    )#.pad(1)
-    matched_Lep = JaggedCandidateArray.candidatesfromcounts(
-        counts= matched_dict_counts['Lepton'],
-        **matched_dict_vars['Lepton']
-    )#.pad(1)
+    
+    ## add matched perm objects
+    matched_objects['Lepton'] = ak.Array({key: matched_leps[key] for key in matched_leps.fields}, with_name="PtEtaPhiMLorentzVector")
 
         # solve for neutrino
-    nu_array = np.zeros((jets.counts.size, 4), dtype='float64')
-    for idx, blep in enumerate(matched_BLep):
-        if blep.size < 1: continue
-        if matched_Lep[idx].size < 1: continue
-        if blep.size > 1: raise ValueError("More than one matched blep. Investigate")
+    nu_array = np.zeros((len(ak.num(jets)), 4), dtype='float64')
+    for idx, blep in enumerate(matched_objects['BLep']):
+        if ak.size(blep.pt) < 1: continue
+        if ak.size(matched_objects['Lepton'][idx].pt) < 1: continue
+        if ak.size(blep.pt) > 1: raise ValueError("More than one matched blep. Investigate")
 
             # must specify same dtype for all arrays
-        blep_inputs = np.array([blep.p4.x[0], blep.p4.y[0], blep.p4.z[0], blep.p4.energy[0]], dtype='float64')
-        lep_inputs = np.array([matched_Lep[idx].p4.x[0], matched_Lep[idx].p4.y[0], matched_Lep[idx].p4.z[0], matched_Lep[idx].p4.energy[0]], dtype='float64')
-        met_inputs = np.array([met[idx].p4.x[0], met[idx].p4.y[0]], dtype='float64')
+        blep_inputs = np.array([blep.px[0], blep.py[0], blep.pz[0], blep.energy[0]], dtype='float64')
+        lep_inputs = np.array([matched_objects['Lepton'][idx].px[0], matched_objects['Lepton'][idx].py[0], matched_objects['Lepton'][idx].pz[0], matched_objects['Lepton'][idx].energy[0]], dtype='float64')
+        met_inputs = np.array([met.px[idx], met.py[idx]], dtype='float64')
         nu = nu_array[idx]
         pynusolver.run_nu_solver(lep_inputs, blep_inputs, met_inputs, nu) # input order for nusolver is (lepton, jet, met, nu), returns Nu(px, py, pz, chi2)
 
     valid_nu = ~((nu_array[:, 3] > 1e20) | (nu_array[:, 3] == 0)) # events that have a solution and matched blep
-    matched_Nu = JaggedCandidateArray.candidatesfromcounts(
-        counts = valid_nu.astype(int),
-        px = nu_array[:, 0][valid_nu],
-        py = nu_array[:, 1][valid_nu],
-        pz = nu_array[:, 2][valid_nu],
-        mass = np.zeros(valid_nu.sum()),
-        chi2 = nu_array[:, 3][valid_nu],
-    )#.pad(1)
 
-    matched_perm = make_perm_table(bhad=matched_BHad, blep=matched_BLep, wja=matched_WJa, wjb=matched_WJb, lepton=matched_Lep, met=met, nu=matched_Nu)
+        # convert px, py, pz to pt, eta, phi
+    nu_px, nu_py, nu_pz = nu_array[:, 0][valid_nu], nu_array[:, 1][valid_nu], nu_array[:, 2][valid_nu]
+    nu_mom, nu_pt = np.sqrt(np.square(nu_px)+np.square(nu_py)+np.square(nu_pz)), np.sqrt(np.square(nu_px)+np.square(nu_py))
+    nu_phi = np.arctan2(nu_py, nu_px)
+    nu_eta = np.arcsinh(nu_pz/nu_pt)
+    matched_objects['Nu'] = ak.Array({
+        'pt' : ak.unflatten(nu_pt, valid_nu.astype(int)),
+        'eta' : ak.unflatten(nu_eta, valid_nu.astype(int)),
+        'phi' : ak.unflatten(nu_phi, valid_nu.astype(int)),
+        'mass' : ak.zeros_like(ak.unflatten(nu_array[:, 0][valid_nu], valid_nu.astype(int))),
+        'chi2' : ak.unflatten(nu_array[:, 3][valid_nu], valid_nu.astype(int)),
+    }, with_name="PtEtaPhiMLorentzVector")
+
+    matched_perm = make_perm_table(bhad=matched_objects['BHad'], blep=matched_objects['BLep'], wja=matched_objects['WJa'], wjb=matched_objects['WJb'], lepton=matched_objects['Lepton'], met=met, nu=matched_objects['Nu'])
     #set_trace()
 
     return matched_perm
