@@ -65,7 +65,7 @@ class Meta_Analyzer(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
 
-        if args.debug: set_trace()
+        #if args.debug: set_trace()
         event_nums = events.event
         self.sample_name = events.metadata['dataset']
 

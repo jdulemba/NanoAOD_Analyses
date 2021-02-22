@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
-from coffea import hist
+from coffea import hist, processor
+from coffea.nanoevents import NanoAODSchema
+import awkward as ak
+from coffea.nanoevents.methods import vector
+ak.behavior.update(vector.behavior)
 from coffea.util import save
-import coffea.processor as processor
 from pdb import set_trace
 import os
 import python.MCWeights as MCWeights
@@ -10,10 +13,12 @@ import numpy as np
 import Utilities.prettyjson as prettyjson
 import python.GenParticleSelector as genpsel
 
+base_jobid = os.environ['base_jobid']
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
 
@@ -30,7 +35,7 @@ corrections = {
 
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
-class GenPartons(processor.ProcessorABC):
+class Analyzer(processor.ProcessorABC):
     def __init__(self):
 
             ## make binning for hists
@@ -53,10 +58,8 @@ class GenPartons(processor.ProcessorABC):
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.corrections = corrections
-        if args.year == '2016':
-            self.Nominal_ttJets = ['ttJets_PS', 'ttJets']
-        else:
-            self.Nominal_ttJets = ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
+
+        self.Nominal_ttJets = ['ttJets_PS', 'ttJets'] if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
         if not self.Nominal_ttJets:
             raise ValueError("This should only be run on ttbar events!")
 
@@ -78,36 +81,39 @@ class GenPartons(processor.ProcessorABC):
 
 
 
-    def process(self, df):
+    def process(self, events):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        self.sample_name = df.dataset
+        self.sample_name = events.metadata['dataset']
 
             ## make event weights
                 # data or MC distinction made internally
-        evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
+        evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
 
-        GenTTbar = genpsel.select(df, mode='NORMAL')
+        genpsel.select(events, mode='NORMAL') # adds SL, DL, and Had objects to events
 
-        #set_trace()
-        for ttdecay in GenTTbar.columns:
+        for ttdecay in ["SL", "DL", "Had"]:
+            #set_trace()
             if args.debug: print(ttdecay)
-            evt_weights_to_use = evt_weights.weight()[GenTTbar[ttdecay]['TTbar'].counts > 0]
-            for gen_obj in GenTTbar[ttdecay].columns:
+            ttdecay_mask = ak.num(events[ttdecay]) > 0
+            if ak.sum(ttdecay_mask) == 0: continue
+
+            evt_weights_to_use = evt_weights.weight()[ttdecay_mask]
+            for gen_obj in events[ttdecay].fields:
                 if args.debug: print(gen_obj)
-                output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, obj=GenTTbar[ttdecay][gen_obj], evt_weights=evt_weights_to_use)
+                output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, obj=events[ttdecay][gen_obj][ttdecay_mask], evt_weights=evt_weights_to_use)
                 
 
         return output
 
     def fill_genp_hists(self, accumulator, genp_type, ttdecaymode, obj, evt_weights):
         #set_trace()
-        accumulator['pt'].fill(    dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, pt=obj.p4.pt.flatten(), weight=evt_weights)
-        accumulator['eta'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, eta=obj.p4.eta.flatten(), weight=evt_weights)
-        accumulator['phi'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, phi=obj.p4.phi.flatten(), weight=evt_weights)
-        accumulator['mass'].fill(  dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, mass=obj.p4.mass.flatten(), weight=evt_weights)
-        accumulator['energy'].fill(dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, energy=obj.p4.E.flatten(), weight=evt_weights)
+        accumulator['pt'].fill(    dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, pt=ak.flatten(obj.pt, axis=None), weight=evt_weights)
+        accumulator['eta'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, eta=ak.flatten(obj.eta, axis=None), weight=evt_weights)
+        accumulator['phi'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, phi=ak.flatten(obj.phi, axis=None), weight=evt_weights)
+        accumulator['mass'].fill(  dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, mass=ak.flatten(obj.mass, axis=None), weight=evt_weights)
+        accumulator['energy'].fill(dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, energy=ak.flatten(obj.energy, axis=None), weight=evt_weights)
 
         return accumulator        
 
@@ -115,20 +121,18 @@ class GenPartons(processor.ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
+
 proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-
-output = processor.run_uproot_job(fileset,
-    treename='Events',
-    processor_instance=GenPartons(),
+proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+output = processor.run_uproot_job(
+    fileset,
+    treename="Events",
+    processor_instance=Analyzer(),
     executor=proc_executor,
-    executor_args={
-        'workers': 8,
-        'flatten' : True,
-        'compression': 5,
-    },
+    executor_args=proc_exec_args,
     chunksize=10000 if args.debug else 100000,
+    #chunksize=100000,
 )
-
 
 if args.debug:
     print(output)
