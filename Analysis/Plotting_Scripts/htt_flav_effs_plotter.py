@@ -14,8 +14,6 @@ from matplotlib import rcParams
 rcParams['font.size'] = 20
 rcParams["savefig.format"] = 'png'
 rcParams["savefig.bbox"] = 'tight'
-import Utilities.styles as styles
-import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
@@ -28,43 +26,12 @@ jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'htt_flav_effs'
 
-jobid = os.environ['jobid']
 outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-flav_effs = {
-    '2016' : {
-        'DeepJet' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-        'DeepCSV' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-    },
-    '2017' : {
-        'DeepJet' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-        'DeepCSV' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-    },
-    '2018' : {
-        'DeepJet' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-        'DeepCSV' : {
-            '3Jets' : {},
-            '4PJets' : {},
-        },
-    },
-}
+years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+flav_effs = {year : {'DeepJet' : {'3Jets' : {}, '4PJets' : {}}, 'DeepCSV' : {'3Jets' : {},'4PJets' : {},} } for year in years_to_run}
 
 if args.construct_btag:
     from copy import deepcopy
@@ -115,18 +82,14 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     )
     hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
-    #set_trace()
-    #figname = 'test.png'    
     figname = os.path.join(plotdir, '%s_Efficiency' % '_'.join([btagger, wp, jmult, flav]))
     fig.savefig(figname)
     print('%s written' % figname)
     plt.close()
-    #set_trace()
 
 
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
 
-years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
 for year in years_to_run:
     input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
     fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('TOT.coffea')]
@@ -194,9 +157,7 @@ print('\n', flav_effs_name, 'written')
 
 
 if args.construct_btag:
-    import Utilities.prettyjson as prettyjson
     import python.BTagScaleFactors as btagSF
-    base_jobid = os.environ['base_jobid']
 
     cfg_file = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
 
