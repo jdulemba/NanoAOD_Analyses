@@ -14,24 +14,11 @@ if not os.path.isdir(outdir):
 
 data_lumi = prettyjson.loads(open(os.path.join(proj_dir,'inputs', '%s_lumis_data.json' % base_jobid)).read()) # file with integrated luminosity for all three years
 
-lumi_weights = {
-    '2016' : {
-        'Electrons' : {},
-        'Muons' :{}
-    },
-    '2017' : {
-        'Electrons' : {},
-        'Muons' :{}
-    },
-    '2018' : {
-        'Electrons' : {},
-        'Muons' :{}
-    },
-}
-
 proj_dir = os.environ['PROJECT_DIR']
 
 years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+lumi_weights = {year:{'Electrons' : {}, 'Muons' : {}} for year in years_to_run}
+
 # for each year, read sumGenWeights from all meta.json files
 for year in years_to_run:
     print(year)
