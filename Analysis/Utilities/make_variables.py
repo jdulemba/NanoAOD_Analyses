@@ -1,6 +1,6 @@
 from pdb import set_trace
 import numpy as np
-#import awkward
+import awkward as ak
 
 def ctstar(top_p4, tbar_p4, debug=False):
 
@@ -28,12 +28,12 @@ def ctstar(top_p4, tbar_p4, debug=False):
 
 def MT(leptons, met, debug=False):
     if debug: set_trace()
+        # broadcast met into same shape as leptons
+    met_pt = (ak.ones_like(leptons.pt))*(met.pt)
+    met_px = (ak.ones_like(leptons.pt))*(met.px)
+    met_py = (ak.ones_like(leptons.pt))*(met.py)
 
-    met_pt = (leptons.pt.ones_like())*(met.pt.flatten())
-    met_px = (leptons.pt.ones_like())*(met.p4.x.flatten())
-    met_py = (leptons.pt.ones_like())*(met.p4.y.flatten())
-
-    return np.sqrt( np.square(leptons.pt + met_pt) - np.square(leptons.p4.x + met_px) - np.square(leptons.p4.y + met_py) )
+    return np.sqrt( np.square(leptons.pt + met_pt) - np.square(leptons.px + met_px) - np.square(leptons.py + met_py) )
 
 def ctstar_flat(top_p4, tbar_p4):
     # convert 4vecs to cartesian
