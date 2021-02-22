@@ -12,7 +12,6 @@ rcParams["savefig.bbox"] = 'tight'
 
 import Utilities.Plotter as Plotter
 from coffea.hist import plot
-#import coffea
 from coffea.util import load#, save
 from pdb import set_trace
 import os
@@ -37,7 +36,6 @@ mc_fnames = sorted([os.path.join(mc_input_dir, fname) for fname in os.listdir(mc
 mc_hdict = plt_tools.add_coffea_files(mc_fnames) if len(mc_fnames) > 1 else load(mc_fnames[0])
 
     # get hists
-#mc_nTrueInt_histo = mc_hdict['PU_nPU']
 mc_nTrueInt_histo = mc_hdict['PU_nTrueInt']
 
 data_input_dir = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'Pileup')
@@ -67,7 +65,11 @@ if not os.path.isdir(outdir):
 
     # get lumi info
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
-lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
+        ## temporary
+if base_jobid == 'ULnanoAOD':
+    lumi_to_use = data_lumi_dict[args.year]['Muons']/1000. if args.year == '2018' else data_lumi_dict[args.year]['Electrons']/1000.
+else:
+    lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
 
 
 ## plot histograms
@@ -99,7 +101,6 @@ ax.set_xlabel('Number of Pileup Interactions')
 ax.set_xlim((0, 100))
 ax.autoscale(axis='x', tight=True)
 ax.set_ylim(0, ax.get_ylim()[1]*1.15)
-#ax.set_ylim(0, None)
 
     ## set legend and corresponding colors
 handles, labels = ax.get_legend_handles_labels()
