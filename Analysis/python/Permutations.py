@@ -1,7 +1,6 @@
 import numpy as np
 from pdb import set_trace
-import awkward
-from coffea.analysis_objects import JaggedCandidateArray
+import awkward as ak
 
 def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     '''
@@ -15,34 +14,31 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     '''
 
         ## these attributes are based on those from URTTbar/interface/Permutation.h https://gitlab.cern.ch/jdulemba/URTTbar/-/blob/htt_analysis_2016legacydata_9410/interface/Permutation.h
-    isWLepComplete = (lepton.counts == 1) & (nu.counts == 1)
-    isTLepComplete = isWLepComplete & (blep.counts == 1)
+    isWLepComplete = (ak.num(lepton.pt) == 1) & (ak.num(nu.pt) == 1)
+    isTLepComplete = isWLepComplete & (ak.num(blep.pt) == 1)
 
-    wlep_p4 = lepton[isWLepComplete].p4 + nu[isWLepComplete].p4
-    WLep = JaggedCandidateArray.candidatesfromcounts(
-        counts = isWLepComplete.astype(int),
-        pt     = wlep_p4.pt.flatten(),
-        eta    = wlep_p4.eta.flatten(),
-        phi    = wlep_p4.phi.flatten(),
-        mass   = wlep_p4.mass.flatten(),
-        charge = lepton[isWLepComplete].charge.flatten(),
-    )#.pad(1) ?
+    WLep = ak.Array({
+        'pt'    : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).pt, []),
+        'eta'   : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).eta, []),
+        'phi'   : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).phi, []),
+        'mass'  : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).mass, []),
+        'charge': ak.fill_none( (ak.mask(lepton, isWLepComplete)).charge, []),
+    }, with_name="PtEtaPhiMLorentzVector")
+    TLep = ak.Array({
+        'pt'    : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).pt, []),
+        'eta'   : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).eta, []),
+        'phi'   : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).phi, []),
+        'mass'  : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).mass, []),
+    }, with_name="PtEtaPhiMLorentzVector")
 
-    tlep_p4 = WLep[isTLepComplete].p4 + blep[isTLepComplete].p4
-    TLep = JaggedCandidateArray.candidatesfromcounts(
-        counts = isTLepComplete.astype(int),
-        pt     = tlep_p4.pt.flatten(),
-        eta    = tlep_p4.eta.flatten(),
-        phi    = tlep_p4.phi.flatten(),
-        mass   = tlep_p4.mass.flatten(),
-    )
 
     ## Event categories
-        # fill [None] events with values for easier comparisons
-    bhad_jetIdx = bhad.pad(1).jetIdx.fillna(-999)
-    blep_jetIdx = blep.pad(1).jetIdx.fillna(-999)
-    wja_jetIdx  = wja.pad(1).jetIdx.fillna(-999)
-    wjb_jetIdx  = wjb.pad(1).jetIdx.fillna(-999)
+        # fill empty [] events with values for easier comparisons
+    bhad_jetIdx = ak.fill_none(ak.pad_none(bhad, 1).jetIdx, -999)
+    blep_jetIdx = ak.fill_none(ak.pad_none(blep, 1).jetIdx, -999)
+    wja_jetIdx = ak.fill_none(ak.pad_none(wja, 1).jetIdx, -999)
+    wjb_jetIdx = ak.fill_none(ak.pad_none(wjb, 1).jetIdx, -999)
+
         # merged jets event categories
             # only bhad and blep merged
     Merged_BHadBLep = (bhad_jetIdx >= 0) & (bhad_jetIdx == blep_jetIdx) & (bhad_jetIdx != wja_jetIdx) & (bhad_jetIdx != wjb_jetIdx)
@@ -81,130 +77,109 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     Lost_Event = (Lost_BHad) | (Lost_BLep) | (Lost_WJa) | (Lost_WJb)
     ##
 
-    n_perm_matches = awkward.JaggedArray.fromcounts(np.ones(bhad.size, dtype=int), bhad.counts + blep.counts + wja.counts + wjb.counts)
+    n_perm_matches = ak.unflatten(ak.num(bhad.pt)+ak.num(blep.pt)+ak.num(wja.pt)+ak.num(wjb.pt), np.ones(len(bhad.pt), dtype=int))
     #isEmpty = (bhad_jetIdx < 0) & (blep_jetIdx < 0) & (wja_jetIdx < 0) & (wjb_jetIdx < 0)
 
         # find number of unique matches
-    jetIdx_stack = np.stack((blep_jetIdx.flatten(), bhad_jetIdx.flatten(), wja_jetIdx.flatten(), wjb_jetIdx.flatten()), axis=1)
-    unique_matches = awkward.JaggedArray.fromcounts(np.ones(bhad.size, dtype=int), np.array([len(list(set([ind for ind in inds if ind >= 0]))) for inds in jetIdx_stack.tolist()]))
+    jetIdx_stack = np.stack( (ak.to_numpy(ak.flatten(bhad_jetIdx)), ak.to_numpy(ak.flatten(blep_jetIdx)), ak.to_numpy(ak.flatten(wja_jetIdx)), ak.to_numpy(ak.flatten(wjb_jetIdx)) ), axis=1)
+    unique_matches = ak.unflatten(np.array([len(list(set([ind for ind in inds if ind >= 0]))) for inds in jetIdx_stack.tolist()]), np.ones(len(bhad.pt), dtype=int))
 
 
-        # create WHad
-            # fill empty entries with zeros
-    wja_dict = {
-        'px' : wja.pad(1).p4.x.fillna(0.).flatten(),
-        'py' : wja.pad(1).p4.y.fillna(0.).flatten(),
-        'pz' : wja.pad(1).p4.z.fillna(0.).flatten(),
-        'energy' : wja.pad(1).p4.energy.fillna(0.).flatten(),
-    }
-    wja_p4 = JaggedCandidateArray.candidatesfromcounts(
-        counts = np.ones(wja.size),
-        **wja_dict
-    )
-    wjb_dict = {
-        'px' : wjb.pad(1).p4.x.fillna(0.).flatten(),
-        'py' : wjb.pad(1).p4.y.fillna(0.).flatten(),
-        'pz' : wjb.pad(1).p4.z.fillna(0.).flatten(),
-        'energy' : wjb.pad(1).p4.energy.fillna(0.).flatten(),
-    }
-    wjb_p4 = JaggedCandidateArray.candidatesfromcounts(
-        counts = np.ones(wjb.size),
-        **wjb_dict
-    )
-
-            ## init variables
-    whad_px = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_py = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_pz = np.full_like(bhad.counts, np.nan, dtype=np.double) 
-    whad_E  = np.full_like(bhad.counts, np.nan, dtype=np.double) 
+    # create WHad
+        # init variables
+    whad_pt  = np.zeros(len(bhad.pt))
+    whad_eta = np.zeros(len(bhad.pt))
+    whad_phi = np.zeros(len(bhad.pt))
+    whad_mass= np.zeros(len(bhad.pt))
 
             # inds where only WJb p4 is used as WHad
-    use_wjb_inds = (Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa).flatten()
-    whad_px[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.x.flatten()
-    whad_py[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.y.flatten()
-    whad_pz[use_wjb_inds] = wjb_p4[use_wjb_inds].p4.z.flatten()
-    whad_E[use_wjb_inds]  = wjb_p4[use_wjb_inds].p4.energy.flatten()
+    use_wjb_inds = ak.flatten(Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa)
+    whad_pt[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].pt, 1), np.nan)))
+    whad_eta[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].eta, 1), np.nan)))
+    whad_phi[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].phi, 1), np.nan)))
+    whad_mass[use_wjb_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].mass, 1), np.nan)))
 
             # inds where only WJa p4 is used as WHad
-    use_wja_inds = (Merged_BHadWJb | Merged_BLepWJb | Lost_WJb).flatten()
-    whad_px[use_wja_inds] = wja_p4[use_wja_inds].p4.x.flatten()
-    whad_py[use_wja_inds] = wja_p4[use_wja_inds].p4.y.flatten()
-    whad_pz[use_wja_inds] = wja_p4[use_wja_inds].p4.z.flatten()
-    whad_E[use_wja_inds]  = wja_p4[use_wja_inds].p4.energy.flatten()
+    use_wja_inds = ak.flatten(Merged_BHadWJb | Merged_BLepWJb | Lost_WJb)
+    whad_pt[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].pt, 1), np.nan)))
+    whad_eta[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].eta, 1), np.nan)))
+    whad_phi[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].phi, 1), np.nan)))
+    whad_mass[use_wja_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].mass, 1), np.nan)))
 
             # inds where combined p4 from WJa and WJb is used as WHad (all other inds)
     use_comb_inds = ~(use_wjb_inds | use_wja_inds)
-    comb_wjets_p4 = wja_p4[use_comb_inds].p4 + wjb_p4[use_comb_inds].p4
-    whad_px[use_comb_inds] = comb_wjets_p4.x.flatten()
-    whad_px[whad_px == 0.] = np.nan
-    whad_py[use_comb_inds] = comb_wjets_p4.y.flatten()
-    whad_py[whad_py == 0.] = np.nan
-    whad_pz[use_comb_inds] = comb_wjets_p4.z.flatten()
-    whad_pz[whad_pz == 0.] = np.nan
-    whad_E[use_comb_inds]  = comb_wjets_p4.energy.flatten()
-    whad_E[whad_E == 0.]   = np.nan
+    whad_pt[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).pt ))
+    whad_eta[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).eta ))
+    whad_phi[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).phi ))
+    whad_mass[use_comb_inds]= ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).mass ))
+    whad_pt[whad_pt == 0.] = np.nan
+    whad_eta[whad_eta == 0.] = np.nan
+    whad_phi[whad_phi == 0.] = np.nan
+    whad_mass[whad_mass == 0.] = np.nan
+    
+    WHad = ak.Array({
+        'pt'    : ak.unflatten(whad_pt[~np.isnan(whad_pt)], (~np.isnan(whad_pt)).astype(int)),
+        'eta'   : ak.unflatten(whad_eta[~np.isnan(whad_eta)], (~np.isnan(whad_eta)).astype(int)),
+        'phi'   : ak.unflatten(whad_phi[~np.isnan(whad_phi)], (~np.isnan(whad_phi)).astype(int)),
+        'mass'  : ak.unflatten(whad_mass[~np.isnan(whad_mass)], (~np.isnan(whad_mass)).astype(int)),
+        'charge': -1*ak.fill_none(ak.mask(WLep, ~np.isnan(whad_mass)).charge, []), # opposite charge as WLep for events that exist
+    }, with_name="PtEtaPhiMLorentzVector")
 
-    WHad = JaggedCandidateArray.candidatesfromcounts(
-        counts = (~np.isnan(whad_px)).astype(int),
-        px     = whad_px[(~np.isnan(whad_px))].flatten(),
-        py     = whad_py[(~np.isnan(whad_py))].flatten(),
-        pz     = whad_pz[(~np.isnan(whad_pz))].flatten(),
-        energy = whad_E[(~np.isnan(whad_E))].flatten(),
-    )
 
-    isWHadComplete = (WHad.counts == 1)
-    isTHadComplete = (isWHadComplete) & (bhad.counts == 1)
+    isWHadComplete = (ak.num(WHad.pt) == 1)
+    isTHadComplete = (isWHadComplete) & (ak.num(bhad.pt) == 1)
 
-    thad_p4 = WHad[isTHadComplete].p4 + bhad[isTHadComplete].p4
-    THad = JaggedCandidateArray.candidatesfromcounts(
-        counts = isTHadComplete.astype(int),
-        pt     = thad_p4.pt.flatten(),
-        eta    = thad_p4.eta.flatten(),
-        phi    = thad_p4.phi.flatten(),
-        mass   = thad_p4.mass.flatten(),
-    )
+    #set_trace()
 
+    # create THad
+    THad = ak.Array({
+        'pt'    : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).pt, []),
+        'eta'   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).eta, []),
+        'phi'   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).phi, []),
+        'mass'  : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).mass, []),
+    }, with_name="PtEtaPhiMLorentzVector")
+
+    # create TTbar
     isComplete = isTHadComplete & isTLepComplete
-    ttbar_p4 = THad[isComplete].p4 + TLep[isComplete].p4
-    TTbar = JaggedCandidateArray.candidatesfromcounts(
-        counts = isComplete.astype(int),
-        pt     = ttbar_p4.pt.flatten(),
-        eta    = ttbar_p4.eta.flatten(),
-        phi    = ttbar_p4.phi.flatten(),
-        mass   = ttbar_p4.mass.flatten(),
-    )
+    TTbar = ak.Array({
+        'pt'    : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).pt, []),
+        'eta'   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).eta, []),
+        'phi'   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).phi, []),
+        'mass'  : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).mass, []),
+    }, with_name="PtEtaPhiMLorentzVector")
 
+    
     #set_trace()    
         ## Combine everything into a single table, all objects are JaggedArrays
-    permutations = awkward.Table(
-        BHad = bhad,
-        BLep = blep,
-        WJa = wja,
-        WJb = wjb,
-        Lepton = lepton,
-        MET = met,
-        Nu = nu,
-        WLep = WLep,
-        TLep = TLep,
-        WHad = WHad,
-        THad = THad,
-        TTbar = TTbar,
-        n_perm_matches = n_perm_matches,
-        #isEmpty = isEmpty,
-        unique_matches = unique_matches,
-        Merged_BHadBLep = Merged_BHadBLep,
-        Merged_BHadWJa = Merged_BHadWJa,
-        Merged_BHadWJb = Merged_BHadWJb,
-        Merged_BLepWJa = Merged_BLepWJa,
-        Merged_BLepWJb = Merged_BLepWJb,
-        Merged_WJets = Merged_WJets,
-        Merged_Event = Merged_Event,
-        Lost_BHad = Lost_BHad,
-        Lost_BLep = Lost_BLep,
-        Lost_WJa = Lost_WJa,
-        Lost_WJb = Lost_WJb,
-        Lost_Event = Lost_Event,
-    )
+    permutations = ak.zip({
+        "BHad" : bhad,
+        "BLep" : blep,
+        "WJa" : wja,
+        "WJb" : wjb,
+        "Lepton" : lepton,
+        "MET" : met,
+        "Nu" : nu,
+        "WLep" : WLep,
+        "TLep" : TLep,
+        "WHad" : WHad,
+        "THad" : THad,
+        "TTbar" : TTbar,
+        "n_perm_matches" : n_perm_matches,
+        #"isEmpty" : isEmpty,
+        "unique_matches" : unique_matches,
+        "Merged_BHadBLep" : Merged_BHadBLep,
+        "Merged_BHadWJa" : Merged_BHadWJa,
+        "Merged_BHadWJb" : Merged_BHadWJb,
+        "Merged_BLepWJa" : Merged_BLepWJa,
+        "Merged_BLepWJb" : Merged_BLepWJb,
+        "Merged_WJets" : Merged_WJets,
+        "Merged_Event" : Merged_Event,
+        "Lost_BHad" : Lost_BHad,
+        "Lost_BLep" : Lost_BLep,
+        "Lost_WJa" : Lost_WJa,
+        "Lost_WJb" : Lost_WJb,
+        "Lost_Event" : Lost_Event,
+    })
 
     #set_trace()
     
