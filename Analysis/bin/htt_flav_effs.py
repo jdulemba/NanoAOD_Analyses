@@ -108,7 +108,6 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 # data or MC distinction made internally
         mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
         el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
-        #evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections)
 
             ## initialize selections and regions
         selection = PackedSelection()
