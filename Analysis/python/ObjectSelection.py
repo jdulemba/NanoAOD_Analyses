@@ -4,7 +4,6 @@ import python.Filters_and_Triggers as Filters_and_Triggers
 import python.IDJet as IDJet
 import python.IDMuon as IDMuon
 import python.IDElectron as IDElectron
-#import python.IDMet as IDMet
 import numpy as np
 from coffea.analysis_tools import PackedSelection
 
@@ -34,36 +33,19 @@ def select_jets(jets, muons, electrons, year, cutflow=None):
     
         ## remove jets that don't pass ID and pt/eta cuts
     jets = jets[(jet_ID & pass_pt_eta_cuts)]
-   
+
         ## clean jets wrt veto+loose+tight el and mu
     jets_ak = ak.with_name(jets[["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    tight_muons_ak = ak.with_name(muons[muons['TIGHTMU'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    loose_muons_ak = ak.with_name(muons[muons['LOOSEMU'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    veto_muons_ak = ak.with_name(muons[muons['VETOMU'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    tight_electrons_ak = ak.with_name(electrons[electrons['TIGHTEL'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    loose_electrons_ak = ak.with_name(electrons[electrons['LOOSEEL'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
-    veto_electrons_ak = ak.with_name(electrons[electrons['VETOEL'] == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
+    muons_ak = ak.with_name(muons[(muons['TIGHTMU'] | muons['LOOSEMU'] | muons['VETOMU']) == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
+    electrons_ak = ak.with_name(electrons[(electrons['TIGHTEL'] | electrons['LOOSEEL'] | electrons['VETOEL']) == True][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
 
-            # tight mu
-    jets_akc, tight_muons_akc = ak.unzip(ak.cartesian([jets_ak, tight_muons_ak], nested=True))
-    clean_j_tightMu_mask = ak.all((jets_akc.delta_r(tight_muons_akc) >= 0.4), axis=2)
-            # loose mu
-    jets_akc, loose_muons_akc = ak.unzip(ak.cartesian([jets_ak, loose_muons_ak], nested=True))
-    clean_j_looseMu_mask = ak.all((jets_akc.delta_r(loose_muons_akc) >= 0.4), axis=2)
-            # veto mu
-    jets_akc, veto_muons_akc = ak.unzip(ak.cartesian([jets_ak, veto_muons_ak], nested=True))
-    clean_j_vetoMu_mask = ak.all((jets_akc.delta_r(veto_muons_akc) >= 0.4), axis=2)
-            # tight el
-    jets_akc, tight_electrons_akc = ak.unzip(ak.cartesian([jets_ak, tight_electrons_ak], nested=True))
-    clean_j_tightEl_mask = ak.all((jets_akc.delta_r(tight_electrons_akc) >= 0.4), axis=2)
-            # loose el
-    jets_akc, loose_electrons_akc = ak.unzip(ak.cartesian([jets_ak, loose_electrons_ak], nested=True))
-    clean_j_looseEl_mask = ak.all((jets_akc.delta_r(loose_electrons_akc) >= 0.4), axis=2)
-            # veto el
-    jets_akc, veto_electrons_akc = ak.unzip(ak.cartesian([jets_ak, veto_electrons_ak], nested=True))
-    clean_j_vetoEl_mask = ak.all((jets_akc.delta_r(veto_electrons_akc) >= 0.4), axis=2)
-
-    clean_jets_mask = (clean_j_vetoMu_mask & clean_j_looseMu_mask & clean_j_tightMu_mask & clean_j_vetoEl_mask & clean_j_looseEl_mask & clean_j_tightEl_mask)
+            # all mu
+    jets_akc, muons_akc = ak.unzip(ak.cartesian([jets_ak, muons_ak], nested=True))
+    clean_j_Mu_mask = ak.all((jets_akc.delta_r(muons_akc) >= 0.4), axis=2)
+            # all el
+    jets_akc, electrons_akc = ak.unzip(ak.cartesian([jets_ak, electrons_ak], nested=True))
+    clean_j_El_mask = ak.all((jets_akc.delta_r(electrons_akc) >= 0.4), axis=2)
+    clean_jets_mask = (clean_j_Mu_mask & clean_j_El_mask)
     jets = jets[clean_jets_mask]
 
         ## leading jet pt cut
@@ -122,9 +104,6 @@ def select(events, year, corrections, noIso=False, cutflow=None, shift=None):
 
     evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
     if cutflow is not None: cutflow['lep_and_filter_pass'] += evt_sel.require(lep_and_filter_pass=True).sum()
-
-        ## SetMET
-    #df['MET'] = IDMet.process_met(df)
 
         ## get corrected jets and MET
     events['Jet'], events['MET'] = IDJet.process_jets(events, year, corrections['JetCor'])
