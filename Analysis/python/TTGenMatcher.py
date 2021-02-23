@@ -3,6 +3,18 @@ import awkward as ak
 import numpy as np
 import compiled.pynusolver as pynusolver
 from python.Permutations import make_perm_table
+from numba import njit, objmode
+
+@njit()
+def find_nu(bleps, leptons, met, nu_array):
+    for idx in range(bleps.shape[0]):
+            # blep doesn't exist for this event
+        if (bleps[idx, 3] == -999): continue
+            ## run NS to get nschi2 to be used solver
+        with objmode():
+            pynusolver.run_nu_solver(leptons[idx], bleps[idx], met[idx], nu_array[idx]) # input order for nusolver is (lepton, jet, met, nu)
+
+    return nu_array
 
 
 def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
@@ -23,7 +35,6 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
         # init dict of objects
     matched_objects = {}
 
-    #set_trace()
         # match jet closest to gen objects 
     for genobj in ['BHad', 'BLep', 'WJa', 'WJb']:
         genobj_ak = ak.with_name(gen_hyp[genobj][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
@@ -44,7 +55,6 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
             'jetIdx' : matched_jets_inds, # index of jet that the gen object is matched to in the event
         }, with_name="PtEtaPhiMLorentzVector")
         
-    #set_trace()
         # match lepton closest to gen lepton
     lepDRs = ak.flatten(leptons.delta_r(gen_hyp['Lepton']), axis=2)
     lepIdxOfMin = ak.unflatten(ak.argmin(lepDRs, axis=1), ak.num(gen_hyp['Lepton']))
@@ -57,17 +67,13 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
 
         # solve for neutrino
     nu_array = np.zeros((len(ak.num(jets)), 4), dtype='float64')
-    for idx, blep in enumerate(matched_objects['BLep']):
-        if ak.size(blep.pt) < 1: continue
-        if ak.size(matched_objects['Lepton'][idx].pt) < 1: continue
-        if ak.size(blep.pt) > 1: raise ValueError("More than one matched blep. Investigate")
-
-            # must specify same dtype for all arrays
-        blep_inputs = np.array([blep.px[0], blep.py[0], blep.pz[0], blep.energy[0]], dtype='float64')
-        lep_inputs = np.array([matched_objects['Lepton'][idx].px[0], matched_objects['Lepton'][idx].py[0], matched_objects['Lepton'][idx].pz[0], matched_objects['Lepton'][idx].energy[0]], dtype='float64')
-        met_inputs = np.array([met.px[idx], met.py[idx]], dtype='float64')
-        nu = nu_array[idx]
-        pynusolver.run_nu_solver(lep_inputs, blep_inputs, met_inputs, nu) # input order for nusolver is (lepton, jet, met, nu), returns Nu(px, py, pz, chi2)
+            # convert all inputs into 2d numpy arrays of dtype=float64 (won't work if they're not float64)
+    blep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].px, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].py, 1), -999))).astype('float64'),\
+        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].pz, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].energy, 1), -999))).astype('float64')), axis=-1)
+    lep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].px, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].py, 1), -999))).astype('float64'),\
+        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].pz, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].energy, 1), -999))).astype('float64')), axis=-1)
+    met_inputs = np.stack((ak.to_numpy(ak.fill_none(met.px, -999)).astype('float64'), ak.to_numpy(ak.fill_none(met.py, -999)).astype('float64')), axis=-1)
+    nu_array = find_nu(bleps=blep_inputs, leptons=lep_inputs, met=met_inputs, nu_array=nu_array)
 
     valid_nu = ~((nu_array[:, 3] > 1e20) | (nu_array[:, 3] == 0)) # events that have a solution and matched blep
 
@@ -85,6 +91,5 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
     }, with_name="PtEtaPhiMLorentzVector")
 
     matched_perm = make_perm_table(bhad=matched_objects['BHad'], blep=matched_objects['BLep'], wja=matched_objects['WJa'], wjb=matched_objects['WJb'], lepton=matched_objects['Lepton'], met=met, nu=matched_objects['Nu'])
-    #set_trace()
 
     return matched_perm
