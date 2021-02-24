@@ -133,7 +133,7 @@
         }
     },
     "ttsolver": {
-        "filename": "prob_htt_jpt30_ljpt50_MT40_cutBasedEl.coffea",
+        "filename": "prob_NanoAODv6_jpt30_ljpt50_MT40_cutBasedEl.coffea",
         "USENS": 1,
         "USEMASS": 1,
         "USE3JMERGED": 1,
