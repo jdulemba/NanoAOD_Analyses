@@ -5,7 +5,7 @@ import Utilities.systematics as systematics
 import awkward as ak
 import Utilities.make_variables as make_vars
 
-def get_event_weights(events, year: str, corrections, BTagSFs=[], isTTbar=False):
+def get_event_weights(events, year: str, corrections, isTTbar=False):
     weights = Weights(len(events), storeIndividual=True) # store individual variations
 
         ## only apply to MC
