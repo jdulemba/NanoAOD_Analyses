@@ -3,9 +3,7 @@ import numpy as np
 from pdb import set_trace
 import python.TTBarSolver as ttsolver
 import compiled.pynusolver as pynusolver
-import awkward
-from coffea.analysis_objects import JaggedCandidateArray
-from python.Permutations import make_perm_table
+import awkward as ak
 
 solver = None
 def year_to_run(**kwargs):
@@ -151,171 +149,149 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
     '''
 
-    jets_inputs = np.stack((jets.p4.x.flatten(), jets.p4.y.flatten(), jets.p4.z.flatten(), jets.p4.energy.flatten(), jets[btagWP].flatten()), axis=1).astype('float64') # one row has (px, py, pyz, E)
-    leptons_inputs = np.stack((leptons.p4.x.flatten(), leptons.p4.y.flatten(), leptons.p4.z.flatten(), leptons.p4.energy.flatten()), axis=1).astype('float64') # one row has (px, py, pyz, E)
-    met_inputs = np.stack((MET.p4.x.flatten(), MET.p4.y.flatten()), axis=1).astype('float64') # one row has (px, py)
-    bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=jets.counts, jets=jets_inputs, leptons=leptons_inputs, met=met_inputs, btag_req=btag_req)
+    jets_inputs = np.stack((ak.to_numpy(ak.ak.flatten(jets.px)), ak.to_numpy(ak.flatten(jets.py)), ak.to_numpy(ak.flatten(jets.pz)), ak.to_numpy(ak.flatten(jets.energy)), ak.to_numpy(ak.flatten(jets[btagWP]))), axis=1).astype('float64') # one row has (px, py, pyz, E)
+    leptons_inputs = np.stack((ak.to_numpy(ak.flatten(leptons.px)), ak.to_numpy(ak.flatten(leptons.py)), ak.to_numpy(ak.flatten(leptons.pz)), ak.to_numpy(ak.flatten(leptons.energy))), axis=1).astype('float64') # one row has (px, py, pyz, E)
+    met_inputs = np.stack((ak.to_numpy(MET.px), ak.to_numpy(MET.py)), axis=1).astype('float64') # one row has (px, py)
+    bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=ak.num(jets), jets=jets_inputs, leptons=leptons_inputs, met=met_inputs, btag_req=btag_req)
     ## for testing
     #nj = jets.counts[0:4]
     #bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=nj, jets=jets_inputs[0:sum(nj)], leptons=leptons_inputs[0:len(nj)], met=met_inputs[0:len(nj)])
     ##
 
-    bp_ordering = np.asarray(bp_ordering)
-    bp_nus = np.asarray(bp_nus)
-    bp_probs = np.asarray(bp_probs)
+        # convert lists into awkward arrays
+    bp_probs = ak.from_iter(bp_probs)
+    bp_nus = ak.from_iter(bp_nus)
+    bp_ordering = ak.from_iter(bp_ordering)
 
-    #set_trace()
         ## only keep permutations with some sort of solution (prob != infinity)
-    valid_evts = (bp_probs[:,0] != np.inf)
+    valid_evts = ak.to_numpy(bp_probs[:,0] != np.inf)
 
-        ## BLep
-    blep_inds = bp_ordering[:,0]
-    best_BLep = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = jets[np.arange(len(blep_inds))[valid_evts], blep_inds[valid_evts]].p4.x.flatten(),
-        py    = jets[np.arange(len(blep_inds))[valid_evts], blep_inds[valid_evts]].p4.y.flatten(),
-        pz    = jets[np.arange(len(blep_inds))[valid_evts], blep_inds[valid_evts]].p4.z.flatten(),
-        energy= jets[np.arange(len(blep_inds))[valid_evts], blep_inds[valid_evts]].p4.energy.flatten(),
-        jetIdx=blep_inds[valid_evts],
-    )
+    # BLep
+    blep_inds = ak.unflatten(bp_ordering[valid_evts][:, 0], valid_evts.astype(int))
+    best_BLep = ak.Array({
+        'pt' : jets[blep_inds].pt,
+        'eta': jets[blep_inds].eta,
+        'phi': jets[blep_inds].phi,
+        'mass': jets[blep_inds].mass,
+        'jetIdx': blep_inds,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## BHad
-    bhad_inds = bp_ordering[:,1]
-    best_BHad = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = jets[np.arange(len(bhad_inds))[valid_evts], bhad_inds[valid_evts]].p4.x.flatten(),
-        py    = jets[np.arange(len(bhad_inds))[valid_evts], bhad_inds[valid_evts]].p4.y.flatten(),
-        pz    = jets[np.arange(len(bhad_inds))[valid_evts], bhad_inds[valid_evts]].p4.z.flatten(),
-        energy= jets[np.arange(len(bhad_inds))[valid_evts], bhad_inds[valid_evts]].p4.energy.flatten(),
-        jetIdx=bhad_inds[valid_evts],
-    )
+    # BHad
+    bhad_inds = ak.unflatten(bp_ordering[valid_evts][:, 1], valid_evts.astype(int))
+    best_BHad = ak.Array({
+        'pt' : jets[bhad_inds].pt,
+        'eta': jets[bhad_inds].eta,
+        'phi': jets[bhad_inds].phi,
+        'mass': jets[bhad_inds].mass,
+        'jetIdx': bhad_inds,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## WJa
-    wja_inds = bp_ordering[:,2]
-    best_WJa = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = jets[np.arange(len(wja_inds))[valid_evts], wja_inds[valid_evts]].p4.x.flatten(),
-        py    = jets[np.arange(len(wja_inds))[valid_evts], wja_inds[valid_evts]].p4.y.flatten(),
-        pz    = jets[np.arange(len(wja_inds))[valid_evts], wja_inds[valid_evts]].p4.z.flatten(),
-        energy= jets[np.arange(len(wja_inds))[valid_evts], wja_inds[valid_evts]].p4.energy.flatten(),
-        jetIdx=wja_inds[valid_evts],
-    )
+    # WJa
+    wja_inds = ak.unflatten(bp_ordering[valid_evts][:, 2], valid_evts.astype(int))
+    best_WJa = ak.Array({
+        'pt' : jets[wja_inds].pt,
+        'eta': jets[wja_inds].eta,
+        'phi': jets[wja_inds].phi,
+        'mass': jets[wja_inds].mass,
+        'jetIdx': wja_inds,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## WJb
-    if bp_ordering.shape[1] == 4:
-        wjb_inds = bp_ordering[:,3]
-        best_WJb = JaggedCandidateArray.candidatesfromcounts(
-            counts=valid_evts.astype(int),
-            px    = jets[np.arange(len(wjb_inds))[valid_evts], wjb_inds[valid_evts]].p4.x.flatten(),
-            py    = jets[np.arange(len(wjb_inds))[valid_evts], wjb_inds[valid_evts]].p4.y.flatten(),
-            pz    = jets[np.arange(len(wjb_inds))[valid_evts], wjb_inds[valid_evts]].p4.z.flatten(),
-            energy= jets[np.arange(len(wjb_inds))[valid_evts], wjb_inds[valid_evts]].p4.energy.flatten(),
-            jetIdx=wjb_inds[valid_evts],
-        )
+    # WJb
+    if len(bp_ordering[valid_evts][0]) == 4: # WJb exists
+        wjb_inds = ak.unflatten(bp_ordering[valid_evts][:, 3], valid_evts.astype(int))
+        best_WJb = ak.Array({
+            'pt' : jets[wjb_inds].pt,
+            'eta': jets[wjb_inds].eta,
+            'phi': jets[wjb_inds].phi,
+            'mass': jets[wjb_inds].mass,
+            'jetIdx': wjb_inds,
+        }, with_name="PtEtaPhiMLorentzVector")
     else:
-        best_WJb = JaggedCandidateArray.candidatesfromcounts(
-            counts=valid_evts.astype(int),
-            px    = np.zeros(valid_evts.sum()),
-            py    = np.zeros(valid_evts.sum()),
-            pz    = np.zeros(valid_evts.sum()),
-            energy= np.zeros(valid_evts.sum()),
-            jetIdx= np.ones(valid_evts.sum())*(-10),
-        )
+        best_WJb = ak.Array({
+            'pt' : ak.zeros_like(best_WJa.pt),
+            'eta' : ak.zeros_like(best_WJa.eta),
+            'phi' : ak.zeros_like(best_WJa.phi),
+            'mass' : ak.zeros_like(best_WJa.mass),
+            'jetIdx': -10*ak.ones_like(best_WJa.jetIdx),
+        }, with_name="PtEtaPhiMLorentzVector")
 
-        ## Nu
-    best_Nu = JaggedCandidateArray.candidatesfromcounts(
-        counts = valid_evts.astype(int),
-        px = bp_nus[:, 0][valid_evts],
-        py = bp_nus[:, 1][valid_evts],
-        pz = bp_nus[:, 2][valid_evts],
-        mass = np.zeros(valid_evts.sum()),
-        chi2 = bp_nus[:, 3][valid_evts],
-    )
+    # Nu
+        # convert px, py, pz to pt, eta, phi
+    nu_px, nu_py, nu_pz = bp_nus[:, 0][valid_evts], bp_nus[:, 1][valid_evts], bp_nus[:, 2][valid_evts]
+    nu_mom, nu_pt = np.sqrt(np.square(nu_px)+np.square(nu_py)+np.square(nu_pz)), np.sqrt(np.square(nu_px)+np.square(nu_py))
+    nu_phi = np.arctan2(nu_py, nu_px)
+    nu_eta = np.arcsinh(nu_pz/nu_pt)
+    best_Nu = ak.Array({
+        'pt' : ak.unflatten(nu_pt, valid_evts.astype(int)),
+        'eta' : ak.unflatten(nu_eta, valid_evts.astype(int)),
+        'phi' : ak.unflatten(nu_phi, valid_evts.astype(int)),
+        'mass' : ak.zeros_like(ak.unflatten(bp_nus[:, 0][valid_evts], valid_evts.astype(int))),
+        'chi2' : ak.unflatten(bp_nus[:, 3][valid_evts], valid_evts.astype(int)),
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## WHad
-    whad_p4 = best_WJa.p4.flatten() + best_WJb.p4.flatten()
-    best_WHad = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = whad_p4.x,
-        py    = whad_p4.y,
-        pz    = whad_p4.z,
-        energy= whad_p4.energy,
-    )
+    # WHad
+    best_WHad = ak.Array({
+        'pt' : (best_WJa+best_WJb).pt,
+        'eta' : (best_WJa+best_WJb).eta,
+        'phi' : (best_WJa+best_WJb).phi,
+        'mass' : (best_WJa+best_WJb).mass,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## THad
-    thad_p4 = best_BHad.p4.flatten() + best_WHad.p4.flatten()
-    best_THad = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = thad_p4.x,
-        py    = thad_p4.y,
-        pz    = thad_p4.z,
-        energy= thad_p4.energy,
-    )
+    # THad
+    best_THad = ak.Array({
+        'pt' : (best_BHad+best_WHad).pt,
+        'eta' : (best_BHad+best_WHad).eta,
+        'phi' : (best_BHad+best_WHad).phi,
+        'mass' : (best_BHad+best_WHad).mass,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## WLep
-    wlep_p4 = leptons[valid_evts].p4.flatten() + best_Nu.p4.flatten()
-    best_WLep = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = wlep_p4.x,
-        py    = wlep_p4.y,
-        pz    = wlep_p4.z,
-        energy= wlep_p4.energy,
-    )
+    # WLep
+    best_WLep = ak.Array({
+        'pt' : ak.flatten((leptons+best_Nu).pt, axis=1),
+        'eta' : ak.flatten((leptons+best_Nu).eta, axis=1),
+        'phi' : ak.flatten((leptons+best_Nu).phi, axis=1),
+        'mass' : ak.flatten((leptons+best_Nu).mass, axis=1),
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## TLep
-    tlep_p4 = best_BLep.p4.flatten() + best_WLep.p4.flatten()
-    best_TLep = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = tlep_p4.x,
-        py    = tlep_p4.y,
-        pz    = tlep_p4.z,
-        energy= tlep_p4.energy,
-    )
+    # TLep
+    best_TLep = ak.Array({
+        'pt' : (best_BLep+best_WLep).pt,
+        'eta' : (best_BLep+best_WLep).eta,
+        'phi' : (best_BLep+best_WLep).phi,
+        'mass' : (best_BLep+best_WLep).mass,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-        ## TTbar
-    tt_p4 = best_THad.p4.flatten() + best_TLep.p4.flatten()
-    best_TTbar = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        px    = tt_p4.x,
-        py    = tt_p4.y,
-        pz    = tt_p4.z,
-        energy= tt_p4.energy,
-    )
+    # TTbar
+    best_TTbar = ak.Array({
+        'pt' : (best_TLep+best_THad).pt,
+        'eta' : (best_TLep+best_THad).eta,
+        'phi' : (best_TLep+best_THad).phi,
+        'mass' : (best_TLep+best_THad).mass,
+    }, with_name="PtEtaPhiMLorentzVector")
 
-    remove_fast = lambda x : x.split('fast_')[-1]
-        ## Lepton
-    dict_vars = {'Lepton' : {remove_fast(key) : leptons[valid_evts][key].flatten() for key in leptons.columns if key != 'p4'}}
-    best_Lep = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        **dict_vars['Lepton']
-    )
+    # Lepton
+    best_Lep = ak.Array({key: ak.unflatten(ak.flatten(leptons[key]), valid_evts.astype(int)) for key in leptons.fields}, with_name="PtEtaPhiMLorentzVector")
 
-        ## MET
-    dict_vars.update({'MET' : {remove_fast(key) : MET[valid_evts][key].flatten() for key in MET.columns if key != 'p4'}})
-    best_MET = JaggedCandidateArray.candidatesfromcounts(
-        counts=valid_evts.astype(int),
-        **dict_vars['MET']
-    )
+    # MET
+    best_MET = ak.Array({key: ak.unflatten(MET[key], valid_evts.astype(int)) for key in MET.fields}, with_name="PtEtaPhiMLorentzVector")
 
-        ## Combine everything into a single table, all objects are JaggedArrays
-    best_permutations = awkward.Table(
-        BHad = best_BHad,
-        BLep = best_BLep,
-        WJa = best_WJa,
-        WJb = best_WJb,
-        Lepton = best_Lep,
-        MET = best_MET,
-        Nu = best_Nu,
-        WLep = best_WLep,
-        TLep = best_TLep,
-        WHad = best_WHad,
-        THad = best_THad,
-        TTbar= best_TTbar,
-        Prob = awkward.JaggedArray.fromcounts(valid_evts.astype(int), bp_probs[valid_evts][:,0]),
-        MassDiscr = awkward.JaggedArray.fromcounts(valid_evts.astype(int), bp_probs[valid_evts][:,1]),
-        NuDiscr = awkward.JaggedArray.fromcounts(valid_evts.astype(int), bp_probs[valid_evts][:,2]),
-    )
+        ## Combine everything into a dictionary
+    best_permutations = ak.zip({
+        "BHad" : best_BHad,
+        "BLep" : best_BLep,
+        "WJa" : best_WJa,
+        "WJb" : best_WJb,
+        "Lepton" : best_Lep,
+        "MET" : best_MET,
+        "Nu" : best_Nu,
+        "WLep" : best_WLep,
+        "TLep" : best_TLep,
+        "WHad" : best_WHad,
+        "THad" : best_THad,
+        "TTbar": best_TTbar,
+        "Prob" : ak.unflatten(bp_probs[:, 0], valid_evts.astype(int)),
+        "MassDiscr" : ak.unflatten(bp_probs[:, 1], valid_evts.astype(int)),
+        "NuDiscr" : ak.unflatten(bp_probs[:, 2], valid_evts.astype(int)),
+    }, depth_limit=1)
 
-    #set_trace()
     return best_permutations
-
