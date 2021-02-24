@@ -18,20 +18,20 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 
-from argparse import ArgumentParser
-parser = ArgumentParser()
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
-parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
-
-args = parser.parse_args()
-
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'matched_perm'
 
-input_dir = '/'.join([proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer])
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
+args = parser.parse_args()
+
+input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
-outdir = '/'.join([proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer])
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -93,21 +93,16 @@ variables = {
 }
 
 
-    ## get plotting colors/settings
-hstyles = styles.styles
-stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-stack_error_opts = {'edgecolor':(0,0,0,.5)}
-
     ## get data lumi and scale MC by lumi
-data_lumi_year = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())[args.year]
-lumi_correction = load('%s/Corrections/%s/MC_LumiWeights_IgnoreSigEvts.coffea' % (proj_dir, jobid))[args.year]['%ss' % args.lepton]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights.coffea'))[args.year]['%ss' % args.lepton]
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
-ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
-names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
+ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
+names = [dataset for dataset in sorted(set([key[0] for key in hdict[sorted(variables.keys())[0]].values().keys()]))] # get dataset names in hists
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
     for tt_cat in ttJets_cats:
-        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
         ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
         lumi_correction.update({tt_cat: ttJets_eff_lumi})
 for hname in hdict.keys():
@@ -129,7 +124,6 @@ for hname in hdict.keys():
 for hname in variables.keys():
     if hname not in hdict.keys():
         raise ValueError("%s not found in file" % hname)
-    #set_trace()
     histo = hdict[hname][:, :, args.lepton, :, :, :].integrate('leptype') # process, jmult, leptype, lepcat, btag, object type
 
     if histo.dense_dim() == 1:
@@ -138,16 +132,15 @@ for hname in variables.keys():
             xaxis_name = histo.dense_axes()[0].name
             histo = histo.rebin(xaxis_name, rebinning)
 
-        #set_trace()
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
-        for jmult in list(set([key[1] for key in histo.values().keys()])):
-            for lepcat in list(set([key[3] for key in histo.values().keys()])):
-                for btagregion in list(set([key[2] for key in histo.values().keys()])):
-                    pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion, hname.split('_')[0]])
+        for jmult in sorted(set([key[1] for key in histo.values().keys()])):
+            for lepcat in sorted(set([key[3] for key in histo.values().keys()])):
+                for btagregion in sorted(set([key[2] for key in histo.values().keys()])):
+                    pltdir = os.path.join(outdir, args.lepton, jmult, lepcat, btagregion, hname.split('_')[0])
                     if not os.path.isdir(pltdir):
                         os.makedirs(pltdir)
 
-                    for obj in sorted(list(set([key[4] for key in histo.values().keys()]))):
+                    for obj in sorted(sorted(set([key[4] for key in histo.values().keys()]))):
                         objlabel, mass_range = objects[obj]
                         new_xtitle = xtitle.replace('obj', objlabel)
                         if ('mass' in hname) and (hname != 'Reso_mass'):
@@ -156,23 +149,18 @@ for hname in variables.keys():
                         fig, ax = plt.subplots()
                         fig.subplots_adjust(hspace=.07)
 
-                        #set_trace()
                         hslice = histo[:, jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
-                        ax = Plotter.plot_mc1d(ax, hslice, xlabel=new_xtitle, xlimits=x_lims)
+                        Plotter.plot_mc1d(ax, hslice, xlabel=new_xtitle, xlimits=x_lims, ylabel='Events')
 
                             # add lepton/jet multiplicity label
-                        #set_trace()
                         ax.text(
                             0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                            fontsize=rcParams['font.size']*0.75, 
-                            horizontalalignment='left', 
-                            verticalalignment='bottom', 
-                            transform=ax.transAxes
+                            fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
                         #set_trace()
-                        figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
+                        figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
