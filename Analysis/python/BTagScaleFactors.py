@@ -7,6 +7,7 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import os
 from coffea.util import load
+import awkward as ak
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -140,10 +141,10 @@ class BTagSF(object):
         per-jet weight to be used. Supports only a single WP for the 
         moment'''
         # First of all flatten everything to make it easier to handle
-        pt = jets.pt.flatten()
-        eta = jets.eta.flatten()
-        flav = jets.hadronFlav.flatten()
-        pass_wp = jets[passing_cut].flatten()
+        pt = ak.to_numpy(ak.flatten(jets.pt))
+        eta = ak.to_numpy(ak.flatten(jets.eta))
+        flav = ak.to_numpy(ak.flatten(jets.hadronFlavour))
+        pass_wp = ak.to_numpy(ak.flatten(jets[passing_cut]))
 
         # Get the MC efficiency
         eff = self.efficiency_(pt, eta, flav)
@@ -168,14 +169,14 @@ class BTagSF(object):
                 flavour_sf_cache[lcb[2]],
                 flav
             )
-        
+
         # use SF and eff to compute p(data) and p(MC)
         p_data = {key : np.where(pass_wp, val, 1 - val) 
                   for key, val in scale_factors.items()}
         p_mc = np.where(pass_wp, eff, 1 - eff)
 
-        # return the jagged version of the ratio
-        return {key : awkward.JaggedArray.fromcounts(jets.pt.counts, i/p_mc)
+        # return the unflattened version of the ratio
+        return {key : ak.unflatten(i/p_mc, ak.num(jets.pt))
                 for key, i in p_data.items()}
 
 
