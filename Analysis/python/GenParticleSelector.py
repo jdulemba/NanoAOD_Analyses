@@ -202,7 +202,7 @@ def select_normal(genparts, w_decay_momid):
         "Up_minus"    : ak.unflatten(gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as second minus
         "Down_minus"  : ak.unflatten(gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as first minus
     })
-    #set_trace()    
+
         ## HAD
     HAD_evts = ak.zip({
         "TTbar"       : ak.unflatten(Gen_TTbar[had_evts], ak.values_astype(had_evts, int)),
@@ -261,7 +261,6 @@ def select(events, mode='NORMAL'):
 
     GenObjs = modes_to_choose[mode](events['GenPart'], w_decay_momid)
 
-    #set_trace()
     events["SL"] = GenObjs["SL"]
     events["DL"] = GenObjs["DL"]
     events["Had"] = GenObjs["Had"]
