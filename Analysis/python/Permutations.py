@@ -149,7 +149,6 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     }, with_name="PtEtaPhiMLorentzVector")
 
     
-    #set_trace()    
         ## Combine everything into a single table, all objects are JaggedArrays
     permutations = ak.zip({
         "BHad" : bhad,
@@ -188,35 +187,27 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
 
 def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
-#def compare_matched_best_perms(mp, bp, njets, mp_mask=None, bp_mask=None):
     '''
     Compare object assignments across two permutations.
     Inputs: matched perm, best perm, njets category, matched perm mask, best perm mask
     '''
-    set_trace()
-    if mp['BLep'].size != bp['BLep'][bp_mask].size:
-    #if mp['BLep'][mp_mask].size != bp['BLep'][bp_mask].size:
+    if len(mp['BLep']) != len(bp['BLep']):
         raise ValueError("Permutations must have the same size in order to be compared!")
     if not ((njets == '3Jets') or (njets == '4PJets')):
         raise ValueError("Only 3Jets or 4+ jets categorizations are supported")
 
     #set_trace()
-    #mp_blep_idx = mp['BLep'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    #mp_bhad_idx = mp['BHad'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    #mp_wja_idx = mp['WJa'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    #mp_wjb_idx = mp['WJb'][mp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    #mp_lep_pt = mp['Lepton'][mp_mask].pad(1).pt.fillna(-999).flatten()
-    mp_blep_idx = mp['BLep'].pad(1).jetIdx.fillna(-999).flatten()
-    mp_bhad_idx = mp['BHad'].pad(1).jetIdx.fillna(-999).flatten()
-    mp_wja_idx = mp['WJa'].pad(1).jetIdx.fillna(-999).flatten()
-    mp_wjb_idx = mp['WJb'].pad(1).jetIdx.fillna(-999).flatten()
-    mp_lep_pt = mp['Lepton'].pad(1).pt.fillna(-999).flatten()
+    mp_blep_idx = ak.fill_none(ak.pad_none(mp['BLep'].jetIdx, 1), -999)
+    mp_bhad_idx = ak.fill_none(ak.pad_none(mp['BHad'].jetIdx, 1), -999)
+    mp_wja_idx = ak.fill_none(ak.pad_none(mp['WJa'].jetIdx, 1), -999)
+    mp_wjb_idx = ak.fill_none(ak.pad_none(mp['WJb'].jetIdx, 1), -999)
+    mp_lep_pt = ak.fill_none(ak.pad_none(mp['Lepton'].pt, 1), -999)
 
-    bp_blep_idx = bp['BLep'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    bp_bhad_idx = bp['BHad'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    bp_wja_idx = bp['WJa'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    bp_wjb_idx = bp['WJb'][bp_mask].pad(1).jetIdx.fillna(-999).flatten()
-    bp_lep_pt = bp['Lepton'][bp_mask].pad(1).pt.fillna(-999).flatten()
+    bp_blep_idx = ak.fill_none(ak.pad_none(bp['BLep'].jetIdx, 1), -999)
+    bp_bhad_idx = ak.fill_none(ak.pad_none(bp['BHad'].jetIdx, 1), -999)
+    bp_wja_idx = ak.fill_none(ak.pad_none(bp['WJa'].jetIdx, 1), -999)
+    bp_wjb_idx = ak.fill_none(ak.pad_none(bp['WJb'].jetIdx, 1), -999)
+    bp_lep_pt = ak.fill_none(ak.pad_none(bp['Lepton'].pt, 1), -999)
 
         # index comparisons
     same_blep = (mp_blep_idx == bp_blep_idx) & (mp_blep_idx >= 0)
@@ -226,32 +217,33 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
 
     same_bs = same_blep & same_bhad
 
-    cats = np.zeros(mp['BLep'].size) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
-    #cats = np.zeros(mp['BLep'][mp_mask].size) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
+    cats = np.zeros(len(mp['BLep'])) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
     if njets == '3Jets':
-        valid_evts = ((mp['TTbar'].counts > 0) & ((mp['unique_matches'] >= 3).flatten()))
+        valid_evts = (ak.num(mp['TTbar'].pt) > 0) & (ak.flatten(mp['unique_matches'] >= 3))
 
             # merged events
-        merged_evts = valid_evts & mp['Merged_Event'].flatten()
-        correct_merged = merged_evts & (mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']).flatten()
-        wrong_merged = merged_evts & ~(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']).flatten()
+        merged_evts = valid_evts & ak.flatten(mp['Merged_Event'])
+        correct_merged = merged_evts & ak.flatten(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets'])
+        wrong_merged = merged_evts & ak.flatten(~(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']))
 
             # lost events
-        lost_evts = valid_evts & mp['Lost_Event'].flatten()
-        correct_lost = lost_evts & ((mp['Lost_WJa'] | mp['Lost_WJb'])).flatten()
-        wrong_lost = lost_evts & ~((mp['Lost_WJa'] | mp['Lost_WJb'])).flatten()
+        lost_evts = valid_evts & ak.flatten(mp['Lost_Event'])
+        correct_lost = lost_evts & ak.flatten(mp['Lost_WJa'] | mp['Lost_WJb'])
+        wrong_lost = lost_evts & ak.flatten(~(mp['Lost_WJa'] | mp['Lost_WJb']))
 
-        right_matching = same_bs & (((bp_wja_idx == mp_wja_idx) | (bp_wja_idx == mp_wjb_idx)) & (bp_wja_idx >= 0)) # bs are matched correctly, bp wjet is matched to one of the matched perm wjets
+            # bs are matched correctly, bp wjet is matched to one of the matched perm wjets, leptons are correctly matched
+        right_matching = same_bs & (((bp_wja_idx == mp_wja_idx) | (bp_wja_idx == mp_wjb_idx)) & (bp_wja_idx >= 0)) & (bp_lep_pt == mp_lep_pt) 
 
         # event categorization
             # unmatchable events
         unmatchable_evts = (~valid_evts | wrong_merged | wrong_lost)
             # right events
-        right_perm_evts = (correct_lost & right_matching) | (correct_merged & right_matching) # matched perm is correct event type and right object matching
+        right_perm_evts = ak.flatten((correct_lost & right_matching) | (correct_merged & right_matching)) # matched perm is correct event type and right object matching
             # matchable events
-        matchable_evts = (correct_lost & ~right_matching) | (correct_merged & ~right_matching) # matched perm is correct event type but wrong object matching
+        matchable_evts = ak.flatten((correct_lost & ~right_matching) | (correct_merged & ~right_matching)) # matched perm is correct event type but wrong object matching
 
     else:
+        set_trace()
         valid_evts = ((mp['TTbar'].counts > 0) & ((mp['unique_matches'] == 4).flatten()))
         isWHadCorrect = ((bp_wja_idx == mp_wja_idx) & (bp_wjb_idx == mp_wjb_idx)) | ((bp_wja_idx == mp_wjb_idx) & (bp_wjb_idx == mp_wja_idx))
         isTHadCorrect = same_bhad & isWHadCorrect
@@ -268,9 +260,8 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
 
 
         # check that there's no overlap in event categories
-    all_cats_as_int = unmatchable_evts.astype(int)+right_perm_evts.astype(int)+matchable_evts.astype(int)
-    if (all_cats_as_int != 1).any():
-        raise ValueError("Events %s have overlapping categories!\nEvents %s have no categories!" % (np.where(all_cats_as_int > 1), np.where(all_cats_as_int == 0)))
+    if not ak.all((unmatchable_evts | right_perm_evts | matchable_evts) == True):
+        raise ValueError("Events %s have no categories!" % ak.where((unmatchable_evts | right_perm_evts | matchable_evts) == False))
 
         # set values in category array
     cats[right_perm_evts] = 1 # matched perm is correct event type and right object matching
