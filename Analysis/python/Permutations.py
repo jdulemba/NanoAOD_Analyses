@@ -243,8 +243,7 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
         matchable_evts = ak.flatten((correct_lost & ~right_matching) | (correct_merged & ~right_matching)) # matched perm is correct event type but wrong object matching
 
     else:
-        set_trace()
-        valid_evts = ((mp['TTbar'].counts > 0) & ((mp['unique_matches'] == 4).flatten()))
+        valid_evts = (ak.num(mp['TTbar'].pt) > 0) & (ak.flatten(mp['unique_matches'] == 4))
         isWHadCorrect = ((bp_wja_idx == mp_wja_idx) & (bp_wjb_idx == mp_wjb_idx)) | ((bp_wja_idx == mp_wjb_idx) & (bp_wjb_idx == mp_wja_idx))
         isTHadCorrect = same_bhad & isWHadCorrect
         isTLepCorrect = same_blep & (bp_lep_pt == mp_lep_pt)
@@ -254,9 +253,9 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
             # unmatchable events
         unmatchable_evts = ~valid_evts
             # right events
-        right_perm_evts = (isCorrect & valid_evts)
+        right_perm_evts = ak.flatten(isCorrect & valid_evts)
             #matchable events
-        matchable_evts = (~isCorrect & valid_evts)
+        matchable_evts = ak.flatten((~isCorrect & valid_evts))
 
 
         # check that there's no overlap in event categories
