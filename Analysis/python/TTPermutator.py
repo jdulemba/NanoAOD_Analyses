@@ -270,7 +270,7 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     }, with_name="PtEtaPhiMLorentzVector")
 
     # Lepton
-    best_Lep = ak.Array({key: ak.unflatten(ak.flatten(leptons[key]), valid_evts.astype(int)) for key in leptons.fields}, with_name="PtEtaPhiMLorentzVector")
+    best_Lep = ak.Array({key: ak.unflatten(ak.flatten(leptons[key][valid_evts]), valid_evts.astype(int)) for key in leptons.fields}, with_name="PtEtaPhiMLorentzVector")
 
     # MET
     best_MET = ak.Array({key: ak.unflatten(MET[key], valid_evts.astype(int)) for key in MET.fields}, with_name="PtEtaPhiMLorentzVector")
