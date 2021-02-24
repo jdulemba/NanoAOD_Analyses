@@ -94,24 +94,24 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
             # inds where only WJb p4 is used as WHad
     use_wjb_inds = ak.flatten(Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa)
-    whad_pt[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].pt, 1), np.nan)))
-    whad_eta[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].eta, 1), np.nan)))
-    whad_phi[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].phi, 1), np.nan)))
-    whad_mass[use_wjb_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb[use_wjb_inds].mass, 1), np.nan)))
+    whad_pt[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.pt, 1), np.nan)[use_wjb_inds]))
+    whad_eta[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.eta, 1), np.nan)[use_wjb_inds]))
+    whad_phi[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.phi, 1), np.nan)[use_wjb_inds]))
+    whad_mass[use_wjb_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.mass, 1), np.nan)[use_wjb_inds]))
 
             # inds where only WJa p4 is used as WHad
     use_wja_inds = ak.flatten(Merged_BHadWJb | Merged_BLepWJb | Lost_WJb)
-    whad_pt[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].pt, 1), np.nan)))
-    whad_eta[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].eta, 1), np.nan)))
-    whad_phi[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].phi, 1), np.nan)))
-    whad_mass[use_wja_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja[use_wja_inds].mass, 1), np.nan)))
+    whad_pt[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.pt, 1), np.nan)[use_wja_inds]))
+    whad_eta[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.eta, 1), np.nan)[use_wja_inds]))
+    whad_phi[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.phi, 1), np.nan)[use_wja_inds]))
+    whad_mass[use_wja_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.mass, 1), np.nan)[use_wja_inds]))
 
             # inds where combined p4 from WJa and WJb is used as WHad (all other inds)
     use_comb_inds = ~(use_wjb_inds | use_wja_inds)
-    whad_pt[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).pt ))
-    whad_eta[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).eta ))
-    whad_phi[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).phi ))
-    whad_mass[use_comb_inds]= ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja[use_comb_inds], 1), 0) + ak.fill_none(ak.pad_none( wjb[use_comb_inds], 1), 0)).mass ))
+    whad_pt[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).pt[use_comb_inds] ))
+    whad_eta[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).eta[use_comb_inds] ))
+    whad_phi[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).phi[use_comb_inds] ))
+    whad_mass[use_comb_inds]= ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).mass[use_comb_inds] ))
     whad_pt[whad_pt == 0.] = np.nan
     whad_eta[whad_eta == 0.] = np.nan
     whad_phi[whad_phi == 0.] = np.nan
@@ -179,7 +179,7 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
         "Lost_WJa" : Lost_WJa,
         "Lost_WJb" : Lost_WJb,
         "Lost_Event" : Lost_Event,
-    })
+    }, depth_limit=1)
 
     #set_trace()
     
@@ -193,6 +193,7 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
     Compare object assignments across two permutations.
     Inputs: matched perm, best perm, njets category, matched perm mask, best perm mask
     '''
+    set_trace()
     if mp['BLep'].size != bp['BLep'][bp_mask].size:
     #if mp['BLep'][mp_mask].size != bp['BLep'][bp_mask].size:
         raise ValueError("Permutations must have the same size in order to be compared!")
