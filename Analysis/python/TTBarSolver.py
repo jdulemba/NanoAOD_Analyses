@@ -28,12 +28,12 @@ class TTSolver(object):
         self.WTmass_right_values  = WTmass_right._values
         
         self.USE3JMERGED = cfg_pars['USE3JMERGED']
-        Mass_3J_Merged_right = probs['3Jets']['Merged_mbpjet_vs_maxmjet']
+        Mass_3J_Merged_right = probs['3Jets']['Merged_mTHadProxy_vs_maxmjet']
         self.Mass_3J_Merged_right_binning = Mass_3J_Merged_right._axes
         self.Mass_3J_Merged_right_values  = Mass_3J_Merged_right._values
         
         self.USE3JLOST = cfg_pars['USE3JLOST']
-        Mass_3J_Lost_right = probs['3Jets']['Lost_mbpjet']
+        Mass_3J_Lost_right = probs['3Jets']['Lost_mTHadProxy']
         self.Mass_3J_Lost_right_binning = Mass_3J_Lost_right._axes
         self.Mass_3J_Lost_right_values  = Mass_3J_Lost_right._values
         
