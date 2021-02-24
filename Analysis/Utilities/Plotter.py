@@ -176,7 +176,8 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_
         density=normalize,
     )
     ax.autoscale(axis='x', tight=True)
-    ax.set_ylim(ylimits)
+    ylims = (0, ax.get_ylim()[1]*1.15) if ylimits is None else ylimits
+    ax.set_ylim(ylims)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_xlim(xlimits)
