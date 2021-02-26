@@ -26,56 +26,45 @@ from scipy import interpolate
 from coffea.lookup_tools.dense_lookup import dense_lookup
 from scipy.optimize import curve_fit
 
+proj_dir = os.environ['PROJECT_DIR']
+jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
+analyzer = 'ttbar_alpha_reco'
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--year', type=str, help='Choose year(s) to run')
-
 args = parser.parse_args()
 
-years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
-
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-analyzer = 'ttbar_alpha_reco'
+if base_jobid == 'ULnanoAOD':
+    years_to_run = [args.year] if args.year else ['2017', '2018']
+    max_years = 2
+else:
+    years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
+    max_years = 3
 
 #blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
 blurb = 'tight $e/\mu$\n$n_{jets}$=3\n$n_{btags} \geq$ 2'
 
 
-alpha_corrections = {
-    '2016' : {
-        'E' : {},
-        'P' : {},
-    },
-    '2017' : {
-        'E' : {},
-        'P' : {},
-    },
-    '2018' : {
-        'E' : {},
-        'P' : {},
-    },
-}
+alpha_corrections = {year : {'E' : {}, 'P' : {}} for year in years_to_run}
 
 
 variables = {
-    'Alpha_THad_P' : ('172.5/Reco m($t_{h}$)', 10, (0., 5.), 'Gen P($t_{h}$)/Reco P($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
-    'Alpha_THad_E' : ('172.5/Reco m($t_{h}$)', 10, (0., 5.), 'Gen E($t_{h}$)/Reco E($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_P' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen P($t_{h}$)/Reco P($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_E' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen E($t_{h}$)/Reco E($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
 }
 
 
     ## get plotting colors/settings
 hstyles = styles.styles
-stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
-data_lumi_dict = prettyjson.loads(open('%s/inputs/lumis_data.json' % proj_dir).read())
-lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))
+data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights.coffea'))
 
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
-ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
-
+ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
 
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
@@ -221,11 +210,11 @@ for year in years_to_run:
     lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
 
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
-    names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
+    names = [dataset for dataset in sorted(set([key[0] for key in hdict[sorted(variables.keys())[0]].values().keys()]))] # get dataset names in hists
     ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
     if len(ttJets_cats) > 0:
         for tt_cat in ttJets_cats:
-            ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+            ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
             mu_lumi = lumi_correction[year]['Muons'][ttJets_lumi_topo]
             el_lumi = lumi_correction[year]['Electrons'][ttJets_lumi_topo]
             lumi_correction[year]['Muons'].update({tt_cat: mu_lumi})
@@ -267,7 +256,7 @@ for year in years_to_run:
             ## make plots for each perm category
         for cat in ['ttJets_right']:
         #for cat in list(set([key[0] for key in h_tot.values().keys()])):
-            pltdir = '/'.join([outdir, cat])
+            pltdir = os.path.join(outdir, cat)
             if not os.path.isdir(pltdir):
                 os.makedirs(pltdir)
             
@@ -300,25 +289,23 @@ for year in years_to_run:
                     alpha_medians = np.array(alpha_median)
                     binned_mtt_medians[idx] = alpha_medians
 
-                ax = Plotter.plot_2d_norm(hslice, xaxis_name='norm_mthad', yaxis_name=alpha_axis_name,
+                Plotter.plot_2d_norm(hslice, xaxis_name='norm_mthad', yaxis_name=alpha_axis_name,
                     values=np.ma.masked_where(hslice.values()[()] <= 0., hslice.values()[()]),
                     xlimits=mthad_lims, ylimits=alpha_lims, xlabel=mthad_title, ylabel=alpha_title, ax=ax, **opts)
 
                    # add lepton/jet multiplicity label
                 ax.text(
                     0.02, 0.85, blurb,
-                    fontsize=rcParams['font.size'], 
                     horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
                     # add perm category and mtt region
                 mtt_label = 'Reco m($t\\bar{t}$) $\geq$ %s' % bin_min if idx == len(mtt_bin_ranges)-1 else '%s $\leq$ Reco m($t\\bar{t}$) $<$ %s' % (bin_min, bin_max)
                 ax.text(
                     0.98, 0.90, '%s\n%s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_label),
-                    fontsize=rcParams['font.size'],
                     horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
                 )
                     ## add lumi/cms label
-                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
                 #set_trace()
                 figname = os.path.join(pltdir, '_'.join([hname, 'Mtt%sto%s' % (int(bin_min), int(bin_max))]))
@@ -339,9 +326,9 @@ for year in years_to_run:
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
 
-                ax = Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='Reco m($t\\bar{t}$) [GeV]', ax=ax,
+                Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='Reco m($t\\bar{t}$) [GeV]', ax=ax,
                     values=fitvals_mtt.T, xbins=lookup_mtt._axes[0], ybins=lookup_mtt._axes[1], **{'cmap_label' : '%s Fit Values' % alpha_title.split('=')[0]})
-                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
                 figname = os.path.join(pltdir, '%s_Mtt_FitVals' % hname)
                 fig.savefig(figname)
                 print('%s written' % figname)
@@ -351,7 +338,6 @@ for year in years_to_run:
                 # plots over entire mttbar range
             all_mtt = histo.integrate('bp_mtt')
             if cat == 'ttJets_right':
-                #set_trace()
                 #alpha_median_all = get_median_from_2d(all_mtt, 'norm_mthad')
                 alpha_median_all = get_median_from_2d(all_mtt, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
                 #alpha_median_all, alpha_median_errs_all = get_median_from_2d(all_mtt, 'norm_mthad', xmin=mthad_fit_range[0], xmax=mthad_fit_range[1])
@@ -377,7 +363,7 @@ for year in years_to_run:
                 ax.legend(loc='upper right')
                 ax.set_xlabel(mthad_title)
                 ax.set_ylabel(alpha_title.split('=')[0])
-                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
                 figname = os.path.join(pltdir, '%s_All_FitVals' % hname)
                 fig.savefig(figname)
                 print('%s written' % figname)
@@ -388,24 +374,22 @@ for year in years_to_run:
             fig.subplots_adjust(hspace=.07)
 
             mtt_range = histo.axis('bp_mtt').edges()[0]
-            ax = Plotter.plot_2d_norm(all_mtt, xaxis_name='norm_mthad', yaxis_name=alpha_axis_name,
+            Plotter.plot_2d_norm(all_mtt, xaxis_name='norm_mthad', yaxis_name=alpha_axis_name,
                 values=np.ma.masked_where(all_mtt.values()[()] <= 0., all_mtt.values()[()]),
                 xlimits=mthad_lims, ylimits=alpha_lims, xlabel=mthad_title, ylabel=alpha_title, ax=ax, **opts)
 
                # add lepton/jet multiplicity label
             ax.text(
                 0.02, 0.85, blurb,
-                fontsize=rcParams['font.size'], 
                 horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
                 # add perm category and mtt region
             ax.text(
                 0.98, 0.90, '%s\nReco m($t\\bar{t}$) $\geq$ %s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_range),
-                fontsize=rcParams['font.size'],
                 horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
             )
                 ## add lumi/cms label
-            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+            hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
             #set_trace()
             figname = os.path.join(pltdir, '_'.join([hname, 'All']))
@@ -415,7 +399,7 @@ for year in years_to_run:
 
 
     ## save corrections
-if len(years_to_run) == 3:
+if len(years_to_run) == max_years:
     corrdir = os.path.join(proj_dir, 'Corrections', jobid)
     if not os.path.isdir(corrdir):
         os.makedirs(corrdir)
