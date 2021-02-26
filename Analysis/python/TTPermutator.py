@@ -197,7 +197,7 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     }, with_name="PtEtaPhiMLorentzVector")
 
     # WJb
-    if len(bp_ordering[valid_evts][0]) == 4: # WJb exists
+    if len(bp_ordering[0]) == 4: # WJb exists
         wjb_inds = ak.unflatten(bp_ordering[valid_evts][:, 3], valid_evts.astype(int))
         best_WJb = ak.Array({
             'pt' : jets[wjb_inds].pt,
