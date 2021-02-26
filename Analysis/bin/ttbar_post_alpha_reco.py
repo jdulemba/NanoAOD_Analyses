@@ -190,7 +190,6 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
                 ## object selection
             #set_trace()
             objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections) if evt_sys == 'nosys' else objsel.select(events, year=args.year, corrections=self.corrections, shift=evt_sys)
-            #objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections) if evt_sys == 'nosys' else objsel.select(df, year=args.year, corrections=self.corrections, shift=evt_sys)
             selection.add('objselection', objsel_evts)
             selection.add('jets_3',  ak.num(events['Jet']) == 3)
             selection.add('jets_4',  ak.num(events['Jet']) == 4)
