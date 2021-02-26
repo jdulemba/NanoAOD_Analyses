@@ -11,7 +11,7 @@ def get_event_weights(events, year: str, corrections, isTTbar=False):
         ## only apply to MC
     if not events.metadata['dataset'].startswith('data_Single'):
             ## Prefire Corrections
-        if (year != '2018') and (corrections['Prefire'] == True):
+        if (year != '2018') and (corrections['Prefire'] == True) and ('L1PreFiringWeight' in events.fields):
             weights.add('Prefire',
                 events['L1PreFiringWeight']['Nom'],
                 events['L1PreFiringWeight']['Up'],
