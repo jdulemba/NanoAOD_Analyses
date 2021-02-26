@@ -34,14 +34,13 @@ single_mu_trigger_paths = {
 def get_triggers(HLT, leptype, year, noIso=False, accumulator=None):
     ## event triggers to be used found here: https://twiki.cern.ch/twiki/bin/view/CMS/TopTriggerYear2016 or 2017, 2018...
 
-    _allowed_leptypes = ['Muon', 'Electron']
-    _err_message = f"Select 'leptype' from {_allowed_leptypes}"
-    assert leptype in _allowed_leptypes, _err_message
+    allowed_leptypes = ['Muon', 'Electron']
+    if leptype not in allowed_leptypes:
+        raise ValueError(f"Select 'leptype' from {allowed_leptypes}")
 
-    #set_trace()
     iso_cat = 'noIso' if noIso else 'Iso'
-    pass_triggers = ak.all((HLT[i] for i in single_mu_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0) if leptype == 'Muon'\
-                     else ak.all((HLT[i] for i in single_el_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0)
+    pass_triggers = ak.any((HLT[i] for i in single_mu_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0) if leptype == 'Muon'\
+            else ak.any((HLT[i] for i in single_el_trigger_paths[year][iso_cat] if i in HLT.fields), axis=0)
 
     if accumulator:
         accumulator['cutflow']['nEvts pass %s pass_triggers' % leptype] += ak.sum(pass_triggers)
