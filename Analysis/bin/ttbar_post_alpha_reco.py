@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-from coffea import hist
+from coffea import hist, processor
+from coffea.nanoevents import NanoAODSchema
+from coffea.analysis_tools import PackedSelection
+import awkward as ak
+from coffea.nanoevents.methods import vector
+ak.behavior.update(vector.behavior)
 from coffea.util import save, load
-import coffea.processor as processor
 from pdb import set_trace
-import os, sys
+import os#, sys
 import python.ObjectSelection as objsel
 import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
@@ -36,20 +40,18 @@ fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
 
     ## specify ttJets samples
-if (args.year == '2016') and (base_jobid == 'NanoAODv6'):
-    Nominal_ttJets = ['ttJets_PS']
-else:
-    Nominal_ttJets = ['ttJetsSL']#, 'ttJetsHad', 'ttJetsDiLep']
-if not Nominal_ttJets:
+Nominal_ttJets = ['ttJets_PS', 'ttJets'] if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else ['ttJetsSL']
+isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
+if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
 
 ## load corrections for event weights
-pu_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_PU_Weights.coffea'))
-lepSF_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'leptonSFs.coffea'))
-jet_corrections = load(os.path.join(proj_dir, 'Corrections', jobid, 'JetCorrections.coffea'))[args.year]
+pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
+lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
+jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
 alpha_corrections = load(os.path.join(proj_dir, 'Corrections', jobid,'alpha_correction_%s.coffea' % jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
@@ -138,7 +140,6 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
             ('E', 'All_1D'), ('E', 'All_2D'), ('E', 'Mtt'),
             ('P', 'All_1D'), ('P', 'All_2D'), ('P', 'Mtt')
         ]
-        #self.alpha_corr_choices = [('E', 'All'), ('E', 'Mtt'), ('P', 'All'), ('P', 'Mtt')]
 
     
     @property
@@ -159,20 +160,20 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
         return histo_dict
 
     
-    def process(self, df):
+    def process(self, events):
         np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
-        self.sample_name = df.dataset
+        self.sample_name = events.metadata['dataset']
 
         for evt_sys in self.event_systematics_to_run:
                 ## make event weights
                     # data or MC distinction made internally
-            mu_evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections, BTagSFs=btaggers)
-            el_evt_weights = MCWeights.get_event_weights(df, year=args.year, corrections=self.corrections, BTagSFs=btaggers)
+            mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+            el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
 
                 ## initialize selections and regions
-            selection = processor.PackedSelection()
+            selection = PackedSelection()
             regions = {
                 'Muon' : {
                     '3Jets' : {'objselection', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'},
@@ -187,70 +188,67 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
             }
 
                 ## object selection
-            #objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections)#, accumulator=output)
             #set_trace()
-            objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections) if evt_sys == 'nosys' else objsel.select(df, year=args.year, corrections=self.corrections, shift=evt_sys)
-            #objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow_%s' % evt_sys]) if evt_sys == 'nosys' else objsel.select(df, year=args.year, corrections=self.corrections, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys)
-            #output['cutflow_%s' % evt_sys]['nEvts passing jet and lepton obj selection'] += objsel_evts.sum()
-            selection.add('jets_3', df['Jet'].counts == 3)
-            selection.add('jets_4', df['Jet'].counts == 4)
-            selection.add('jets_5p', df['Jet'].counts > 4)
-            selection.add('jets_4p', df['Jet'].counts > 3) # only for getting btag weights
+            objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections) if evt_sys == 'nosys' else objsel.select(events, year=args.year, corrections=self.corrections, shift=evt_sys)
+            #objsel_evts = objsel.select(df, year=args.year, corrections=self.corrections) if evt_sys == 'nosys' else objsel.select(df, year=args.year, corrections=self.corrections, shift=evt_sys)
             selection.add('objselection', objsel_evts)
-            selection.add('btag_pass', df['Jet'][btag_wps[0]].sum() >= 2)
+            selection.add('jets_3',  ak.num(events['Jet']) == 3)
+            selection.add('jets_4',  ak.num(events['Jet']) == 4)
+            selection.add('jets_5p',  ak.num(events['Jet']) > 4)
+            selection.add('jets_4p',  ak.num(events['Jet']) > 3) # only for getting btag weights
+            selection.add('btag_pass', ak.sum(events['Jet'][btag_wps[0]], axis=1) >= 2)
+
+                # sort jets by btag value
+            events['Jet'] = events['Jet'][ak.argsort(events['Jet']['btagDeepB'], ascending=False)] if btagger == 'DeepCSV' else events['Jet'][ak.argsort(events['Jet']['btagDeepFlavB'], ascending=False)]
 
                 ## add different selections
                     ## muons
-            selection.add('tight_MU', df['Muon']['TIGHTMU'].sum() == 1) # one muon passing TIGHT criteria
+            selection.add('tight_MU', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing TIGHT criteria
 
                     ## electrons
-            selection.add('tight_EL', df['Electron']['TIGHTEL'].sum() == 1) # one electron passing TIGHT criteria
-
-                # sort jets by btag value
-            df['Jet'] = df['Jet'][df['Jet']['btagDeepB'].argsort(ascending=False)] if btagger == 'DeepCSV' else df['Jet'][df['Jet']['btagDeepFlavB'].argsort(ascending=False)]
+            selection.add('tight_EL', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1) # one electron passing TIGHT criteria
 
             ### apply lepton SFs to MC (only applicable to tight leptons)
             if 'LeptonSF' in corrections.keys():
                 tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
-                tight_muons = df['Muon'][tight_mu_cut][(df['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
-                muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=lepSF_correction,
-                    pt=tight_muons.pt.flatten(), eta=tight_muons.eta.flatten())
-                mu_reco_cen = np.ones(df.size)
-                mu_reco_err = np.zeros(df.size)
-                mu_trig_cen = np.ones(df.size)
-                mu_trig_err = np.zeros(df.size)
+                tight_muons = events['Muon'][tight_mu_cut][(events['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
+                muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=self.corrections['LeptonSF'],
+                    pt=ak.flatten(tight_muons['pt']), eta=ak.flatten(tight_muons['eta']))
+                mu_reco_cen = np.ones(len(events))
+                mu_reco_err = np.zeros(len(events))
+                mu_trig_cen = np.ones(len(events))
+                mu_trig_err = np.zeros(len(events))
                 mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
                 mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
                 mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
                 mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
-                mu_evt_weights.add('Lep_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
-                mu_evt_weights.add('Lep_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
-
+                mu_evt_weights.add('RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+                mu_evt_weights.add('TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+    
                 tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
-                tight_electrons = df['Electron'][tight_el_cut][(df['Electron'][tight_el_cut]['TIGHTEL'] == True)]
-                elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=lepSF_correction,
-                    pt=tight_electrons.pt.flatten(), eta=tight_electrons.etaSC.flatten())
-                el_reco_cen = np.ones(df.size)
-                el_reco_err = np.zeros(df.size)
-                el_trig_cen = np.ones(df.size)
-                el_trig_err = np.zeros(df.size)
+                tight_electrons = events['Electron'][tight_el_cut][(events['Electron'][tight_el_cut]['TIGHTEL'] == True)]
+                elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=self.corrections['LeptonSF'],
+                    pt=ak.flatten(tight_electrons['pt']), eta=ak.flatten(tight_electrons['etaSC']))
+                el_reco_cen = np.ones(len(events))
+                el_reco_err = np.zeros(len(events))
+                el_trig_cen = np.ones(len(events))
+                el_trig_err = np.zeros(len(events))
                 el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
                 el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
                 el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
                 el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
-                el_evt_weights.add('Lep_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
-                el_evt_weights.add('Lep_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
+                el_evt_weights.add('RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+                el_evt_weights.add('TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
 
             if corrections['BTagSF'] == True:
-                #set_trace()
-                deepcsv_cen = np.ones(df.size)
+                deepcsv_cen = np.ones(len(events))
                 threeJets_cut = selection.require(objselection=True, jets_3=True)
-                deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=df['Jet'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
-                deepcsv_cen[threeJets_cut] = deepcsv_3j_wts['central'].prod()
-
+                deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=events['Jet'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
+                deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts['central'], axis=1)
+    
                 fourplusJets_cut = selection.require(objselection=True, jets_4p=True)
-                deepcsv_4pj_wts = self.corrections['BTag_Constructors']['DeepCSV']['4PJets'].get_scale_factor(jets=df['Jet'][fourplusJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
-                deepcsv_cen[fourplusJets_cut] = deepcsv_4pj_wts['central'].prod()
+                deepcsv_4pj_wts = self.corrections['BTag_Constructors']['DeepCSV']['4PJets'].get_scale_factor(jets=events['Jet'][fourplusJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
+                deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts['central'], axis=1)
 
                     # make dict of btag weights
                 btag_weights = {
@@ -258,8 +256,8 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
                 }
 
                 # find gen level particles for ttbar system
-            GenTTbar = genpsel.select(df, mode='NORMAL')
-            selection.add('semilep', GenTTbar['SL']['TTbar'].counts > 0)
+            genpsel.select(events, mode='NORMAL')
+            selection.add('semilep', ak.num(events['SL']) > 0)
 
             ## fill hists for each region
             for lepton in regions.keys():
@@ -271,87 +269,99 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
                     if cut.sum() > 0:
                         leptype = 'MU' if lepton == 'Muon' else 'EL'
                         if 'loose_or_tight_%s' % leptype in regions[lepton][jmult]:
-                            lep_mask = ((df[lepton][cut]['TIGHT%s' % leptype]) | (df[lepton][cut]['LOOSE%s' % leptype]))
+                            lep_mask = ((events[lepton][cut]['TIGHT%s' % leptype]) | (events[lepton][cut]['LOOSE%s' % leptype]))
                         elif 'tight_%s' % leptype in regions[lepton][jmult]:
-                            lep_mask = (df[lepton][cut]['TIGHT%s' % leptype])
+                            lep_mask = (events[lepton][cut]['TIGHT%s' % leptype])
                         elif 'loose_%s' % leptype in regions[lepton][jmult]:
-                            lep_mask = (df[lepton][cut]['LOOSE%s' % leptype])
+                            lep_mask = (events[lepton][cut]['LOOSE%s' % leptype])
                         else:
                             raise ValueError("Not sure what lepton type to choose for event")
 
                             # find matched permutations    
-                        mp = ttmatcher.best_match(gen_hyp=GenTTbar[cut], jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], met=df['MET'][cut])
+                        mp = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], met=events['MET'][cut])
         
                             # find best permutations
-                        best_perms = ttpermutator.find_best_permutations(jets=df['Jet'][cut], leptons=df[lepton][cut][lep_mask], MET=df['MET'][cut], btagWP=btag_wps[0])
-                        valid_perms = best_perms['TTbar'].counts > 0
-        
-                        bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'noslep'
+                        best_perms = ttpermutator.find_best_permutations(jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], MET=events['MET'][cut], btagWP=btag_wps[0])
+                        valid_perms = ak.num(best_perms['TTbar'].pt) > 0
+
+                            # compare matched per to best perm
+                        bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
                         perm_cat_array = compare_matched_best_perms(mp, best_perms, njets='3Jets' if jmult == '3Jets' else '4PJets')
-                        bp_status[(cut)] = perm_cat_array
-                        sl_tau_evts = (np.abs(GenTTbar['SL']['Lepton'].pdgId) == 15).pad(1).fillna(False).flatten() # fillna to make sure array is same size as df.size
+                        bp_status[cut] = perm_cat_array
+                        sl_tau_evts = ak.where(ak.fill_none(ak.pad_none(np.abs(events['SL']['Lepton'].pdgId) == 15, 1), False) == True)[0]
                         bp_status[sl_tau_evts] = 4
         
                             ## create MT regions
-                        MT = make_vars.MT(df[lepton][cut][lep_mask], df['MET'][cut])
-                        MTHigh = (MT[valid_perms] >= MTcut).flatten()
-   
-                        evt_weights_to_use = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh] 
+                        MT = make_vars.MT(events[lepton][cut][lep_mask], events['MET'][cut])
+                        MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
+
+                        wts = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]   
 
                         if args.debug: print('    sysname:', evt_sys)
-                        #set_trace()
-                        output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=GenTTbar[cut][valid_perms][MTHigh], bp=best_perms, mtcut=MTHigh, evt_weights=evt_weights_to_use)
+                        output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=events['SL'][cut][valid_perms][MTHigh], bp=best_perms[valid_perms][MTHigh], evt_wts=wts)
 
         return output
 
 
-    def fill_hists(self, acc, sys, jetmult, leptype, permarray, genttbar, bp, mtcut, evt_weights):
-            ## get gen variables that don't change
-        gen_mtt = genttbar['SL']['TTbar'].p4.mass.flatten()
-        gen_mthad = genttbar['SL']['THad'].p4.mass.flatten()
-        gen_thad_ctstar, gen_tlep_ctstar = make_vars.ctstar_flat(genttbar['SL']['THad'].p4.flatten(), genttbar['SL']['TLep'].p4.flatten())
+    def fill_hists(self, acc, sys, jetmult, leptype, permarray, genttbar, bp, evt_wts):
         #set_trace()
+            ## get gen variables that don't change
+        gen_mtt = ak.flatten(genttbar['TTbar'].mass, axis=None)
+        gen_mthad = ak.flatten(genttbar['THad'].mass, axis=None)
+        gen_thad_ctstar, gen_tlep_ctstar = make_vars.ctstar(genttbar['THad'], genttbar['TLep'])
+        gen_thad_ctstar = ak.flatten(gen_thad_ctstar, axis=None)
 
-        orig_thad_p4, orig_tlep_p4 = bp['THad'].p4.flatten(), bp['TLep'].p4.flatten()
-        uncorr_bp_thad_ctstar, uncorr_bp_tlep_ctstar = make_vars.ctstar_flat(orig_thad_p4, orig_tlep_p4)
+        orig_bp_thad_ctstar, orig_bp_tlep_ctstar = make_vars.ctstar(bp['THad'], bp['TLep'])
+        orig_bp_thad_ctstar = ak.flatten(orig_bp_thad_ctstar)
+        orig_bp_mthad = ak.flatten(bp['THad'].mass)
+        orig_bp_mtt = ak.flatten(bp['TTbar'].mass)
+
+            # construct dict of alpha corrections
+        alpha_corr_vals_dict = {'_'.join([kvar, mtt_bin]) : self.corrections['Alpha'][kvar][mtt_bin](172.5/orig_bp_mthad, orig_bp_mtt) if mtt_bin == 'Mtt' else self.corrections['Alpha'][kvar][mtt_bin](172.5/orig_bp_mthad) for kvar, mtt_bin in self.alpha_corr_choices}
+            # construct dict of corrected thad/ttbar values
+        corr_bp_vals = {}
+        for key in alpha_corr_vals_dict.keys():
+            corr_bp_thad_p4 = bp['THad'].multiply(alpha_corr_vals_dict[key])
+            corr_bp_thad_ctstar, corr_bp_tlep_ctstar = make_vars.ctstar(corr_bp_thad_p4, bp['TLep'])
+            corr_bp_vals[key] = {
+                'mthad' : ak.flatten(corr_bp_thad_p4.mass),
+                'thad_ctstar' : ak.flatten(corr_bp_thad_ctstar, axis=None),
+                'mtt' : ak.flatten((corr_bp_thad_p4 + bp['TLep']).mass, axis=None)
+            }
+
 
         for permval in np.unique(permarray).tolist():
             #set_trace()
             perm_inds = np.where(permarray == permval)
             dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
 
-            orig_bp_mthad = orig_thad_p4.mass[mtcut][perm_inds]
-            orig_bp_mtt = bp['TTbar'].p4.mass.flatten()[mtcut][perm_inds]
-
                 # apply no correction
                 # Fill hists with no correction
-            acc['Reco_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', mtt=orig_bp_mtt, weight=evt_weights[perm_inds])
-            acc['Reco_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', mthad=orig_bp_mthad, weight=evt_weights[perm_inds])
-            acc['Reco_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', ctstar=uncorr_bp_thad_ctstar[mtcut][perm_inds], weight=evt_weights[perm_inds])
-            acc['Reco_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', ctstar_abs=np.abs(uncorr_bp_thad_ctstar[mtcut][perm_inds]), weight=evt_weights[perm_inds])
-            acc['Reso_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_mtt=gen_mtt[perm_inds] - orig_bp_mtt, weight=evt_weights[perm_inds])
-            acc['Reso_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_mthad=gen_mthad[perm_inds] - orig_bp_mthad, weight=evt_weights[perm_inds])
-            acc['Reso_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_ctstar=gen_thad_ctstar[perm_inds] - uncorr_bp_thad_ctstar[mtcut][perm_inds], weight=evt_weights[perm_inds])
-            acc['Reso_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_ctstar_abs=np.abs(gen_thad_ctstar[perm_inds]) - np.abs(uncorr_bp_thad_ctstar[mtcut][perm_inds]), weight=evt_weights[perm_inds])
+            acc['Reco_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', mtt=orig_bp_mtt[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reco_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', mthad=orig_bp_mthad[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reco_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', ctstar=orig_bp_thad_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reco_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', ctstar_abs=np.abs(orig_bp_thad_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            acc['Reso_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_mtt=gen_mtt[perm_inds] - orig_bp_mtt[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reso_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_mthad=gen_mthad[perm_inds] - orig_bp_mthad[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reso_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_ctstar=gen_thad_ctstar[perm_inds] - orig_bp_thad_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            acc['Reso_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='Uncorrected', reso_ctstar_abs=np.abs(gen_thad_ctstar[perm_inds]) - np.abs(orig_bp_thad_ctstar[perm_inds]), weight=evt_wts[perm_inds])
 
             if jetmult != '3Jets': continue
 
+            #set_trace()
                 ## apply alpha corrections only for 3Jets
-            for kvar, mtt_bin in self.alpha_corr_choices:
-                corr = self.corrections['Alpha'][kvar][mtt_bin](172.5/orig_bp_mthad, orig_bp_mtt) if mtt_bin == 'Mtt' else self.corrections['Alpha'][kvar][mtt_bin](172.5/orig_bp_mthad)
-                corrected_thad_p4 = orig_thad_p4[mtcut][perm_inds]*corr
-                corrected_mthad = corrected_thad_p4.mass
-                corrected_mtt = (orig_tlep_p4[mtcut][perm_inds]+corrected_thad_p4).mass
-                corrected_thad_ctstar, corrected_tlep_ctstar = make_vars.ctstar_flat(corrected_thad_p4, orig_tlep_p4[mtcut][perm_inds])
-
-                acc['Reco_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), mtt=corrected_mtt, weight=evt_weights[perm_inds])
-                acc['Reco_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), mthad=corrected_mthad, weight=evt_weights[perm_inds])
-                acc['Reco_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), ctstar=corrected_thad_ctstar, weight=evt_weights[perm_inds])
-                acc['Reco_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), ctstar_abs=np.abs(corrected_thad_ctstar), weight=evt_weights[perm_inds])
-                acc['Reso_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), reso_mtt=gen_mtt[perm_inds] - corrected_mtt, weight=evt_weights[perm_inds])
-                acc['Reso_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), reso_mthad=gen_mthad[perm_inds] - corrected_mthad, weight=evt_weights[perm_inds])
-                acc['Reso_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), reso_ctstar=gen_thad_ctstar[perm_inds] - corrected_thad_ctstar, weight=evt_weights[perm_inds])
-                acc['Reso_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype='_'.join([kvar, mtt_bin]), reso_ctstar_abs=np.abs(gen_thad_ctstar[perm_inds]) - np.abs(corrected_thad_ctstar), weight=evt_weights[perm_inds])
+            for corrtype in corr_bp_vals.keys():
+                corr_mthad = corr_bp_vals[corrtype]['mthad'][perm_inds]
+                corr_ctstar = corr_bp_vals[corrtype]['thad_ctstar'][perm_inds]
+                corr_mtt = corr_bp_vals[corrtype]['mtt'][perm_inds]
+                acc['Reco_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, mtt=corr_mtt, weight=evt_wts[perm_inds])
+                acc['Reco_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, mthad=corr_mthad, weight=evt_wts[perm_inds])
+                acc['Reco_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, ctstar=corr_ctstar, weight=evt_wts[perm_inds])
+                acc['Reco_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, ctstar_abs=np.abs(corr_ctstar), weight=evt_wts[perm_inds])
+                acc['Reso_mtt'].fill(            dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, reso_mtt=gen_mtt[perm_inds] - corr_mtt, weight=evt_wts[perm_inds])
+                acc['Reso_mthad'].fill(          dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, reso_mthad=gen_mthad[perm_inds] - corr_mthad, weight=evt_wts[perm_inds])
+                acc['Reso_thad_ctstar'].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, reso_ctstar=gen_thad_ctstar[perm_inds] - corr_ctstar, weight=evt_wts[perm_inds])
+                acc['Reso_thad_ctstar_abs'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, corrtype=corrtype, reso_ctstar_abs=np.abs(gen_thad_ctstar[perm_inds]) - np.abs(corr_ctstar), weight=evt_wts[perm_inds])
 
 
         return acc
@@ -359,26 +369,19 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
+
 proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-output = processor.run_uproot_job(fileset,
-    treename='Events',
+proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+output = processor.run_uproot_job(
+    fileset,
+    treename="Events",
     processor_instance=ttbar_post_alpha_reco(),
     executor=proc_executor,
-    executor_args={
-        'workers': 8,
-        'flatten' : True,
-        'compression': 5,
-    },
+    executor_args=proc_exec_args,
     chunksize=10000 if args.debug else 100000,
-    #chunksize=10000 if args.debug else 50000,
+    #chunksize=100000,
     #chunksize=10000,
 )
-
-
-if args.debug:
-    print(output)
-#set_trace()
-#print(output['cutflow'])
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
