@@ -21,15 +21,16 @@ import fnmatch
 import Utilities.Plotter as Plotter
 from coffea.hist import plot
 
-from argparse import ArgumentParser
-parser = ArgumentParser()
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
-parser.add_argument('--plot', default='all', choices=['nosys', 'uncs', 'all'], help='Make plots for no systematics, variations of JES/JER systematics, or both.')
-args = parser.parse_args()
-
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 analyzer = 'ttbar_post_alpha_reco'
+
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('--plot', default='all', choices=['nosys', 'uncs', 'all'], help='Make plots for no systematics, variations of JES/JER systematics, or both.')
+args = parser.parse_args()
 
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
@@ -86,22 +87,20 @@ variables = {
 
     ## get plotting colors/settings
 hstyles = styles.styles
-stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-stack_error_opts = {'edgecolor':(0,0,0,.5)}
 
     ## get data lumi and scale MC by lumi
-data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())[args.year]
-lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))[args.year]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights.coffea'))[args.year]
 lumi_to_use = (data_lumi_year['Muons']+data_lumi_year['Electrons'])/2000.
 
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
-ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*other']
-names = [dataset for dataset in list(set([key[0] for key in hdict[list(variables.keys())[0]].values().keys()]))] # get dataset names in hists
+ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
+names = [dataset for dataset in sorted(set([key[0] for key in hdict[sorted(variables.keys())[0]].values().keys()]))] # get dataset names in hists
 
 ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat in ttJets_permcats])] # gets ttJets(_PS)_other, ...
 if len(ttJets_cats) > 0:
     for tt_cat in ttJets_cats:
-        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
+        ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
         mu_lumi = lumi_correction['Muons'][ttJets_lumi_topo]
         el_lumi = lumi_correction['Electrons'][ttJets_lumi_topo]
         lumi_correction['Muons'].update({tt_cat: mu_lumi})
@@ -155,7 +154,7 @@ for hname in variables.keys():
                     line_opts={'linestyle' : '-'},
                 )
                 ax.autoscale(axis='x', tight=True)
-                ax.set_ylim(0, None)
+                ax.set_ylim(0, ax.get_ylim()[1]*1.15)
                 ax.set_xlabel(xtitle)
                 ax.set_xlim(x_lims)
             
@@ -173,10 +172,9 @@ for hname in variables.keys():
                 #set_trace()
                 ax.text(
                     0.02, 0.85, 'tight $e/\mu$, %s\n%s' % (jet_mults[jmult], hstyles[cat]['name']),
-                    fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', 
-                    transform=ax.transAxes
+                    horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
-                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
     
                 figname = os.path.join(pltdir, '_'.join([jmult, cat, hname]))
                 fig.savefig(figname)
@@ -213,8 +211,8 @@ for hname in variables.keys():
 
                     # norm
                 #set_trace()
-                for corr in hslice.values().keys():
-                    ax_norm = Plotter.plot_1D(values=hslice.values()[corr]/np.sum(hslice.values()[corr]), bins=hslice.dense_axes()[0].edges(),
+                for corr in sorted(hslice.values().keys()):
+                    Plotter.plot_1D(values=hslice.values()[corr]/np.sum(hslice.values()[corr]), bins=hslice.dense_axes()[0].edges(),
                         ax=ax_norm, xlimits=x_lims, xlabel=xtitle, ylabel='A.U.', label=corr[0], histtype='step')
 
                 ## set legend and corresponding colors
@@ -235,7 +233,7 @@ for hname in variables.keys():
 
             # set axes and call ax.legend() with the new values
             ax.autoscale(axis='x', tight=True)
-            ax.set_ylim(0, None)
+            ax.set_ylim(0, ax.get_ylim()[1]*1.15)
             ax.set_xlabel(xtitle)
             ax.set_xlim(x_lims)
                 
@@ -244,9 +242,9 @@ for hname in variables.keys():
                 # add perm category 
             ax.text(
                 0.02, 0.85, 'tight $e/\mu$\n%s' % hstyles[cat]['name'],
-                fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
-            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+            hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
 
             figname = os.path.join(pltdir, '_'.join(['Comp_JMults', cat, hname]))
             fig.savefig(figname)
@@ -271,7 +269,7 @@ for hname in variables.keys():
 
             # set axes and call ax.legend() with the new values
             ax_norm.autoscale(axis='x', tight=True)
-            ax_norm.set_ylim(0, None)
+            ax_norm.set_ylim(0, ax_norm.get_ylim()[1]*1.15)
             ax_norm.set_xlabel(xtitle)
             ax_norm.set_ylabel('A.U.')
             ax_norm.set_xlim(x_lims)
@@ -281,9 +279,9 @@ for hname in variables.keys():
                 # add perm category 
             ax_norm.text(
                 0.02, 0.85, 'tight $e/\mu$\n%s\n' % hstyles[cat]['name'],
-                fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax_norm.transAxes
+                horizontalalignment='left', verticalalignment='bottom', transform=ax_norm.transAxes
             )
-            hep.cms.cmslabel(ax=ax_norm, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+            hep.cms.label(ax=ax_norm, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
             #set_trace()
     
             figname_norm = os.path.join(pltdir, '_'.join(['Comp_JMults', cat, hname, 'Norm']))
@@ -320,7 +318,7 @@ for hname in variables.keys():
                     line_opts={'linestyle' : '-'},
                 )
                 ax.autoscale(axis='x', tight=True)
-                ax.set_ylim(0, None)
+                ax.set_ylim(0, ax.get_ylim()[1]*1.15)
                 ax.set_xlabel(None)
                 ax.set_xlim(x_lims)
 
