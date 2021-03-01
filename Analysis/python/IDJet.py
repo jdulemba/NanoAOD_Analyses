@@ -85,7 +85,6 @@ else:
     raise ValueError("base_jobid not set")
     
 jet_pars = prettyjson.loads(open(os.path.join(os.environ['PROJECT_DIR'], 'cfg_files', 'cfg_pars_%s.json' % os.environ['jobid'])).read())['Jets']
-#jet_pars = prettyjson.loads(open('%s/cfg_files/cfg_pars_%s.json' % (os.environ['PROJECT_DIR'], os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DeepCSV', 'DeepJet']
 valid_WPs = ['Loose', 'Medium', 'Tight']
@@ -96,18 +95,6 @@ if jet_pars['permutations']['tightb'] not in valid_WPs:
     raise IOError("%s is not a valid working point" % jet_pars['permutations']['tightb'])
 if jet_pars['permutations']['looseb'] not in valid_WPs:
     raise IOError("%s is not a valid working point" % jet_pars['permutations']['looseb'])
-
-
-_signature_map = {
-    'JetPt': 'pt',
-    'JetEta': 'eta',
-    'Rho': 'rho',
-    'JetA': 'area'
-}
-
-#bdiscr = 'btagDeepB' if jet_pars['btagger'] == 'DeepCSV' else 'btagDeepFlavB'
-#wps = list(set([jet_pars['btagger']+jet_pars['permutations']['tightb'], jet_pars['btagger']+jet_pars['permutations']['looseb']]))
-#wps = [''.join(wp) for wp in itertools.product(valid_taggers, valid_WPs)]
 
 
 def make_pt_eta_cuts(jets):
