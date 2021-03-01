@@ -82,16 +82,16 @@ bp_variables = {
 }
 
 variables = {
-    'mtt' : ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.), False),
-    #'mtt' : ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.), True),
+    #'mtt' : ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.), False),
+    'mtt' : ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.), True),
     'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
     'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
     'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 500.), True),
     'eta_thad' : ('$\\eta$($t_{h}$)', 2, (-4., 4.), True),
     'eta_tt' : ('$\\eta$($t\\bar{t}$)', 2, (-4., 4.), True),
     'tlep_ctstar' : ('cos($\\theta^{*}_{t_{l}}$)', 2, (-1., 1.), True),
-    'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), False),
-    #'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), True),
+    #'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), False),
+    'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 2, (0., 1.), True),
     'full_disc' : ('$\\lambda_{C}$', 2, (5, 25.), True),
     'mass_disc' : ('$\\lambda_{M}$', 2, (0, 20.), True),
     'ns_disc' : ('$\\lambda_{NS}$', 2, (3., 10.), True),
@@ -156,20 +156,23 @@ if ((args.plot == 'all') or (args.plot == 'bp')):
                         if ('mass' in hname) and (hname != 'Reso_mass'):
                             x_lims = mass_range
     
-                        fig, ax = plt.subplots()
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        #fig, ax = plt.subplots()
                         fig.subplots_adjust(hspace=.07)
     
                         #set_trace()
                         hslice = histo[:, jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
                         #hslice = histo['ttJets*', jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
-                        Plotter.plot_mc1d(ax, hslice, xlabel=new_xtitle, xlimits=x_lims, ylabel='Events')
+                        #Plotter.plot_mc1d(ax, hslice, xlabel=new_xtitle, xlimits=x_lims, ylabel='Events')
+                        Plotter.plot_stack1d(ax, rax, hslice, xlabel=new_xtitle, xlimits=x_lims, **{'maskData': False})
     
                             # add lepton/jet multiplicity label
                         ax.text(
-                            0.02, 0.88, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                            0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
                             horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=True, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        #hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
@@ -215,7 +218,7 @@ if ((args.plot == 'all') or (args.plot == 'kin')):
 
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                        0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
                         horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                     )
                     hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
