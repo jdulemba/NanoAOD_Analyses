@@ -264,6 +264,7 @@ class best_perms(processor.ProcessorABC):
 
             ## object selection
         objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
+        #set_trace()
         output['cutflow']['nEvts passing jet and lepton obj selection'] += ak.sum(objsel_evts)
         selection.add('objselection', objsel_evts)
         selection.add('jets_3',  ak.num(events['Jet']) == 3)
