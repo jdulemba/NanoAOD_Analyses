@@ -27,6 +27,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
+parser.add_argument('--plot', default='all', choices=['Gen', 'Reco', 'Reso', 'all'], help='Make plots best perm objects, kinematic plots, or both.')
 args = parser.parse_args()
 
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
@@ -74,24 +75,31 @@ objects = {
     'Lepton' : (objtypes['Lep'][args.lepton], (0., 5.)),
 }
 
-variables = {
-    'Gen_pt' : ('$p_{T}$(Gen obj) [GeV]', 1, (0., 500.)),
-    'Gen_eta': ('$\\eta$(Gen obj)', 1, (-2.6, 2.6)),
-    'Gen_phi': ('$\\phi$(Gen obj)', 1, (-4, 4)),
-    'Gen_mass': ('m(Gen obj) [GeV]', 1, (0., 300.)),
-    'Gen_energy': ('E(Gen obj) [GeV]', 1, (0., 1000.)),
-    'Reco_pt' : ('$p_{T}$(Reco obj) [GeV]', 1, (0., 500.)),
-    'Reco_eta': ('$\\eta$(Reco obj)', 1, (-2.6, 2.6)),
-    'Reco_phi': ('$\\phi$(Reco obj)', 1, (-4, 4)),
-    'Reco_mass': ('m(Reco obj) [GeV]', 1, (0., 300.)),
-    'Reco_energy': ('E(Reco obj) [GeV]', 1, (0., 1000.)),
-    'Reso_pt' : ('$p_{T}$(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
-    'Reso_eta': ('$\\eta$(Gen-Reco obj)', 1, (-2.6, 2.6)),
-    'Reso_phi': ('$\\phi$(Gen-Reco obj)', 1, (-4, 4)),
-    'Reso_mass': ('m(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
-    'Reso_energy': ('E(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
-}
-
+variables = {}
+if (args.plot == 'all') or (args.plot == 'Gen'):
+    variables.update({
+        'Gen_pt' : ('$p_{T}$(Gen obj) [GeV]', 1, (0., 500.)),
+        'Gen_eta': ('$\\eta$(Gen obj)', 1, (-2.6, 2.6)),
+        'Gen_phi': ('$\\phi$(Gen obj)', 1, (-4, 4)),
+        'Gen_mass': ('m(Gen obj) [GeV]', 1, (0., 300.)),
+        'Gen_energy': ('E(Gen obj) [GeV]', 1, (0., 1000.)),
+    })
+if (args.plot == 'all') or (args.plot == 'Reco'):
+    variables.update({
+        'Reco_pt' : ('$p_{T}$(Reco obj) [GeV]', 1, (0., 500.)),
+        'Reco_eta': ('$\\eta$(Reco obj)', 1, (-2.6, 2.6)),
+        'Reco_phi': ('$\\phi$(Reco obj)', 1, (-4, 4)),
+        'Reco_mass': ('m(Reco obj) [GeV]', 1, (0., 300.)),
+        'Reco_energy': ('E(Reco obj) [GeV]', 1, (0., 1000.)),
+    })
+if (args.plot == 'all') or (args.plot == 'Reso'):
+    variables.update({
+        'Reso_pt' : ('$p_{T}$(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
+        'Reso_eta': ('$\\eta$(Gen-Reco obj)', 1, (-2.6, 2.6)),
+        'Reso_phi': ('$\\phi$(Gen-Reco obj)', 1, (-4, 4)),
+        'Reso_mass': ('m(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
+        'Reso_energy': ('E(Gen-Reco obj) [GeV]', 1, (-200., 200.)),
+    })
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
@@ -105,26 +113,25 @@ if len(ttJets_cats) > 0:
         ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
         ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
         lumi_correction.update({tt_cat: ttJets_eff_lumi})
-for hname in hdict.keys():
-    if hname == 'cutflow': continue
-    hdict[hname].scale(lumi_correction, axis='dataset')
-
 
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names)
-#set_trace()
+
+    # scale and group hists by process
 for hname in hdict.keys():
     if hname == 'cutflow': continue
-    hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
-    
+    hdict[hname].scale(lumi_correction, axis='dataset') # scale hists
+    hdict[hname] = hdict[hname].group(process_cat, process, process_groups) # group by process
+    hdict[hname] = hdict[hname][:, :, args.lepton].integrate('leptype') # only pick out specified lepton
+
 
     ## make plots
 for hname in variables.keys():
     if hname not in hdict.keys():
         raise ValueError("%s not found in file" % hname)
-    histo = hdict[hname][:, :, args.lepton, :, :, :].integrate('leptype') # process, jmult, leptype, lepcat, btag, object type
+    histo = hdict[hname]
 
     if histo.dense_dim() == 1:
         xtitle, rebinning, x_lims = variables[hname]
@@ -155,7 +162,7 @@ for hname in variables.keys():
                             # add lepton/jet multiplicity label
                         ax.text(
                             0.02, 0.90, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                            fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
                         hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
@@ -164,5 +171,3 @@ for hname in variables.keys():
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
-
-
