@@ -38,7 +38,7 @@ for year in years_to_run:
         sumGenWeights = meta_json["sumGenWeights"]
         xsec = dataset['xsection']
         for lep in ['Electrons', 'Muons']:
-            lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
+            umi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
     print("%s calculated" % year)
 
