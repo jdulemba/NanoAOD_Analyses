@@ -56,7 +56,7 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
             error_opts=hstyles['data_err_opts']
         )
     ax.autoscale(axis='x', tight=True)
-    ax.set_ylim(0, None)
+    ax.set_ylim(0, ax.get_ylim()[1]*1.15)
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
     
