@@ -102,6 +102,7 @@ for year in years_to_run:
     if not hpass.compatible(hall):
         raise ValueError("Passing and All hists don't have the same binning!")
 
+    #set_trace()
         ## rescale hist by lumi for muons and electrons separately and then combine
     hpass_mu = hpass[:, :, :, 'Muon', :].integrate('leptype')
     hpass_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
@@ -125,6 +126,7 @@ for year in years_to_run:
     for wp in hpass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
         for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
             for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
+                print(wp, jmult, flav)
                 #set_trace()
                     # get passing and all hists for 3 and 4+ jets separately, only as a function of pT and eta
                 h_pass = hpass_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
@@ -148,7 +150,6 @@ for year in years_to_run:
 
                 plot_effs(eff_lookup, edges, lumi_to_use, year, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
 
-#set_trace()
 wp_name = list(set(working_points))[0]
     # save files
 flav_effs_name = os.path.join(outdir, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp_name, jobid))
