@@ -8,11 +8,10 @@ import numpy as np
 from coffea.analysis_tools import PackedSelection
 
 def select_jets(jets, muons, electrons, year, cutflow=None):
-    
+
         ## pt and eta cuts
     pass_pt_eta_cuts = IDJet.make_pt_eta_cuts(jets)
     if cutflow is not None: cutflow['jets pass pT and eta cuts'] += ak.sum(pass_pt_eta_cuts)
-    #if cutflow is not None: cutflow['jets pass pT and eta cuts'] += pass_pt_eta_cuts.sum().sum()
     
     #    ## HEM issue
     #if year == '2018':
@@ -66,6 +65,78 @@ def select_jets(jets, muons, electrons, year, cutflow=None):
         return jets, passing_jets
 
 
+def select_leptons(events, year, noIso=False, cutflow=None):
+
+    evt_sel = PackedSelection()
+
+    ### trigger selection
+    evt_sel.add('mu_triggers', Filters_and_Triggers.get_triggers(HLT=events['HLT'], leptype='Muon', year=year, noIso=noIso))
+    evt_sel.add('el_triggers', Filters_and_Triggers.get_triggers(HLT=events['HLT'], leptype='Electron', year=year, noIso=noIso))
+
+    ### filter selection
+    evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(Flags=events['Flag'], year=year))
+
+    ### lepton selection
+    events['Muon'] = IDMuon.process_muons(events['Muon'], year)
+    events['Electron'] = IDElectron.process_electrons(events['Electron'], year)
+    evt_sel.add('single_lep', np.logical_xor(( (ak.sum(events['Muon']['TIGHTMU'], axis=1) + ak.sum(events['Muon']['LOOSEMU'], axis=1)) == 1 ), ( (ak.sum(events['Electron']['TIGHTEL'], axis=1) + ak.sum(events['Electron']['LOOSEEL'], axis=1)) == 1 ))) # only single LOOSE or TIGHT el or mu (not counting vetos)
+    evt_sel.add('single_looseMu', ak.sum(events['Muon']['LOOSEMU'], axis=1) == 1)
+    evt_sel.add('single_tightMu', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1)
+    evt_sel.add('single_looseEl', ak.sum(events['Electron']['LOOSEEL'], axis=1) == 1)
+    evt_sel.add('single_tightEl', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1)
+    evt_sel.add('zero_vetoMu', ak.sum(events['Muon']['VETOMU'], axis=1) == 0)
+    evt_sel.add('zero_vetoEl', ak.sum(events['Electron']['VETOEL'], axis=1) == 0)
+    evt_sel.add('tightMu_pass_vetoMu', (ak.sum(((events['Muon']['TIGHTMU']*1 + events['Muon']['VETOMU']*1) > 0), axis=1) == 1)) # only veto mu (if it exists) is tight
+    evt_sel.add('looseMu_pass_vetoMu', (ak.sum(((events['Muon']['LOOSEMU']*1 + events['Muon']['VETOMU']*1) > 0), axis=1) == 1)) # only veto mu (if it exists) is loose
+    evt_sel.add('tightEl_pass_vetoEl', (ak.sum(((events['Electron']['TIGHTEL']*1 + events['Electron']['VETOEL']*1) > 0), axis=1) == 1)) # only veto el (if it exists) is tight
+    evt_sel.add('looseEl_pass_vetoEl', (ak.sum(((events['Electron']['LOOSEEL']*1 + events['Electron']['VETOEL']*1) > 0), axis=1) == 1)) # only veto el (if it exists) is loose
+
+        # leptons pass loose/tight requirements and triggers (mu only pass mu triggers, el only pass el triggers)
+    evt_sel.add('tightMu_pass', evt_sel.require(single_lep=True, single_tightMu=True, zero_vetoEl=True, tightMu_pass_vetoMu=True, mu_triggers=True) & ~evt_sel.require(el_triggers=True))
+    evt_sel.add('looseMu_pass', evt_sel.require(single_lep=True, single_looseMu=True, zero_vetoEl=True, looseMu_pass_vetoMu=True, mu_triggers=True) & ~evt_sel.require(el_triggers=True))
+    evt_sel.add('tightEl_pass', evt_sel.require(single_lep=True, single_tightEl=True, zero_vetoMu=True, tightEl_pass_vetoEl=True, el_triggers=True) & ~evt_sel.require(mu_triggers=True))
+    evt_sel.add('looseEl_pass', evt_sel.require(single_lep=True, single_looseEl=True, zero_vetoMu=True, looseEl_pass_vetoEl=True, el_triggers=True) & ~evt_sel.require(mu_triggers=True))
+
+    evt_sel.add('passing_mu', evt_sel.require(tightMu_pass=True) | evt_sel.require(looseMu_pass=True))
+    evt_sel.add('passing_el', evt_sel.require(tightEl_pass=True) | evt_sel.require(looseEl_pass=True))
+    evt_sel.add('passing_lep', evt_sel.require(passing_mu=True) | evt_sel.require(passing_el=True))
+
+    evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
+    if cutflow is not None: cutflow['lep_and_filter_pass'] += evt_sel.require(lep_and_filter_pass=True).sum()
+
+    return evt_sel.require(lep_and_filter_pass=True)
+
+def jets_selection(events, year, corrections, cutflow=None, shift=None):
+        ## build corrected jets and MET
+    events['Jet'], events['MET'] = IDJet.process_jets(events, year, corrections['JetCor'])
+            # get jet selection for systematic shift (can only support one at a time)
+    if shift == 'JES_UP':
+        jets_to_use = events['Jet']['JES_jes']['up']
+    elif shift == 'JES_DW':
+        jets_to_use = events['Jet']['JES_jes']['down']
+    elif shift == 'JER_UP':
+        jets_to_use = events['Jet']['JER']['up']
+    elif shift == 'JER_DW':
+        jets_to_use = events['Jet']['JER']['down']
+    elif shift == 'MET_UP':
+        raise ValueError("MET systematic shifts not supported yet!")
+    elif shift == 'MET_DW':
+        raise ValueError("MET systematic shifts not supported yet!")
+    else:
+        jets_to_use = events['Jet']
+
+        # evaluate selection on jets
+    if cutflow is not None:
+        new_jets, passing_jets, cutflow = select_jets(jets_to_use, events['Muon'], events['Electron'], year, cutflow)
+    else:
+        new_jets, passing_jets = select_jets(jets_to_use, events['Muon'], events['Electron'], year)
+
+        ## substitute jets for ones that pass requirements from select_jets
+    events['SelectedJets'] = new_jets
+
+    return passing_jets
+
+
 def select(events, year, corrections, noIso=False, cutflow=None, shift=None):
 
     evt_sel = PackedSelection()
@@ -105,13 +176,30 @@ def select(events, year, corrections, noIso=False, cutflow=None, shift=None):
     evt_sel.add('lep_and_filter_pass', evt_sel.require(passing_lep=True, pass_filters=True))
     if cutflow is not None: cutflow['lep_and_filter_pass'] += evt_sel.require(lep_and_filter_pass=True).sum()
 
-        ## get corrected jets and MET
+        ## build corrected jets and MET
     events['Jet'], events['MET'] = IDJet.process_jets(events, year, corrections['JetCor'])
-    if cutflow is not None:
-        new_jets, passing_jets, cutflow = select_jets(events['Jet'], events['Muon'], events['Electron'], year, cutflow)
+            # get jet selection for systematic shift (can only support one at a time)
+    if shift == 'JES_UP':
+        jets_to_use = events['Jet']['JES_jes']['up']
+    elif shift == 'JES_DW':
+        jets_to_use = events['Jet']['JES_jes']['down']
+    elif shift == 'JER_UP':
+        jets_to_use = events['Jet']['JER']['up']
+    elif shift == 'JER_DW':
+        jets_to_use = events['Jet']['JER']['down']
+    elif shift == 'MET_UP':
+        raise ValueError("MET systematic shifts not supported yet!")
+    elif shift == 'MET_DW':
+        raise ValueError("MET systematic shifts not supported yet!")
     else:
-        new_jets, passing_jets = select_jets(events['Jet'], events['Muon'], events['Electron'], year)
-    
+        jets_to_use = events['Jet']
+
+        # evaluate selection on jets
+    if cutflow is not None:
+        new_jets, passing_jets, cutflow = select_jets(jets_to_use, events['Muon'], events['Electron'], year, cutflow)
+    else:
+        new_jets, passing_jets = select_jets(jets_to_use, events['Muon'], events['Electron'], year)
+
         ## substitute jets for ones that pass requirements from select_jets
     events['Jet'] = new_jets
 
