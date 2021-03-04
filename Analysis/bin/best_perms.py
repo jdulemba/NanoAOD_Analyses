@@ -78,7 +78,7 @@ if not( len(wps_to_use) == 1):
 btag_wps = ['DeepCSVMedium']
 
 if corrections['BTagSF'] == True:
-    sf_file = '%s/Corrections/%s/%s' % (proj_dir, jobid, jet_pars['btagging']['btagSF_file'])
+    sf_file = os.path.join(proj_dir, 'Corrections', jobid, jet_pars['btagging']['btagSF_file'])
     if not os.path.isfile(sf_file):
         raise IOError("BTag SF file %s doesn't exist" % sf_file)
 
@@ -147,7 +147,6 @@ class best_perms(processor.ProcessorABC):
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
         self.corrections = corrections
-        self.isData = True
 
     
     @property
@@ -427,11 +426,10 @@ class best_perms(processor.ProcessorABC):
                             MT = make_vars.MT(leptons, met)
                             MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
 
-                            wts = evt_weights.weight()[cut][valid_perms][MTHigh] if self.isData else (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
+                            wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
                                 # fill hists
                             output = self.fill_selection_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion, permarray=bp_status[cut][valid_perms][MTHigh],
                                 perm=best_perms[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
-                            #set_trace()
                             output = self.fill_jet_hists(acc=output, jetmult=jmult, leptype=lepton, lepcat=leptype, btagregion=btagregion,
                                 permarray=bp_status[cut][valid_perms][MTHigh], obj=jets[valid_perms][MTHigh], evt_wts=wts)
 
