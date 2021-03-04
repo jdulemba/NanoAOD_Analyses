@@ -195,12 +195,12 @@
         "name": "singlet_schannel"
     },
     {
-        "DBSName": "/ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
+        "DBSName": "/ST_t-channel_antitop_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
         "xsection": 80.95,
         "name": "singletbar_tchannel"
     },
     {
-        "DBSName": "/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
+        "DBSName": "/ST_t-channel_top_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
         "xsection": 136.02,
         "name": "singlet_tchannel"
     },
@@ -234,7 +234,7 @@
         "name": "WJets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/W1JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
         "xsection_old": 9493,
         "xsection": 8690.0,
         "name": "W1Jets"
@@ -245,7 +245,7 @@
         "name": "W2Jets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
         "xsection": 992.5,
         "name": "W3Jets"
     },
@@ -381,38 +381,33 @@
 
 
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2018A",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2018B",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2018C",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleMuon_2018D",
-        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
-    },
-    {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2018D",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
 
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/EGamma/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2018A",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/EGamma/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2018B",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
@@ -422,7 +417,7 @@
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/EGamma/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2018D",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     }

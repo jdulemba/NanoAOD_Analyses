@@ -386,7 +386,7 @@
 
 
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2017B",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
@@ -396,44 +396,44 @@
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2017D",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2017E",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2017F-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD",
         "name": "data_SingleMuon_2017F",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
 
 
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2017B",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2017C",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2017D",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2017E",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2017F",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     }
