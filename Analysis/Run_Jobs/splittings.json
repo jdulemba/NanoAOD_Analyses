@@ -1,6 +1,7 @@
 {
     "*" : 10,
     "ttJets*" : 5,
+    "ttJetsSL" : 1,
     "tt[WZ]*" : 5,
     "QCD*" : 10,
     "data*" : 5,
