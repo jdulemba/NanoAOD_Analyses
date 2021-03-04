@@ -298,7 +298,6 @@ output = processor.run_uproot_job(
     executor_args=proc_exec_args,
     #chunksize=10000 if args.debug else 100000,
     chunksize=100000,
-    #chunksize=10000,
 )
 
 save(output, args.outfname)
