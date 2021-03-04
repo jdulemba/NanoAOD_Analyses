@@ -26,16 +26,15 @@ from fnmatch import fnmatch
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('--save_ratios', action='store_true', help='Save NNLO/tune ratios for all years')
+parser.add_argument('--save_ratios', action='store_true', help='Save NNLO/tune ratios for all years (default is to not save them).')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
-analyzer = 'reweighting_vars'
+analyzer = 'nnlo_reweighting_vars'
 
 f_ext = 'TOT.coffea'
-outdir = os.path.join(proj_dir, 'plots', jobid, analyzer)
+outdir = os.path.join(proj_dir, 'plots', base_jobid, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
     
@@ -101,20 +100,20 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
         # raw histo
     nnlo_histo = nnlo_dict[nnlo_var].integrate('dataset')
             # orig
-    ax = plot.plot1d(nnlo_histo,
+    plot.plot1d(nnlo_histo,
         ax=ax, clear=False,
         line_opts={'linestyle' : '-', 'color' : 'k'},
     )
-    ax = plot.plot1d(nnlo_histo, ## need to plot errorbar separately
+    plot.plot1d(nnlo_histo, ## need to plot errorbar separately
         ax=ax, clear=False,
         error_opts={'color': 'k', 'marker' : None},
     )
             # orig logy
-    ax_logy = plot.plot1d(nnlo_histo,
+    plot.plot1d(nnlo_histo,
         ax=ax_logy, clear=False,
         line_opts={'linestyle' : '-', 'color' : 'k'},
     )
-    ax_logy = plot.plot1d(nnlo_histo, ## need to plot errorbar separately
+    plot.plot1d(nnlo_histo, ## need to plot errorbar separately
         ax=ax_logy, clear=False,
         error_opts={'color': 'k', 'marker' : None},
     )
@@ -122,20 +121,20 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
     nnlo_normed_histo = nnlo_histo.copy()
     nnlo_normed_histo.scale(1./nnlo_normed_histo.values(overflow='all')[()].sum())
             # norm
-    ax_norm = plot.plot1d(nnlo_normed_histo,
+    plot.plot1d(nnlo_normed_histo,
         ax=ax_norm, clear=False,
         line_opts={'linestyle' : '-', 'color' : 'k'},
     )
-    ax_norm = plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
+    plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
         ax=ax_norm, clear=False,
         error_opts={'color': 'k', 'marker' : None},
     )
             # logy
-    ax_norm_logy = plot.plot1d(nnlo_normed_histo,
+    plot.plot1d(nnlo_normed_histo,
         ax=ax_norm_logy, clear=False,
         line_opts={'linestyle' : '-', 'color' : 'k'},
     )
-    ax_norm_logy = plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
+    plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
         ax=ax_norm_logy, clear=False,
         error_opts={'color': 'k', 'marker' : None},
     )
@@ -144,15 +143,16 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
     logy_min, logy_max = np.min(nnlo_histo.values()[()]), np.max(nnlo_histo.values()[()]) 
     normed_logy_min, normed_logy_max = np.min(nnlo_normed_histo.values()[()]), np.max(nnlo_normed_histo.values()[()]) 
     
-    years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+    years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2017', '2018']
+    #years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
     for year in years_to_run:
-        input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
+        input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, base_jobid), analyzer)
         fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
         hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
     
             ## get NLO values from hdict
         ttSL = 'ttJets_PS' if ((year == '2016') and (base_jobid == 'NanoAODv6')) else 'ttJetsSL'
-        xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s.json' % year if base_jobid == 'NanoAODv6' else 'samples_%s_%s.json' % (year, base_jobid))).read())
+        xsec_file = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'samples_%s_%s.json' % (year, base_jobid))).read())
         tt_dataset = list(filter(lambda x: fnmatch(x['name'], ttSL), xsec_file))[0]
         xsec = tt_dataset['xsection']
         meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s.meta.json' % ttSL)).read())
@@ -174,67 +174,65 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
             # make normalized hist
         tune_normed_histo = tune_histo.copy()
         tune_normed_histo.scale(1./tune_integral)
-        #tune_normed_histo.scale(1./tune_normed_histo.values(overflow='all')[()].sum())
         # rebin
         xaxis_name = tune_histo.dense_axes()[0].name
         tune_histo = tune_histo.rebin(xaxis_name, nnlo_bins)
         tune_normed_histo = tune_normed_histo.rebin(xaxis_name, nnlo_bins)
     
             # plot yields    
-        ax = plot.plot1d(tune_histo,
+        plot.plot1d(tune_histo,
             ax=ax, clear=False,
             line_opts={'linestyle' : '-', 'color' : style_dict[year][1]},
         )
-        ax = plot.plot1d(tune_histo, ## need to plot errorbar separately
+        plot.plot1d(tune_histo, ## need to plot errorbar separately
             ax=ax, clear=False,
             error_opts={'color': style_dict[year][1], 'marker' : None},
         )
                 # logy
-        ax_logy = plot.plot1d(tune_histo,
+        plot.plot1d(tune_histo,
             ax=ax_logy, clear=False,
             line_opts={'linestyle' : '-', 'color' : style_dict[year][1]},
         )
-        ax_logy = plot.plot1d(tune_histo, ## need to plot errorbar separately
+        plot.plot1d(tune_histo, ## need to plot errorbar separately
             ax=ax_logy, clear=False,
             error_opts={'color': style_dict[year][1], 'marker' : None},
         )
 
+        #set_trace()
                 ## plot ratios
-        first_valid_bin, last_valid_bin = np.where(~np.isnan(nnlo_histo.values()[()]/tune_histo.values()[()]))[0][0], np.where(~np.isnan(nnlo_histo.values()[()]/tune_histo.values()[()]))[0][-1]+1
-        ratio_masked_vals = np.ma.masked_where(np.isnan((nnlo_histo.values()[()]/tune_histo.values()[()])[first_valid_bin:last_valid_bin]), (nnlo_histo.values()[()]/tune_histo.values()[()])[first_valid_bin:last_valid_bin])
+        ratio_vals, ratio_bins = Plotter.get_ratio_arrays(num_vals=nnlo_histo.values()[()], denom_vals=tune_histo.values()[()], input_bins=nnlo_histo.dense_axes()[0].edges())
                     # orig
-        rax.step(nnlo_histo.dense_axes()[0].edges()[first_valid_bin:last_valid_bin+1], np.r_[ratio_masked_vals, ratio_masked_vals[-1]], where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
+        rax.step(ratio_bins, ratio_vals, where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
                     # logy
-        rax_logy.step(nnlo_histo.dense_axes()[0].edges()[first_valid_bin:last_valid_bin+1], np.r_[ratio_masked_vals, ratio_masked_vals[-1]], where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
-    
+        rax_logy.step(ratio_bins, ratio_vals, where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
+
             # plot normalized
         tune_normed_histo = tune_histo.copy()
         tune_normed_histo.scale(1./tune_normed_histo.values()[()].sum())
                     # orig
-        ax_norm = plot.plot1d(tune_normed_histo,
+        plot.plot1d(tune_normed_histo,
             ax=ax_norm, clear=False,
             line_opts={'linestyle' : '-', 'color' : style_dict[year][1]},
         )
-        ax_norm = plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
+        plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
             ax=ax_norm, clear=False,
             error_opts={'color': style_dict[year][1], 'marker' : None},
         )
                     # logy
-        ax_norm_logy = plot.plot1d(tune_normed_histo,
+        plot.plot1d(tune_normed_histo,
             ax=ax_norm_logy, clear=False,
             line_opts={'linestyle' : '-', 'color' : style_dict[year][1]},
         )
-        ax_norm_logy = plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
+        plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
             ax=ax_norm_logy, clear=False,
             error_opts={'color': style_dict[year][1], 'marker' : None},
         )
                 ## plot ratios
-        first_valid_bin_normed, last_valid_bin_normed = np.where(~np.isnan(nnlo_normed_histo.values()[()]/tune_normed_histo.values()[()]))[0][0], np.where(~np.isnan(nnlo_normed_histo.values()[()]/tune_normed_histo.values()[()]))[0][-1]+1
-        ratio_masked_vals_normed = np.ma.masked_where(np.isnan((nnlo_normed_histo.values()[()]/tune_normed_histo.values()[()])[first_valid_bin_normed:last_valid_bin_normed]), (nnlo_normed_histo.values()[()]/tune_normed_histo.values()[()])[first_valid_bin_normed:last_valid_bin_normed])
+        normed_ratio_vals, normed_ratio_bins = Plotter.get_ratio_arrays(num_vals=nnlo_normed_histo.values()[()], denom_vals=tune_normed_histo.values()[()], input_bins=nnlo_normed_histo.dense_axes()[0].edges())
                     # orig
-        rax_norm.step(nnlo_normed_histo.dense_axes()[0].edges()[first_valid_bin_normed:last_valid_bin_normed+1], np.r_[ratio_masked_vals_normed, ratio_masked_vals_normed[-1]], where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
+        rax_norm.step(normed_ratio_bins, normed_ratio_vals, where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
                     # logy
-        rax_norm_logy.step(nnlo_normed_histo.dense_axes()[0].edges()[first_valid_bin_normed:last_valid_bin_normed+1], np.r_[ratio_masked_vals_normed, ratio_masked_vals_normed[-1]], where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
+        rax_norm_logy.step(normed_ratio_bins, normed_ratio_vals, where='post', **{'linestyle' : '-', 'color' : style_dict[year][1]})
     
             ## update min/max values
         if np.min(tune_histo.values()[()]) < logy_min: logy_min = np.min(tune_histo.values()[()])
@@ -242,15 +240,15 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
         if np.min(tune_normed_histo.values()[()]) < normed_logy_min: normed_logy_min = np.min(tune_normed_histo.values()[()])
         if np.max(tune_normed_histo.values()[()]) > normed_logy_max: normed_logy_max = np.max(tune_normed_histo.values()[()])
 
-        #set_trace()
         if args.save_ratios:
-            save_dict[year][tune_var] = dense_lookup(ratio_masked_vals_normed, (nnlo_binning)) if vlines is None else dense_lookup(ratio_masked_vals_normed.reshape(6,6), (mtt_binning, ctstar_binning))
+            #set_trace()
+            save_dict[year][tune_var] = dense_lookup(normed_ratio_vals, (nnlo_binning)) if vlines is None else dense_lookup(normed_ratio_vals[:-1].reshape(len(mtt_binning)-1,len(ctstar_binning)-1), (mtt_binning, ctstar_binning))
 
 
     # plot yields
         # format axes
     ax.autoscale(axis='x', tight=True)
-    ax.set_ylim(None)
+    ax.set_ylim(None, ax.get_ylim()[1]*1.15)
     ax.set_xlabel(None)
     ax.set_ylabel('%s [pb/GeV]' % ytitle)
     
@@ -310,12 +308,11 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
             rax.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=('data', 'axes fraction'),
                 xytext=(0, -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
     
-    hep.cms.cmslabel(ax=ax, year='')
+    hep.cms.label(ax=ax, year='')
 
     #set_trace()
-    figname = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_%s' % (jobid, tune_var, png_ext))
+    figname = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_%s' % (base_jobid, tune_var, png_ext))
     fig.savefig(figname)
-    #set_trace()
     print('%s written' % figname)
     
     
@@ -354,9 +351,9 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
             rax_logy.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=('data', 'axes fraction'),
                 xytext=(0, -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
     
-    hep.cms.cmslabel(ax=ax_logy, year='')
+    hep.cms.label(ax=ax_logy, year='')
     
-    figname_logy = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Logy_%s' % (jobid, tune_var, png_ext))
+    figname_logy = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Logy_%s' % (base_jobid, tune_var, png_ext))
     fig_logy.savefig(figname_logy)
     print('%s written' % figname_logy)
     
@@ -364,7 +361,7 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
     # plot normalized
         # format axes
     ax_norm.autoscale(axis='x', tight=True)
-    ax_norm.set_ylim(None)
+    ax_norm.set_ylim(None, ax_norm.get_ylim()[1]*1.15)
     ax_norm.set_xlabel(None)
     ax_norm.set_ylabel('$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]' % ytitle)
     
@@ -395,9 +392,9 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
             rax_norm.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=('data', 'axes fraction'),
                 xytext=(0, -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
     
-    hep.cms.cmslabel(ax=ax_norm, year='')
+    hep.cms.label(ax=ax_norm, year='')
     
-    figname_norm = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Norm_%s' % (jobid, tune_var, png_ext))
+    figname_norm = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Norm_%s' % (base_jobid, tune_var, png_ext))
     fig_norm.savefig(figname_norm)
     print('%s written' % figname_norm)
     
@@ -408,7 +405,6 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
     ax_norm_logy.set_xlabel(None)
     ax_norm_logy.set_ylabel('$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]' % ytitle)
     ax_norm_logy.set_yscale('log')
-    #set_trace()
     ax_norm_logy.set_ylim(normed_logy_min, 15.*normed_logy_max)
     
     rax_norm_logy.axhline(1, **{'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1})
@@ -438,15 +434,17 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
             rax_norm_logy.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=('data', 'axes fraction'),
                 xytext=(0, -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
     
-    hep.cms.cmslabel(ax=ax_norm_logy, year='')
+    hep.cms.label(ax=ax_norm_logy, year='')
     
-    figname_norm_logy = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Norm_Logy_%s' % (jobid, tune_var, png_ext))
+    figname_norm_logy = os.path.join(outdir, '%s_ttJets_xsec_%s_Comp_Norm_Logy_%s' % (base_jobid, tune_var, png_ext))
     fig_norm_logy.savefig(figname_norm_logy)
     print('%s written' % figname_norm_logy)
 
 
 # save weights
 if args.save_ratios:
-    ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s.coffea' % jobid)
+    set_trace()
+    ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s_Test.coffea' % base_jobid)
+    #ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s.coffea' % base_jobid)
     save(save_dict, ratios_fname)
     print('\n', ratios_fname, 'written')    
