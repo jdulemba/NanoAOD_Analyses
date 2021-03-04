@@ -157,13 +157,9 @@ if ((args.plot == 'all') or (args.plot == 'bp')):
                             x_lims = mass_range
     
                         fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        #fig, ax = plt.subplots()
                         fig.subplots_adjust(hspace=.07)
     
-                        #set_trace()
                         hslice = histo[:, jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
-                        #hslice = histo['ttJets*', jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
-                        #Plotter.plot_mc1d(ax, hslice, xlabel=new_xtitle, xlimits=x_lims, ylabel='Events')
                         Plotter.plot_stack1d(ax, rax, hslice, xlabel=new_xtitle, xlimits=x_lims, **{'maskData': False})
     
                             # add lepton/jet multiplicity label
@@ -172,7 +168,6 @@ if ((args.plot == 'all') or (args.plot == 'bp')):
                             horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
                         hep.cms.label(ax=ax, data=True, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
-                        #hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
@@ -185,8 +180,6 @@ if ((args.plot == 'all') or (args.plot == 'kin')):
     for hname in variables.keys():
         if hname not in hdict.keys():
             raise ValueError("%s not found in file" % hname)
-        #set_trace()
-
         histo = hdict[hname]
     
         xtitle, rebinning, x_lims, withData = variables[hname]
