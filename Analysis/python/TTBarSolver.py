@@ -76,9 +76,11 @@ class TTSolver(object):
             if nschi < 1e12:
                 nsbinning = ns_pars[1] 
                 nsvalues  = ns_pars[2] 
-                    ## find binning to use for when sqrt(nschi) is in under/overflow
+                ## find binning to use for when sqrt(nschi) is in under/overflow
+                    # event is invalid if in overflow (for NS)
                 if np.sqrt(nschi) > nsbinning[-1]:
                     bin_to_use = int(nsbinning[-1] - 1)
+                    result += nstest 
                 elif np.sqrt(nschi) < nsbinning[0]:
                     bin_to_use = 0
                 else:
@@ -136,9 +138,11 @@ class TTSolver(object):
             if nschi < 1e12:
                 nsbinning = ns_pars[1] 
                 nsvalues  = ns_pars[2] 
-                    ## find binning to use for when sqrt(nschi) is in under/overflow
+                ## find binning to use for when sqrt(nschi) is in under/overflow
+                    # event is invalid if in overflow (for NS)
                 if np.sqrt(nschi) > nsbinning[-1]:
                     bin_to_use = int(nsbinning[-1] - 1)
+                    result += nstest 
                 elif np.sqrt(nschi) < nsbinning[0]:
                     bin_to_use = 0
                 else:
@@ -187,9 +191,11 @@ class TTSolver(object):
             if nschi < 1e12:
                 nsbinning = ns_pars[1] 
                 nsvalues  = ns_pars[2] 
-                    ## find binning to use for when sqrt(nschi) is in under/overflow
+                ## find binning to use for when sqrt(nschi) is in under/overflow
+                    # event is invalid if in overflow (for NS)
                 if np.sqrt(nschi) > nsbinning[-1]:
                     bin_to_use = int(nsbinning[-1] - 1)
+                    result += nstest 
                 elif np.sqrt(nschi) < nsbinning[0]:
                     bin_to_use = 0
                 else:
