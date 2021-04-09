@@ -6,7 +6,6 @@ from pdb import set_trace
 import os
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'meta_info'
 
@@ -14,22 +13,14 @@ outdir = os.path.join(proj_dir, 'Corrections', base_jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-mc_pu_weights = {
-    '2016' : {},
-    '2017' : {},
-    '2018' : {},
-}
-data_pu_dists = {
-    '2016' : {},
-    '2017' : {},
-    '2018' : {},
-}
-
 pu_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'Pileup')
 
-years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+mc_pu_weights = {year: {} for year in years_to_run}
+data_pu_dists = {year: {} for year in years_to_run}
+
 for year in years_to_run:
-    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
+    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, base_jobid), analyzer)
     fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('.coffea')]
 
         # get nominal distribution
@@ -66,7 +57,7 @@ for year in years_to_run:
                 mc_weights[mc_weights == np.inf] = np.nan
                 mc_weights = np.nan_to_num(mc_weights)
                 mc_pu_weights[year][dataset[0]][sys_var] = dense_lookup(mc_weights, edges)
-        
+
     # save files
 mcweights_name = os.path.join(outdir, 'MC_PU_Weights.coffea')
 save(mc_pu_weights, mcweights_name)
