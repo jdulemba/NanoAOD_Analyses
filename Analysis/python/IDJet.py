@@ -106,29 +106,7 @@ def make_leadjet_pt_cut(jets):
     leadpt_cut = (ak.max(jets['pt'], axis=1) >= jet_pars['lead_ptmin'])
     return leadpt_cut
 
-def HEM_15_16_issue(jets):
-    hem_region = ((jets['eta'] > -3.2) & (jets['eta'] < -1.3) & (jets['phi'] > -1.57) & (jets['phi'] < -0.87))
-    return hem_region
-
-
-def get_ptGenJet(jets, genjets, dr_max, pt_max_factor):
-    '''
-    requirements defined here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution#Smearing_procedures
-    Procedure based off this: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_25/PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L59-L87
-    '''
-        # At each jet 1 location is the index of the genJet that it matched best with
-        # <<<<important>>>> selves without a match will get a -1 to preserve counts structure
-    matched_genJet_inds = jets.argmatch(genjets, deltaRCut=dr_max/2, deltaPtCut=(pt_max_factor*jets.JER))
-        # initialize ptGenJet to zeros, must use jets not genjets for shape!
-    ptGenJet = jets.pt.zeros_like()
-        # find negation of events in which njets > 0 but ngenjets == 0 (results in empty sections of jagged arrays)
-    valid_inds = ~((jets.counts > 0)  & (genjets.counts == 0))
-        # set ptGenJet for jets that have corresponding genjet matches
-    ptGenJet[valid_inds][matched_genJet_inds[valid_inds] != -1] = genjets[valid_inds][matched_genJet_inds[valid_inds][matched_genJet_inds[valid_inds] != -1]].pt
-    jets['ptGenJet'] =  ptGenJet
-
-
-def process_jets(events, year, corrections=None):
+def process_jets(events, year, corrections=None, hem_15_16=False):
 
     jets = events['Jet']
     jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
@@ -156,6 +134,7 @@ def process_jets(events, year, corrections=None):
 
         events_cache = events.caches[0]
         corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
+        #corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
+        corrected_met = events['MET'] if ((year == '2018') and (hem_15_16)) else met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
 
     return corrected_jets, corrected_met
