@@ -13,9 +13,8 @@ from pdb import set_trace
 import os
 import Utilities.plot_tools as plt_tools
 import Utilities.prettyjson as prettyjson
-#from coffea import hist
-#import numpy as np
 import Utilities.Plotter as Plotter
+from Utilities.styles import styles as styles
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -80,10 +79,12 @@ objects = {
 }
 
 ttdecay_types = {
-    'SL' : '$t\\bar{t} \\rightarrow$ lj',
-    'DL' : '$t\\bar{t} \\rightarrow$ ll',
-    'Had': '$t\\bar{t} \\rightarrow$ jj',
+    'SL' : '$\\rightarrow$ lj',
+    'DL' : '$\\rightarrow$ ll',
+    'Had': '$\\rightarrow$ jj',
 }
+
+isSignal = lambda x : (x.startswith('AtoTT') or x.startswith('HtoTT'))
 
 variables = {
     'pt' : ('$p_{T}$(obj) [GeV]', 2, (0., 500.)),
@@ -107,47 +108,60 @@ lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_Lum
 for hname in hdict.keys():
     if hname == 'cutflow': continue
     hdict[hname].scale(lumi_correction['Muons'], axis='dataset')
-    hdict[hname] = hdict[hname].integrate('dataset')
+    #hdict[hname] = hdict[hname].integrate('dataset')
 
 
+#set_trace()
     ## make bp plots
 for hname in variables.keys():
     if hname not in hdict.keys():
         raise ValueError("%s not found in file" % hname)
-    histo = hdict[hname]
+    h_tot = hdict[hname]
     xtitle, rebinning, x_lims = variables[hname]
-    xaxis_name = histo.dense_axes()[0].name
+    xaxis_name = h_tot.dense_axes()[0].name
     if rebinning != 1:
-        histo = histo.rebin(xaxis_name, rebinning)
-    #set_trace()
-    #for ttbar_type in ['SL']:
-    for ttbar_type in sorted(set([key[1] for key in histo.values().keys()])):
-        ttdecay_label = ttdecay_types[ttbar_type]
-        pltdir = os.path.join(outdir, ttbar_type)
-        if not os.path.isdir(pltdir):
-            os.makedirs(pltdir)
-        for genobj, (objlabel, mass_range) in objects[ttbar_type].items():
-            new_xtitle = xtitle.replace('obj', objlabel)
-            if hname == 'mass':
-                x_lims = mass_range
-            tt_histo = histo[genobj, ttbar_type].integrate('objtype').integrate('ttdecay')
+        h_tot = h_tot.rebin(xaxis_name, rebinning)
+    for dataset in sorted(set([key[0] for key in h_tot.values().keys()])):
+        histo = h_tot[dataset].integrate('dataset')
+        #for ttbar_type in ['SL']:
+        for ttbar_type in sorted(set([key[1] for key in histo.values().keys()])):
+            decay_label = '%s %s' % (plt_tools.get_label(dataset, styles), ttdecay_types[ttbar_type])
+            #decay_label = ttdecay_types[ttbar_type]
+            pltdir = os.path.join(outdir, dataset, ttbar_type) if isSignal(dataset) else os.path.join(outdir, 'ttJets', ttbar_type)
+            if not os.path.isdir(pltdir):
+                os.makedirs(pltdir)
+            for genobj, (objlabel, mass_range) in objects[ttbar_type].items():
+                new_xtitle = xtitle.replace('obj', objlabel)
+                if hname == 'mass':
+                    x_lims = mass_range
+                tt_histo = histo[genobj, ttbar_type].integrate('objtype').integrate('ttdecay')
+        
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(hspace=.07)
     
-            fig, ax = plt.subplots()
-            fig.subplots_adjust(hspace=.07)
+                Plotter.plot_1D(tt_histo.values()[()], tt_histo.axis(xaxis_name).edges(), xlabel=new_xtitle, xlimits=x_lims, ax=ax, histtype='step')
+                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
 
-            Plotter.plot_1D(tt_histo.values()[()], tt_histo.axis(xaxis_name).edges(), xlabel=new_xtitle, xlimits=x_lims, ax=ax, histtype='step')
-            hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
-
-                # add lepton/jet multiplicity label
-            ax.text(
-                0.95, 0.90, ttdecay_label,
-                fontsize=rcParams['font.size'], horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
-            )
-
-            #set_trace()
-            figname = os.path.join(pltdir, '_'.join([ttbar_type, genobj, hname]))
-            fig.savefig(figname)
-            print('%s written' % figname)
-            plt.close()
-
-
+                #set_trace()
+                    # add lepton/jet multiplicity label
+                if isSignal(dataset):
+                    if 'Int' in dataset:
+                        sig_type = 'Int, w $<$ 0' if 'Int_neg' in dataset else 'Int, w $>$ 0'
+                    else:
+                        sig_type = 'Res'
+                    sig_label = '%s\n%s' % (decay_label, sig_type)
+                    ax.text(
+                        0.95, 0.85, sig_label,
+                        horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
+                    )
+                else:
+                    ax.text(
+                        0.95, 0.90, decay_label,
+                        horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
+                    )
+    
+                #set_trace()
+                figname = os.path.join(pltdir, '_'.join([ttbar_type, genobj, hname]))
+                fig.savefig(figname)
+                print('%s written' % figname)
+                plt.close()
