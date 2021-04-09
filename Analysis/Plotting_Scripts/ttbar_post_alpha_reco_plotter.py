@@ -199,7 +199,6 @@ for hname in variables.keys():
                 hslice = nosys_histo[cat, jmult, :].integrate('process').integrate('jmult') if jmult == '3Jets' else nosys_histo[cat, jmult, :].integrate('process').integrate('corrtype')
                 if jmult == '3Jets':
                     hslice = hslice[comp_3j_mask]
-                #set_trace()
 
                     # yields 
                 plot.plot1d(hslice,
@@ -295,7 +294,7 @@ for hname in variables.keys():
         if rebinning != 1:
             xaxis_name = h_tot.dense_axes()[0].name
             h_tot = h_tot.rebin(xaxis_name, rebinning)
-    
+   
         uncs_histo = h_tot[:, :, '3Jets', :].integrate('jmult')
             # make plot for each category
         for cat in sorted(set([key[0] for key in uncs_histo.values().keys()])):
@@ -307,7 +306,6 @@ for hname in variables.keys():
                 hslice = uncs_histo[cat, :, corr].integrate('process').integrate('corrtype')
 
                 fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                #fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
     
                     # plot yields
@@ -328,9 +326,8 @@ for hname in variables.keys():
                     nom_histo = hslice['nosys'].integrate('sys')
                     sys_histo = hslice[sys].integrate('sys')
 
-                    sys_first_valid_bin, sys_last_valid_bin = np.where(~np.isnan(sys_histo.values()[()]/nom_histo.values()[()]))[0][0], np.where(~np.isnan(sys_histo.values()[()]/nom_histo.values()[()]))[0][-1]+1
-                    ratio_masked_vals = np.ma.masked_where(np.isnan((sys_histo.values()[()]/nom_histo.values()[()])[sys_first_valid_bin:sys_last_valid_bin]), (sys_histo.values()[()]/nom_histo.values()[()])[sys_first_valid_bin:sys_last_valid_bin])
-                    rax.step(nom_histo.dense_axes()[0].edges()[sys_first_valid_bin:sys_last_valid_bin+1], np.r_[ratio_masked_vals, ratio_masked_vals[-1]], where='post', **{'linestyle' : '-', 'color' : systematics[sys][1], 'linewidth' :  systematics[sys][2]})
+                    ratio_masked_vals, ratio_bins = Plotter.get_ratio_arrays(num_vals=sys_histo.values()[()], denom_vals=nom_histo.values()[()], input_bins=nom_histo.dense_axes()[0].edges())
+                    rax.step(ratio_bins, ratio_masked_vals, where='post', **{'linestyle' : '-', 'color' : systematics[sys][1], 'linewidth' :  systematics[sys][2]})
 
                 rax.set_xlabel(xtitle)
                 rax.set_ylabel('Sys/Nominal')
@@ -353,11 +350,10 @@ for hname in variables.keys():
                     fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', 
                     transform=ax.transAxes
                 )
-                hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
+                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
     
                 #set_trace()
                 figname = os.path.join(pltdir, '_'.join(['3Jets', cat, corr, hname, 'Sys_Comp']))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
-    
