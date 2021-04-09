@@ -9,13 +9,11 @@ ak.behavior.update(vector.behavior)
 
 from coffea.util import save, load
 from pdb import set_trace
-import os#, sys
+import os
 import python.ObjectSelection as objsel
-#import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
-#import coffea.lumi_tools.lumi_tools as lumi_tools
 import Utilities.make_variables as make_vars
 from python.IDJet import btag_values as btag_values
 import python.GenParticleSelector as genpsel
@@ -62,7 +60,7 @@ ttpermutator.year_to_run(year=args.year)
 pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
 jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
-#alpha_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid,'alpha_correction_%s.coffea' % jobid))[args.year]['E']['All_2D'] # E, All_2D determined by post application plots
+alpha_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid,'alpha_correction_%s.coffea' % jobid))[args.year]['E']['All_2D'] # E, All_2D determined by post application plots
 nnlo_reweighting = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
@@ -70,7 +68,7 @@ corrections = {
     'LeptonSF' : lepSF_correction,
     'BTagSF' : True,
     'JetCor' : jet_corrections,
-    #'Alpha' : alpha_corrections,
+    'Alpha' : alpha_corrections,
     'NNLO_Rewt' : nnlo_reweighting,
 }
 
@@ -297,8 +295,8 @@ class apply_nnlo_weights(processor.ProcessorABC):
 
             ## make event weights
                 # data or MC distinction made internally
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)#, isTTbar=isNominal_ttJets_)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)#, isTTbar=isNominal_ttJets_)
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
 
             ## initialize selections
         selection = PackedSelection()
