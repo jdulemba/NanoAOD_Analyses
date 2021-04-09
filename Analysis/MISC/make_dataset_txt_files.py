@@ -31,7 +31,6 @@ if not os.path.isfile(args.json):
    raise ValueError('file %s does not exist' % args.json)
 
 outdir = os.path.join(proj_dir, 'inputs', '_'.join(os.path.basename(args.json).split('.')[0].split('_')[1:])) # get name of json file except for 'samples_'
-#set_trace()
 if not os.path.isdir(outdir): os.makedirs(outdir)
 
 all_samples = prettyjson.loads(open(args.json).read())
@@ -52,9 +51,9 @@ for sample in samples_to_run:
 
         txtname = os.path.join(outdir, '%s_tmp.txt' % sample['name']) if args.test else os.path.join(outdir, '%s.txt' % sample['name'])
 
-        flist = das.query('file dataset=%s' % sample['DBSName'])#, True)
-        flist = [fname.replace('/store', 'root://cmsxrootd.fnal.gov//store') for fname in flist] # add xrootd redirector
-        fnames = '\n'.join(flist)
+        flist = das.query('file dataset=%s instance=%s' % (sample['DBSName'], sample['tier'])) if 'tier' in sample else das.query('file dataset=%s' % sample['DBSName'])#, True)
+        flist = [fname.replace('/store', 'root://xrootd-cms.infn.it//store') for fname in flist] # add xrootd redirector
+        fnames = '\n'.join(sorted(flist))
 
         txt_out = open(txtname, 'w')
         txt_out.write(fnames)
