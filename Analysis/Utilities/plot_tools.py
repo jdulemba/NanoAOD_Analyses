@@ -84,6 +84,18 @@ template_groups['2018'] = {
     'data_obs' : ['data_Single*'],
 }
 
+# create groups for signal samples and add them to dataset/template_groups
+signal_groups = {
+    'AtoTTJetsDiLep_M400_W10_Int' : ['AtoTTJetsDiLep_M400_W10_Int_*'],
+    'HtoTTJetsDiLep_M750_W2p5_Int': ['HtoTTJetsDiLep_M750_W2p5_Int_*'],
+    'AtoTTJetsDiLep_M400_W10_Res' : ['AtoTTJetsDiLep_M400_W10_Res'],
+    'HtoTTJetsDiLep_M750_W2p5_Res': ['HtoTTJetsDiLep_M750_W2p5_Res'],
+}
+for group in dataset_groups.values():
+    group.update(signal_groups)
+for group in template_groups.values():
+    group.update(signal_groups)
+
 
 def get_styles(sample, styles):
     best_pattern = ''
