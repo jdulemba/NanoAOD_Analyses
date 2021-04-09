@@ -24,7 +24,7 @@ from fnmatch import fnmatch
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
-analyzer = 'check_kin_reweighting_yields'
+analyzer = 'check_nnlo_reweighting_yields'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,19 +32,19 @@ parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is
 args = parser.parse_args()
 
 f_ext = 'TOT.coffea'
-input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
+input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, base_jobid), analyzer)
 fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
     
-outdir = os.path.join(proj_dir, 'plots', jobid, analyzer, args.year)
+outdir = os.path.join(proj_dir, 'plots', base_jobid, analyzer, args.year)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
     
 rewt_style_dict = {
     'Nominal' : ('Nominal', 'k'),
     'thad_pt' : ('$W_{Orig}$($p_{T}$($t_{h}$))', '#e42a2c'), ## red
-    'mtt_vs_thad_ctstar' : ('$W_{Orig}$($m_{t\\bar{t}}$, cos($\\theta^{*}_{t_{h}}$))', '#377eb8'), ## blue
     'thad_pt_Interp' : ('$W_{Int}$($p_{T}$($t_{h}$))', '#4daf4a'), ## green
+    'mtt_vs_thad_ctstar' : ('$W_{Orig}$($m_{t\\bar{t}}$, cos($\\theta^{*}_{t_{h}}$))', '#377eb8'), ## blue
     'mtt_vs_thad_ctstar_Interp' : ('$W_{Int}$($m_{t\\bar{t}}$, cos($\\theta^{*}_{t_{h}}$))', '#ff7f00'), ## orange
 }
 
@@ -77,10 +77,10 @@ yields_dict = {}
 
     ## get data lumi and scale MC by lumi
 ttSL = 'ttJets_PS' if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else 'ttJetsSL'
-data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())[args.year]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
 lumi_to_use = (data_lumi_year['Muons']+data_lumi_year['Electrons'])/2000.
 
-lumi_correction_dict = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_Test.coffea'))[args.year]
+lumi_correction_dict = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights.coffea'))[args.year]
 avg_lumi_corr = (lumi_correction_dict['Muons'][ttSL]+lumi_correction_dict['Electrons'][ttSL])/2.
 
 process_axis = hist.Cat("process", "Process")
@@ -121,7 +121,7 @@ for hname in variables.keys():
     fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
 
-    for rewt_key in histo.values().keys():
+    for rewt_key in sorted(histo.values().keys()):
             # plot yields    
         ax = plot.plot1d(histo[rewt_key].integrate('rewt'),
             ax=ax, clear=False,
@@ -129,10 +129,9 @@ for hname in variables.keys():
         )
             ## plot ratios
         if rewt_key == ('Nominal',): continue
-        first_valid_bin, last_valid_bin = np.where(~np.isnan(histo.values()[rewt_key]/histo.values()[('Nominal',)]))[0][0], np.where(~np.isnan(histo.values()[rewt_key]/histo.values()[('Nominal',)]))[0][-1]+1
-        ratio_masked_vals = np.ma.masked_where(np.isnan((histo.values()[rewt_key]/histo.values()[('Nominal',)])[first_valid_bin:last_valid_bin]), (histo.values()[rewt_key]/histo.values()[('Nominal',)])[first_valid_bin:last_valid_bin])
-                    # orig
-        rax.step(histo.dense_axes()[0].edges()[first_valid_bin:last_valid_bin+1], np.r_[ratio_masked_vals, ratio_masked_vals[-1]], where='post', **{'linestyle' : '-', 'color' : rewt_style_dict[rewt_key[0]][1]})
+                # orig
+        ratio_masked_vals, ratio_bins = Plotter.get_ratio_arrays(num_vals=histo.values()[rewt_key], denom_vals=histo.values()[('Nominal',)], input_bins=histo.dense_axes()[0].edges())
+        rax.step(ratio_bins, ratio_masked_vals, where='post', **{'linestyle' : '-', 'color' : rewt_style_dict[rewt_key[0]][1]})
 
     #set_trace()
     # plot yields
@@ -182,7 +181,7 @@ for hname in variables.keys():
             rax.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=('data', 'axes fraction'),
                 xytext=(0, -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
 
-    hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))    
+    hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))    
 
     figname = os.path.join(outdir, 'SemilepTTbar_RewtComp_%s' % hname)
     fig.savefig(figname)
