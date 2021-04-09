@@ -18,6 +18,7 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 import Utilities.systematics as systematics
+from copy import deepcopy
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -81,8 +82,8 @@ linearize_binning = (
 variables = {
     'mtt_vs_tlep_ctstar_abs' : ('m($t\\bar{t}$)', '|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[0], linearize_binning[1], (linearize_binning[0][0], linearize_binning[0][-1]), (linearize_binning[1][0], linearize_binning[1][-1]), True),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
-    ###'mtt' : ('m($t\\bar{t}$) [GeV]', linearize_binning[0], (200., 2000.), True),
-    ###'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[1], (0., 1.), True),
+    ##'mtt' : ('m($t\\bar{t}$) [GeV]', linearize_binning[0], (200., 2000.), True),
+    ##'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[1], (0., 1.), True),
     'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
     'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
     'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
@@ -96,12 +97,15 @@ variables = {
     'full_disc' : ('$\\lambda_{C}$', 2, (5, 25.), True),
     'mass_disc' : ('$\\lambda_{M}$', 2, (0, 20.), True),
     'ns_disc' : ('$\\lambda_{NS}$', 2, (3., 10.), True),
+    'ns_dist' : ('$D_{\\nu, min}$', 1, (0., 150.), True),
     'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
     'Jets_eta' : ('$\\eta$(jets)', 2, (-2.6, 2.6), True),
+    'Jets_phi' : ('$\\phi$(jets)', 2, (-4., 4.), True),
     'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
     'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 2, (-2.6, 2.6), True),
     'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
     'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 2, (-2.6, 2.6), True),
+    'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 2, (-4, 4), True),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
     'MT' : ('$M_{T}$ [GeV]', 1, (0., 300.), True),
     'MET_pt' : ('$p_{T}$(MET) [GeV]', 1, (0., 300.), True),
@@ -109,14 +113,9 @@ variables = {
 }
 
 
-    ## get plotting colors/settings
-stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-stack_error_opts = {'edgecolor':(0,0,0,.5)}
-
     ## get data lumi and scale MC by lumi
-data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())[args.year]
-lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights_Test.coffea'))[args.year]['%ss' % args.lepton]
-#lumi_correction = load(os.path.join(proj_dir, 'Corrections', jobid, 'MC_LumiWeights_allTTJets.coffea'))[args.year]['%ss' % args.lepton]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights.coffea'))[args.year]['%ss' % args.lepton]
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
 ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
 names = [dataset for dataset in sorted(set([key[0] for key in hdict[sorted(variables.keys())[0]].values().keys()]))] # get dataset names in hists
@@ -124,23 +123,21 @@ ttJets_cats = [name for name in names if any([fnmatch.fnmatch(name, cat) for cat
 if len(ttJets_cats) > 0:
     for tt_cat in ttJets_cats:
         ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-2]) if 'sl_tau' in tt_cat else '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
-        #ttJets_lumi_topo = '_'.join(tt_cat.split('_')[:-1]) # gets ttJets[SL, Had, DiLep] or ttJets_PS
         ttJets_eff_lumi = lumi_correction[ttJets_lumi_topo]
         lumi_correction.update({tt_cat: ttJets_eff_lumi})
-for hname in hdict.keys():
-    if 'cutflow' in hname: continue
-    #set_trace()
-    hdict[hname].scale(lumi_correction, axis='dataset')
 
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names)
+
+    # scale and group hists by process
 for hname in hdict.keys():
     if 'cutflow' in hname: continue
     #set_trace()
-    hdict[hname] = hdict[hname].group(process_cat, process, process_groups)
-
+    hdict[hname].scale(lumi_correction, axis='dataset') # scale hists
+    #hdict[hname] = hdict[hname].group(process_cat, process, process_groups) # group by process
+    hdict[hname] = hdict[hname][:, :, :, args.lepton].integrate('leptype') # only pick out specified lepton
 
 
 def plot_shape_uncs(reg_C, reg_D, **opts):
@@ -211,12 +208,11 @@ def plot_shape_uncs(reg_C, reg_D, **opts):
         verticalalignment='bottom',
         transform=ax.transAxes
     )
-    ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
     if not os.path.isdir(pltdir):
         os.makedirs(pltdir)
     figname = '%s/Shape_Uncertainties_CoverD_%s_%s_%s' % (pltdir, args.lepton, jmult, hname)
-    #figname = 'test'
     fig.savefig(figname)
     print('%s written' % figname)
     #set_trace()
@@ -270,16 +266,14 @@ def plot_qcd_shape(reg,**opts):
         verticalalignment='bottom',
         transform=ax.transAxes
     )
-    ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
 
     #set_trace()
     if not os.path.isdir(pltdir):
         os.makedirs(pltdir)
-    figname = '%s/QCD_Shape_BTAGSideband_%s_%s_%s' % (pltdir, args.lepton, jmult, hname)
-    #figname = 'test'
+    figname = os.path.join(pltdir, 'QCD_Shape_BTAGSideband_%s_%s_%s' % (args.lepton, jmult, hname))
     fig.savefig(figname)
     print('%s written' % figname)
-    #set_trace()
 
 
 def get_norm_unc(reg_A, reg_B):
@@ -302,7 +296,7 @@ if args.nosys:
     for hname in variables.keys():
         if hname not in hdict.keys():
             raise ValueError("%s not found in file" % hname)
-        histo = hdict[hname][:, 'nosys', :, args.lepton, :, :].integrate('sys').integrate('leptype') # process, sys, jmult, leptype, btag, lepcat
+        histo = hdict[hname][:, 'nosys', :, :, :].integrate('sys') # process, sys, jmult, btag, lepcat
         #set_trace()
     
         if histo.dense_dim() == 1:
@@ -311,14 +305,15 @@ if args.nosys:
                 xaxis_name = histo.dense_axes()[0].name
                 histo = histo.rebin(xaxis_name, rebinning)
     
-            #set_trace()
             ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
+            #for jmult in ['3Jets']:
+            #for jmult in ['4PJets']:
+            #    for lepcat in ['Tight']:
+            #        for btagregion in ['btagPass']:
             for jmult in sorted(set([key[1] for key in histo.values().keys()])):
-                #for lepcat in ['Tight']:
-                #    for btagregion in ['btagPass']:
                 for lepcat in sorted(set([key[3] for key in histo.values().keys()])):
                     for btagregion in sorted(set([key[2] for key in histo.values().keys()])):
-                        pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion])
+                        pltdir = os.path.join(outdir, args.lepton, jmult, lepcat, btagregion)
                         if not os.path.isdir(pltdir):
                             os.makedirs(pltdir)
    
@@ -326,7 +321,16 @@ if args.nosys:
                         fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                         fig.subplots_adjust(hspace=.07)
     
-                        hslice = histo[:, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag')
+                        #set_trace()
+                        tmp_groups = deepcopy(process_groups)
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2018') and (args.lepton == 'Electron') and (jmult == '3Jets') and (lepcat == 'Tight') and (btagregion == 'btagPass'): tmp_groups['QCD'].remove('QCD_EM_30to50')
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Muon') and (jmult == '4PJets') and (lepcat == 'Tight') and (btagregion == 'btagPass'): tmp_groups['QCD'].remove('QCD_Mu_80to120')
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Electron') and (jmult == '3Jets') and (lepcat == 'Tight') and (btagregion == 'btagPass'):
+                            tmp_groups['QCD'].remove('QCD_Mu_80to120')
+                            tmp_groups['QCD'].remove('QCD_EM_50to80')
+
+                        h_group = histo.group(process_cat, process, tmp_groups) # group by process
+                        hslice = h_group[:, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag')
    
                         if hname == 'Lep_iso':
                             if args.lepton == 'Muon':
@@ -339,7 +343,7 @@ if args.nosys:
                             #'maskData' : not withData
                         }
     
-                        ax, rax = Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
+                        Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **mc_opts)
     
                         #set_trace() 
                         if hname == 'Jets_njets':
@@ -357,14 +361,13 @@ if args.nosys:
                             0.02, 0.88, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
                             fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
-                        figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
+                        figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
-    
         
         if histo.dense_dim() == 2:
             xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData = variables[hname]
@@ -385,12 +388,14 @@ if args.nosys:
             histo = histo.rebin(yaxis_name, new_ybins)
     
             ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
+            #for jmult in ['3Jets']:
+            ##for jmult in ['4PJets']:
+            #    for lepcat in ['Tight']:
+            #        for btagregion in ['btagPass']:
             for jmult in sorted(set([key[1] for key in histo.values().keys()])):
-                #for lepcat in ['Tight']:
-                #    for btagregion in ['btagPass']:
                 for lepcat in sorted(set([key[3] for key in histo.values().keys()])):
                     for btagregion in sorted(set([key[2] for key in histo.values().keys()])):
-                        pltdir = '/'.join([outdir, args.lepton, jmult, lepcat, btagregion])
+                        pltdir = os.path.join(outdir, args.lepton, jmult, lepcat, btagregion)
                         if not os.path.isdir(pltdir):
                             os.makedirs(pltdir)
    
@@ -399,7 +404,17 @@ if args.nosys:
                         else:
                             withData = variables[hname][-1]
                         print(', '.join([jmult, lepcat, btagregion, hname])) 
-                        hslice = histo[:, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag')
+
+                        ## TEMPORARY
+                        tmp_groups = deepcopy(process_groups)
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2018') and (args.lepton == 'Electron') and (jmult == '3Jets') and (lepcat == 'Tight') and (btagregion == 'btagPass'): tmp_groups['QCD'].remove('QCD_EM_30to50')
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Muon') and (jmult == '4PJets') and (lepcat == 'Tight') and (btagregion == 'btagPass'): tmp_groups['QCD'].remove('QCD_Mu_80to120')
+                        if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Electron') and (jmult == '3Jets') and (lepcat == 'Tight') and (btagregion == 'btagPass'):
+                            tmp_groups['QCD'].remove('QCD_Mu_80to120')
+                            tmp_groups['QCD'].remove('QCD_EM_50to80')
+
+                        h_group = histo.group(process_cat, process, tmp_groups) # group by process
+                        hslice = h_group[:, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag')
    
                         mc_opts = {
                             'maskData' : not withData
@@ -411,34 +426,31 @@ if args.nosys:
                             if dax == 0:
                                 xlabel = ytitle
                                 xlimits = y_lims
-                                figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, yaxis_name, 'proj']))
+                                figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, yaxis_name, 'proj']))
                             else:
                                 xlabel = '%s [GeV]' % xtitle
                                 xlimits = x_lims
-                                figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, xaxis_name, 'proj']))
+                                figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, xaxis_name, 'proj']))
 
                             fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                             fig.subplots_adjust(hspace=.07)
 
-                            #set_trace()
                             hproj = hslice.integrate(hslice.dense_axes()[dax].name)
     
-                            ax, rax = Plotter.plot_stack1d(ax, rax, hproj, xlabel=xlabel, xlimits=xlimits, **mc_opts)
+                            Plotter.plot_stack1d(ax, rax, hproj, xlabel=xlabel, xlimits=xlimits, **mc_opts)
     
                                 # add lepton/jet multiplicity label
-                            #set_trace()
                             ax.text(
                                 0.02, 0.88, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
                                 fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                             #set_trace()
                             fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
  
-
                             ## make 1D plots of mtt for each ctstar bin
                         for ybin in range(len(hslice.dense_axes()[1].edges())-1):
                             fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
@@ -446,7 +458,7 @@ if args.nosys:
 
                             hproj = hslice[:, :, hslice.dense_axes()[1].edges()[ybin]:hslice.dense_axes()[1].edges()[ybin+1]].integrate(hslice.dense_axes()[1].name)
  
-                            ax, rax = Plotter.plot_stack1d(ax, rax, hproj, xlabel='%s [GeV]' % xtitle, xlimits=x_lims, **mc_opts)
+                            Plotter.plot_stack1d(ax, rax, hproj, xlabel='%s [GeV]' % xtitle, xlimits=x_lims, **mc_opts)
     
                                 # add lepton/jet multiplicity label, add ctstar range label
                             binlabel = '%s $\leq$ %s < %s' % (hslice.dense_axes()[1].edges()[ybin], ytitle, hslice.dense_axes()[1].edges()[ybin+1])
@@ -454,12 +466,12 @@ if args.nosys:
                                 0.02, 0.88, "%s, %s\t%s\n%s" % (lep_cats[lepcat], jet_mults[jmult], binlabel, btag_cats[btagregion]),
                                 fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                             #set_trace()
                             bintitle = '%sctstar%s' % (hslice.dense_axes()[1].edges()[ybin], hslice.dense_axes()[1].edges()[ybin+1])
                             bintitle = bintitle.replace('.', 'p')
-                            figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, bintitle, 'mtt']))
+                            figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, bintitle, 'mtt']))
                             fig.savefig(figname)
                             print('%s written' % figname)
                             plt.close()
@@ -469,13 +481,10 @@ if args.nosys:
                         fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                         fig.subplots_adjust(hspace=.07)
 
-                        #set_trace()
                         hline = Plotter.linearize_hist(hslice)
-                        #set_trace()
                         
-                        ax, rax = Plotter.plot_stack1d(ax, rax, hline, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, len(hline.axis(hline.dense_axes()[0].name).edges())-1), **mc_opts)
+                        Plotter.plot_stack1d(ax, rax, hline, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, len(hline.axis(hline.dense_axes()[0].name).edges())-1), **mc_opts)
     
-                        #set_trace()
                             # draw vertical lines separating ctstar bins
                         bin_sep_lines = [hslice.values()[('EWK',)].shape[0]*ybin for ybin in range(1, hslice.values()[('EWK',)].shape[1])]
                         for binline in bin_sep_lines:
@@ -489,15 +498,13 @@ if args.nosys:
                             verticalalignment='bottom', 
                             transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
-                        figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
+                        figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
-
-
 
  
 # plot with QCD estimation
@@ -517,9 +524,8 @@ if args.qcd_est:
         if hname not in hdict.keys():
             raise ValueError("%s not found in file" % hname)
         #set_trace()
-        histo = hdict[hname][:, :, :, args.lepton, :, :].integrate('leptype') # process, sys, jmult, leptype, btag, lepcat
+        histo = hdict[hname][:, :, :, :, :] # process, sys, jmult, btag, lepcat
 
-    
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
             xaxis_name = histo.dense_axes()[0].name
@@ -562,38 +568,51 @@ if args.qcd_est:
             x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
     
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
-        for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+        #for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+        for jmult in ['3Jets']:
+        #for jmult in ['4PJets']:
             print(jmult)
+            sig_groups = deepcopy(process_groups)
+                # remove single event with really high weight
+            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2018') and (args.lepton == 'Electron') and (jmult == '3Jets'): sig_groups['QCD'].remove('QCD_EM_30to50')
+            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Muon') and (jmult == '4PJets'): sig_groups['QCD'].remove('QCD_Mu_80to120')
+            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Electron') and (jmult == '3Jets'):
+                sig_groups['QCD'].remove('QCD_Mu_80to120')
+                sig_groups['QCD'].remove('QCD_EM_50to80')
+
+            sig_group = histo.group(process_cat, process, sig_groups) # group by process
+            sideband_group = histo.group(process_cat, process, process_groups) # group by process
+
             if histo.dense_dim() == 1:
-                iso_sb    = histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                btag_sb   = histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                double_sb = histo[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                sig_histo = histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
+                iso_sb    = sideband_group[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                btag_sb   = sideband_group[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                double_sb = sideband_group[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                sig_histo = sig_group[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
             else:
-                iso_sb_histo    = histo[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                btag_sb_histo   = histo[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                double_sb_histo = histo[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                iso_sb_histo    = sideband_group[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                btag_sb_histo   = sideband_group[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                double_sb_histo = sideband_group[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
                 iso_sb    = Plotter.linearize_hist(iso_sb_histo)
                 btag_sb   = Plotter.linearize_hist(btag_sb_histo)
                 double_sb = Plotter.linearize_hist(double_sb_histo)
-                sig_histo = Plotter.linearize_hist(histo[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
+                sig_histo = Plotter.linearize_hist(sig_group[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
 
                 ## plot shape uncertainties and find normalization uncs
             if args.plot_shapes:
                 #set_trace()
                 if (hname == 'Jets_njets') or (hname == 'mtt_vs_tlep_ctstar_abs'):
-                    unc_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', 'Uncertainties'])
+                    unc_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', 'Uncertainties')
                     if not os.path.isdir(unc_dir): os.makedirs(unc_dir)
-                    shape_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', 'Shapes'])
+                    shape_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', 'Shapes')
                     if not os.path.isdir(shape_dir): os.makedirs(shape_dir)
 
                     if hname == 'Jets_njets':
-                        sig = histo[:, 'nosys', jmult, 'btagPass', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
+                        sig = sig_group[:, 'nosys', jmult, 'btagPass', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
                         norm_uncs = get_norm_unc(reg_A=sig, reg_B=btag_sb)
                         unc_txt_name = 'Norm_Uncs_%s_%s' % (args.lepton, jmult)
                         #set_trace()
                         plt_tools.print_table(norm_uncs, filename='%s/%s.txt' % (unc_dir, unc_txt_name), print_output=True)
-                        print('%s/%s.txt written' % ('/'.join([outdir, args.lepton, jmult, 'QCD_Est']), unc_txt_name))
+                        print('%s/%s.txt written' % (os.path.join(outdir, args.lepton, jmult, 'QCD_Est'), unc_txt_name))
 
                     if hname == 'mtt_vs_tlep_ctstar_abs':
                         ## plot qcd shape
@@ -625,7 +644,6 @@ if args.qcd_est:
                 shape_reg = 'BTAG'
                 for norm in ['Sideband']:
                 #for norm in ['ABCD', 'Sideband']:
-                    #set_trace()
                     qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type=norm, shape_region=shape_reg, norm_region=shape_reg if norm=='Sideband' else None, sys=sys)
                     #set_trace()
                         # save post qcd-est dist to dict
@@ -635,7 +653,7 @@ if args.qcd_est:
 
                     if sys == 'nosys':                 
                         qcd_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
-                        qcd_dir = '/'.join([outdir, args.lepton, jmult, 'QCD_Est', sys_to_name[sys], qcd_name])
+                        qcd_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', sys_to_name[sys], qcd_name)
                         if not os.path.isdir(qcd_dir):
                             os.makedirs(qcd_dir)
     
@@ -652,7 +670,7 @@ if args.qcd_est:
                                 out.write(prettyjson.dumps(yields_json))
     
                         #set_trace() 
-                        ax, rax = Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
+                        Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
                             else Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
     
                             # add lepton/jet multiplicity label
@@ -665,7 +683,7 @@ if args.qcd_est:
                             for vline in vlines:
                                 ax.axvline(vline, color='k', linestyle='--')
                                 if rax is not None: rax.axvline(vline, color='k', linestyle='--')
-                        ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = '%s/%s_QCD_Est_%s' % (qcd_dir, '_'.join([sys, jmult, args.lepton, hname]), qcd_name)
