@@ -39,6 +39,7 @@ if not os.path.isdir(outdir):
 fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
+
 jet_mults = {
     '3Jets' : '3 jets',
     '4PJets' : '4+ jets'
@@ -156,24 +157,55 @@ if ((args.plot == 'all') or (args.plot == 'bp')):
                         if ('mass' in hname) and (hname != 'Reso_mass'):
                             x_lims = mass_range
     
-                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                        fig.subplots_adjust(hspace=.07)
-    
                         hslice = histo[:, jmult, btagregion, lepcat, obj].integrate('jmult').integrate('lepcat').integrate('btag').integrate('objtype')
-                        Plotter.plot_stack1d(ax, rax, hslice, xlabel=new_xtitle, xlimits=x_lims, **{'maskData': False})
+                            # split hslice into signal samples/SM MC+data
+                        sig_hslice = hslice[Plotter.signal_samples]
+                        SM_hslice = hslice[Plotter.nonsignal_samples]
+
+                            # plot signal
+                        if sig_hslice.values():
+                            for signal in sig_hslice.values().keys():
+                                fig, ax = plt.subplots()
+                                fig.subplots_adjust(hspace=.07)
+
+                                sig_hist = sig_hslice[signal].integrate('process')
+                                Plotter.plot_1D(*sig_hist.values().values(), sig_hist.axis(xaxis_name).edges(), xlabel=new_xtitle, xlimits=x_lims, ax=ax,
+                                    label='%s, %s' % (plt_tools.get_label(signal[0], styles.styles), signal[0].split('_')[-1]))
+                                ax.legend(loc='upper right')
+                                    # add lepton/jet multiplicity label
+                                ax.text(
+                                    0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                    horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                                )
+                                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+                                sig_pltdir = os.path.join(pltdir, signal[0])
+                                if not os.path.isdir(sig_pltdir):
+                                    os.makedirs(sig_pltdir)
+                                figname = os.path.join(sig_pltdir, '_'.join([signal[0], jmult, args.lepton, lepcat, btagregion, hname]))
+                                fig.savefig(figname)
+                                print('%s written' % figname)
+                                plt.close()
+                        
+                            # plot SM MC and data
+                        if SM_hslice.values():
+                            fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                            fig.subplots_adjust(hspace=.07)
     
-                            # add lepton/jet multiplicity label
-                        ax.text(
-                            0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
-                        )
-                        hep.cms.label(ax=ax, data=True, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            Plotter.plot_stack1d(ax, rax, SM_hslice, xlabel=new_xtitle, xlimits=x_lims, **{'maskData': False})
     
-                        #set_trace()
-                        figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
-                        fig.savefig(figname)
-                        print('%s written' % figname)
-                        plt.close()
+                                # add lepton/jet multiplicity label
+                            ax.text(
+                                0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                            )
+                            hep.cms.label(ax=ax, data=True, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    
+                            #set_trace()
+                            figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname, obj]))
+                            fig.savefig(figname)
+                            print('%s written' % figname)
+                            plt.close()
 
     ## make kinematic plots
 if ((args.plot == 'all') or (args.plot == 'kin')):
@@ -183,9 +215,8 @@ if ((args.plot == 'all') or (args.plot == 'kin')):
         histo = hdict[hname]
     
         xtitle, rebinning, x_lims, withData = variables[hname]
-        if rebinning != 1:
-            xaxis_name = histo.dense_axes()[0].name
-            histo = histo.rebin(xaxis_name, rebinning)
+        xaxis_name = histo.dense_axes()[0].name
+        histo = histo.rebin(xaxis_name, rebinning)
     
         ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
         for jmult in sorted(set([key[1] for key in histo.values().keys()])):
@@ -194,13 +225,13 @@ if ((args.plot == 'all') or (args.plot == 'kin')):
                     pltdir = os.path.join(outdir, args.lepton, jmult, lepcat, btagregion)
                     if not os.path.isdir(pltdir):
                         os.makedirs(pltdir)
-    
-                    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-                    fig.subplots_adjust(hspace=.07)
-    
+
                     hslice = histo[:, jmult, btagregion, lepcat].integrate('jmult').integrate('lepcat').integrate('btag')
-                    Plotter.plot_stack1d(ax, rax, hslice, xlabel=xtitle, xlimits=x_lims, **{'maskData': not withData})
-    
+
+                        # split hslice into signal samples/SM MC+data
+                    sig_hslice = hslice[Plotter.signal_samples]
+                    SM_hslice = hslice[Plotter.nonsignal_samples]
+
                     if hname == 'Jets_njets':
                         print(jmult)
                         yields_txt, yields_json = Plotter.get_samples_yield_and_frac(hslice, data_lumi_year['%ss' % args.lepton]/1000.)
@@ -209,15 +240,45 @@ if ((args.plot == 'all') or (args.plot == 'kin')):
                         with open('%s.json' % yields_fname, 'w') as out:
                             out.write(prettyjson.dumps(yields_json))
 
-                        # add lepton/jet multiplicity label
-                    ax.text(
-                        0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
-                        horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
-                    )
-                    hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        # plot signal
+                    if sig_hslice.values():
+                        for signal in sig_hslice.values().keys():
+                            fig, ax = plt.subplots()
+                            fig.subplots_adjust(hspace=.07)
+
+                            sig_hist = sig_hslice[signal].integrate('process')
+                            Plotter.plot_1D(*sig_hist.values().values(), sig_hist.axis(xaxis_name).edges(), xlabel=xtitle, xlimits=x_lims, ax=ax,
+                                label='%s, %s' % (plt_tools.get_label(signal[0], styles.styles), signal[0].split('_')[-1]))
+                            ax.legend(loc='upper right')
+                                # add lepton/jet multiplicity label
+                            ax.text(
+                                0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                                horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                            )
+                            hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+                            sig_pltdir = os.path.join(pltdir, signal[0])
+                            if not os.path.isdir(sig_pltdir):
+                                os.makedirs(sig_pltdir)
+                            figname = os.path.join(sig_pltdir, '_'.join([signal[0], jmult, args.lepton, lepcat, btagregion, hname]))
+                            fig.savefig(figname)
+                            print('%s written' % figname)
+                            plt.close()
+                        
+                        # plot SM MC and data
+                    if SM_hslice.values():
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
     
-                    #set_trace()
-                    figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
-                    fig.savefig(figname)
-                    print('%s written' % figname)
-                    plt.close()
+                        Plotter.plot_stack1d(ax, rax, SM_hslice, xlabel=xtitle, xlimits=x_lims, **{'maskData': not withData})
+                            # add lepton/jet multiplicity label
+                        ax.text(
+                            0.02, 0.85, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
+                            horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                        )
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    
+                        figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
