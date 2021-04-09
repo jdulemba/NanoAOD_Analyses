@@ -12,6 +12,8 @@ import python.MCWeights as MCWeights
 import fnmatch
 from coffea.analysis_tools import PackedSelection
 import awkward as ak
+import python.IDJet as IDJet
+import python.GenParticleSelector as genpsel
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -40,12 +42,15 @@ for fname in fileset.keys():
 pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
 jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
+nnlo_var = 'mtt_vs_thad_ctstar_Interp'
+nnlo_reweighting = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'JetCor' : jet_corrections,
     'BTagSF' : False,
+    'NNLO_Rewt' : {'Var' : nnlo_var, 'Correction' : nnlo_reweighting[nnlo_var]},
 }
 
 jet_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())['Jets']
@@ -114,36 +119,38 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         regions = {
             'Muon' : {
                 '3Jets'  : {
-                    'objselection', 'jets_3', 'loose_or_tight_MU'
+                    'lep_and_filter_pass', 'passing_jets', 'jets_3', 'loose_or_tight_MU'
                 },
             },
             'Electron' : {
                 '3Jets'  : {
-                    'objselection', 'jets_3', 'loose_or_tight_EL'
+                    'lep_and_filter_pass', 'passing_jets', 'jets_3', 'loose_or_tight_EL'
                 },
             },
         }
 
-            ## object selection
-        #set_trace()
-        objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
-        output['cutflow']['nEvts passing jet and muon obj selection'] += ak.sum(objsel_evts)
-        selection.add('objselection', objsel_evts)
-
-        ## add different selections
-        selection.add('jets_3', ak.num(events['Jet']) == 3)
-
+            # get all passing leptons
+        lep_and_filter_pass = objsel.select_leptons(events, year=args.year, cutflow=output['cutflow'])
+        selection.add('lep_and_filter_pass', lep_and_filter_pass)
                 ## muons
         selection.add('tight_MU', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing TIGHT criteria
         selection.add('loose_or_tight_MU', ak.sum(events['Muon']['LOOSEMU'] | events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
-
                 ## electrons
         selection.add('tight_EL', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing TIGHT criteria
         selection.add('loose_or_tight_EL', ak.sum(events['Electron']['LOOSEEL'] | events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
 
+            ## build corrected jets and MET
+        events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'])
+
+            # jet selection
+        passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow'])
+        selection.add('passing_jets', passing_jets)
+        output['cutflow']['nEvts passing jet and lepton obj selection'] += ak.sum(passing_jets & lep_and_filter_pass)
+        selection.add('jets_3', ak.num(events['SelectedJets']) == 3)
+
         ## apply lepton SFs to MC (only applicable to tight leptons)
-        if 'LeptonSF' in corrections.keys():
-            tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
+        if 'LeptonSF' in self.corrections.keys():
+            tight_mu_cut = selection.require(tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = events['Muon'][tight_mu_cut][(events['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
             muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_muons['pt']), eta=ak.flatten(tight_muons['eta']))
@@ -158,7 +165,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             mu_evt_weights.add('RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
             mu_evt_weights.add('TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
 
-            tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
+            tight_el_cut = selection.require(tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = events['Electron'][tight_el_cut][(events['Electron'][tight_el_cut]['TIGHTEL'] == True)]
             elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_electrons['pt']), eta=ak.flatten(tight_electrons['etaSC']))
@@ -175,16 +182,22 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
         if isTTbar:
             ## add 4+ jets categories for ttbar events
-            selection.add('jets_4+', ak.num(events['Jet']) > 3)
+            selection.add('jets_4+', ak.num(events['SelectedJets']) > 3)
             regions['Muon'].update({
-                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_MU'}
+                '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4+', 'loose_or_tight_MU'}
             })
             regions['Electron'].update({
-                '4PJets' : {'objselection', 'jets_4+', 'loose_or_tight_EL'}
+                '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4+', 'loose_or_tight_EL'}
             })
+            if 'NNLO_Rewt' in self.corrections.keys():
+                    # find gen level particles for ttbar system
+                genpsel.select(events, mode='NORMAL')
+                nnlo_wts = MCWeights.get_nnlo_weights(self.corrections['NNLO_Rewt'], events)
+                mu_evt_weights.add('%s_reweighting' % self.corrections['NNLO_Rewt']['Var'], nnlo_wts)
+                el_evt_weights.add('%s_reweighting' % self.corrections['NNLO_Rewt']['Var'], nnlo_wts)
 
 
-        btag_wps = [wp for wp in events['Jet'].fields if wps_to_use[0] in wp]
+        btag_wps = [wp for wp in events['SelectedJets'].fields if wps_to_use[0] in wp]
         #set_trace()
         ## fill hists for each region
         for btag_wp in btag_wps:
@@ -194,7 +207,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                     cut = selection.all(*regions[lepton][jmult])
  
                     evt_weights_to_use = evt_weights.weight()
-                    jets = events['Jet'][cut]
+                    jets = events['SelectedJets'][cut]
                         ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
                     bjets = jets[(jets['hadronFlavour'] == 5)]
                     cjets = jets[(jets['hadronFlavour'] == 4)]
@@ -239,10 +252,6 @@ output = processor.run_uproot_job(
     executor_args=proc_exec_args,
     chunksize=100000,
 )
-
-
-if args.debug:
-    print(output)
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
