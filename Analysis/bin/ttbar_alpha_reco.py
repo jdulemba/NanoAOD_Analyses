@@ -18,6 +18,7 @@ import Utilities.make_variables as make_vars
 import python.ObjectSelection as objsel
 import python.MCWeights as MCWeights
 from python.Permutations import compare_matched_best_perms
+import python.IDJet as IDJet
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -50,12 +51,15 @@ ttpermutator.year_to_run(year=args.year)
 pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
 jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
+nnlo_var = 'mtt_vs_thad_ctstar_Interp'
+nnlo_reweighting = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : True,
     'JetCor' : jet_corrections,
+    'NNLO_Rewt' : {'Var' : nnlo_var, 'Correction' : nnlo_reweighting[nnlo_var]},
 }
 
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
@@ -148,67 +152,71 @@ class ttbar_alpha_reco(processor.ProcessorABC):
         selection = PackedSelection()
         regions = {
             'Muon' : {
-                'objselection', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'
+                'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'
             },
             'Electron' : {
-                'objselection', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'
+                'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'
             },
         }
 
-            ## object selection
-        objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections)
-        selection.add('jets_3',  ak.num(events['Jet']) == 3)
-        selection.add('objselection', objsel_evts)
-        selection.add('btag_pass', ak.sum(events['Jet'][btag_wps[0]], axis=1) >= 2)
+            # get all passing leptons
+        lep_and_filter_pass = objsel.select_leptons(events, year=args.year)
+        selection.add('lep_and_filter_pass', lep_and_filter_pass) # add passing leptons requirement to all systematics
 
-            # sort jets by btag value
-        events['Jet'] = events['Jet'][ak.argsort(events['Jet']['btagDeepB'], ascending=False)] if btagger == 'DeepCSV' else events['Jet'][ak.argsort(events['Jet']['btagDeepFlavB'], ascending=False)]
-
-            ## add different selections
+        ## add different selections
                 ## muons
-        selection.add('tight_MU', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing TIGHT criteria
-
+        tight_mu_sel = ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1
+        selection.add('tight_MU', tight_mu_sel) # one muon passing TIGHT criteria
                 ## electrons
-        selection.add('tight_EL', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1) # one electron passing TIGHT criteria
+        tight_el_sel = ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1
+        selection.add('tight_EL', tight_el_sel) # one electron passing TIGHT criteria
 
-        #set_trace()
         ### apply lepton SFs to MC (only applicable to tight leptons)
-        if 'LeptonSF' in corrections.keys():
-            tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
-            tight_muons = events['Muon'][tight_mu_cut][(events['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
+        if 'LeptonSF' in self.corrections.keys():
+            tight_muons = events['Muon'][tight_mu_sel][(events['Muon'][tight_mu_sel]['TIGHTMU'] == True)]
             muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_muons['pt']), eta=ak.flatten(tight_muons['eta']))
             mu_reco_cen = np.ones(len(events))
             mu_reco_err = np.zeros(len(events))
             mu_trig_cen = np.ones(len(events))
             mu_trig_err = np.zeros(len(events))
-            mu_reco_cen[tight_mu_cut] = muSFs_dict['RECO_CEN']
-            mu_reco_err[tight_mu_cut] = muSFs_dict['RECO_ERR']
-            mu_trig_cen[tight_mu_cut] = muSFs_dict['TRIG_CEN']
-            mu_trig_err[tight_mu_cut] = muSFs_dict['TRIG_ERR']
-            mu_evt_weights.add('RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
-            mu_evt_weights.add('TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
+            mu_reco_cen[tight_mu_sel] = muSFs_dict['RECO_CEN']
+            mu_reco_err[tight_mu_sel] = muSFs_dict['RECO_ERR']
+            mu_trig_cen[tight_mu_sel] = muSFs_dict['TRIG_CEN']
+            mu_trig_err[tight_mu_sel] = muSFs_dict['TRIG_ERR']
+            mu_evt_weights.add('Lep_RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
+            mu_evt_weights.add('Lep_TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
 
-            tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
-            tight_electrons = events['Electron'][tight_el_cut][(events['Electron'][tight_el_cut]['TIGHTEL'] == True)]
+            tight_electrons = events['Electron'][tight_el_sel][(events['Electron'][tight_el_sel]['TIGHTEL'] == True)]
             elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_electrons['pt']), eta=ak.flatten(tight_electrons['etaSC']))
             el_reco_cen = np.ones(len(events))
             el_reco_err = np.zeros(len(events))
             el_trig_cen = np.ones(len(events))
             el_trig_err = np.zeros(len(events))
-            el_reco_cen[tight_el_cut] = elSFs_dict['RECO_CEN']
-            el_reco_err[tight_el_cut] = elSFs_dict['RECO_ERR']
-            el_trig_cen[tight_el_cut] = elSFs_dict['TRIG_CEN']
-            el_trig_err[tight_el_cut] = elSFs_dict['TRIG_ERR']
-            el_evt_weights.add('RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
-            el_evt_weights.add('TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
+            el_reco_cen[tight_el_sel] = elSFs_dict['RECO_CEN']
+            el_reco_err[tight_el_sel] = elSFs_dict['RECO_ERR']
+            el_trig_cen[tight_el_sel] = elSFs_dict['TRIG_CEN']
+            el_trig_err[tight_el_sel] = elSFs_dict['TRIG_ERR']
+            el_evt_weights.add('Lep_RECO', el_reco_cen, el_reco_err, el_reco_err, shift=True)
+            el_evt_weights.add('Lep_TRIG', el_trig_cen, el_trig_err, el_trig_err, shift=True)
 
-        if corrections['BTagSF'] == True:
+            ## build corrected jets and MET
+        events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'])
+
+            # jet selection
+        passing_jets = objsel.jets_selection(events, year=args.year)
+        selection.add('passing_jets', passing_jets)
+        selection.add('jets_3',  ak.num(events['SelectedJets']) == 3)
+        selection.add('btag_pass', ak.sum(events['SelectedJets'][btag_wps[0]], axis=1) >= 2)
+
+        events['SelectedJets'] = events['SelectedJets'][ak.argsort(events['SelectedJets']['btagDeepB'], ascending=False)] if btaggers[0] == 'DeepCSV' else events['SelectedJets'][ak.argsort(events['SelectedJets']['btagDeepFlavB'], ascending=False)]
+
+        if self.corrections['BTagSF'] == True:
             #set_trace()
             deepcsv_cen = np.ones(len(events))
-            threeJets_cut = selection.require(objselection=True, jets_3=True)
-            deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=events['Jet'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
+            threeJets_cut = selection.require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
+            deepcsv_3j_wts = self.corrections['BTag_Constructors']['DeepCSV']['3Jets'].get_scale_factor(jets=events['SelectedJets'][threeJets_cut], passing_cut='DeepCSV'+wps_to_use[0])
             deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts['central'], axis=1)
         
                 # make dict of btag weights
@@ -220,6 +228,10 @@ class ttbar_alpha_reco(processor.ProcessorABC):
             # find gen level particles for ttbar system
         genpsel.select(events, mode='NORMAL')
         selection.add('semilep', ak.num(events['SL']) > 0)
+        if 'NNLO_Rewt' in self.corrections.keys():
+            nnlo_wts = MCWeights.get_nnlo_weights(self.corrections['NNLO_Rewt'], events)
+            mu_evt_weights.add('%s_reweighting' % self.corrections['NNLO_Rewt']['Var'], nnlo_wts)
+            el_evt_weights.add('%s_reweighting' % self.corrections['NNLO_Rewt']['Var'], nnlo_wts)
 
         ## fill hists for each region
         for lepton in regions.keys():
@@ -230,19 +242,22 @@ class ttbar_alpha_reco(processor.ProcessorABC):
             if cut.sum() > 0:
                 leptype = 'MU' if lepton == 'Muon' else 'EL'
                 if 'loose_or_tight_%s' % leptype in regions[lepton]:
-                    lep_mask = ((events[lepton][cut]['TIGHT%s' % leptype]) | (events[lepton][cut]['LOOSE%s' % leptype]))
+                    leptons = events[lepton][cut][((events[lepton][cut]['TIGHT%s' % leptype] == True) | (events[lepton][cut]['LOOSE%s' % leptype] == True))]
                 elif 'tight_%s' % leptype in regions[lepton]:
-                    lep_mask = (events[lepton][cut]['TIGHT%s' % leptype])
+                    leptons = events[lepton][cut][(events[lepton][cut]['TIGHT%s' % leptype] == True)]
                 elif 'loose_%s' % leptype in regions[lepton]:
-                    lep_mask = (events[lepton][cut]['LOOSE%s' % leptype])
+                    leptons = events[lepton][cut][(events[lepton][cut]['LOOSE%s' % leptype] == True)]
                 else:
                     raise ValueError("Not sure what lepton type to choose for event")
 
+                    # get jets and MET
+                jets, met = events['SelectedJets'][cut], events['SelectedMET'][cut]
+
                     # find matched permutations
-                mp = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], met=events['MET'][cut])
+                mp = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=jets, leptons=leptons, met=met)
 
                     # find best permutations
-                best_perms = ttpermutator.find_best_permutations(jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], MET=events['MET'][cut], btagWP=btag_wps[0])
+                best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wps[0])
                 valid_perms = ak.num(best_perms['TTbar'].pt) > 0
 
                     # compare matched per to best perm
@@ -253,7 +268,7 @@ class ttbar_alpha_reco(processor.ProcessorABC):
                 bp_status[sl_tau_evts] = 4
 
                     ## create MT regions
-                MT = make_vars.MT(events[lepton][cut][lep_mask], events['MET'][cut])
+                MT = make_vars.MT(leptons, met)
                 MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
 
                 wts = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
