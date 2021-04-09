@@ -27,7 +27,7 @@ analyzer = 'meta_info'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('year', choices=['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 args = parser.parse_args()
 
 mc_input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, base_jobid), analyzer)
@@ -65,11 +65,12 @@ if not os.path.isdir(outdir):
 
     # get lumi info
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
-        ## temporary
-if base_jobid == 'ULnanoAOD':
-    lumi_to_use = data_lumi_dict[args.year]['Muons']/1000. if args.year == '2018' else data_lumi_dict[args.year]['Electrons']/1000.
-else:
-    lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
+#        ## temporary
+#if base_jobid == 'ULnanoAOD':
+#    lumi_to_use = data_lumi_dict[args.year]['Muons']/1000. if args.year == '2018' else data_lumi_dict[args.year]['Electrons']/1000.
+#else:
+#    lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
+lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
 
 
 ## plot histograms
@@ -87,7 +88,7 @@ plot.plot1d(
 )
 
 # plot MC
-mc_pu = mc_nTrueInt_histo['ttJets_PS'] if args.year == '2016' else mc_nTrueInt_histo['ttJetsSL']
+mc_pu = mc_nTrueInt_histo['ttJets_PS'] if (args.year == '2016' and base_jobid == 'NanoAODv6') else mc_nTrueInt_histo['ttJetsSL']
 plot.plot1d(
     mc_pu,
     ax=ax,
