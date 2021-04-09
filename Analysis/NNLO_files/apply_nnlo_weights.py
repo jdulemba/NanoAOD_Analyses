@@ -21,17 +21,17 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 
-from argparse import ArgumentParser
-parser = ArgumentParser()
-parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
-parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
-args = parser.parse_args()
-
-
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
-analyzer = 'htt_nnlo_reweighting_study'
+analyzer = 'apply_nnlo_weights'
+
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
+args = parser.parse_args()
+
 
 rewt_style_dict = {
     'Nominal' : ('Nominal', 'k'),
@@ -43,7 +43,7 @@ rewt_style_dict = {
 
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
-outdir = os.path.join(proj_dir, 'plots', base_jobid, 'htt_nnlo_test', args.year)
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -135,8 +135,8 @@ reso_variables = {
 
 
     ## get data lumi and scale MC by lumi
-data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', 'lumis_data.json')).read())[args.year]
-lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights_Test.coffea'))[args.year]['%ss' % args.lepton]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())[args.year]
+lumi_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_LumiWeights.coffea'))[args.year]['%ss' % args.lepton]
         # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
 ttJets_permcats = ['*right', '*matchable', '*unmatchable', '*sl_tau', '*other']
 names = [dataset for dataset in sorted(set([key[0] for key in hdict['mtt'].values().keys()]))] # 'mtt' hardcoded because it has all ttJets event cats
@@ -159,7 +159,8 @@ for hname in hdict.keys():
 
 
     ## make plots
-#for plt_type in ['RECO', 'GEN']:
+#for plt_type in ['RECO']:
+#for plt_type in ['GEN']:
 for plt_type in ['RECO', 'GEN', 'RESO']:
     vars_dict = reso_variables if plt_type == 'RESO' else variables
     for hname in vars_dict.keys():
@@ -217,7 +218,7 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                             0.02, 0.88, "%s, %s\n%s\t\t%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion], evt_type_cats[plt_type]),
                             fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                         )
-                        hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, 'ttJetsAll', plt_type, hname]))
@@ -256,7 +257,7 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                                 0.02, 0.88, "%s, %s\n%s\t\t%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion], evt_type_cats[plt_type]),
                                 fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            hep.cms.cmslabel(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                             #set_trace()
                             figname = os.path.join(pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, ttcat, plt_type, hname]))
@@ -332,7 +333,7 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                                 0.02, 0.88, "%s, %s\n%s" % (lep_cats[lepcat], jet_mults[jmult], btag_cats[btagregion]),
                                 fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            ax = hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                             #set_trace()
                             fig.savefig(figname)
@@ -355,7 +356,7 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                                 0.02, 0.88, "%s, %s\t%s\n%s" % (lep_cats[lepcat], jet_mults[jmult], binlabel, btag_cats[btagregion]),
                                 fontsize=rcParams['font.size']*0.75, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                             )
-                            ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                            ax = hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                             #set_trace()
                             bintitle = '%sctstar%s' % (hslice.dense_axes()[1].edges()[ybin], hslice.dense_axes()[1].edges()[ybin+1])
@@ -390,7 +391,7 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                             verticalalignment='bottom', 
                             transform=ax.transAxes
                         )
-                        ax = hep.cms.cmslabel(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+                        ax = hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = '%s/%s' % (pltdir, '_'.join([jmult, args.lepton, lepcat, btagregion, hname]))
@@ -399,5 +400,3 @@ for plt_type in ['RECO', 'GEN', 'RESO']:
                         plt.close()
     
     
-    
-     
