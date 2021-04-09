@@ -18,6 +18,7 @@ import python.GenParticleSelector as genpsel
 import python.TTGenMatcher as ttmatcher
 import Utilities.make_variables as make_vars
 import python.Test_Permutator as tperm
+import python.IDJet as IDJet
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -47,12 +48,15 @@ if not isTTbar:
 pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'leptonSFs.coffea'))[args.year]
 jet_corrections = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea'))[args.year]
+nnlo_var = 'mtt_vs_thad_ctstar_Interp'
+nnlo_reweighting = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid))[args.year]
 corrections = {
     'Pileup' : pu_correction,
     'Prefire' : True,
     'LeptonSF' : lepSF_correction,
     'BTagSF' : False,
     'JetCor' : jet_corrections,
+    'NNLO_Rewt' : {'Var' : nnlo_var, 'Correction' : nnlo_reweighting[nnlo_var]},
 }
 
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())
@@ -150,53 +154,29 @@ class permProbComputer(processor.ProcessorABC):
         regions = {
             'Muon' : {
                 'LoT' : {
-                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                    #'4Jets' :  {'objselection', 'jets_4',  'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                    #'5Jets' :  {'objselection', 'jets_5',  'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                    #'6PJets' : {'objselection', 'jets_6p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
                 },
                 'Tight' : {
-                    '3Jets'  : {'objselection', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'},
-                    '4PJets' : {'objselection', 'jets_4p', 'tight_MU', 'btag_pass', 'semilep'},
-                #    '4Jets' :  {'objselection', 'jets_4',  'tight_MU', 'btag_pass', 'semilep'},
-                #    '5Jets' :  {'objselection', 'jets_5',  'tight_MU', 'btag_pass', 'semilep'},
-                #    '6PJets' : {'objselection', 'jets_6p', 'tight_MU', 'btag_pass', 'semilep'},
+                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'},
+                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_MU', 'btag_pass', 'semilep'},
                 },
             },
             'Electron' : {
                 'LoT' : {
-                    '3Jets'  : {'objselection', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                    '4PJets' : {'objselection', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                    #'4Jets' :  {'objselection', 'jets_4',  'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                    #'5Jets' :  {'objselection', 'jets_5',  'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                    #'6PJets' : {'objselection', 'jets_6p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
                 },
                 'Tight' : {
-                    '3Jets'  : {'objselection', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'},
-                    '4PJets' : {'objselection', 'jets_4p', 'tight_EL', 'btag_pass', 'semilep'},
-                #    '4Jets' :  {'objselection', 'jets_4',  'tight_EL', 'btag_pass', 'semilep'},
-                #    '5Jets' :  {'objselection', 'jets_5',  'tight_EL', 'btag_pass', 'semilep'},
-                #    '6PJets' : {'objselection', 'jets_6p', 'tight_EL', 'btag_pass', 'semilep'},
+                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'},
+                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_EL', 'btag_pass', 'semilep'},
                 },
             },
         }
 
-            ## object selection
-        objsel_evts = objsel.select(events, year=args.year, corrections=self.corrections, cutflow=output['cutflow'])
-        output['cutflow']['nEvts passing jet and lepton obj selection'] += ak.sum(objsel_evts)
-        selection.add('jets_3', ak.num(events['Jet']) == 3)
-        selection.add('jets_4p', ak.num(events['Jet']) > 3)
-        selection.add('jets_4', ak.num(events['Jet']) == 4)
-        selection.add('jets_5', ak.num(events['Jet']) == 5)
-        selection.add('jets_6p', ak.num(events['Jet']) >= 6)
-        selection.add('objselection', objsel_evts)
-        selection.add('btag_pass', ak.sum(events['Jet'][btag_wp], axis=1) >= 2)
-
-            # sort jets by btag value
-        events['Jet'] = events['Jet'][ak.argsort(events['Jet']['btagDeepB'], ascending=False)] if btagger == 'DeepCSV' else events['Jet'][ak.argsort(events['Jet']['btagDeepFlavB'], ascending=False)]
-
-            ## add different selections
+            # get all passing leptons
+        lep_and_filter_pass = objsel.select_leptons(events, year=args.year, cutflow=output['cutflow'])
+        selection.add('lep_and_filter_pass', lep_and_filter_pass)
                 ## muons
         selection.add('tight_MU', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing TIGHT criteria
         selection.add('loose_or_tight_MU', ak.sum(events['Muon']['LOOSEMU'] | events['Muon']['TIGHTMU'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
@@ -204,10 +184,23 @@ class permProbComputer(processor.ProcessorABC):
         selection.add('tight_EL', ak.sum(events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing TIGHT criteria
         selection.add('loose_or_tight_EL', ak.sum(events['Electron']['LOOSEEL'] | events['Electron']['TIGHTEL'], axis=1) == 1) # one muon passing LOOSE or TIGHT criteria
 
-        #set_trace()
+            ## build corrected jets and MET
+        events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'])
+
+            # jet selection
+        passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow'])
+        selection.add('passing_jets', passing_jets)
+        output['cutflow']['nEvts passing jet and lepton obj selection'] += ak.sum(passing_jets & lep_and_filter_pass)
+        selection.add('jets_3', ak.num(events['SelectedJets']) == 3)
+        selection.add('jets_4p', ak.num(events['SelectedJets']) > 3)
+        selection.add('btag_pass', ak.sum(events['SelectedJets'][btag_wp], axis=1) >= 2)
+
+            # sort jets by btag value
+        events['SelectedJets'] = events['SelectedJets'][ak.argsort(events['SelectedJets']['btagDeepB'], ascending=False)] if btagger == 'DeepCSV' else events['SelectedJets'][ak.argsort(events['SelectedJets']['btagDeepFlavB'], ascending=False)]
+
         ## apply lepton SFs to MC (only applicable to tight leptons)
         if 'LeptonSF' in corrections.keys():
-            tight_mu_cut = selection.require(objselection=True, tight_MU=True) # find events passing muon object selection with one tight muon
+            tight_mu_cut = selection.require(tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = events['Muon'][tight_mu_cut][(events['Muon'][tight_mu_cut]['TIGHTMU'] == True)]
             muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton='Muons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_muons['pt']), eta=ak.flatten(tight_muons['eta']))
@@ -222,7 +215,7 @@ class permProbComputer(processor.ProcessorABC):
             mu_evt_weights.add('RECO', mu_reco_cen, mu_reco_err, mu_reco_err, shift=True)
             mu_evt_weights.add('TRIG', mu_trig_cen, mu_trig_err, mu_trig_err, shift=True)
 
-            tight_el_cut = selection.require(objselection=True, tight_EL=True) # find events passing electron object selection with one tight electron
+            tight_el_cut = selection.require(tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = events['Electron'][tight_el_cut][(events['Electron'][tight_el_cut]['TIGHTEL'] == True)]
             elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton='Electrons', corrections=self.corrections['LeptonSF'],
                 pt=ak.flatten(tight_electrons['pt']), eta=ak.flatten(tight_electrons['etaSC']))
@@ -240,6 +233,10 @@ class permProbComputer(processor.ProcessorABC):
             # find gen level particles for ttbar system
         genpsel.select(events, mode='NORMAL')
         selection.add('semilep', ak.num(events['SL']) > 0)
+        if 'NNLO_Rewt' in self.corrections.keys():
+            nnlo_wts = MCWeights.get_nnlo_weights(self.corrections['NNLO_Rewt'], events)
+            mu_evt_weights.add('%s_reweighting' % corrections['NNLO_Rewt']['Var'], nnlo_wts)
+            el_evt_weights.add('%s_reweighting' % corrections['NNLO_Rewt']['Var'], nnlo_wts)
 
         ## fill hists for each region
         for lepton in regions.keys():
@@ -255,29 +252,32 @@ class permProbComputer(processor.ProcessorABC):
                     if ak.sum(cut) > 0:
                         leptype = 'MU' if lepton == 'Muon' else 'EL'
                         if 'loose_or_tight_%s' % leptype in regions[lepton][lepcat][jmult]:
-                            lep_mask = ((events[lepton][cut]['TIGHT%s' % leptype]) | (events[lepton][cut]['LOOSE%s' % leptype]))
+                            leptons = events[lepton][cut][((events[lepton][cut]['TIGHT%s' % leptype] == True) | (events[lepton][cut]['LOOSE%s' % leptype] == True))]
                         elif 'tight_%s' % leptype in regions[lepton][lepcat][jmult]:
-                            lep_mask = (events[lepton][cut]['TIGHT%s' % leptype])
+                            leptons = events[lepton][cut][(events[lepton][cut]['TIGHT%s' % leptype] == True)]
                         elif 'loose_%s' % leptype in regions[lepton][lepcat][jmult]:
-                            lep_mask = (events[lepton][cut]['LOOSE%s' % leptype])
+                            leptons = events[lepton][cut][(events[lepton][cut]['LOOSE%s' % leptype] == True)]
                         else:
                             raise ValueError("Not sure what lepton type to choose for event")
 
+                            # get jets and MET
+                        jets, met = events['SelectedJets'][cut], events['SelectedMET'][cut]
+
                             ## create MT regions
-                        MT = make_vars.MT(events[lepton][cut][lep_mask], events['MET'][cut])
+                        MT = make_vars.MT(leptons, events['MET'][cut])
                         MTHigh = ak.flatten(MT >= MTcut)
 
 
-                        test_perms = tperm.find_permutations(jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], MET=events['MET'][cut], btagWP=btag_wp)
-                        matched_perm = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=events['Jet'][cut], leptons=events[lepton][cut][lep_mask], met=events['MET'][cut])
+                        test_perms = tperm.find_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wp)
+                        matched_perm = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=jets, leptons=leptons, met=met)
 
                         #set_trace()
                         if jmult == '3Jets':
-                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=events['Jet'][cut][MTHigh],  tps=test_perms[MTHigh],  mp=matched_perm[MTHigh],  evt_weights=wts[MTHigh])
-                            #output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=events['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[~MTHigh])
+                            output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=jets[MTHigh],  tps=test_perms[MTHigh],  mp=matched_perm[MTHigh],  evt_weights=wts[MTHigh])
+                            #output = self.make_3j_categories(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=jets[~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[~MTHigh])
                         else:
-                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=events['Jet'][cut][MTHigh],  tps=test_perms[MTHigh],  mp=matched_perm[MTHigh],  evt_weights=wts[MTHigh])
-                            #output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=events['Jet'][cut][~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[~MTHigh])
+                            output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTHigh', jets=jets[MTHigh],  tps=test_perms[MTHigh],  mp=matched_perm[MTHigh],  evt_weights=wts[MTHigh])
+                            #output = self.fill_4pj_hists(accumulator=output, jetmult=jmult, leptype=lepton, lepcat=lepcat, mtregion='MTLow',  jets=jets[~MTHigh], tps=test_perms[~MTHigh], mp=matched_perm[~MTHigh], evt_weights=wts[~MTHigh])
 
         return output
 
@@ -411,9 +411,8 @@ output = processor.run_uproot_job(
     processor_instance=permProbComputer(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    chunksize=10000 if args.debug else 100000,
-    #chunksize=100000,
-    #chunksize=10000,
+    #chunksize=10000 if args.debug else 100000,
+    chunksize=100000,
 )
 
 
