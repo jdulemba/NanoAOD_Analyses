@@ -23,11 +23,22 @@ def get_event_weights(events, year: str, corrections, isTTbar=False):
     
             ## Pileup Reweighting
         if 'Pileup' in corrections.keys():
-            weights.add('Pileup',
-                corrections['Pileup'][events.metadata['dataset']]['central'](events['Pileup']['nTrueInt']),
-                corrections['Pileup'][events.metadata['dataset']]['up'](events['Pileup']['nTrueInt']),
-                corrections['Pileup'][events.metadata['dataset']]['down'](events['Pileup']['nTrueInt'])
-            )
+                # treat interference samples differently
+            if (events.metadata['dataset'].startswith('AtoTT') or events.metadata['dataset'].startswith('HtoTT')) and ('Int' in events.metadata['dataset']):
+                central_pu_wt = ak.where(events['genWeight'] > 0, corrections['Pileup']['%s_pos' % events.metadata['dataset']]['central'](events['Pileup']['nTrueInt']),\
+                    corrections['Pileup']['%s_neg' % events.metadata['dataset']]['central'](events['Pileup']['nTrueInt']))
+                up_pu_wt = ak.where(events['genWeight'] > 0, corrections['Pileup']['%s_pos' % events.metadata['dataset']]['up'](events['Pileup']['nTrueInt']),\
+                    corrections['Pileup']['%s_neg' % events.metadata['dataset']]['up'](events['Pileup']['nTrueInt']))
+                down_pu_wt = ak.where(events['genWeight'] > 0, corrections['Pileup']['%s_pos' % events.metadata['dataset']]['down'](events['Pileup']['nTrueInt']),\
+                    corrections['Pileup']['%s_neg' % events.metadata['dataset']]['down'](events['Pileup']['nTrueInt']))
+
+                weights.add('Pileup', central_pu_wt, up_pu_wt, down_pu_wt)
+            else:
+                weights.add('Pileup',
+                    corrections['Pileup'][events.metadata['dataset']]['central'](events['Pileup']['nTrueInt']),
+                    corrections['Pileup'][events.metadata['dataset']]['up'](events['Pileup']['nTrueInt']),
+                    corrections['Pileup'][events.metadata['dataset']]['down'](events['Pileup']['nTrueInt'])
+                )
 
         ## PS and LHE weights for ttbar events
         if isTTbar:
@@ -79,42 +90,42 @@ def get_pdf_weights(df):
     df['PDFWeights'] = pdfweights
     
 
-def get_kin_weights(correction, genttbar):
-    sl_evts = genttbar['SL']['TTbar'].counts > 0
-    dl_evts = genttbar['DL']['TTbar'].counts > 0
-    had_evts = genttbar['Had']['TTbar'].counts > 0
+def get_nnlo_weights(correction, events):
+    sl_evts = ak.num(events['SL']) > 0
+    dl_evts = ak.num(events['DL']) > 0
+    had_evts = ak.num(events['Had']) > 0
 
     np.random.seed(10) # sets seed so values from random distributions are reproducible (same as JER corrections)
-    which_top_to_use = np.random.randint(2, size=genttbar.size) # top is 0, tbar is 1 
+    which_top_to_use = np.random.randint(2, size=len(events)) # top is 0, tbar is 1 
     var = correction['Var']
     dist = correction['Correction']
 
-    wts = np.ones(genttbar.size)
+    wts = np.ones(len(events))
     if 'thad_pt' in var:
             # set wts for semilep evts
-        wts[sl_evts] = dist(genttbar['SL']['THad'].p4.pt[sl_evts].flatten())
+        wts[sl_evts] = dist(ak.flatten(events['SL'][sl_evts]['THad'].pt, axis=None))
             # set wts for dilep evts
-        dl_pt = np.where(which_top_to_use[dl_evts], genttbar['DL']['Top'].p4.pt[dl_evts].flatten(), genttbar['DL']['Tbar'].p4.pt[dl_evts].flatten())
+        dl_pt = np.where(which_top_to_use[dl_evts], ak.flatten(events['DL'][dl_evts]['Top'].pt, axis=None), ak.flatten(events['DL'][dl_evts]['Tbar'].pt, axis=None))
         wts[dl_evts] = dist(dl_pt)
             # set wts for had evts
-        had_pt = np.where(which_top_to_use[had_evts], genttbar['Had']['Top'].p4.pt[had_evts].flatten(), genttbar['Had']['Tbar'].p4.pt[had_evts].flatten())
+        had_pt = np.where(which_top_to_use[had_evts], ak.flatten(events['Had'][had_evts]['Top'].pt, axis=None), ak.flatten(events['Had'][had_evts]['Tbar'].pt, axis=None))
         wts[had_evts] = dist(had_pt)
 
     elif 'mtt_vs_thad_ctstar' in var:
             # set wts for semilep evts
-        thad_p4, tlep_p4 = genttbar['SL']['THad'].p4[sl_evts].flatten(), genttbar['SL']['TLep'].p4[sl_evts].flatten()
-        thad_ctstar, tlep_ctstar = make_vars.ctstar_flat(thad_p4, tlep_p4)
-        wts[sl_evts] = dist(genttbar['SL']['TTbar'].p4.mass[sl_evts].flatten(), thad_ctstar)
+        thad_ctstar, tlep_ctstar = make_vars.ctstar(events['SL'][sl_evts]['THad'], events['SL'][sl_evts]['TLep'])
+        thad_ctstar, tlep_ctstar = ak.flatten(thad_ctstar, axis=None), ak.flatten(tlep_ctstar, axis=None)
+        wts[sl_evts] = dist(ak.flatten(events['SL'][sl_evts]['TTbar'].mass, axis=None), thad_ctstar)
             # set wts for dilep evts
-        dl_top_p4, dl_tbar_p4 = genttbar['DL']['Top'].p4[dl_evts].flatten(), genttbar['DL']['Tbar'].p4[dl_evts].flatten()
-        dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar_flat(dl_top_p4, dl_tbar_p4)
+        dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar(events['DL'][dl_evts]['Top'], events['DL'][dl_evts]['Tbar'])
+        dl_top_ctstar, dl_tbar_ctstar = ak.flatten(dl_top_ctstar, axis=None), ak.flatten(dl_tbar_ctstar, axis=None)
         dl_ctstar = np.where(which_top_to_use[dl_evts], dl_top_ctstar, dl_tbar_ctstar)
-        wts[dl_evts] = dist(genttbar['DL']['TTbar'].p4.mass[dl_evts].flatten(), dl_ctstar)
+        wts[dl_evts] = dist(ak.flatten(events['DL'][dl_evts]['TTbar'].mass, axis=None), dl_ctstar)
             # set wts for had evts
-        had_top_p4, had_tbar_p4 = genttbar['Had']['Top'].p4[had_evts].flatten(), genttbar['Had']['Tbar'].p4[had_evts].flatten()
-        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar_flat(had_top_p4, had_tbar_p4)
+        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar(events['Had'][had_evts]['Top'], events['Had'][had_evts]['Tbar'])
+        had_top_ctstar, had_tbar_ctstar = ak.flatten(had_top_ctstar, axis=None), ak.flatten(had_tbar_ctstar, axis=None)
         had_ctstar = np.where(which_top_to_use[had_evts], had_top_ctstar, had_tbar_ctstar)
-        wts[had_evts] = dist(genttbar['Had']['TTbar'].p4.mass[had_evts].flatten(), had_ctstar)
+        wts[had_evts] = dist(ak.flatten(events['Had'][had_evts]['TTbar'].mass, axis=None), had_ctstar)
 
     else:
         raise ValueError("%s not supported for NNLO kinematic reweighting" % var)
