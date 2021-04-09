@@ -3,19 +3,38 @@ from pdb import set_trace
 import tools
 import Utilities.prettyjson as prettyjson
 import fnmatch
+from copy import deepcopy
 
-from argparse import ArgumentParser
-parser = ArgumentParser('submit analyzer to the batch queues')
+import argparse
+class ParseKwargs(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, dict())
+        for value in values:
+            key, value = value.split('=')
+            getattr(namespace, self.dest)[key] = value
+
+parser = argparse.ArgumentParser('submit analyzer to the batch queues')
 parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('jobdir', help='Directory name to be created in nobackup area.')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
-parser.add_argument('--sample', type=str, help='Use specific sample')
+parser.add_argument('--opts', nargs='*', action=ParseKwargs, help='Options to pass to analyzers.')
+#parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
-parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex')
-parser.add_argument('--evt_sys', type=str, default='NONE', help='Specify event systematics to run, will be capitalized. Default is NONE')
-parser.add_argument('--rewt_sys', type=str, default='NONE', help='Specify reweighting systematics to run, will be capitalized. Default is NONE')
-parser.add_argument('--only_sys', type=int, default=0, help='Only run specified systematics and not nominal weights (nosys)')
+#parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex')
+#parser.add_argument('--evt_sys', type=str, default='NONE', help='Specify event systematics to run, will be capitalized. Default is NONE')
+#parser.add_argument('--rewt_sys', type=str, default='NONE', help='Specify reweighting systematics to run, will be capitalized. Default is NONE')
+#parser.add_argument('--only_sys', type=int, default=0, help='Only run specified systematics and not nominal weights (nosys)')
 args = parser.parse_args()
+
+#set_trace()
+# define dictionary of options to pass
+opts_dict = {} if args.opts is None else args.opts
+opts_dict['apply_hem'] = opts_dict.get('apply_hem', 'False')
+opts_dict['signal'] = opts_dict.get('signal', ".*")
+opts_dict['evt_sys'] = opts_dict.get('evt_sys', 'NONE')
+opts_dict['rewt_sys'] = opts_dict.get('rewt_sys', 'NONE')
+opts_dict['only_sys'] = opts_dict.get('only_sys', 0)
+opts_dict['debug'] = opts_dict.get('debug', 'False')
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -68,19 +87,28 @@ Queue
 """.format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir, SIGOUTNAME=sig_outname)
     return condorfile
 
-def add_condor_jobs(idx, frange, sample):
+#def add_condor_jobs(idx, frange, sample):
+#    condorfile = """
+#Output = con_{IDX}.stdout
+#Error = con_{IDX}.stderr
+#Log = con_{IDX}.log
+#Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
+#Queue
+#""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir)
+def add_condor_jobs(idx, frange, opts):
     condorfile = """
 Output = con_{IDX}.stdout
 Error = con_{IDX}.stderr
 Log = con_{IDX}.log
-Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
+Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --opts {OPTS}
 Queue
-""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir)
+""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, OPTS=opts)
     return condorfile
 
     ## get samples to use
 indir = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, base_jobid))
-samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample) if args.sample else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
+#set_trace()
+samples_to_use = tools.get_sample_list(indir=indir, sample=opts_dict['sample']) if 'sample' in opts_dict.keys() else tools.get_sample_list(indir=indir, text_file='analyzer_inputs.txt')
 for sample in samples_to_use:
     if not os.path.isfile(sample):
         raise IOError("Sample file %s.txt not found" % sample)
@@ -92,6 +120,7 @@ for sample in samples_to_use:
     file_inds = [idx for idx, fname in enumerate([fname.strip('\n') for fname in sfiles if not fname.startswith('#')])]
     splitting = tools.get_file_splitting('AtoTT') if analyzer == 'htt_signal_reweight' else tools.get_file_splitting(sample.split('/')[-1].split('.')[0])
     file_chunks = list(tools.get_file_range(file_inds, splitting))
+
     if (analyzer == 'htt_signal_reweight') or (analyzer == 'signal_validation'):
             ## make batch_job.sh file
         batch_dir = '%s/%s/%s_%s' % (proj_dir, jobdir, sample_name, args.signal) if not args.signal == parser.get_default('signal') else '%s/%s/%s_AHtoTT' % (proj_dir, jobdir, sample_name)
@@ -121,7 +150,7 @@ for sample in samples_to_use:
 
     else:
             ## make batch_job.sh file
-        batch_dir = '%s/%s/%s' % (proj_dir, jobdir, sample_name)
+        batch_dir = os.path.join(proj_dir, jobdir, sample_name)
         if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
         batch_cmd = create_batch_job()
         batch_conf = open(os.path.join(batch_dir, 'batch_job.sh'), 'w')
@@ -130,9 +159,14 @@ for sample in samples_to_use:
         
             ## make condor.jdl file
         condor_cmd = base_condor_jdl()
-
         for idx, chunk in enumerate(file_chunks):
-            condor_cmd += add_condor_jobs(idx, chunk, sample.split('/')[-1].split('.')[0])
+                # make list of options to pass to analyzers
+            tmp_opts_dict = deepcopy(opts_dict)
+            tmp_opts_dict['sample'] = sample_name
+            tmp_opts_dict['outfname'] = os.path.join(batch_dir, '%s_out_%s.coffea' % (sample_name, idx))
+            opts_list = ["%s=%s" % (key, val) for key, val in tmp_opts_dict.items()]
+
+            condor_cmd += add_condor_jobs(idx, chunk, " ".join(opts_list))
 
         condor_conf = open(os.path.join(batch_dir, 'condor.jdl'), 'w')
         condor_conf.write(condor_cmd)
