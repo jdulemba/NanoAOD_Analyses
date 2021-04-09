@@ -81,7 +81,7 @@
         "name": "ttJetsHad_hdampUP"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToHadronic_mtop166p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection": 380.11432,
         "name": "ttJetsHad_mtop1665"
     },
@@ -230,7 +230,7 @@
         "name": "ZJets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
         "xsection": 61526.7,
         "name": "WJets"
     },
@@ -381,75 +381,35 @@
 
 
     {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleMuon_2016B",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleMuon_2016C",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleMuon_2016D",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleMuon_2016E",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2016F-UL2016_MiniAODv1_NanoAODv2-v4/NANOAOD",
         "name": "data_SingleMuon_2016F",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2016G",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2016H",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },
 
 
     {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleElectron_2016B",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleElectron_2016C",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleElectron_2016D",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
-        "name": "data_SingleElectron_2016E",
-        "lumimask": "NOT PRESENT"
-    },
-    {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD",
         "name": "data_SingleElectron_2016F",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2016G",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2016H",
-        "lumimask": "NOT PRESENT"
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     }
 ]
