@@ -273,7 +273,7 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     best_Lep = ak.Array({key: ak.unflatten(ak.flatten(leptons[key][valid_evts]), valid_evts.astype(int)) for key in leptons.fields}, with_name="PtEtaPhiMLorentzVector")
 
     # MET
-    best_MET = ak.Array({key: ak.unflatten(MET[key], valid_evts.astype(int)) for key in MET.fields}, with_name="PtEtaPhiMLorentzVector")
+    best_MET = ak.Array({key: ak.unflatten(MET[key][valid_evts], valid_evts.astype(int)) for key in MET.fields}, with_name="PtEtaPhiMLorentzVector")
 
         ## Combine everything into a dictionary
     best_permutations = ak.zip({
@@ -289,9 +289,9 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
         "WHad" : best_WHad,
         "THad" : best_THad,
         "TTbar": best_TTbar,
-        "Prob" : ak.unflatten(bp_probs[:, 0], valid_evts.astype(int)),
-        "MassDiscr" : ak.unflatten(bp_probs[:, 1], valid_evts.astype(int)),
-        "NuDiscr" : ak.unflatten(bp_probs[:, 2], valid_evts.astype(int)),
+        "Prob" : ak.unflatten(bp_probs[valid_evts][:, 0], valid_evts.astype(int)),
+        "MassDiscr" : ak.unflatten(bp_probs[valid_evts][:, 1], valid_evts.astype(int)),
+        "NuDiscr" : ak.unflatten(bp_probs[valid_evts][:, 2], valid_evts.astype(int)),
     }, depth_limit=1)
 
     return best_permutations
