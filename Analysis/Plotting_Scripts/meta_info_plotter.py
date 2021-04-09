@@ -90,7 +90,6 @@ for sample in samples:
         if not ((args.data_mc == 'MC') or (args.data_mc == 'All')): continue
         print("    %s is being analyzed" % sample)
 
-        #set_trace()
             ## write meta info to json
         meta_dict = {}
         for key, val in hdict[sample].items():
@@ -108,7 +107,7 @@ for sample in samples:
         pu_nTrueInt_histo = PU_nTrueInt_histo[sample].integrate('dataset')
         pu_nTrueInt_bins = pu_nTrueInt_histo.axis('pu_nTrueInt').edges()
         fig_nTrueInt, ax_nTrueInt = plt.subplots()
-        plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=sample, histtype='step')
+        plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=sample)
         ax_nTrueInt.legend(loc='upper right')
         hep.cms.label(ax=ax_nTrueInt, rlabel=args.year)
         figname_nTrueInt = os.path.join(outdir, '%s_PU_nTrueInt.png' % sample)
@@ -120,7 +119,7 @@ for sample in samples:
         pu_nPU_histo = PU_nPU_histo[sample].integrate('dataset')
         pu_nPU_bins = pu_nPU_histo.axis('pu_nPU').edges()
         fig_nPU, ax_nPU = plt.subplots()
-        plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=sample, histtype='step')
+        plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, xlimits=(0., 100.), xlabel=('$\mathsf{%s}$' % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=sample)
         ax_nPU.legend(loc='upper right')
         hep.cms.label(ax=ax_nPU, rlabel=args.year)
         figname_nPU = os.path.join(outdir, '%s_PU_nPU.png' % sample)
