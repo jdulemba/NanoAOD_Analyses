@@ -52,8 +52,14 @@ class Meta_Analyzer(processor.ProcessorABC):
         #set_trace()        
             ## construct dictionary of dictionaries to hold meta info for each sample
         for sample in fileset.keys():
-            histo_dict[sample] = processor.defaultdict_accumulator(int)
-            histo_dict['%s_runs_to_lumis' % sample] = processor.value_accumulator(list)
+            if 'Int' in sample:
+                histo_dict['%s_pos' % sample] = processor.defaultdict_accumulator(int)
+                histo_dict['%s_pos_runs_to_lumis' % sample] = processor.value_accumulator(list)
+                histo_dict['%s_neg' % sample] = processor.defaultdict_accumulator(int)
+                histo_dict['%s_neg_runs_to_lumis' % sample] = processor.value_accumulator(list)
+            else:
+                histo_dict[sample] = processor.defaultdict_accumulator(int)
+                histo_dict['%s_runs_to_lumis' % sample] = processor.value_accumulator(list)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ''
@@ -87,18 +93,42 @@ class Meta_Analyzer(processor.ProcessorABC):
 
         else:
             genWeights = events['genWeight']
-            output[self.sample_name]['sumGenWeights'] += sum(genWeights)
+                # split interference into pos/neg weighted events
+            if 'Int' in self.sample_name:
+                pos_evts = ak.where(genWeights > 0)
+                neg_evts = ak.where(genWeights < 0)
+                output['%s_pos' % self.sample_name]['sumGenWeights'] += sum(genWeights[pos_evts])
+                output['%s_neg' % self.sample_name]['sumGenWeights'] += sum(genWeights[neg_evts])
 
-            output['PU_nTrueInt'].fill(dataset=self.sample_name, pu_nTrueInt=events['Pileup']['nTrueInt'], weight=genWeights)
-            output['PU_nPU'].fill(dataset=self.sample_name, pu_nPU=events['Pileup']['nPU'], weight=genWeights)
+                output['PU_nTrueInt'].fill(dataset='%s_pos' % self.sample_name, pu_nTrueInt=events['Pileup']['nTrueInt'][pos_evts], weight=genWeights[pos_evts])
+                output['PU_nPU'].fill(dataset='%s_pos' % self.sample_name, pu_nPU=events['Pileup']['nPU'][pos_evts], weight=genWeights[pos_evts])
+                output['PU_nTrueInt'].fill(dataset='%s_neg' % self.sample_name, pu_nTrueInt=events['Pileup']['nTrueInt'][neg_evts], weight=genWeights[neg_evts])
+                output['PU_nPU'].fill(dataset='%s_neg' % self.sample_name, pu_nPU=events['Pileup']['nPU'][neg_evts], weight=genWeights[neg_evts])
 
-            output[self.sample_name]['nEvents'] += ak.size(event_nums)
+                output['%s_pos' % self.sample_name]['nEvents'] += ak.size(event_nums[pos_evts])
+                output['%s_neg' % self.sample_name]['nEvents'] += ak.size(event_nums[neg_evts])
 
-            if 'LHEPdfWeight' in events.fields:
-                LHEpdfWeights = events['LHEPdfWeight']
-                    ## get sum of each pdf weight over all events
-                sumLHEpdfWeights = ak.sum(LHEpdfWeights, axis=0)
-                output[self.sample_name]['sumLHEpdfWeights'] += ak.to_numpy(sumLHEpdfWeights)
+                if 'LHEPdfWeight' in events.fields:
+                    LHEpdfWeights = events['LHEPdfWeight']
+                        ## get sum of each pdf weight over all events
+                    sumLHEpdfWeights_pos = ak.sum(LHEpdfWeights[pos_evts], axis=0)
+                    output['%s_pos' % self.sample_name]['sumLHEpdfWeights'] += ak.to_numpy(sumLHEpdfWeights_pos)
+                    sumLHEpdfWeights_neg = ak.sum(LHEpdfWeights[neg_evts], axis=0)
+                    output['%s_neg' % self.sample_name]['sumLHEpdfWeights'] += ak.to_numpy(sumLHEpdfWeights_neg)
+
+            else:
+                output[self.sample_name]['sumGenWeights'] += sum(genWeights)
+
+                output['PU_nTrueInt'].fill(dataset=self.sample_name, pu_nTrueInt=events['Pileup']['nTrueInt'], weight=genWeights)
+                output['PU_nPU'].fill(dataset=self.sample_name, pu_nPU=events['Pileup']['nPU'], weight=genWeights)
+
+                output[self.sample_name]['nEvents'] += ak.size(event_nums)
+
+                if 'LHEPdfWeight' in events.fields:
+                    LHEpdfWeights = events['LHEPdfWeight']
+                        ## get sum of each pdf weight over all events
+                    sumLHEpdfWeights = ak.sum(LHEpdfWeights, axis=0)
+                    output[self.sample_name]['sumLHEpdfWeights'] += ak.to_numpy(sumLHEpdfWeights)
 
         return output
 
