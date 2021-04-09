@@ -99,21 +99,27 @@ class Analyzer(processor.ProcessorABC):
             ttdecay_mask = ak.num(events[ttdecay]) > 0
             if ak.sum(ttdecay_mask) == 0: continue
 
-            evt_weights_to_use = evt_weights.weight()[ttdecay_mask]
+            wts = evt_weights.weight()[ttdecay_mask]
             for gen_obj in events[ttdecay].fields:
                 if args.debug: print(gen_obj)
-                output = self.fill_genp_hists(accumulator=output, genp_type=gen_obj, ttdecaymode=ttdecay, obj=events[ttdecay][gen_obj][ttdecay_mask], evt_weights=evt_weights_to_use)
+                if 'Int' in self.sample_name:
+                    pos_evts = np.where(wts > 0)
+                    output = self.fill_genp_hists(accumulator=output, dname='%s_pos' % self.sample_name, genp_type=gen_obj, ttdecaymode=ttdecay, obj=events[ttdecay][gen_obj][ttdecay_mask][pos_evts], evt_weights=wts[pos_evts])
+                    neg_evts = np.where(wts < 0)
+                    output = self.fill_genp_hists(accumulator=output, dname='%s_neg' % self.sample_name, genp_type=gen_obj, ttdecaymode=ttdecay, obj=events[ttdecay][gen_obj][ttdecay_mask][neg_evts], evt_weights=wts[neg_evts])
+                else:
+                    output = self.fill_genp_hists(accumulator=output, dname=self.sample_name, genp_type=gen_obj, ttdecaymode=ttdecay, obj=events[ttdecay][gen_obj][ttdecay_mask], evt_weights=wts)
                 
 
         return output
 
-    def fill_genp_hists(self, accumulator, genp_type, ttdecaymode, obj, evt_weights):
+    def fill_genp_hists(self, accumulator, dname,  genp_type, ttdecaymode, obj, evt_weights):
         #set_trace()
-        accumulator['pt'].fill(    dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, pt=ak.flatten(obj.pt, axis=None), weight=evt_weights)
-        accumulator['eta'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, eta=ak.flatten(obj.eta, axis=None), weight=evt_weights)
-        accumulator['phi'].fill(   dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, phi=ak.flatten(obj.phi, axis=None), weight=evt_weights)
-        accumulator['mass'].fill(  dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, mass=ak.flatten(obj.mass, axis=None), weight=evt_weights)
-        accumulator['energy'].fill(dataset=self.sample_name, objtype=genp_type, ttdecay=ttdecaymode, energy=ak.flatten(obj.energy, axis=None), weight=evt_weights)
+        accumulator['pt'].fill(    dataset=dname, objtype=genp_type, ttdecay=ttdecaymode, pt=ak.flatten(obj.pt, axis=None), weight=evt_weights)
+        accumulator['eta'].fill(   dataset=dname, objtype=genp_type, ttdecay=ttdecaymode, eta=ak.flatten(obj.eta, axis=None), weight=evt_weights)
+        accumulator['phi'].fill(   dataset=dname, objtype=genp_type, ttdecay=ttdecaymode, phi=ak.flatten(obj.phi, axis=None), weight=evt_weights)
+        accumulator['mass'].fill(  dataset=dname, objtype=genp_type, ttdecay=ttdecaymode, mass=ak.flatten(obj.mass, axis=None), weight=evt_weights)
+        accumulator['energy'].fill(dataset=dname, objtype=genp_type, ttdecay=ttdecaymode, energy=ak.flatten(obj.energy, axis=None), weight=evt_weights)
 
         return accumulator        
 
@@ -133,9 +139,6 @@ output = processor.run_uproot_job(
     chunksize=10000 if args.debug else 100000,
     #chunksize=100000,
 )
-
-if args.debug:
-    print(output)
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
