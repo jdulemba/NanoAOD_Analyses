@@ -38,14 +38,17 @@ var_opts = {
     'mtt_vs_thad_ctstar' : {'xtitle' : 'm($t\\bar{t}$) [GeV]', 'ytitle' : 'cos($\\theta^{*}_{t_{h}}$)'},
 }
 year_opts = {
-    '2016' : {'leg_title' : '2016 CP5' if base_jobid == 'ULnanoAOD' else '2016 T4', 'col' : '#377eb8'}, ## blue
-    '2017' : {'leg_title' : '2017 CP5', 'col' : '#e42a2c'}, ## red
+    '2016' : {'leg_title' : '2016 CP5 (post-VFP)' if base_jobid == 'ULnanoAOD' else '2016 T4', 'col' : '#377eb8'}, ## blue
+    '2017' : {'leg_title' : '2017 CP5', 'col' : '#e41a1c'}, ## red
     '2018' : {'leg_title' : '2018 CP5', 'col' : '#4daf4a'}, ## green
 }
+if base_jobid == 'ULnanoAOD':
+    year_opts['2016APV'] = {'leg_title' : '2016 CP5 (pre-VFP)', 'col' : '#984ea3'} # purple
 
-outdir = os.path.join(proj_dir, 'plots', base_jobid, 'reweighting_vars', 'Interp')
+outdir = os.path.join(proj_dir, 'plots', base_jobid, 'make_nnlo_reweighting_vars', 'Interp')
 if not os.path.isdir(outdir): os.makedirs(outdir)
 
+years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
 
 for var in var_opts.keys():
     if var == 'thad_pt':
@@ -57,14 +60,14 @@ for var in var_opts.keys():
             fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
         )
     
-
-    for year in ratios.keys():
+    #set_trace()
+    for year in years_to_run:
         histo = ratios[year][var] # get histogram
 
         if histo._dimension == 1:
             orig_bins, orig_vals = histo._axes, histo._values
                 # plot original distribution
-            ax = Plotter.plot_1D(orig_vals, orig_bins, xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], color=year_opts[year]['col'], ax=ax, histtype='step', label='%s Original' % year_opts[year]['leg_title'])
+            Plotter.plot_1D(orig_vals, orig_bins, xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], color=year_opts[year]['col'], ax=ax, label='%s Original' % year_opts[year]['leg_title'])
 
                 # get interpolated values from ROOT Interpolate
             orig_ratio_hist = Hist(orig_bins, name='', title='')
@@ -76,22 +79,11 @@ for var in var_opts.keys():
             for xbin in range(output_bins.size-1):
                 interped_array[xbin] = orig_ratio_hist.Interpolate(output_bins[xbin])
 
-            ax = Plotter.plot_1D(interped_array, output_bins, xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], color=year_opts[year]['col'], ax=ax, histtype='step', label='%s Interp' % (year_opts[year]['leg_title']), linestyle='--')
+            Plotter.plot_1D(interped_array, output_bins, xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], color=year_opts[year]['col'], ax=ax, label='%s Interp' % (year_opts[year]['leg_title']), linestyle='--')
 
             if args.save_ratios:
                 lookup = dense_lookup(*(interped_array, output_bins))
                 ratios[year].update({'%s_Interp' % var : lookup})
-
-            #set_trace()
-            #    # get interpolated values from numpy fit
-            #deg = 2
-            #bin_centers = (orig_bins[:-1]+orig_bins[1:])/2
-            #np_fit = np.polyfit(bin_centers, orig_vals, deg, full=True)
-            #chisq_ndof = np_fit[1]/(len(bin_centers)-(deg+1))
-            #output_xbins = np.linspace(orig_bins[0], orig_bins[-1], (orig_bins.size-1)*10+1)
-            #fitvals = np.poly1d(np_fit[0])(output_xbins)
-            #ax = Plotter.plot_1D(fitvals[:-1], output_xbins, xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], color=year_opts[year]['col'], ax=ax, histtype='step', label='%s %sD Fit' % (year_opts[year]['leg_title'], deg), linestyle='--')
-            #lookup = dense_lookup(*(fitvals, output_xbins))
 
         else:
             (orig_xbins, orig_ybins), orig_vals = histo._axes, histo._values
@@ -114,7 +106,7 @@ for var in var_opts.keys():
                 # plot original distribution
             fig, ax = plt.subplots()
             fig.subplots_adjust(hspace=.07)
-            ax = Plotter.plot_2d_norm(0, xbins=orig_xbins, ybins=orig_ybins, values=orig_vals,
+            Plotter.plot_2d_norm(0, xbins=orig_xbins, ybins=orig_ybins, values=orig_vals,
                 xlimits=(min(orig_xbins), max(orig_xbins)), ylimits=(min(orig_ybins), max(orig_ybins)),
                 xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], ax=ax, **{'cmap_label' : 'NNLO/Tune'},
             )
@@ -123,7 +115,7 @@ for var in var_opts.keys():
                 fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
             ax.text(0.98, 0.95, 'Original', fontsize=rcParams['font.size'], horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes)
-            hep.cms.cmslabel(ax=ax, year=year)
+            hep.cms.label(ax=ax, year=year)
 
             figname = os.path.join(outdir, '%s_%s_ttJets_Orig_NNLO_to_Tune_%s' % (year, jobid, var))
             fig.savefig(figname)
@@ -132,7 +124,7 @@ for var in var_opts.keys():
                 # plot interpolated distribution
             fig_int, ax_int = plt.subplots()
             fig_int.subplots_adjust(hspace=.07)
-            ax_int = Plotter.plot_2d_norm(0, xbins=output_xbins, ybins=output_ybins, values=interped_array,
+            Plotter.plot_2d_norm(0, xbins=output_xbins, ybins=output_ybins, values=interped_array,
                 xlimits=(min(orig_xbins), max(orig_xbins)), ylimits=(min(orig_ybins), max(orig_ybins)),
                 xlabel=var_opts[var]['xtitle'], ylabel=var_opts[var]['ytitle'], ax=ax_int, **{'cmap_label' : 'NNLO/Tune'},
             )
@@ -141,7 +133,7 @@ for var in var_opts.keys():
                 fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax_int.transAxes
             )
             ax_int.text(0.98, 0.95, 'Interpolated', fontsize=rcParams['font.size'], horizontalalignment='right', verticalalignment='bottom', transform=ax_int.transAxes)
-            hep.cms.cmslabel(ax=ax_int, year=year)
+            hep.cms.label(ax=ax_int, year=year)
 
             figname_int = os.path.join(outdir, '%s_%s_ttJets_Interp_NNLO_to_Tune_%s' % (year, jobid, var))
             fig_int.savefig(figname_int)
@@ -154,17 +146,14 @@ for var in var_opts.keys():
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0.6, ax.get_ylim()[1])
         ax.legend(loc='upper right')
-        hep.cms.cmslabel(ax=ax, year='')
+        hep.cms.label(ax=ax, year='')
 
         figname = os.path.join(outdir, '%s_ttJets_Interpolated_NNLO_to_Tune_%s_Comp' % (jobid, var))
-        #figname = os.path.join(outdir, '%s_ttJets_QuadFit_NNLO_to_Tune_%s_Comp' % (jobid, var))
         fig.savefig(figname)
         print('%s written' % figname)
         plt.close()
 
-
 if args.save_ratios:
-    orig_interp_ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % jobid)
+    orig_interp_ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea' % base_jobid)
     save(ratios, orig_interp_ratios_fname)
     print('\n', orig_interp_ratios_fname, 'written')
-
