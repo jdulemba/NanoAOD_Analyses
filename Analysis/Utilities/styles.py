@@ -296,7 +296,16 @@ styles = {
         'facecolor' : '#606060', # grey
         'name' : '$\\tau \\tau \\rightarrow hh$',
     },
-
-
-
 }
+
+
+from itertools import product
+for bundle in product([365, 400, 500, 600, 750, 800, 1000], ['2p5', '10', '25']):
+    styles['AtoTT*_M%d_W%s_*' % bundle] = {
+        'facecolor' : '#e41a1c',
+        'name' : "$A_{%d}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}$" % (bundle[0], bundle[1].replace('p', '.')),
+    }
+    styles['HtoTT*_M%d_W%s_*' % bundle] = {
+        'facecolor' : 'b',
+        'name' : "$H_{%d}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}$" % (bundle[0], bundle[1].replace('p', '.')),
+    }
