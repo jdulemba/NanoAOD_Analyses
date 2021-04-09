@@ -16,6 +16,8 @@ data_samples = re.compile('(data*)')
 qcd_samples = re.compile('(QCD*)')
 prompt_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'QCD*']))
 nonTT_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'ttJets*', 'TT$'])) # 'TT$' is for templates
+signal_samples = re.compile(r'((?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
+nonsignal_samples = re.compile(r'(?!(?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
 
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
@@ -230,7 +232,7 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', mask=Non
     return ax
 
 
-def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-', color='k', density=False, weights=None, ax=None, label='', histtype='errorbar', **kwargs):
+def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-', color='k', density=False, weights=None, ax=None, label='', histtype='step', **kwargs):
     if ax is None:
         ax = plt.gca()
 
@@ -241,7 +243,7 @@ def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-
     ytitle = kwargs.get('ytitle', ylabel)
     ax.set_xlabel(xtitle)
     ax.set_ylabel(ytitle)
-    ax.set_ylim(0, None)
+    #ax.set_ylim(0, None)
 
     return ax
 
@@ -348,15 +350,23 @@ def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all', sys=
     Returns: list of tuples containing sample name, yield, and fraction
     '''
     if histo.sparse_dim() > 1:
+        set_trace()
         mc_dict = histo[:, sys].integrate('sys')
-        mc_dict = mc_dict[mc_samples]
+        sig_dict = mc_dict[signal_samples]
+        mc_dict = mc_dict[nonsignal_samples][mc_samples]
         data_dict = histo[:, 'nosys'].integrate('sys')
         data_dict = data_dict[data_samples]
 
     else:
-        mc_dict = histo[mc_samples]
+        sig_dict = histo[signal_samples]
+        mc_dict = histo[nonsignal_samples][mc_samples]
         data_dict = histo[data_samples]
 
+        # get signal values
+    sig_yields_and_errs = sig_dict.integrate(sig_dict.dense_axes()[0].name).sum().values(overflow=overflow, sumw2=True)
+    sig_proc_yields_list = [(''.join(process), proc_yields[0], proc_yields[1]) for process, proc_yields in sig_yields_and_errs.items()]
+
+        # get SM MC and data values
     yields_and_errs = mc_dict.integrate(mc_dict.dense_axes()[0].name).sum().values(overflow=overflow, sumw2=True)
     yields_and_errs.update(data_dict.integrate(data_dict.dense_axes()[0].name).sum().values(overflow=overflow, sumw2=True))
     proc_yields_list = [(''.join(process), proc_yields[0], proc_yields[1]) for process, proc_yields in yields_and_errs.items()]
@@ -371,7 +381,7 @@ def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all', sys=
     rows += [("", "", "", "", "")]
     rows += [("", "data", format(data_yield, '.1f'), format(data_err, '.1f'), "")]
     rows += [("", "", "", "", "")]
-    rows += [("", "data/SIM", "", "", format(data_yield/mc_yield, '.3f'))]
+    rows += [("", "data/SIM", "", "", '0.' if mc_yield == 0. else format(data_yield/mc_yield, '.3f'))]
     if promptmc:
         prompt_mc_yield = sum([process[1] for process in proc_yields_list if not ((process[0] == 'data') or (process[0] == 'QCD'))])
         prompt_mc_err = np.sqrt(sum([process[2] for process in proc_yields_list if not ((process[0] == 'data') or (process[0] == 'QCD'))]))
@@ -379,9 +389,13 @@ def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow='all', sys=
         rows += [("", "Prompt MC", format(prompt_mc_yield, '.1f'), format(prompt_mc_err, '.1f'),  "")]
         rows += [("", "data-Prompt MC", format(data_yield-prompt_mc_yield, '.1f'), format(np.sqrt(data_err**2+prompt_mc_err**2), '.1f'), "")]
 
+    rows += [("", "", "", "", "")]
+    rows += [("", process, format(proc_yield, '.1f'), format(np.sqrt(proc_err), '.1f'), "") for process, proc_yield, proc_err in sig_proc_yields_list]
+
     yields_dict = {process:(round(proc_yield, 2), round(np.sqrt(proc_err), 2)) for process, proc_yield, proc_err in proc_yields_list}
     yields_dict.update({'SIM': (round(mc_yield, 2), round(mc_err, 2))})
-    yields_dict.update({'data/SIM': round(data_yield/mc_yield, 3)})
+    yields_dict.update({'data/SIM': 0. if mc_yield == 0. else round(data_yield/mc_yield, 3)})
+    yields_dict.update({process:(round(proc_yield, 2), round(np.sqrt(proc_err), 2)) for process, proc_yield, proc_err in sig_proc_yields_list})
 
     return rows, yields_dict
 
