@@ -31,7 +31,7 @@ args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
 base_jobid = os.environ['base_jobid']
-analyzer = 'nnlo_reweighting_vars'
+analyzer = 'make_nnlo_reweighting_vars'
 
 f_ext = 'TOT.coffea'
 outdir = os.path.join(proj_dir, 'plots', base_jobid, analyzer)
@@ -39,16 +39,14 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
     
 style_dict = {
-    '2016' : ('2016 CP5' if base_jobid == 'ULnanoAOD' else '2016 T4', '#377eb8'), ## blue
-    '2017' : ('2017 CP5', '#e42a2c'), ## red
+    '2016' : ('2016 CP5 (post-VFP)' if base_jobid == 'ULnanoAOD' else '2016 T4', '#377eb8'), ## blue
+    '2017' : ('2017 CP5', '#e41a1c'), ## red
     '2018' : ('2018 CP5', '#4daf4a'), ## green
 }
+if base_jobid == 'ULnanoAOD':
+    style_dict['2016APV'] = ('2016 CP5 (pre-VFP)', '#984ea3') # purple
 
-save_dict = {
-    '2016': {'thad_pt': {}, 'mtt_vs_thad_ctstar': {}},
-    '2017': {'thad_pt': {}, 'mtt_vs_thad_ctstar': {}},
-    '2018': {'thad_pt': {}, 'mtt_vs_thad_ctstar': {}},
-}
+save_dict = {year: {'thad_pt': {}, 'mtt_vs_thad_ctstar': {}} for year in style_dict.keys()}
 
 mtt_binning = np.array([250., 420., 520., 620., 800., 1000., 3500.])
 mtt_binlabels = ['%s $\leq$ m($t\\bar{t}$) $\leq$ %s' % (mtt_binning[bin], mtt_binning[bin+1]) for bin in range(len(mtt_binning)-1)]
@@ -143,8 +141,7 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
     logy_min, logy_max = np.min(nnlo_histo.values()[()]), np.max(nnlo_histo.values()[()]) 
     normed_logy_min, normed_logy_max = np.min(nnlo_normed_histo.values()[()]), np.max(nnlo_normed_histo.values()[()]) 
     
-    years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2017', '2018']
-    #years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+    years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
     for year in years_to_run:
         input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, base_jobid), analyzer)
         fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
@@ -242,7 +239,7 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
 
         if args.save_ratios:
             #set_trace()
-            save_dict[year][tune_var] = dense_lookup(normed_ratio_vals, (nnlo_binning)) if vlines is None else dense_lookup(normed_ratio_vals[:-1].reshape(len(mtt_binning)-1,len(ctstar_binning)-1), (mtt_binning, ctstar_binning))
+            save_dict[year][tune_var] = dense_lookup(normed_ratio_vals[:-1], (nnlo_binning)) if vlines is None else dense_lookup(normed_ratio_vals[:-1].reshape(len(mtt_binning)-1,len(ctstar_binning)-1), (mtt_binning, ctstar_binning))
 
 
     # plot yields
@@ -443,8 +440,6 @@ for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
 
 # save weights
 if args.save_ratios:
-    set_trace()
-    ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s_Test.coffea' % base_jobid)
-    #ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s.coffea' % base_jobid)
+    ratios_fname = os.path.join(proj_dir, 'NNLO_files', 'NNLO_to_Tune_Ratios_%s.coffea' % base_jobid)
     save(save_dict, ratios_fname)
     print('\n', ratios_fname, 'written')    
