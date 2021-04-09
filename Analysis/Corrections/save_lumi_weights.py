@@ -30,15 +30,30 @@ for year in years_to_run:
         if dataset['DBSName'] == 'NOT PRESENT':
             print("Dataset %s not present, will be skipped" % sample)
             continue
-        if not os.path.isfile(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s.meta.json' % sample)):
-            print("No meta.json file found for dataset %s, skipping" % sample)
-            continue
-        print('    %s' % sample)
-        meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s.meta.json' % sample)).read())
-        sumGenWeights = meta_json["sumGenWeights"]
-        xsec = dataset['xsection']
-        for lep in ['Electrons', 'Muons']:
-            umi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
+
+        if 'Int' in sample:
+            #set_trace()
+            for wt_type in ['pos', 'neg']:
+                if not os.path.isfile(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s_%s.meta.json' % (sample, wt_type))):
+                    print("No meta.json file found for dataset %s_%s, skipping" % (sample, wt_type))
+                    continue
+                print('    %s_%s' % (sample, wt_type))
+                meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s_%s.meta.json' % (sample, wt_type))).read())
+                sumGenWeights = meta_json["sumGenWeights"]
+                xsec = dataset['xsection']
+                for lep in ['Electrons', 'Muons']:
+                    lumi_weights[year][lep]['%s_%s' % (sample, wt_type)] = data_lumi[year][lep]/abs(sumGenWeights/xsec)
+
+        else:
+            if not os.path.isfile(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s.meta.json' % sample)):
+                print("No meta.json file found for dataset %s, skipping" % sample)
+                continue
+            print('    %s' % sample)
+            meta_json = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_%s' % (year, base_jobid), '%s.meta.json' % sample)).read())
+            sumGenWeights = meta_json["sumGenWeights"]
+            xsec = dataset['xsection']
+            for lep in ['Electrons', 'Muons']:
+                lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
     print("%s calculated" % year)
 
