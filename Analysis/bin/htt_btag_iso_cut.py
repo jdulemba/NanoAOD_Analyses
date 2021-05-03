@@ -34,13 +34,9 @@ analyzer = 'htt_btag_iso_cut'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-parser.add_argument('--evt_sys', type=str, help='Specify event systematics to run. Default is (NONE,NONE) and all opts are capitalized through run_analyzer')
-parser.add_argument('--rewt_sys', type=str, help='Specify reweighting systematics to run. Default is (NONE,NONE) and all opts are capitalized through run_analyzer')
-parser.add_argument('--only_sys', type=int, help='Only run specified systematics and not nominal weights (nosys)')
-
+parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 args = parser.parse_args()
 
 # convert input string of fileset dictionary to actual dictionary
@@ -65,6 +61,15 @@ if isData_:
 Nominal_ttJets = ['ttJets_PS'] if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else ['ttJetsSL', 'ttJetsHad', 'ttJetsDiLep']
 isNominal_ttJets_ = samplename in Nominal_ttJets
 isTTShift_ = isTTbar_ and (samplename.endswith('UP') or samplename.endswith('DOWN') or 'mtop' in samplename)
+
+# convert input string of options dictionary to actual dictionary
+odict = (args.opts).replace("\'", "\"")
+opts_dict = prettyjson.loads(odict)
+
+    ## set config options passed through argparse
+import ast
+to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
+apply_hem = ast.literal_eval(opts_dict.get('apply_hem', 'True'))
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
@@ -122,27 +127,30 @@ perm_cats = {
 }
 
 # get systematics to run
+evt_sys_to_run = opts_dict.get('evt_sys', 'NONE').upper()
+rewt_sys_to_run = opts_dict.get('rewt_sys', 'NONE').upper()
+only_sys = ast.literal_eval(opts_dict.get('only_sys', 'False'))
 if isData_ or isTTShift_: # data or separate systematics dataset
     event_systematics_to_run = ['nosys']
     reweight_systematics_to_run = ['nosys']
 else: # MC samples
     import fnmatch
-    if bool(args.only_sys): # don't run 'nosys'
-        if (args.evt_sys == 'NONE') and (args.rewt_sys == 'NONE'):
+    if only_sys: # don't run 'nosys'
+        if (evt_sys_to_run == 'NONE') and (rewt_sys_to_run == 'NONE'):
             raise ValueError("At least one systematic must be specified in order to run only on systematics!")
     
-        event_systematics_to_run = ['nosys'] if (args.rewt_sys != 'NONE') else []
+        event_systematics_to_run = ['nosys'] if (rewt_sys_to_run != 'NONE') else []
         reweight_systematics_to_run = []
     
     else:
         event_systematics_to_run = ['nosys']
         reweight_systematics_to_run = ['nosys']
 
-    event_systematics_to_run += [systematics.event_sys_opts[args.year][name] for name in systematics.event_sys_opts[args.year].keys() if fnmatch.fnmatch(name, args.evt_sys)]
+    event_systematics_to_run += [systematics.event_sys_opts[args.year][name] for name in systematics.event_sys_opts[args.year].keys() if fnmatch.fnmatch(name, evt_sys_to_run)]
     if isSignal_:
-        reweight_systematics_to_run += [systematics.signal_reweight_opts[args.year][name] for name in systematics.signal_reweight_opts[args.year].keys() if fnmatch.fnmatch(name, args.rewt_sys)]
+        reweight_systematics_to_run += [systematics.signal_reweight_opts[args.year][name] for name in systematics.signal_reweight_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
     else:
-        reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, args.rewt_sys)]
+        reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
 
         ## check that systematics only related to ttbar events aren't used for non-ttbar events
     if not isTTbar_:
@@ -167,7 +175,9 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         #self.mtregion_axis = hist.Cat("mtregion", "MT Region")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
+        self.eta_2d_axis = hist.Bin("eta_2d", r"$\eta$", np.array([-3.0, -2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5, 3.0]))
         self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.phi_2d_axis = hist.Bin("phi_2d", r"$\phi$", np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]))
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
@@ -216,21 +226,21 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                         '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'DeepCSV_pass'},
                         '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_MU', 'DeepCSV_pass'},
                     },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'DeepCSV_fail'},
-                    #    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_MU', 'DeepCSV_fail'},
-                    #},
+                    'btagFail' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'DeepCSV_fail'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_MU', 'DeepCSV_fail'},
+                    },
                 },
-                #'Loose' : {
-                #    'btagPass' : {
-                #        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_MU', 'DeepCSV_pass'},
-                #        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_MU', 'DeepCSV_pass'},
-                #    },
-                #    'btagFail' : {
-                #        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_MU', 'DeepCSV_fail'},
-                #        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_MU', 'DeepCSV_fail'},
-                #    },
-                #},
+                'Loose' : {
+                    'btagPass' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_MU', 'DeepCSV_pass'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_MU', 'DeepCSV_pass'},
+                    },
+                    'btagFail' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_MU', 'DeepCSV_fail'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_MU', 'DeepCSV_fail'},
+                    },
+                },
             },
             'Electron' : {
                 'Tight' : {
@@ -238,36 +248,36 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                         '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'DeepCSV_pass'},
                         '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_EL', 'DeepCSV_pass'},
                     },
-                    #'btagFail' : {
-                    #    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'DeepCSV_fail'},
-                    #    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_EL', 'DeepCSV_fail'},
-                    #},
+                    'btagFail' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'DeepCSV_fail'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_EL', 'DeepCSV_fail'},
+                    },
                 },
-                #'Loose' : {
-                #    'btagPass' : {
-                #        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_EL', 'DeepCSV_pass'},
-                #        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_EL', 'DeepCSV_pass'},
-                #    },
-                #    'btagFail' : {
-                #        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_EL', 'DeepCSV_fail'},
-                #        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_EL', 'DeepCSV_fail'},
-                #    },
-                #},
+                'Loose' : {
+                    'btagPass' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_EL', 'DeepCSV_pass'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_EL', 'DeepCSV_pass'},
+                    },
+                    'btagFail' : {
+                        '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_EL', 'DeepCSV_fail'},
+                        '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_EL', 'DeepCSV_fail'},
+                    },
+                },
             },
         }
         self.regions = {sys:deepcopy(base_regions) for sys in self.event_systematics_to_run}
             # remove sideband regions for systematics
         for sys in self.regions.keys():
             if (sys != 'nosys') or isTTShift_ or isSignal_:
-                del self.regions[sys]['Muon']['Loose']
-                del self.regions[sys]['Electron']['Loose']
-                del self.regions[sys]['Muon']['Tight']['btagFail']
-                del self.regions[sys]['Electron']['Tight']['btagFail']
+                if 'Loose' in self.regions[sys]['Muon'].keys(): del self.regions[sys]['Muon']['Loose']
+                if 'Loose' in self.regions[sys]['Electron'].keys(): del self.regions[sys]['Electron']['Loose']
+                if 'btagFail' in self.regions[sys]['Muon']['Tight'].keys(): del self.regions[sys]['Muon']['Tight']['btagFail']
+                if 'btagFail' in self.regions[sys]['Electron']['Tight'].keys(): del self.regions[sys]['Electron']['Tight']['btagFail']
 
         if isSM_Data_:
-            del self.regions['nosys']['Electron']
+            if 'Electron' in self.regions['nosys'].keys(): del self.regions['nosys']['Electron']
         if isSE_Data_:
-            del self.regions['nosys']['Muon']
+            if 'Muon' in self.regions['nosys'].keys(): del self.regions['nosys']['Muon']
         if isData_:
             for lepton in self.regions['nosys'].keys():
                 for leptype in self.regions['nosys'][lepton].keys():
@@ -297,6 +307,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.njets_axis)
         histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
         histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
+        histo_dict['Jets_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_2d_axis, self.eta_2d_axis)
 
         return histo_dict
 
@@ -306,6 +317,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
         histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.lepIso_axis)
         histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
+        histo_dict['Lep_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_2d_axis, self.eta_2d_axis)
     #    histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
     #    histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.energy_axis)
 
@@ -355,7 +367,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
 
             # get all passing leptons
-        lep_and_filter_pass = objsel.select_leptons(events, year=args.year)#, cutflow=output['cutflow'])
+        lep_and_filter_pass = objsel.select_leptons(events, year=args.year, hem_15_16=apply_hem)
         {selection[sys].add('lep_and_filter_pass', lep_and_filter_pass) for sys in selection.keys()} # add passing leptons requirement to all systematics
 
             ## build corrected jets and MET
@@ -434,12 +446,12 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                 el_evt_weights.add('%s_reweighting' % corrections['NNLO_Rewt']['Var'], nnlo_wts)
 
 
-        #if args.debug: set_trace()
+        #if to_debug: set_trace()
             # run over systematics that require changes to event objects (jets+MET)
         for evt_sys in self.event_systematics_to_run:
             output['cutflow_%s' % evt_sys]['lep_and_filter_pass'] += ak.sum(lep_and_filter_pass)
                 # jet selection
-            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys)
+            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys, hem_15_16=apply_hem)
             output['cutflow_%s' % evt_sys]['nEvts passing jet and lepton obj selection'] += ak.sum(passing_jets & lep_and_filter_pass)
             selection[evt_sys].add('passing_jets', passing_jets)
             selection[evt_sys].add('jets_3',  ak.num(events['SelectedJets']) == 3)
@@ -500,7 +512,7 @@ class htt_btag_iso_cut(processor.ProcessorABC):
 
                             output['cutflow_%s' % evt_sys]['nEvts %s' % ', '.join([lepton, leptype, btagregion, jmult])] += cut.sum()
 
-                            if args.debug: print(lepton, leptype, btagregion, jmult)
+                            if to_debug: print(lepton, leptype, btagregion, jmult)
                             if cut.sum() > 0:
                                 ltype = 'MU' if lepton == 'Muon' else 'EL'
                                 if 'loose_or_tight_%s' % ltype in self.regions[evt_sys][lepton][leptype][btagregion][jmult]:
@@ -539,15 +551,15 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                 output['cutflow_%s' % evt_sys]['nEvts %s: pass MT cut' % ', '.join([lepton, leptype, btagregion, jmult])] += ak.sum(MTHigh)
 
                                     # fill hists for each systematic
-                                if args.debug: print('  evt sys:', evt_sys)
+                                if to_debug: print('  evt sys:', evt_sys)
                                 #set_trace()
                                 if evt_sys == 'nosys':
                                     for rewt_sys in self.reweight_systematics_to_run:
-                                        #if args.debug: set_trace()
+                                        #if to_debug: set_trace()
                                             ## only fill plots in signal region if systematic variation being used
                                         if (rewt_sys != 'nosys') and ('%s_%s' % (leptype, btagregion) != 'Tight_btagPass'): continue
 
-                                        if args.debug: print('    sysname:', rewt_sys)
+                                        if to_debug: print('    sysname:', rewt_sys)
 
                                         if rewt_sys == 'nosys':
                                             wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
@@ -576,8 +588,8 @@ class htt_btag_iso_cut(processor.ProcessorABC):
                                                 perm=best_perms[valid_perms][MTHigh], jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
 
                                 else:
-                                    if args.debug: print('    sysname:', evt_sys)
-                                    #if args.debug: set_trace()
+                                    if to_debug: print('    sysname:', evt_sys)
+                                    #if to_debug: set_trace()
                                     wts = (evt_weights.weight()*btag_weights['%s_CEN' % btaggers[0]])[cut][valid_perms][MTHigh]
                                             # fill hists for interference samples
                                     if isInt_:
@@ -640,6 +652,8 @@ class htt_btag_iso_cut(processor.ProcessorABC):
             acc['Jets_eta'].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.eta)*evt_wts)[perm_inds]))
             acc['Jets_phi'].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=ak.flatten(jets.phi[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
             acc['Jets_njets'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, njets=ak.num(jets)[perm_inds], weight=evt_wts[perm_inds])
+            acc['Jets_phi_vs_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
+                phi_2d=ak.flatten(jets.phi[perm_inds]), eta_2d=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
 
             acc['Jets_LeadJet_pt'].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=pt_sorted_jets[perm_inds].pt[:, 0], weight=evt_wts[perm_inds])
             acc['Jets_LeadJet_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=pt_sorted_jets[perm_inds].eta[:, 0], weight=evt_wts[perm_inds])
@@ -649,6 +663,8 @@ class htt_btag_iso_cut(processor.ProcessorABC):
             acc['Lep_phi'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=ak.flatten(leptons.phi[perm_inds]), weight=evt_wts[perm_inds])
             acc['Lep_iso'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
                 iso=ak.flatten(leptons['pfRelIso04_all'][perm_inds]) if leptype == 'Muon' else ak.flatten(leptons['pfRelIso03_all'][perm_inds]), weight=evt_wts[perm_inds])
+            acc['Lep_phi_vs_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
+                phi_2d=ak.flatten(leptons.phi[perm_inds]), eta_2d=ak.flatten(leptons.eta[perm_inds]), weight=evt_wts[perm_inds])
 
             acc['MT'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mt=ak.flatten(MTvals)[perm_inds], weight=evt_wts[perm_inds])
 
@@ -658,15 +674,15 @@ class htt_btag_iso_cut(processor.ProcessorABC):
         return accumulator
 
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
     processor_instance=htt_btag_iso_cut(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if to_debug else 100000,
     chunksize=100000,
 )
 
