@@ -2,6 +2,10 @@ import awkward as ak
 from pdb import set_trace
 
 single_el_trigger_paths = {
+    '2016APV' : {
+        'Iso' : ["Ele27_WPTight_Gsf"],
+        'noIso' : ["Ele27_WPLoose_Gsf"],
+    },
     '2016' : {
         'Iso' : ["Ele27_WPTight_Gsf"],
         'noIso' : ["Ele27_WPLoose_Gsf"],
@@ -17,6 +21,10 @@ single_el_trigger_paths = {
 }
 
 single_mu_trigger_paths = {
+    '2016APV' : {
+        'Iso' : ["IsoMu24", "IsoTkMu24"],
+        'noIso' : ["Mu50"],
+    },
     '2016' : {
         'Iso' : ["IsoMu24", "IsoTkMu24"],
         'noIso' : ["Mu50"],
@@ -51,6 +59,14 @@ def get_triggers(HLT, leptype, year, noIso=False, accumulator=None):
 
 ## Supported filters found here: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
 met_filters = {}
+met_filters["2016APV"] = [
+    "goodVertices",
+    "globalSuperTightHalo2016Filter",
+    "HBHENoiseFilter",
+    "HBHENoiseIsoFilter",
+    "EcalDeadCellTriggerPrimitiveFilter",
+    "BadPFMuonFilter"
+]
 met_filters["2016"] = [
     "goodVertices",
     "globalSuperTightHalo2016Filter",

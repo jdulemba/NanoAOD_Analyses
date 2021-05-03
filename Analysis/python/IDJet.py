@@ -44,18 +44,31 @@ if os.environ['base_jobid'] == 'NanoAODv6':
     }
     
 elif os.environ['base_jobid'] == 'ULnanoAOD':
-    #btag_values["2016"] = {
-    #    'btagDeepB' : {
-    #        'DeepCSVLoose' : 0.2217,
-    #        'DeepCSVMedium': 0.6321,
-    #        'DeepCSVTight' : 0.8953,
-    #    },
-    #    'btagDeepFlavB' : {
-    #        'DeepJetLoose' : 0.0614,
-    #        'DeepJetMedium': 0.3093,
-    #        'DeepJetTight' : 0.7221
-    #    }
-    #}
+        # 2016(APV) values are still old ones
+    btag_values["2016APV"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.2217,
+            'DeepCSVMedium': 0.6321,
+            'DeepCSVTight' : 0.8953,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0614,
+            'DeepJetMedium': 0.3093,
+            'DeepJetTight' : 0.7221
+        }
+    }
+    btag_values["2016"] = {
+        'btagDeepB' : {
+            'DeepCSVLoose' : 0.2217,
+            'DeepCSVMedium': 0.6321,
+            'DeepCSVTight' : 0.8953,
+        },
+        'btagDeepFlavB' : {
+            'DeepJetLoose' : 0.0614,
+            'DeepJetMedium': 0.3093,
+            'DeepJetTight' : 0.7221
+        }
+    }
     btag_values["2017"] = {
         'btagDeepB' : {
             'DeepCSVLoose' : 0.1355,
@@ -106,7 +119,7 @@ def make_leadjet_pt_cut(jets):
     leadpt_cut = (ak.max(jets['pt'], axis=1) >= jet_pars['lead_ptmin'])
     return leadpt_cut
 
-def process_jets(events, year, corrections=None, hem_15_16=False):
+def process_jets(events, year, corrections=None):
 
     jets = events['Jet']
     jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
@@ -123,7 +136,10 @@ def process_jets(events, year, corrections=None, hem_15_16=False):
     if (jet_pars['applyJER'] == 1) and corrections is not None:
         if events.metadata['dataset'].startswith('data_Single'):
             era = [key for key in corrections['DATA'].keys() if events.metadata['dataset'].split(year)[-1] in key]
-            if (year == '2016') and ('Bv2' in events.metadata['dataset']): era = ['BCD']
+            if ('2016' in year) and (('Bv2' in events.metadata['dataset']) or ('C' in events.metadata['dataset']) or ('D' in events.metadata['dataset'])): era = ['BCD']
+            if ('2016' in year) and (('E' in events.metadata['dataset']) or ('F' in events.metadata['dataset'])): era = ['EF']
+            if ('2016' in year) and (('G' in events.metadata['dataset']) or ('H' in events.metadata['dataset'])): era = ['GH']
+            #if ('2016' in year) and ('Bv2' in events.metadata['dataset']): era = ['BCD']
             if len(era) != 1: raise ValueError("Only one era should be used for %s" % events.metadata['dataset'])
             jet_factory = corrections['DATA'][era[0]]['JetsFactory']
             met_factory = corrections['DATA'][era[0]]['METFactory']
@@ -134,7 +150,6 @@ def process_jets(events, year, corrections=None, hem_15_16=False):
 
         events_cache = events.caches[0]
         corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        #corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
-        corrected_met = events['MET'] if ((year == '2018') and (hem_15_16)) else met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
+        corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
 
     return corrected_jets, corrected_met
