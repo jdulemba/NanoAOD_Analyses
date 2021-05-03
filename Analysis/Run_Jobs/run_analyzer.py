@@ -146,7 +146,8 @@ if (analyzer == 'htt_signal_reweight') or (analyzer == 'signal_validation'):
             OPTS=opts
     )
 #elif analyzer == 'htt_btag_iso_cut':
-elif (analyzer == 'htt_btag_iso_cut') or (analyzer == 'evtWeights'):
+#elif (analyzer == 'htt_btag_iso_cut') or (analyzer == 'evtWeights'):
+elif (analyzer == 'htt_btag_iso_cut') or (analyzer == 'evtWeights') or (analyzer == 'htt_btag_sb_regions'):
     run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} "{OPTS}" """.format(
             PROJDIR=proj_dir,
             ANALYZER=analyzer,
