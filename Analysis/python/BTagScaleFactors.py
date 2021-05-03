@@ -30,10 +30,15 @@ if base_jobid == 'NanoAODv6':
     }
 elif base_jobid == 'ULnanoAOD':
     btag_csvFiles = {
-        #'2016' : {
-        #    'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
-        #    'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
-        #},
+            # 2016(APV) are same as EOY for now!!
+        '2016APV' : {
+            'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
+            'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+        },
+        '2016' : {
+            'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
+            'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+        },
         '2017' : {
             'DeepJet' : 'DeepJet_106XUL17SF_used.csv',
             'DeepCSV' : 'DeepCSV_106XUL17SF_used.csv',
