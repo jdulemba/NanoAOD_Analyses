@@ -37,8 +37,8 @@ parser.add_argument('--year', type=str, help='Choose year(s) to run')
 args = parser.parse_args()
 
 if base_jobid == 'ULnanoAOD':
-    years_to_run = [args.year] if args.year else ['2017', '2018']
-    max_years = 2
+    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
+    max_years = 4
 else:
     years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
     max_years = 3
