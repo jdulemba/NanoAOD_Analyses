@@ -1,5 +1,22 @@
 {
     "Muons": {
+        "2016APV":{
+            "VETOMU": {
+                "id": "LOOSE_15Db",
+                "ptmin": 20.0,
+                "etamax": 2.4
+            },
+            "LOOSEMU" : {
+                "id": "ANTILOOSE_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            },
+            "TIGHTMU" : {
+                "id": "TIGHT_15Db",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            }
+        },
         "2016":{
             "VETOMU": {
                 "id": "LOOSE_15Db",
@@ -53,6 +70,23 @@
         }
     },
     "Electrons": {
+        "2016APV": {
+            "VETOEL": {
+                "id": "VETO_15",
+                "ptmin": 20.0,
+                "etamax": 2.4
+            },
+            "LOOSEEL": {
+                "id": "FAKES",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            },
+            "TIGHTEL": {
+                "id": "TIGHT_15_NoECAL_Gap",
+                "ptmin": 30.0,
+                "etamax": 2.4
+            }
+        },
         "2016": {
             "VETOEL": {
                 "id": "VETO_15",
