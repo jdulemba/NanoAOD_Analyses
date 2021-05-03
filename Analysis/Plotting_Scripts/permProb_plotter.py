@@ -36,8 +36,8 @@ base_jobid = os.environ['base_jobid']
 analyzer = 'permProbComputer'
 
 if base_jobid == 'ULnanoAOD':
-    years_to_run = [args.year] if args.year else ['2017', '2018']
-    max_years = 2
+    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
+    max_years = 4
 else:
     years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
     max_years = 3
@@ -120,7 +120,8 @@ for year in years_to_run:
     fnames = sorted(fnames)
     
     hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
-    
+
+    #set_trace()    
     lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
 
 
