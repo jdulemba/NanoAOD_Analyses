@@ -9,6 +9,7 @@ import re
 from pdb import set_trace
 import numpy as np
 import Utilities.systematics as systematics
+from iminuit import minimize
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile('(?!data*)')
@@ -57,8 +58,9 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
             clear=False,
             error_opts=hstyles['data_err_opts']
         )
-    ax.autoscale(axis='x', tight=True)
-    ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+    ax.autoscale()
+    ax.set_ylim(0, ax.get_ylim()[1]*1.3)
+    #ax.set_ylim(0, None)
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
     
@@ -71,7 +73,8 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
         handles[idx].set_facecolor(facecolor)
         labels[idx] = legname
     # call ax.legend() with the new values
-    ax.legend(handles,labels, loc='upper right', title=mc_opts['legend_title']) if 'legend_title' in mc_opts.keys() else ax.legend(handles,labels, loc='upper right')
+    ax.legend(handles,labels, loc='upper right', title=mc_opts['legend_title'], ncol=3) if 'legend_title' in mc_opts.keys() else ax.legend(handles,labels, loc='upper right', ncol=3)
+    #ax.legend(handles,labels, loc='upper right', title=mc_opts['legend_title']) if 'legend_title' in mc_opts.keys() else ax.legend(handles,labels, loc='upper right')
     #set_trace()
     
         ## plot data/MC ratio
@@ -115,7 +118,8 @@ def plot_sys_variations(ax, rax, nom, up, dw, xlabel='', ylabel='', xlimits=None
     ax = hep.plot.histplot(nom_data.values()[()], nom_data.dense_axes()[0].edges(), ax=ax, label='data', marker='.', color='k', histtype='errorbar')
 
     ax.legend(loc='upper right', title=opts['legend_title'])
-    ax.autoscale(axis='x', tight=True)
+    #ax.autoscale(axis='x', tight=True)
+    ax.autoscale()
     ax.set_ylabel(ylabel)
     ax.set_ylim(0, None)
     ax.set_xlabel(None)
@@ -177,8 +181,10 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_
         order=mcorder,
         density=normalize,
     )
-    ax.autoscale(axis='x', tight=True)
-    ylims = (0, ax.get_ylim()[1]*1.15) if ylimits is None else ylimits
+    #ax.autoscale(axis='x', tight=True)
+    #ylims = (0, ax.get_ylim()[1]*1.15) if ylimits is None else ylimits
+    ax.autoscale()
+    ylims = (0, None) if ylimits is None else ylimits
     ax.set_ylim(ylims)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -221,7 +227,8 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel='', ylabel='', mask=Non
     cmap_label = opts.get('cmap_label', '')
     plt.colorbar(pc, ax=ax, label=cmap_label, pad=0.)
 
-    ax.autoscale(axis='x', tight=True)
+    #ax.autoscale(axis='x', tight=True)
+    ax.autoscale()
     ax.set_xlim(xlimits)
     ax.set_ylim(ylimits)
     xtitle = opts.get('xtitle', xlabel)
@@ -237,13 +244,14 @@ def plot_1D(values, bins, xlimits=None, xlabel='', ylabel='Events', linestyle='-
         ax = plt.gca()
 
     hep.plot.histplot(values, bins, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
-    ax.autoscale(axis='x', tight=True)
+    #ax.autoscale(axis='x', tight=True)
+    ax.autoscale()
     ax.set_xlim(min(bins), max(bins)) if xlimits is None else ax.set_xlim(xlimits)
     xtitle = kwargs.get('xtitle', xlabel)
     ytitle = kwargs.get('ytitle', ylabel)
     ax.set_xlabel(xtitle)
     ax.set_ylabel(ytitle)
-    #ax.set_ylim(0, None)
+    ax.set_ylim(0, None)
 
     return ax
 
@@ -280,10 +288,23 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
     btag_dmp = data_minus_prompt(btag_sb)
     double_dmp = data_minus_prompt(double_sb)
 
+    data_histo_dict = {
+        'ISO' : iso_sb[data_samples].integrate('process'),
+        'BTAG' : btag_sb[data_samples].integrate('process'),
+        'DOUBLE' : double_sb[data_samples].integrate('process'),
+        'SIG' : sig_reg[data_samples].integrate('process'),
+    }
+    prompt_histo_dict = {
+        'ISO' : iso_sb[prompt_mc_mask].integrate('process'),
+        'BTAG' : btag_sb[prompt_mc_mask].integrate('process'),
+        'DOUBLE' : double_sb[prompt_mc_mask].integrate('process'),
+        'SIG' : sig_reg[prompt_mc_mask].integrate('process'),
+    }
     dmp_dict = {
         'ISO' : iso_dmp,
         'BTAG' : btag_dmp,
         'DOUBLE' : double_dmp,
+        'SIG' : sig_dmp,
     }
 
     qcd_dict = {
@@ -305,6 +326,8 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
     normalization = 0
     if norm_type == 'ABCD':
         normalization = (np.sum(btag_dmp.values(overflow='all')[()])*np.sum(iso_dmp.values(overflow='all')[()]))/(np.sum(double_dmp.values(overflow='all')[()]))
+    elif norm_type == 'ABCD-ML':
+        normalization, norm_err = get_ml_qcd_yield(data=data_histo_dict, prompt=prompt_histo_dict, qcd=dmp_dict)
     elif norm_type == 'Sideband':
         normalization = np.sum(qcd_dict['SIG'].values(overflow='all')[()])/np.sum(qcd_dict[norm_region].values(overflow='all')[()])*np.sum(dmp_dict[norm_region].values(overflow='all')[()])
 
@@ -564,4 +587,43 @@ def get_ratio_arrays(num_vals, denom_vals, input_bins):
     ratio_bins = input_bins[first_valid_bin:last_valid_bin+1]
 
     return ratio_vals, ratio_bins
+
+
+### define negative log-likelihood function
+def negLogLikelihood(params, N_data, N_prompt, N_qcd):
+    """ the negative log-Likelihood-Function"""
+    scale, N_qcd_A = params
+
+    lnl_sig = -1*N_data['SIG']*np.log(scale*N_prompt['SIG']+N_qcd_A)+(scale*N_prompt['SIG']+N_qcd_A)
+    lnl_btag = -1*N_data['BTAG']*np.log(scale*N_prompt['BTAG']+N_qcd['BTAG'])+(scale*N_prompt['BTAG']+N_qcd['BTAG'])
+    lnl_iso = -1*N_data['ISO']*np.log(scale*N_prompt['ISO']+N_qcd['ISO'])+(scale*N_prompt['ISO']+N_qcd['ISO'])
+    lnl_double = -1*N_data['DOUBLE']*np.log(scale*N_prompt['DOUBLE']+((N_qcd['BTAG']*N_qcd['ISO'])/N_qcd_A))+(scale*N_prompt['DOUBLE']+((N_qcd['BTAG']*N_qcd['ISO'])/N_qcd_A))
+    lnl = np.sum(lnl_sig+lnl_btag+lnl_iso+lnl_double)
+
+    return lnl
+
+def get_ml_qcd_yield(data, prompt, qcd):
+    ### minimize the negative log-Likelihood
+    N_data = {key: np.sum(data[key].values(overflow='all')[()]) for key in data.keys()}
+    N_prompt = {key: np.sum(prompt[key].values(overflow='all')[()]) for key in prompt.keys()}
+    N_qcd = {key: np.sum(qcd[key].values(overflow='all')[()]) for key in qcd.keys()} # is data-prompt estmimate for qcd
+        ## test range of values for consistency
+    #results = []
+    #for scale in np.linspace(0, 2, 21):
+    #    for n_qcd_a in np.linspace(1000., 20000., 20):
+    #        results.append((scale, n_qcd_a, minimize(negLogLikelihood, x0=[scale, n_qcd_a], args=(N_data, N_prompt, N_qcd)).x[1]))
+    init_point = [1., 2000]
+    #set_trace()
+    # result is basically a scipy optimize result object
+    result = minimize(negLogLikelihood, x0=init_point, args=(N_data, N_prompt, N_qcd))
+    fit_val, fit_err = result.x[1], np.sqrt(result.hess_inv[1,1])
+    return fit_val, fit_err
+
+
+## get uncertainty on ratio between A and B
+def get_ratio_and_uncertainty(a_val, a_err, b_val, b_err):
+        # c = a/b
+    c_val = a_val/b_val
+    c_err = np.sqrt( (a_err/a_val)**2 + (b_err/b_val)**2 )*c_val
+    return c_val, c_err
 
