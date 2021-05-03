@@ -93,8 +93,9 @@ def make_name_map(jstack, isMC):
     return name_map
 
 
-years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-#years_to_run = ['2017']
+#years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+years_to_run = ['2016', '2017', '2018']
+#years_to_run = ['2016']
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
     for dtype in ['DATA', 'MC']:
@@ -155,7 +156,11 @@ for year in years_to_run:
     }
     print('Jet corrections for %s saved' % year)
 
-#set_trace()
+    ## temporary while there are no dedicated JECs for UL 2016
+if base_jobid == 'ULnanoAOD':
+    jet_corrections['2016APV'] = jet_corrections['2016']
+
+set_trace()
 fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea')
 save(jet_corrections, fname)
 print('\n%s written' % fname)
