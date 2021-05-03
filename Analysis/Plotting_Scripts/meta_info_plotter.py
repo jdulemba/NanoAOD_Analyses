@@ -21,7 +21,6 @@ import Utilities.plot_tools as plt_tools
 import numpy as np
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'meta_info'
 
@@ -32,9 +31,9 @@ parser.add_argument('data_mc', choices=['Data', 'MC', 'All'], help='Make plots f
 
 args = parser.parse_args()
 
-input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
+input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, base_jobid), analyzer)
 f_ext = 'TOT.coffea'
-outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer)
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, base_jobid), analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -97,7 +96,7 @@ for sample in samples:
                 meta_dict[key] = val
             else:
                 meta_dict[key] = val.tolist()
-        meta_fname = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, jobid), '%s.meta.json' % sample)
+        meta_fname = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, base_jobid), '%s.meta.json' % sample)
         with open(meta_fname, 'w') as out:
             out.write(prettyjson.dumps(meta_dict))
         print('%s written' % meta_fname)
@@ -138,7 +137,7 @@ if (args.data_mc == 'Data') or (args.data_mc == 'All'):
                 el_lumi_map_ind_dict[key] = val
             else:
                 el_lumi_map_ind_dict[key] = val.tolist()
-        with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, jobid), '%s.run.json' % period), 'w') as out:
+        with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, base_jobid), '%s.run.json' % period), 'w') as out:
             out.write(prettyjson.dumps(el_lumi_map_ind_dict))
         print('%s.run.json written' % period)
 
@@ -149,7 +148,7 @@ if (args.data_mc == 'Data') or (args.data_mc == 'All'):
                 mu_lumi_map_ind_dict[key] = val
             else:
                 mu_lumi_map_ind_dict[key] = val.tolist()
-        with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, jobid), '%s.run.json' % period), 'w') as out:
+        with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, base_jobid), '%s.run.json' % period), 'w') as out:
             out.write(prettyjson.dumps(mu_lumi_map_ind_dict))
         print('%s.run.json written' % period)
 
@@ -160,7 +159,7 @@ if (args.data_mc == 'Data') or (args.data_mc == 'All'):
             el_lumi_map_comb_dict[key] = val
         else:
             el_lumi_map_comb_dict[key] = val.tolist()
-    with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, jobid), 'data_SingleElectron_%s.run.json' % args.year), 'w') as out:
+    with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, base_jobid), 'data_SingleElectron_%s.run.json' % args.year), 'w') as out:
         out.write(prettyjson.dumps(el_lumi_map_comb_dict))
     print('data_SingleElectron_%s.run.json written' % args.year)
 
@@ -170,6 +169,6 @@ if (args.data_mc == 'Data') or (args.data_mc == 'All'):
             mu_lumi_map_comb_dict[key] = val
         else:
             mu_lumi_map_comb_dict[key] = val.tolist()
-    with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, jobid), 'data_SingleMuon_%s.run.json' % args.year), 'w') as out:
+    with open(os.path.join(proj_dir,'inputs', '%s_%s' % (args.year, base_jobid), 'data_SingleMuon_%s.run.json' % args.year), 'w') as out:
         out.write(prettyjson.dumps(mu_lumi_map_comb_dict))
     print('data_SingleMuon_%s.run.json written' % args.year)

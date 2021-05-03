@@ -18,6 +18,7 @@ import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
+parser.add_argument('--year', type=str, help='What year is the ntuple from.')
 parser.add_argument('--construct_btag', action='store_false', help='Makes btag SF constructor (default is True)')
 args = parser.parse_args()
 
@@ -30,7 +31,8 @@ outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+if args.year: years_to_run = [args.year]
 flav_effs = {year : {'DeepJet' : {'3Jets' : {}, '4PJets' : {}}, 'DeepCSV' : {'3Jets' : {},'4PJets' : {},} } for year in years_to_run}
 
 if args.construct_btag:
