@@ -326,7 +326,7 @@
         "name": "QCD_Mu_600to800"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-800to1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIISummer19UL16NanoAODAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/NANOAODSIM",
         "xsection": 3.275,
         "name": "QCD_Mu_800to1000"
     },
@@ -381,11 +381,6 @@
 
 
     {
-        "DBSName": "/SingleMuon/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "name": "data_SingleMuon_2016Bv1",
-        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
-    },
-    {
         "DBSName": "/SingleMuon/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2016Bv2",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
@@ -413,12 +408,7 @@
 
 
     {
-        "DBSName": "/SingleElectron/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "name": "data_SingleElectron_2016Bv1",
-        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
-    },
-    {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleElectron/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2016Bv2",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
     },

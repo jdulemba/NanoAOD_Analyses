@@ -273,7 +273,7 @@
         "name": "WW"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/ZZ_TuneCP5_13TeV-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v3/NANOAODSIM",
         "xsection": 12.14,
         "name": "ZZ"
     },
@@ -391,7 +391,7 @@
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/SingleMuon/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleMuon_2017C",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
     },
