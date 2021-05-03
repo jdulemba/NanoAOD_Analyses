@@ -24,7 +24,7 @@ parser.add_argument('year', choices=['2018'], help='What year is the ntuple from
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
 parser.add_argument('--nosys', action='store_true', help='Make plots without systematics and no qcd estimation')
 parser.add_argument('--qcd_est', action='store_true', help='Estimate qcd contribution')
-parser.add_argument('--not_applied', action='store_true', help='Make plots when HEM correction is applied or not (default is not applied).')
+parser.add_argument('--hem', choices=['not', 'scaled', 'removed'], default='not', help='Make plots when HEM correction is applied or not (default is not applied).')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -32,16 +32,27 @@ jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'hem_invest'
 
+#set_trace()
+if args.hem == 'not':
+    hem_odir = 'Not_Applied'
+    fname_str = 'NotApplied'
+if args.hem == 'scaled':
+    hem_odir = 'Scaled'
+    fname_str = 'SCALED'
+if args.hem == 'removed':
+    hem_odir = 'Removed'
+    fname_str = 'REMOVE'
+    
+
 input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, jobid), analyzer)
 f_ext = 'TOT.coffea'
-outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Not_Applied') if args.not_applied else os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, 'Applied')
+outdir = os.path.join(proj_dir, 'plots', '%s_%s' % (args.year, jobid), analyzer, hem_odir)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 fnames = sorted(['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
-fname_to_use = [fname for fname in fnames if 'NotApplied' in fname] if args.not_applied else [fname for fname in fnames if 'NotApplied' not in fname]
+fname_to_use = [fname for fname in fnames if fname_str in fname]
 hdict = plt_tools.add_coffea_files(fname_to_use) if len(fname_to_use) > 1 else load(fname_to_use[0])
-#hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
 jet_mults = {
     '3Jets' : '3 jets',
@@ -79,7 +90,8 @@ mtt_binlabels = ['%s $\leq$ m($t\\bar{t}$) $\leq$ %s' % (linearize_binning[0][bi
 
 # binning and bin labels for phi x eta
 phi_eta_binning = (
-    np.array([-3.2, -2.4, -1.6, -0.85, 0., 0.85, 1.6, 2.4, 3.2]), # phi binning
+    #np.array([-3.2, -2.4, -1.6, -0.85, 0., 0.85, 1.6, 2.4, 3.2]), # phi binning
+    np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]), # phi
     np.array([-2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5]) # eta binning
 )
 eta_binlabels = ['%s $\leq$ $\\eta$ $\leq$ %s' % (phi_eta_binning[1][bin], phi_eta_binning[1][bin+1]) for bin in range(len(phi_eta_binning[1])-1)]
@@ -88,8 +100,11 @@ phi_binlabels = ['%s $\leq$ $\\phi$ $\leq$ %s' % (phi_eta_binning[0][bin], phi_e
 
 
 variables = {
-    #'mtt_vs_tlep_ctstar_abs' : ('m($t\\bar{t}$)', '|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[0], linearize_binning[1], (linearize_binning[0][0], linearize_binning[0][-1]),
-    #    (linearize_binning[1][0], linearize_binning[1][-1]), True, None, (ctstar_binlabels, ctstar_bin_locs)),
+    'mtt_vs_tlep_ctstar_abs' : ('m($t\\bar{t}$)', '|cos($\\theta^{*}_{t_{l}}$)|', linearize_binning[0], linearize_binning[1], (linearize_binning[0][0], linearize_binning[0][-1]),
+        (linearize_binning[1][0], linearize_binning[1][-1]), True, None, (ctstar_binlabels, ctstar_bin_locs)),
+    'Jets_phi_vs_eta' : ('$\\phi$(jets)', '$\\eta$(jets)', phi_eta_binning[0], phi_eta_binning[1], (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
+    'Lep_phi_vs_eta' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], '$\\eta$(%s)' % objtypes['Lep'][args.lepton], phi_eta_binning[0], phi_eta_binning[1],
+        (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
     'Jets_njets' : ('$n_{jets}$', 1, (0, 15), True),
     'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
     'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
@@ -108,14 +123,11 @@ variables = {
     'Jets_pt' : ('$p_{T}$(jets) [GeV]', 2, (0., 300.), True),
     'Jets_eta' : ('$\\eta$(jets)', 2, (-2.6, 2.6), True),
     'Jets_phi' : ('$\\phi$(jets)', 2, (-4., 4.), True),
-    #'Jets_phi_vs_eta' : ('$\\phi$(jets)', '$\\eta$(jets)', phi_eta_binning[0], phi_eta_binning[1], (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
     'Jets_LeadJet_pt' : ('$p_{T}$(leading jet) [GeV]', 2, (0., 300.), True),
     'Jets_LeadJet_eta' : ('$\\eta$(leading jet)', 2, (-2.6, 2.6), True),
     'Lep_pt' : ('$p_{T}$(%s) [GeV]' % objtypes['Lep'][args.lepton], 2, (0., 300.), True),
     'Lep_eta' : ('$\\eta$(%s)' % objtypes['Lep'][args.lepton], 2, (-2.6, 2.6), True),
     'Lep_phi' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], 2, (-4, 4), True),
-    #'Lep_phi_vs_eta' : ('$\\phi$(%s)' % objtypes['Lep'][args.lepton], '$\\eta$(%s)' % objtypes['Lep'][args.lepton], phi_eta_binning[0], phi_eta_binning[1],
-    #    (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
     'Lep_iso' : ('pfRelIso, %s' % objtypes['Lep'][args.lepton], 1, (0., 1.), True),
     'MT' : ('$M_{T}$ [GeV]', 1, (0., 300.), True),
     'MET_pt' : ('$p_{T}$(MET) [GeV]', 1, (0., 300.), True),
@@ -167,9 +179,9 @@ if args.nosys:
     
             ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
             for jmult in sorted(set([key[1] for key in histo.values().keys()])):
-                #for lepcat in ['Tight']:
-                #    for btagregion in ['btagPass']:
                 for lepcat in sorted(set([key[3] for key in histo.values().keys()])):
+                #for lepcat in ['Tight']:
+                    #for btagregion in ['btagPass']:
                     for btagregion in sorted(set([key[2] for key in histo.values().keys()])):
                         pltdir = os.path.join(outdir, args.lepton, jmult, lepcat, btagregion)
                         if not os.path.isdir(pltdir):
