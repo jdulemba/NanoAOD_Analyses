@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from pdb import set_trace
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
@@ -8,7 +9,6 @@ from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
 
 from coffea.util import save, load
-from pdb import set_trace
 import os
 import python.ObjectSelection as objsel
 import Utilities.plot_tools as plt_tools
@@ -69,7 +69,8 @@ opts_dict = prettyjson.loads(odict)
     ## set config options passed through argparse
 import ast
 to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
-apply_hem = ast.literal_eval(opts_dict.get('apply_hem', 'False')) and (not isData_)
+apply_hem = ast.literal_eval(opts_dict.get('apply_hem', 'False'))
+#apply_hem = ast.literal_eval(opts_dict.get('apply_hem', 'False')) and (not isData_)
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
@@ -149,7 +150,9 @@ class hem_invest(processor.ProcessorABC):
         #self.mtregion_axis = hist.Cat("mtregion", "MT Region")
         self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
         self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
+        self.eta_2d_axis = hist.Bin("eta_2d", r"$\eta$", np.array([-3.0, -2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5, 3.0]))
         self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.phi_2d_axis = hist.Bin("phi_2d", r"$\phi$", np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]))
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
@@ -279,7 +282,7 @@ class hem_invest(processor.ProcessorABC):
         histo_dict['Jets_njets'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.njets_axis)
         histo_dict['Jets_LeadJet_pt']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.pt_axis)
         histo_dict['Jets_LeadJet_eta']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
-        histo_dict['Jets_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis, self.eta_axis)
+        histo_dict['Jets_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_2d_axis, self.eta_2d_axis)
 
         return histo_dict
 
@@ -289,7 +292,7 @@ class hem_invest(processor.ProcessorABC):
         histo_dict['Lep_eta']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
         histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.lepIso_axis)
         histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis)
-        histo_dict['Lep_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_axis, self.eta_axis)
+        histo_dict['Lep_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.phi_2d_axis, self.eta_2d_axis)
     #    histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.eta_axis)
     #    histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepcat_axis, self.energy_axis)
 
@@ -339,12 +342,11 @@ class hem_invest(processor.ProcessorABC):
         selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
 
             # get all passing leptons
-        lep_and_filter_pass = objsel.select_leptons(events, year=args.year)#, cutflow=output['cutflow'])
+        lep_and_filter_pass = objsel.select_leptons(events, year=args.year, hem_15_16=apply_hem)
         {selection[sys].add('lep_and_filter_pass', lep_and_filter_pass) for sys in selection.keys()} # add passing leptons requirement to all systematics
 
             ## build corrected jets and MET
-        #events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'])
-        events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'], hem_15_16=apply_hem)
+        events['Jet'], events['MET'] = IDJet.process_jets(events, args.year, self.corrections['JetCor'])
 
         if isData_:
             runs = events.run
@@ -424,8 +426,7 @@ class hem_invest(processor.ProcessorABC):
         for evt_sys in self.event_systematics_to_run:
             output['cutflow_%s' % evt_sys]['lep_and_filter_pass'] += ak.sum(lep_and_filter_pass)
                 # jet selection
-            #passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys)
-            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys, hem_15_16=self.corrections['JetCor'] if apply_hem else None)
+            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output['cutflow_%s' % evt_sys], shift=evt_sys, hem_15_16=apply_hem)
             output['cutflow_%s' % evt_sys]['nEvts passing jet and lepton obj selection'] += ak.sum(passing_jets & lep_and_filter_pass)
             selection[evt_sys].add('passing_jets', passing_jets)
             selection[evt_sys].add('jets_3',  ak.num(events['SelectedJets']) == 3)
@@ -615,7 +616,7 @@ class hem_invest(processor.ProcessorABC):
             acc['Jets_phi'].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, phi=ak.flatten(jets.phi[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
             acc['Jets_njets'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, njets=ak.num(jets)[perm_inds], weight=evt_wts[perm_inds])
             acc['Jets_phi_vs_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
-                phi=ak.flatten(jets.phi[perm_inds]), eta=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
+                phi_2d=ak.flatten(jets.phi[perm_inds]), eta_2d=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
 
             acc['Jets_LeadJet_pt'].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, pt=pt_sorted_jets[perm_inds].pt[:, 0], weight=evt_wts[perm_inds])
             acc['Jets_LeadJet_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, eta=pt_sorted_jets[perm_inds].eta[:, 0], weight=evt_wts[perm_inds])
@@ -626,7 +627,7 @@ class hem_invest(processor.ProcessorABC):
             acc['Lep_iso'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
                 iso=ak.flatten(leptons['pfRelIso04_all'][perm_inds]) if leptype == 'Muon' else ak.flatten(leptons['pfRelIso03_all'][perm_inds]), weight=evt_wts[perm_inds])
             acc['Lep_phi_vs_eta'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion,
-                phi=ak.flatten(leptons.phi[perm_inds]), eta=ak.flatten(leptons.eta[perm_inds]), weight=evt_wts[perm_inds])
+                phi_2d=ak.flatten(leptons.phi[perm_inds]), eta_2d=ak.flatten(leptons.eta[perm_inds]), weight=evt_wts[perm_inds])
 
             acc['MT'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, lepcat=lepcat, btag=btagregion, mt=ak.flatten(MTvals)[perm_inds], weight=evt_wts[perm_inds])
 
