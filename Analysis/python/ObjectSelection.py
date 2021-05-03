@@ -51,6 +51,23 @@ def hem1516_corr(jets, MET, corr, lazy_cache): # HEM region that had issues in 2
     return new_jets, new_met
 
 
+def remove_HEM_objs(obj, isData=None):
+    in_hem_region = (-1.57 < obj['phi']) & (obj['phi'] < -0.87) & (-3.0 < obj['eta']) & (obj['eta'] < -1.3)
+    remove_objs = ak.to_numpy(ak.flatten(in_hem_region))
+    if isData is not None:
+        runs_broadcast = ak.broadcast_arrays(isData, obj.pt)[0] # make runs same shape as pt
+        failing_runs = runs_broadcast >= 319077 # runs corresponding to HEM failure
+        remove_hem_objs = (in_hem_region & failing_runs)
+    else:
+            # remove ~60% of MC in HEM region
+        np.random.seed(10)
+        remove_mc = np.random.choice(2, ak.sum(in_hem_region), p=[0.4, 0.6]).astype(bool) # 60% of MC events in hem region don't pass on average
+        remove_objs[remove_objs == True] = remove_mc
+        remove_hem_objs = ak.unflatten(remove_objs, ak.num(obj))
+
+    return obj[~remove_hem_objs]
+
+
 def select_jets(jets, muons, electrons, year, cutflow=None):
 
         ## pt and eta cuts
@@ -67,8 +84,6 @@ def select_jets(jets, muons, electrons, year, cutflow=None):
         jetId = 2 # pass tight but not tightLepVeto ID
     jet_ID = (jets['jetId'] >= jetId) # pass at least tight
     if cutflow is not None: cutflow['jets pass ID'] += ak.sum(jet_ID)
-    #jet_ID = (jets.Id >= jetId) # pass at least tight
-    #if cutflow is not None: cutflow['jets pass ID'] += jet_ID.sum().sum()
 
         ## remove jets that don't pass ID and pt/eta cuts
     jets = jets[(jet_ID & pass_pt_eta_cuts)]
@@ -105,7 +120,7 @@ def select_jets(jets, muons, electrons, year, cutflow=None):
         return jets, passing_jets
 
 
-def select_leptons(events, year, noIso=False, cutflow=None):
+def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
 
     evt_sel = PackedSelection()
 
@@ -119,6 +134,9 @@ def select_leptons(events, year, noIso=False, cutflow=None):
     ### lepton selection
     events['Muon'] = IDMuon.process_muons(events['Muon'], year)
     events['Electron'] = IDElectron.process_electrons(events['Electron'], year)
+    if (year == '2018') and (hem_15_16):
+        events['Electron'] = remove_HEM_objs(obj=events['Electron'], isData=events.run if events.metadata['dataset'].startswith('data_Single') else None)
+
     evt_sel.add('single_lep', np.logical_xor(( (ak.sum(events['Muon']['TIGHTMU'], axis=1) + ak.sum(events['Muon']['LOOSEMU'], axis=1)) == 1 ), ( (ak.sum(events['Electron']['TIGHTEL'], axis=1) + ak.sum(events['Electron']['LOOSEEL'], axis=1)) == 1 ))) # only single LOOSE or TIGHT el or mu (not counting vetos)
     evt_sel.add('single_looseMu', ak.sum(events['Muon']['LOOSEMU'], axis=1) == 1)
     evt_sel.add('single_tightMu', ak.sum(events['Muon']['TIGHTMU'], axis=1) == 1)
@@ -146,7 +164,8 @@ def select_leptons(events, year, noIso=False, cutflow=None):
 
     return evt_sel.require(lep_and_filter_pass=True)
 
-def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=None):
+def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=False):
+#def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=None):
         # get jet selection for systematic shift (can only support one at a time)
     if shift == 'JES_UP':
         jets_to_use = events['Jet']['JES_jes']['up']
@@ -170,9 +189,10 @@ def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=None):
         jets_to_use = events['Jet']
         met_to_use = events['MET']
 
-    if (year == '2018') and (hem_15_16 is not None):
+    if (year == '2018') and (hem_15_16):
         #set_trace()
-        jets_to_use, met_to_use = hem1516_corr(jets=jets_to_use, MET=met_to_use, corr=hem_15_16, lazy_cache=events.caches[0])
+        jets_to_use = remove_HEM_objs(obj=jets_to_use, isData=events.run if events.metadata['dataset'].startswith('data_Single') else None)
+        #jets_to_use, met_to_use = hem1516_corr(jets=jets_to_use, MET=met_to_use, corr=hem_15_16, lazy_cache=events.caches[0])
         #set_trace()
 
         # evaluate selection on jets
@@ -186,5 +206,4 @@ def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=None):
     events['SelectedMET'] = met_to_use
 
     return passing_jets
-
 
