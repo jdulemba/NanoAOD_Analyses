@@ -412,7 +412,7 @@
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/EGamma/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
         "name": "data_SingleElectron_2018C",
         "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
     },
