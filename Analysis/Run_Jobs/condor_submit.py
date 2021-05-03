@@ -29,11 +29,11 @@ args = parser.parse_args()
 #set_trace()
 # define dictionary of options to pass
 opts_dict = {} if args.opts is None else args.opts
-opts_dict['apply_hem'] = opts_dict.get('apply_hem', 'False')
+opts_dict['apply_hem'] = opts_dict.get('apply_hem', 'True')
 opts_dict['signal'] = opts_dict.get('signal', ".*")
 opts_dict['evt_sys'] = opts_dict.get('evt_sys', 'NONE')
 opts_dict['rewt_sys'] = opts_dict.get('rewt_sys', 'NONE')
-opts_dict['only_sys'] = opts_dict.get('only_sys', 0)
+opts_dict['only_sys'] = opts_dict.get('only_sys', 'False')
 opts_dict['debug'] = opts_dict.get('debug', 'False')
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -69,11 +69,10 @@ def base_condor_jdl():
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-+JobFlavour = "testmatch"
++MaxRuntime = 10800
 requirements = (OpSysAndVer =?= "CentOS7")
 Proxy_path = {PROXYPATH}
 """.format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
-
     return condorfile
 
 def add_signal_condor_jobs(idx, frange, sample, signal):
@@ -87,14 +86,6 @@ Queue
 """.format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SIGNAL=signal, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir, SIGOUTNAME=sig_outname)
     return condorfile
 
-#def add_condor_jobs(idx, frange, sample):
-#    condorfile = """
-#Output = con_{IDX}.stdout
-#Error = con_{IDX}.stderr
-#Log = con_{IDX}.log
-#Arguments = $(Proxy_path) {ANALYZER} {FRANGE} {YEAR} --sample={SAMPLE} --evt_sys={EVTSYS} --rewt_sys={REWTSYS} --only_sys={ONLYSYS} --outfname={BATCHDIR}/{SAMPLE}_out_{IDX}.coffea
-#Queue
-#""".format(IDX=idx, ANALYZER=analyzer, FRANGE=frange, YEAR=args.year, SAMPLE=sample, EVTSYS=args.evt_sys, REWTSYS=args.rewt_sys, ONLYSYS=args.only_sys, BATCHDIR=batch_dir)
 def add_condor_jobs(idx, frange, opts):
     condorfile = """
 Output = con_{IDX}.stdout
