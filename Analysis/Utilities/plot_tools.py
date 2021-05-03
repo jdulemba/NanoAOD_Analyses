@@ -3,86 +3,94 @@ import fnmatch
 import os
 import matplotlib.pyplot as plt
 
+base_jobid = os.environ['jobid']
 
-dataset_groups = { '2016' : {}, '2017' : {}, '2018' : {}}
-dataset_groups['2016'] = {
-    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-    'ttJets_right' : ['ttJets*_right'],
-    'ttJets_matchable' : ['ttJets*_matchable'],
-    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
-    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
-    'ttJets_other' : ['ttJets*_other'],
-    'ttJets' : ['ttJets', 'ttJets_PS'],
-    'ttJets_Sys' : ['ttJets_*DOWN', 'ttJets_*UP'],
-    'singlet' : ['single*'],
-    'QCD' : ['QCD*'],
-    'data' : ['data_Single*'],
+#dataset_groups = {'2016APV' : {}, '2016' : {}, '2017' : {}, '2018' : {}}
+dataset_groups = {
+    year : {
+        'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+        'ttJets_right' : ['ttJets*_right'],
+        'ttJets_matchable' : ['ttJets*_matchable'],
+        'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+        'ttJets_sl_tau' : ['ttJets*_sl_tau'],
+        'ttJets_other' : ['ttJets*_other'],
+        'ttJets' : ['ttJets', 'ttJets_PS'] if (base_jobid == 'NanoAODv6' and year == '2016') else ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],
+        'ttJets_Sys' : ['ttJets_*DOWN', 'ttJets_*UP'] if (base_jobid == 'NanoAODv6' and year == '2016') else ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
+        'singlet' : ['single*'],
+        'QCD' : ['QCD*'],
+        'data' : ['data_Single*'],
+    }
+    for year in ['2016APV', '2016', '2017', '2018']
 }
-dataset_groups['2017'] = {
-    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-    'ttJets_right' : ['ttJets*_right'],
-    'ttJets_matchable' : ['ttJets*_matchable'],
-    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
-    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
-    'ttJets_other' : ['ttJets*_other'],
-    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
-    'singlet' : ['single*'],
-    'QCD' : ['QCD*'],
-    'data' : ['data_Single*'],
-}
-dataset_groups['2018'] = {
-    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-    'ttJets_right' : ['ttJets*_right'],
-    'ttJets_matchable' : ['ttJets*_matchable'],
-    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
-    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
-    'ttJets_other' : ['ttJets*_other'],
-    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
-    'singlet' : ['single*'],
-    'QCD' : ['QCD*'],
-    'data' : ['data_Single*'],
-}
+#dataset_groups['2016APV'] = dataset_groups['2016']
+#dataset_groups['2017'] = {
+#    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+#    'ttJets_right' : ['ttJets*_right'],
+#    'ttJets_matchable' : ['ttJets*_matchable'],
+#    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+#    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
+#    'ttJets_other' : ['ttJets*_other'],
+#    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
+#    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
+#    'singlet' : ['single*'],
+#    'QCD' : ['QCD*'],
+#    'data' : ['data_Single*'],
+#}
+#dataset_groups['2018'] = {
+#    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+#    'ttJets_right' : ['ttJets*_right'],
+#    'ttJets_matchable' : ['ttJets*_matchable'],
+#    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
+#    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
+#    'ttJets_other' : ['ttJets*_other'],
+#    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
+#    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
+#    'singlet' : ['single*'],
+#    'QCD' : ['QCD*'],
+#    'data' : ['data_Single*'],
+#}
 
     ## dataset groupings for making templates to be used in fit
-template_groups = { '2016' : {}, '2017' : {}, '2018' : {}}
-template_groups['2016'] = {
-    'QCD' : ['QCD*'],
-    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
-    'VV' : ['[WZ][WZ]'],
-    'TTV' : ['tt[WZ]*'],
-    'WJets' : ['WJets'],
-    'ZJets' : ['ZJets'],
-    'sChannel' : ['single*_schannel*'],
-    'tChannel' : ['single*_tchannel*'],
-    'tWChannel' : ['single*_tW*'],
-    'data_obs' : ['data_Single*'],
+#template_groups = {'2016APV' : {}, '2016' : {}, '2017' : {}, '2018' : {}}
+template_groups = {
+    year: {
+        'QCD' : ['QCD*'],
+        'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+        'VV' : ['[WZ][WZ]'],
+        'TTV' : ['tt[WZ]*'],
+        'WJets' : ['WJets'],
+        'ZJets' : ['ZJets'],
+        'sChannel' : ['single*_schannel*'],
+        'tChannel' : ['single*_tchannel*'],
+        'tWChannel' : ['single*_tW*'],
+        'data_obs' : ['data_Single*'],
+    }
+    for year in ['2016APV', '2016', '2017', '2018']
 }
-template_groups['2017'] = {
-    'QCD' : ['QCD*'],
-    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
-    'VV' : ['[WZ][WZ]'],
-    'TTV' : ['tt[WZ]*'],
-    'WJets' : ['WJets'],
-    'ZJets' : ['ZJets'],
-    'sChannel' : ['single*_schannel*'],
-    'tChannel' : ['single*_tchannel*'],
-    'tWChannel' : ['single*_tW*'],
-    'data_obs' : ['data_Single*'],
-}
-template_groups['2018'] = {
-    'QCD' : ['QCD*'],
-    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
-    'VV' : ['[WZ][WZ]'],
-    'TTV' : ['tt[WZ]*'],
-    'WJets' : ['WJets'],
-    'ZJets' : ['ZJets'],
-    'sChannel' : ['single*_schannel*'],
-    'tChannel' : ['single*_tchannel*'],
-    'tWChannel' : ['single*_tW*'],
-    'data_obs' : ['data_Single*'],
-}
+#template_groups['2017'] = {
+#    'QCD' : ['QCD*'],
+#    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+#    'VV' : ['[WZ][WZ]'],
+#    'TTV' : ['tt[WZ]*'],
+#    'WJets' : ['WJets'],
+#    'ZJets' : ['ZJets'],
+#    'sChannel' : ['single*_schannel*'],
+#    'tChannel' : ['single*_tchannel*'],
+#    'tWChannel' : ['single*_tW*'],
+#    'data_obs' : ['data_Single*'],
+#}
+#template_groups['2018'] = {
+#    'QCD' : ['QCD*'],
+#    'TT' : ['ttJets*_right', 'ttJets*_matchable', 'ttJets*_unmatchable', 'ttJets*_other'],
+#    'VV' : ['[WZ][WZ]'],
+#    'TTV' : ['tt[WZ]*'],
+#    'WJets' : ['WJets'],
+#    'ZJets' : ['ZJets'],
+#    'sChannel' : ['single*_schannel*'],
+#    'tChannel' : ['single*_tchannel*'],
+#    'tWChannel' : ['single*_tW*'],
+#    'data_obs' : ['data_Single*'],
+#}
 
 # create groups for signal samples and add them to dataset/template_groups
 signal_groups = {
