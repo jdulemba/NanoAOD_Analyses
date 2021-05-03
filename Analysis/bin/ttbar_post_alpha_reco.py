@@ -32,14 +32,20 @@ parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-parser.add_argument('--evt_sys', type=str, help='Specify event systematics to run. Default is (NONE,NONE) and all opts are capitalized through run_analyzer')
-
+parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 args = parser.parse_args()
 
 # convert input string of fileset dictionary to actual dictionary
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
+
+# convert input string of options dictionary to actual dictionary
+odict = (args.opts).replace("\'", "\"")
+opts_dict = prettyjson.loads(odict)
+
+    ## set config options passed through argparse
+import ast
+to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
 
     ## specify ttJets samples
 Nominal_ttJets = ['ttJets_PS', 'ttJets'] if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else ['ttJetsSL']
@@ -103,9 +109,9 @@ perm_cats = {
 
     ## determine which systematics to run
 sys_opts = ['nosys', 'JER_UP', 'JER_DW', 'JES_UP', 'JES_DW']
-event_systematics_to_run = ['nosys'] if ((args.evt_sys == 'NONE') or (args.evt_sys is None)) else [name for name in sys_opts if fnmatch.fnmatch(name, args.evt_sys)]
+evt_sys_to_run = opts_dict.get('evt_sys', 'NONE')
+event_systematics_to_run = ['nosys'] if (evt_sys_to_run == 'NONE') else [name for name in sys_opts if fnmatch.fnmatch(name, evt_sys_to_run)]
 print('Running with event systematics:', *sorted(event_systematics_to_run), sep=', ')
-
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class ttbar_post_alpha_reco(processor.ProcessorABC):
@@ -315,7 +321,7 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
 
                         wts = (evt_weights.weight()*deepcsv_cen)[cut][valid_perms][MTHigh]   
 
-                        if args.debug: print('    sysname:', evt_sys)
+                        if to_debug: print('    sysname:', evt_sys)
                         output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=events['SL'][cut][valid_perms][MTHigh], bp=best_perms[valid_perms][MTHigh], evt_wts=wts)
 
         return output
@@ -388,17 +394,16 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
         return accumulator
 
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
     processor_instance=ttbar_post_alpha_reco(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if to_debug else 100000,
     chunksize=100000,
-    #chunksize=10000,
 )
 
 save(output, args.outfname)

@@ -19,7 +19,7 @@ parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
+parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 
 args = parser.parse_args()
 
@@ -34,6 +34,15 @@ samplename = list(fileset.keys())[0]
 isData_ = samplename.startswith('data')
 if isData_:
     lumiMask_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'LumiMasks', '%s_GoldenJson_%s.txt' % (args.year, base_jobid))
+
+# convert input string of options dictionary to actual dictionary
+odict = (args.opts).replace("\'", "\"")
+opts_dict = prettyjson.loads(odict)
+
+    ## set config options passed through argparse
+import ast
+to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
@@ -71,7 +80,6 @@ class Meta_Analyzer(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
 
-        #if args.debug: set_trace()
         event_nums = events.event
         self.sample_name = events.metadata['dataset']
 
@@ -135,8 +143,8 @@ class Meta_Analyzer(processor.ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
@@ -144,7 +152,7 @@ output = processor.run_uproot_job(
     executor=proc_executor,
     executor_args=proc_exec_args,
     chunksize=100000,
-    #chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if to_debug else 100000,
 )
 
 save(output, args.outfname)
