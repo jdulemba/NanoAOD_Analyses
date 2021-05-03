@@ -30,13 +30,21 @@ parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
+parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 
 args = parser.parse_args()
 
 # convert input string of fileset dictionary to actual dictionary
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
+
+# convert input string of options dictionary to actual dictionary
+odict = (args.opts).replace("\'", "\"")
+opts_dict = prettyjson.loads(odict)
+
+    ## set config options passed through argparse
+import ast
+to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
 
     ## run on correct samples
 Nominal_ttJets = ['ttJetsSL'] if base_jobid == 'ULnanoAOD' else ['ttJetsSL', 'ttJets_PS']
@@ -246,7 +254,7 @@ class permProbComputer(processor.ProcessorABC):
                     cut = selection.all(*regions[lepton][lepcat][jmult])
                     wts = evt_weights.weight()[cut] # get event weights
 
-                    if args.debug: print(lepton, lepcat, jmult)
+                    if to_debug: print(lepton, lepcat, jmult)
                     #print(lepton, lepcat, jmult)
                     #set_trace()
                     if ak.sum(cut) > 0:
@@ -344,7 +352,7 @@ class permProbComputer(processor.ProcessorABC):
 
             ## Lost Events
         if ak.sum(correct_lost) > 0:
-            if args.debug: print("\tAnalyzing Lost")
+            if to_debug: print("\tAnalyzing Lost")
             lost_evt_wts = ak.ones_like(tps[correct_lost].blepIdx)*evt_weights[correct_lost] # make event weights same shape as test perms
 
             lost_tp_blepInds, lost_mp_blepInds = ak.unzip(ak.cartesian( [tps[correct_lost].blepIdx, mp[correct_lost]['BLep'].jetIdx] )) # make mp inds same size as test perms, then split
@@ -371,7 +379,7 @@ class permProbComputer(processor.ProcessorABC):
 
             ## Merged Events
         if ak.sum(correct_merged) > 0:
-            if args.debug: print("\tAnalyzing Merged")
+            if to_debug: print("\tAnalyzing Merged")
             merged_evt_wts = ak.ones_like(tps[correct_merged].blepIdx)*evt_weights[correct_merged] # make event weights same shape as test perms
 
             merged_tp_blepInds, merged_mp_blepInds = ak.unzip(ak.cartesian( [tps[correct_merged].blepIdx, mp[correct_merged]['BLep'].jetIdx] )) # make mp inds same size as test perms, then split
@@ -403,15 +411,15 @@ class permProbComputer(processor.ProcessorABC):
         return accumulator
 
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
     processor_instance=permProbComputer(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if to_debug else 100000,
     chunksize=100000,
 )
 

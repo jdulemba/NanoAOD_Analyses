@@ -30,13 +30,20 @@ parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
-parser.add_argument('--debug', action='store_true', help='Uses iterative_executor for debugging purposes, otherwise futures_excutor will be used (faster)')
-
+parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 args = parser.parse_args()
 
 # convert input string of fileset dictionary to actual dictionary
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
+
+# convert input string of options dictionary to actual dictionary
+odict = (args.opts).replace("\'", "\"")
+opts_dict = prettyjson.loads(odict)
+
+    ## set config options passed through argparse
+import ast
+to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
 
     ## run on correct samples
 Nominal_ttJets = ['ttJets_PS', 'ttJets'] if ((args.year == '2016') and (base_jobid == 'NanoAODv6')) else ['ttJetsSL']
@@ -303,15 +310,15 @@ class ttbar_alpha_reco(processor.ProcessorABC):
         return accumulator
 
 
-proc_executor = processor.iterative_executor if args.debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if args.debug else {"schema": NanoAODSchema, "workers": 8}
+proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
+proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
     processor_instance=ttbar_alpha_reco(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=10000 if args.debug else 100000,
+    #chunksize=10000 if to_debug else 100000,
     chunksize=100000,
 )
 
