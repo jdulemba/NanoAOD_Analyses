@@ -136,10 +136,13 @@ def process_jets(events, year, corrections=None):
     if (jet_pars['applyJER'] == 1) and corrections is not None:
         if events.metadata['dataset'].startswith('data_Single'):
             era = [key for key in corrections['DATA'].keys() if events.metadata['dataset'].split(year)[-1] in key]
-            if ('2016' in year) and (('Bv2' in events.metadata['dataset']) or ('C' in events.metadata['dataset']) or ('D' in events.metadata['dataset'])): era = ['BCD']
-            if ('2016' in year) and (('E' in events.metadata['dataset']) or ('F' in events.metadata['dataset'])): era = ['EF']
-            if ('2016' in year) and (('G' in events.metadata['dataset']) or ('H' in events.metadata['dataset'])): era = ['GH']
-            #if ('2016' in year) and ('Bv2' in events.metadata['dataset']): era = ['BCD']
+            if year == '2016APV':
+                if (('Bv2' in events.metadata['dataset']) or ('C' in events.metadata['dataset']) or ('D' in events.metadata['dataset'])): era = ['BCD']
+                elif (('E' in events.metadata['dataset']) or ('F' in events.metadata['dataset'])): era = ['EF']
+                else: raise ValueError("Era not found for 2016APV dataset.")
+            if year == '2016':
+                if (('F' in events.metadata['dataset']) or ('G' in events.metadata['dataset']) or ('H' in events.metadata['dataset'])): era = ['FGH']
+                else: raise ValueError("Era not found for 2016 dataset.")
             if len(era) != 1: raise ValueError("Only one era should be used for %s" % events.metadata['dataset'])
             jet_factory = corrections['DATA'][era[0]]['JetsFactory']
             met_factory = corrections['DATA'][era[0]]['METFactory']
