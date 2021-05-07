@@ -161,20 +161,20 @@ class permProbComputer(processor.ProcessorABC):
         selection = PackedSelection()
         regions = {
             'Muon' : {
-                'LoT' : {
-                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
-                },
+                #'LoT' : {
+                #    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                #    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_MU', 'btag_pass', 'semilep'},
+                #},
                 'Tight' : {
                     '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_MU', 'btag_pass', 'semilep'},
                     '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_MU', 'btag_pass', 'semilep'},
                 },
             },
             'Electron' : {
-                'LoT' : {
-                    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
-                },
+                #'LoT' : {
+                #    '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                #    '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'loose_or_tight_EL', 'btag_pass', 'semilep'},
+                #},
                 'Tight' : {
                     '3Jets'  : {'lep_and_filter_pass', 'passing_jets', 'jets_3' , 'tight_EL', 'btag_pass', 'semilep'},
                     '4PJets' : {'lep_and_filter_pass', 'passing_jets', 'jets_4p', 'tight_EL', 'btag_pass', 'semilep'},
