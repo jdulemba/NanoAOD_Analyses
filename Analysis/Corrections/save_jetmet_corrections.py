@@ -30,12 +30,17 @@ split_by_era = {
 
 jecfiles = {
     'Unc' : 'UncertaintySources' if args.split_uncs else 'Uncertainty', # or UncertaintySources for splitting
-        #2016 only defined for NanoAODv6
+    '2016APV' : {
+        'tag' : 'Summer19UL16APV',
+        'v' : 'V7',
+        'DATA' : ['RunBCD', 'RunEF'],
+        'eras' : ['BCD', 'EF'],
+    },
     '2016' : {
-        'tag' : 'Summer16_07Aug2017',
-        'v' : 'V11',
-        'DATA' : ['BCD', 'EF', 'GH'],
-        'eras' : ['BCD', 'EF', 'GH'],
+        'tag' : 'Summer19UL16' if base_jobid == 'ULnanoAOD' else 'Summer16_07Aug2017',
+        'v' : 'V7' if base_jobid == 'ULnanoAOD' else 'V11',
+        'DATA' : ['RunFGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
+        'eras' : ['FGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
     },
     '2017' : {
         'tag' : 'Summer19UL17' if base_jobid == 'ULnanoAOD' else 'Fall17_17Nov2017',
@@ -52,9 +57,13 @@ jecfiles = {
 }
 
 jerfiles = {
-        #2016 only defined for NanoAODv6
+    '2016APV' : {
+        'tag' : 'Summer20UL16APV_JRV3',
+        'JER' : 'PtResolution',
+        'JERSF' : 'SF',
+    },
     '2016' : {
-        'tag' : 'Summer16_25nsV1',
+        'tag' : 'Summer20UL16_JRV3' if base_jobid == 'ULnanoAOD' else 'Summer16_25nsV1',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
@@ -93,8 +102,8 @@ def make_name_map(jstack, isMC):
     return name_map
 
 
-#years_to_run = ['2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-years_to_run = ['2016', '2017', '2018']
+years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+#years_to_run = ['2016APV', '2016', '2017', '2018']
 #years_to_run = ['2016']
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
@@ -128,7 +137,6 @@ for year in years_to_run:
         data_JECuncertainties = JetCorrectionUncertainty(**{name:Jetevaluator[name] for name in Jetevaluator.keys() if name.startswith('%s_%s_%s' % (jec_data_tag, jecfiles['Unc'], jet_type))})
             # make JEC stack of all corrections
         data_JECStack = JECStack({}, jec=data_JECcorrector, junc=data_JECuncertainties)
-        #data_JECStack = JECStack({}, jec=data_JECcorrector, junc=data_JECuncertainties, jer=data_JER, jersf=data_JERsf)
             # make jet and met factory
         data_name_map = make_name_map(data_JECStack, isMC=False)
         data_jet_factory = CorrectedJetsFactory(data_name_map, data_JECStack)
@@ -156,11 +164,8 @@ for year in years_to_run:
     }
     print('Jet corrections for %s saved' % year)
 
-    ## temporary while there are no dedicated JECs for UL 2016
-if base_jobid == 'ULnanoAOD':
-    jet_corrections['2016APV'] = jet_corrections['2016']
 
-set_trace()
+#set_trace()
 fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea')
 save(jet_corrections, fname)
 print('\n%s written' % fname)
