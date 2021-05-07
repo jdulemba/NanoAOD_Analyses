@@ -169,6 +169,8 @@ btag_regions = {
     '0p30' : (0.25, 0.30),
     '0p35' : (0.30, 0.35),
     '0p40' : (0.35, 0.40),
+    '0p45' : (0.40, 0.45),
+    '0p50' : (0.45, 0.50),
 }
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
