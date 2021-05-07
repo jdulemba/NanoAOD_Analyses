@@ -19,6 +19,8 @@ prompt_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'QCD*']))
 nonTT_mc_mask = re.compile(r'(?!(?:%s))' % '|'.join(['data*', 'ttJets*', 'TT$'])) # 'TT$' is for templates
 signal_samples = re.compile(r'((?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
 nonsignal_samples = re.compile(r'(?!(?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
+top_samples = re.compile(r'((?:%s))' % '|'.join(['ttJets*', 'singlet*']))
+bkg_samples = re.compile(r'((?:%s))' % '|'.join(['QCD*', 'EWK*']))
 
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
@@ -353,6 +355,17 @@ def data_minus_prompt(histo):
     data_minus_prompt.add(neg_pmc_hist)
 
     return data_minus_prompt
+
+def data_minus_top(histo):
+    data_hist = histo[data_samples].integrate('process')
+    top_mc_hist  = histo[top_samples].integrate('process')
+
+    neg_top_hist = top_mc_hist.copy()
+    data_minus_top = data_hist.copy()
+    neg_top_hist.scale(-1.)
+    data_minus_top.add(neg_top_hist)
+
+    return data_minus_top
 
 
 def get_qcd_shape(dmp_hist, overflow='all'):
