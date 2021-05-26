@@ -29,9 +29,12 @@ parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
 parser.add_argument('--nosys', action='store_true', help='Make plots without systematics and no qcd estimation')
 parser.add_argument('--dmp', action='store_true', help='Make plots of data minus prompt MC shapes')
-parser.add_argument('--qcd_est', action='store_true', help='Estimate qcd contribution')
-parser.add_argument('--plot_shapes', action='store_true', help='Make plots of qcd shape, and shape and normalization uncertainties')
-parser.add_argument('--save_sys', action='store_true', help='Save dists for all systematic variations')
+parser.add_argument('--bkg_shapes', action='store_true', help='Make plots comparing EKW+QCD MC and data-driven shapes.')
+parser.add_argument('--bkg_est', action='store_true', help='Estimate ewk+qcd contribution')
+parser.add_argument('--vary_norm', action='store_true', help='Make plots varying normalization uncertainty for ewk+qcd estimation.')
+parser.add_argument('--vary_shape', action='store_true', help='Make plots varying shape for ewk+qcd estimation.')
+parser.add_argument('--vary_shape_and_norm', action='store_true', help='Make plots varying shape and norm for ewk+qcd estimation.')
+#parser.add_argument('--save_sys', action='store_true', help='Save dists for all systematic variations')
 args = parser.parse_args()
 
 sys_to_name = systematics.sys_to_name[args.year]
@@ -86,6 +89,7 @@ lep_cats = {
 }
 
 linearize_binning = (
+    #np.array([300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1500.0]),
     np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]),
     #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
     np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
@@ -117,6 +121,8 @@ variables = {
     'mtt' : ('m($t\\bar{t}$) [GeV]', 4, (200., 2000.), True),
     'tlep_ctstar_abs' : ('|cos($\\theta^{*}_{t_{l}}$)|', 1, (0., 1.), True),
     'mthad' : ('m($t_{h}$) [GeV]', 2, (0., 300.), True),
+    'mWHad' : ('m($W_{h}$) [GeV]', 2, (0., 300.), True),
+    'mWLep' : ('m($W_{l}$) [GeV]', 2, (0., 300.), True),
     'pt_thad' : ('$p_{T}$($t_{h}$) [GeV]', 2, (0., 500.), True),
     'pt_tlep' : ('$p_{T}$($t_{l}$) [GeV]', 2, (0., 500.), True),
     'pt_tt' : ('$p_{T}$($t\\bar{t}$) [GeV]', 2, (0., 500.), True),
@@ -382,7 +388,8 @@ def plot_qcd_dmp_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
 
     rax.autoscale()
     rax.set_ylabel('Sys/Cen')
-    rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(5.0, rax.get_ylim()[1]))
+    rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(1.5, rax.get_ylim()[1]))
+    #rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(5.0, rax.get_ylim()[1]))
     rax.set_xlim(xlimits)
     rax.set_xlabel(xlabel)
 
@@ -499,7 +506,8 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
 
     rax.autoscale()
     rax.set_ylabel('Sys/Cen')
-    rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(5.0, rax.get_ylim()[1]))
+    rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(1.5, rax.get_ylim()[1]))
+    #rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(5.0, rax.get_ylim()[1]))
     rax.set_xlim(xlimits)
     rax.set_xlabel(xlabel)
 
@@ -508,6 +516,7 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
             # draw vertical lines separating ctstar bins
         for vline in vlines:
             ax.axvline(vline, color='k', linestyle='--')
+            rax.axvline(vline, color='k', linestyle='--')
 
     ax.text(
         0.02, 0.94, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
@@ -623,6 +632,128 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
     print('%s written' % figname)
+
+
+def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
+    if not signal: raise ValueError("You need a distribution from the signal region")
+
+    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    #fig, ax = plt.subplots()
+    fig.subplots_adjust(hspace=.07)
+
+        # get opts
+    xlimits = opts.get('xlims')
+    xlabel = opts.get('xtitle')
+    jmult = opts.get('jmult')
+    pltdir = opts.get('pltdir')
+    vlines = opts.get('vlines')
+    cols_to_label = {}
+
+    #set_trace()
+    if signal:
+            # get EWK+QCD MC
+        sig_bkg_hist = signal['histo'][Plotter.bkg_samples]
+        sig_norm = sig_bkg_hist.sum(*[ax.name for ax in sig_bkg_hist.axes()]).values()[()]
+        hist.plot.plot1d(sig_bkg_hist,
+            overlay=sig_bkg_hist.axes()[0].name,
+            ax=ax, clear=False, stack=True, line_opts=None,
+            fill_opts=Plotter.stack_fill_opts,
+            error_opts=Plotter.stack_error_opts,
+        )
+
+    if cen_sb:
+        cen_data_minus_top = Plotter.data_minus_top(cen_sb['histo'])
+            # find scale to get shape of data-top and then scale to sig norm
+        sb_to_sig_scale = sig_norm/cen_data_minus_top.sum(*[ax.name for ax in cen_data_minus_top.axes()]).values()[()]
+        cen_data_minus_top.scale(sb_to_sig_scale)
+
+        hist.plot.plot1d(cen_data_minus_top, ax=ax, clear=False,
+            line_opts={'color' : cen_sb['color']},
+        )
+        cols_to_label.update({cen_sb['color']: cen_sb['label']})
+
+    if up_sb:
+        up_data_minus_top = Plotter.data_minus_top(up_sb['histo'])
+            # find scale to get shape of data-top and then scale to sig norm
+        sb_to_sig_scale = sig_norm/up_data_minus_top.sum(*[ax.name for ax in up_data_minus_top.axes()]).values()[()]
+        up_data_minus_top.scale(sb_to_sig_scale)
+
+        hist.plot.plot1d(up_data_minus_top, ax=ax, clear=False,
+            line_opts={'color' : up_sb['color']},
+        )
+        cols_to_label.update({up_sb['color']: up_sb['label']})
+
+            # plot num/denom ratio
+        hist.plotratio(
+            up_data_minus_top, cen_data_minus_top, error_opts={'marker': '.', 'markersize': 10., 'color': up_sb['color'], 'elinewidth': 1},
+            unc='num', clear=False, ax=rax, guide_opts={}
+        )
+
+    if dw_sb:
+        dw_data_minus_top = Plotter.data_minus_top(dw_sb['histo'])
+            # find scale to get shape of data-top and then scale to sig norm
+        sb_to_sig_scale = sig_norm/dw_data_minus_top.sum(*[ax.name for ax in dw_data_minus_top.axes()]).values()[()]
+        dw_data_minus_top.scale(sb_to_sig_scale)
+
+        hist.plot.plot1d(dw_data_minus_top, ax=ax, clear=False,
+            line_opts={'color' : dw_sb['color']},
+        )
+        cols_to_label.update({dw_sb['color']: dw_sb['label']})
+
+            # plot num/denom ratio
+        hist.plotratio(
+            dw_data_minus_top, cen_data_minus_top, error_opts={'marker': '.', 'markersize': 10., 'color': dw_sb['color'], 'elinewidth': 1},
+            unc='num', clear=False, ax=rax, guide_opts={}
+        )
+
+        ## set legend and corresponding colors
+    handles, labels = ax.get_legend_handles_labels()
+    for idx, sample in enumerate(labels):
+        if sample == 'data' or sample == 'Observed': continue
+        if isinstance(handles[idx], matplotlib.lines.Line2D):
+            labels[idx] = cols_to_label[handles[idx].get_color()]
+        else:
+            facecolor, legname = plt_tools.get_styles(sample, Plotter.hstyles)
+            handles[idx].set_facecolor(facecolor)
+            labels[idx] = legname
+
+    handles, def_labels = ax.get_legend_handles_labels()
+    ax.legend(handles,labels, loc='upper right', ncol=2)
+
+    ax.autoscale()
+    ax.set_ylabel('Events')
+    ax.set_ylim(0, None)
+    ax.set_xlabel(None)
+    ax.set_xlim(xlimits)
+
+    rax.autoscale()
+    rax.set_ylabel('Sys/Cen')
+    rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(1.5, rax.get_ylim()[1]))
+    #rax.set_ylim(max(0.0, rax.get_ylim()[0]), min(5.0, rax.get_ylim()[1]))
+    rax.set_xlim(xlimits)
+    rax.set_xlabel(xlabel)
+
+    if vlines is not None:
+        #set_trace()
+            # draw vertical lines separating ctstar bins
+        for vline in vlines:
+            ax.axvline(vline, color='k', linestyle='--')
+            rax.axvline(vline, color='k', linestyle='--')
+
+    ax.text(
+        0.02, 0.94, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+        fontsize=rcParams['font.size'], horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+    )
+    hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+
+    #set_trace()
+    if not os.path.isdir(pltdir):
+        os.makedirs(pltdir)
+    pltname = opts.get('fname')
+    figname = os.path.join(pltdir, pltname)
+    fig.savefig(figname)
+    print('%s written' % figname)
+
 
 
 def plot_qcd_mc_shape(sig_reg=None, btag_sb=None, iso_sb=None, double_sb=None, print_ratios=False, **opts):
@@ -1024,22 +1155,22 @@ if args.dmp:
             dw_sb_lin = Plotter.linearize_hist(dw_sb_histo)
             sig_lin = Plotter.linearize_hist(sig_histo)
 
-            #   ## data-prompt
-            #       ## plot projection onto mtt
-            #plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_histo.integrate('ctstar_abs'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_histo.integrate('ctstar_abs'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_histo.integrate('ctstar_abs'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #   **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_mtt' % (args.lepton, jmult)})
-            #       ## plot projection onto ctstar
-            #plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_histo.integrate('mtt'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_histo.integrate('mtt'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_histo.integrate('mtt'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #   **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
-            #       ## plot linearized 2D mtt ctstar dist
-            #plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #   **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'QCD_DMP_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
+               ## data-prompt
+                   ## plot projection onto mtt
+            plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_histo.integrate('ctstar_abs'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_histo.integrate('ctstar_abs'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_histo.integrate('ctstar_abs'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+               **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_mtt' % (args.lepton, jmult)})
+                   ## plot projection onto ctstar
+            plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_histo.integrate('mtt'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_histo.integrate('mtt'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_histo.integrate('mtt'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+               **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
+                   ## plot linearized 2D mtt ctstar dist
+            plot_qcd_dmp_shape(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+               **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'QCD_DMP_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
 
                ## data-(single top/ttbar)
                    ## plot projection onto mtt
@@ -1058,46 +1189,185 @@ if args.dmp:
                 dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
                **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'EWK_plus_QCD_DD_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
 
-            ## make plots comparing data-driven background (data-ttbar-st) in sidebands to EWK+QCD MC in signal
-            #       ## plot projection onto mtt
-            #plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_histo.integrate('ctstar_abs'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_histo.integrate('ctstar_abs'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_histo.integrate('ctstar_abs'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #    signal={'histo' : sig_histo.integrate('ctstar_abs')},
-            #   **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'EWK_QCD_Comparison_%s_%s_mtt' % (args.lepton, jmult)})
-            #       ## plot projection onto ctstar
-            #plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_histo.integrate('mtt'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_histo.integrate('mtt'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_histo.integrate('mtt'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #    signal={'histo' : sig_histo.integrate('mtt')},
-            #   **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'EWK_QCD_Comparison_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
-            #       ## plot linearized 2D mtt ctstar dist
-            #plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
-            #    up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
-            #    dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
-            #    signal={'histo' : sig_lin},
-            #   **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'EWK_QCD_Comparison_%s_%s_%s' % (args.lepton, jmult, hname)})
+            # make plots comparing data-driven background (data-ttbar-st) in sidebands to EWK+QCD MC in signal
+                   ## plot projection onto mtt
+            plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_histo.integrate('ctstar_abs'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_histo.integrate('ctstar_abs'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_histo.integrate('ctstar_abs'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                signal={'histo' : sig_histo.integrate('ctstar_abs')},
+               **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'EWK_QCD_Comparison_%s_%s_mtt' % (args.lepton, jmult)})
+                   ## plot projection onto ctstar
+            plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_histo.integrate('mtt'), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_histo.integrate('mtt'), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_histo.integrate('mtt'), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                signal={'histo' : sig_histo.integrate('mtt')},
+               **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'EWK_QCD_Comparison_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
+                   ## plot linearized 2D mtt ctstar dist
+            plot_ewk_qcd_cont(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                signal={'histo' : sig_lin},
+               **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'EWK_QCD_Comparison_%s_%s_%s' % (args.lepton, jmult, hname)})
+
+
+if args.bkg_shapes:
+    for hname in variables.keys():
+        if hname not in hdict.keys():
+            raise ValueError("%s not found in file" % hname)
+        histo = hdict[hname][:, :, 'nosys', :].integrate('sys') # process, sys, jmult, btag
+        #set_trace()
+        
+        if histo.dense_dim() == 1:
+            xtitle, xrebinning, x_lims, withData = variables[hname]
+            xaxis_name = histo.dense_axes()[0].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+    
+        if histo.dense_dim() == 2:
+            xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
+            if (hname == 'mtt_vs_tlep_ctstar_abs'):
+                xrebinning = np.array([300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1500.0])
+                x_lims = (xrebinning[0], xrebinning[-1])
+
+            vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
+            nbins = (len(xrebinning)-1)*(len(yrebinning)-1) if histo.dense_dim() == 2 else None
+    
+            xaxis_name = histo.dense_axes()[0].name
+            yaxis_name = histo.dense_axes()[1].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+                ## rebin y axis
+            if isinstance(yrebinning, np.ndarray):
+                new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+            elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+                new_ybins = yrebinning
+            histo = histo.rebin(yaxis_name, new_ybins)
+
+        #set_trace()   
+        if hname == 'Lep_iso':
+            x_lims = (0., 0.15) if (args.lepton == 'Muon') else (0., 0.1)
+    
+        ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
+        #for jmult in ['3Jets']:
+        #for jmult in ['4PJets']:
+        for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+            shape_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', 'Shapes', 'DMT')
+            if not os.path.isdir(shape_dir): os.makedirs(shape_dir)
+            comp_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', 'Shapes', 'MC_DD_Comp')
+            if not os.path.isdir(comp_dir): os.makedirs(comp_dir)
+
+                # get sideband and signal region hists (hardcoded)
+            cen_sb_histo = histo[:, '0p1to0p4', jmult].integrate('jmult').integrate('btag')
+            up_sb_histo = histo[:, '0p2to0p5', jmult].integrate('jmult').integrate('btag')
+            dw_sb_histo = histo[:, '0p0to0p2', jmult].integrate('jmult').integrate('btag')
+            sig_histo = histo[:, 'btagPass', jmult].integrate('jmult').integrate('btag')
+
+            if histo.dense_dim() == 1:
+                # make data-(single top/ttbar) shape plots
+                plot_ewk_qcd_dmtop_shape(cen_sb={'histo' : cen_sb_histo, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                    up_sb={'histo' : up_sb_histo, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                    dw_sb={'histo' : dw_sb_histo, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                    signal={'histo' : sig_histo},
+                   **{'xtitle':xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'fname': 'BKG_DD_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
+
+                # make plots comparing data-driven background (data-ttbar-st) in sidebands to EWK+QCD MC in signal
+                plot_bkg_mc_dd_comp(cen_sb={'histo' : cen_sb_histo, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                    up_sb={'histo' : up_sb_histo, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                    dw_sb={'histo' : dw_sb_histo, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                    signal={'histo' : sig_histo},
+                   **{'xtitle':xtitle, 'xlims':x_lims, 'pltdir':comp_dir, 'hname': hname, 'jmult':jmult, 'fname': 'BKG_MC_DD_Comparison_%s_%s_%s' % (args.lepton, jmult, hname)})
+
+            if histo.dense_dim() == 2:
+                    # linearize sideband and signal region hists (hardcoded)
+                cen_sb_lin = Plotter.linearize_hist(cen_sb_histo)
+                up_sb_lin = Plotter.linearize_hist(up_sb_histo)
+                dw_sb_lin = Plotter.linearize_hist(dw_sb_histo)
+                sig_lin = Plotter.linearize_hist(sig_histo)
+
+                # make data-(single top/ttbar) shape plots
+                plot_ewk_qcd_dmtop_shape(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                    up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                    dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                   **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'BKG_DD_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
+
+                # make 1D projection along dense axes
+                for dax in range(2):
+                    if dax == 0:
+                        ## plot projection onto yaxis
+                        plot_ewk_qcd_dmtop_shape(cen_sb={'histo' : cen_sb_histo.integrate(cen_sb_histo.dense_axes()[dax].name), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                            up_sb={'histo' : up_sb_histo.integrate(up_sb_histo.dense_axes()[dax].name), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                            dw_sb={'histo' : dw_sb_histo.integrate(dw_sb_histo.dense_axes()[dax].name), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                            signal={'histo' : sig_histo.integrate(sig_histo.dense_axes()[dax].name)},
+                           **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'BKG_DD_Shapes_%s_%s_%s_proj' % (args.lepton, jmult, hname.split('_vs_')[1])})
+                    else:
+                        ## plot projection onto xaxis
+                        plot_ewk_qcd_dmtop_shape(cen_sb={'histo' : cen_sb_histo.integrate(cen_sb_histo.dense_axes()[dax].name), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                            up_sb={'histo' : up_sb_histo.integrate(up_sb_histo.dense_axes()[dax].name), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                            dw_sb={'histo' : dw_sb_histo.integrate(dw_sb_histo.dense_axes()[dax].name), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                            signal={'histo' : sig_histo.integrate(sig_histo.dense_axes()[dax].name)},
+                           **{'xtitle':xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'jmult':jmult, 'fname': 'BKG_DD_Shapes_%s_%s_%s_proj' % (args.lepton, jmult, hname.split('_vs_')[0])})
+
+
+                # make plots comparing data-driven background (data-ttbar-st) in sidebands to EWK+QCD MC in signal
+                plot_bkg_mc_dd_comp(cen_sb={'histo' : cen_sb_lin, 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                    up_sb={'histo' : up_sb_lin, 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                    dw_sb={'histo' : dw_sb_lin, 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                    signal={'histo' : sig_lin},
+                   **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':comp_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'BKG_MC_DD_Comparison_%s_%s_%s' % (args.lepton, jmult, hname)})
+
+                # make 1D projection along dense axes
+                for dax in range(2):
+                    if dax == 0:
+                        ## plot projection onto yaxis
+                        plot_bkg_mc_dd_comp(cen_sb={'histo' : cen_sb_histo.integrate(cen_sb_histo.dense_axes()[dax].name), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                            up_sb={'histo' : up_sb_histo.integrate(up_sb_histo.dense_axes()[dax].name), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                            dw_sb={'histo' : dw_sb_histo.integrate(dw_sb_histo.dense_axes()[dax].name), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                            signal={'histo' : sig_histo.integrate(sig_histo.dense_axes()[dax].name)},
+                           **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':comp_dir, 'jmult':jmult, 'fname': 'BKG_MC_DD_Comparison_%s_%s_%s_proj' % (args.lepton, jmult, hname.split('_vs_')[1])})
+                    else:
+                        ## plot projection onto xaxis
+                        plot_bkg_mc_dd_comp(cen_sb={'histo' : cen_sb_histo.integrate(cen_sb_histo.dense_axes()[dax].name), 'label' : 'Cen (0.1-0.4)', 'color' : 'k'},
+                            up_sb={'histo' : up_sb_histo.integrate(up_sb_histo.dense_axes()[dax].name), 'label' : 'Up (0.2-0.5)', 'color' : 'r'},
+                            dw_sb={'histo' : dw_sb_histo.integrate(dw_sb_histo.dense_axes()[dax].name), 'label' : 'Down (0.0-0.2)', 'color' : 'b'},
+                            signal={'histo' : sig_histo.integrate(sig_histo.dense_axes()[dax].name)},
+                           **{'xtitle':xtitle, 'xlims':x_lims, 'pltdir':comp_dir, 'jmult':jmult, 'fname': 'BKG_MC_DD_Comparison_%s_%s_%s_proj' % (args.lepton, jmult, hname.split('_vs_')[0])})
 
 
  
-# plot with QCD estimation
-if args.qcd_est:    
-    systs_to_run = sorted(sys_to_name.keys()) if args.save_sys else ['nosys']
+# plot with EWK+QCD estimation
+if args.bkg_est:
+    systs_to_run = ['nosys']
+    #systs_to_run = sorted(sys_to_name.keys()) if args.save_sys else ['nosys']
     print('\nPlotting distributions for systematics:\n\t', *systs_to_run)
 
+    ## combine EWK and QCD processes into BKG groups
+    proc_bin = hist.Cat("process", "process", sorting='placement')
+    bkg_groups = {proc:proc for proc in process_groups.keys()}
+    del bkg_groups['EWK']
+    del bkg_groups['QCD']
+    bkg_groups['BKG'] = ['EWK', 'QCD']
+    
     #set_trace()
-        ## save post qcd-est dists for all systematics
-    if (args.save_sys):
-        import itertools
-            # keys are (lepton, jmult, sys, hname)
-        save_keys = sorted(itertools.product([args.lepton], ['3Jets', '4PJets'], [sys_to_name[sys] for sys in systs_to_run], [name for name in variables.keys()]))
-        post_qcd_est = {key:None for key in save_keys}
+    #    ## save post qcd-est dists for all systematics
+    #if (args.save_sys):
+    #    import itertools
+    #        # keys are (lepton, jmult, sys, hname)
+    #    save_keys = sorted(itertools.product([args.lepton], ['3Jets', '4PJets'], [sys_to_name[sys] for sys in systs_to_run], [name for name in variables.keys()]))
+    #    post_bkg_est = {key:None for key in save_keys}
 
     for hname in variables.keys():
         if hname not in hdict.keys():
             raise ValueError("%s not found in file" % hname)
+        histo = hdict[hname].group("process", proc_bin, bkg_groups) # group by EWK+QCD into BKG
         #set_trace()
-        histo = hdict[hname][:, :, :, :, :] # process, sys, jmult, btag, lepcat
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
@@ -1141,140 +1411,64 @@ if args.qcd_est:
         if hname == 'Lep_iso':
             x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
     
-        ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
-        for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+
+            # loop over different jet multiplicities
+        for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ['3Jets']:
         #for jmult in ['4PJets']:
+            #set_trace()
             print(jmult)
-            sig_groups = deepcopy(process_groups)
-                # remove single event with really high weight
-            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2018') and (args.lepton == 'Electron') and (jmult == '3Jets'): sig_groups['QCD'].remove('QCD_EM_30to50')
-            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Muon') and (jmult == '4PJets'): sig_groups['QCD'].remove('QCD_Mu_80to120')
-            if (jobid == 'ULnanoAOD_noMT_noLJpt') and (args.year == '2017') and (args.lepton == 'Electron') and (jmult == '3Jets'):
-                sig_groups['QCD'].remove('QCD_Mu_80to120')
-                sig_groups['QCD'].remove('QCD_EM_50to80')
-
-            sig_group = histo.group(process_cat, process, sig_groups) # group by process
-            sideband_group = histo.group(process_cat, process, process_groups) # group by process
+                # get sideband and signal region hists (hardcoded)
+            cen_sb_histo = histo[:, '0p1to0p4', :, jmult].integrate('jmult').integrate('btag')
+            sig_histo = histo[:, 'btagPass', jmult].integrate('jmult').integrate('btag')
 
             if histo.dense_dim() == 1:
-                iso_sb    = sideband_group[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                btag_sb   = sideband_group[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                double_sb = sideband_group[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                sig_histo = sig_group[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag')
+                cen_sb = histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                sig_histo = histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult')
             else:
-                iso_sb_histo    = sideband_group[:, 'nosys', jmult, 'btagPass', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                btag_sb_histo   = sideband_group[:, 'nosys', jmult, 'btagFail', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                double_sb_histo = sideband_group[:, 'nosys', jmult, 'btagFail', 'Loose'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                nosys_sig_reg_histo = sig_group[:, 'nosys', jmult, 'btagPass', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                iso_sb    = Plotter.linearize_hist(iso_sb_histo)
-                btag_sb   = Plotter.linearize_hist(btag_sb_histo)
-                double_sb = Plotter.linearize_hist(double_sb_histo)
-                sig_histo = Plotter.linearize_hist(sig_group[:, :, jmult, 'btagPass', 'Tight'].integrate('jmult').integrate('lepcat').integrate('btag'))
+                cen_sb = Plotter.linearize_hist(histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                sig_histo = Plotter.linearize_hist(histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult'))
 
-                ## plot shape uncertainties and find normalization uncs
-            if args.plot_shapes:
-                #set_trace()
-                if (hname == 'Jets_njets') or (hname == 'mtt_vs_tlep_ctstar_abs'):
-                    unc_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', 'Uncertainties')
-                    if not os.path.isdir(unc_dir): os.makedirs(unc_dir)
-                    shape_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', 'Shapes')
-                    if not os.path.isdir(shape_dir): os.makedirs(shape_dir)
-
-                    if hname == 'Jets_njets':
-                        sig = sig_group[:, 'nosys', jmult, 'btagPass', 'Tight'].integrate('sys').integrate('jmult').integrate('lepcat').integrate('btag')
-                        norm_uncs = get_norm_unc(reg_A=sig, reg_B=btag_sb)
-                        unc_txt_name = 'Norm_Uncs_%s_%s' % (args.lepton, jmult)
-                        #set_trace()
-                        plt_tools.print_table(norm_uncs, filename='%s/%s.txt' % (unc_dir, unc_txt_name), print_output=True)
-                        print('%s/%s.txt written' % (os.path.join(outdir, args.lepton, jmult, 'QCD_Est'), unc_txt_name))
-
-                    if hname == 'mtt_vs_tlep_ctstar_abs':
-                        ## plot qcd shapes (MC and data-prompt)
-                            ## QCD MC
-                        #set_trace()
-                                ## plot projection onto mtt
-                        plot_qcd_mc_shape(sig_reg=nosys_sig_reg_histo.integrate('ctstar_abs'), btag_sb=btag_sb_histo.integrate('ctstar_abs'),
-                            iso_sb=iso_sb_histo.integrate('ctstar_abs'), double_sb=double_sb_histo.integrate('ctstar_abs'), print_ratios=True,
-                            **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'hname': 'mtt', 'jmult':jmult, 'fname': 'QCD_Simulation_Shapes_%s_%s_mtt' % (args.lepton, jmult)})
-                                ## plot projection onto ctstar
-                        plot_qcd_mc_shape(sig_reg=nosys_sig_reg_histo.integrate('mtt'), btag_sb=btag_sb_histo.integrate('mtt'),
-                            iso_sb=iso_sb_histo.integrate('mtt'), double_sb=double_sb_histo.integrate('mtt'),
-                            **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'QCD_Simulation_Shapes_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
-                                ## plot linearized 2D mtt ctstar dist
-                        plot_qcd_mc_shape(sig_reg=sig_histo[:, 'nosys', :].integrate('sys'), btag_sb=btag_sb, iso_sb=iso_sb, double_sb=double_sb,
-                            **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult,
-                            'vlines':vlines, 'fname': 'QCD_Simulation_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)}
-                        )
-                            ## data-prompt
-                                ## plot projection onto mtt
-                        plot_qcd_dmp_shape(btag_sb=btag_sb_histo.integrate('ctstar_abs'), iso_sb=iso_sb_histo.integrate('ctstar_abs'), double_sb=double_sb_histo.integrate('ctstar_abs'),
-                            **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':shape_dir, 'hname': 'mtt', 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_mtt' % (args.lepton, jmult)})
-                                ## plot projection onto ctstar
-                        plot_qcd_dmp_shape(btag_sb=btag_sb_histo.integrate('mtt'), iso_sb=iso_sb_histo.integrate('mtt'), double_sb=double_sb_histo.integrate('mtt'),
-                            **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':shape_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname': 'QCD_DMP_Shapes_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
-                                ## plot linearized 2D mtt ctstar dist
-                        plot_qcd_dmp_shape(btag_sb=btag_sb, iso_sb=iso_sb, double_sb=double_sb,
-                            **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':shape_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname': 'QCD_DMP_Shapes_%s_%s_%s' % (args.lepton, jmult, hname)})
-
-                        ## plot shape uncertainties
-                            ## plot projection onto mtt
-                        plot_shape_uncs(numerators=[{'histo' : btag_sb_histo.integrate('ctstar_abs'), 'label' : 'B (BTAG)', 'color' : 'k'}, {'histo' : iso_sb_histo.integrate('ctstar_abs'), 'label' : 'C (ISO)', 'color' : 'r'}],
-                            denom={'histo' : double_sb_histo.integrate('ctstar_abs'), 'label' : 'D (BTAG-ISO)', 'color' : 'b'}, 
-                            **{'xtitle':'%s [GeV]' % xtitle, 'xlims':x_lims, 'pltdir':unc_dir, 'hname': 'mtt', 'jmult':jmult, 'fname':'Shape_Uncertainties_%s_%s_mtt' % (args.lepton, jmult)})
-                            ## plot projection onto ctstar
-                        plot_shape_uncs(numerators=[{'histo' : btag_sb_histo.integrate('mtt'), 'label' : 'B (BTAG)', 'color' : 'k'}, {'histo' : iso_sb_histo.integrate('mtt'), 'label' : 'C (ISO)', 'color' : 'r'}],
-                            denom={'histo' : double_sb_histo.integrate('mtt'), 'label' : 'D (BTAG-ISO)', 'color' : 'b'}, 
-                            **{'xtitle':ytitle, 'xlims':y_lims, 'pltdir':unc_dir, 'hname': 'tlep_ctstar_abs', 'jmult':jmult, 'fname':'Shape_Uncertainties_%s_%s_tlep_ctstar_abs' % (args.lepton, jmult)})
-                            ## plot linearized 2D mtt ctstar dist
-                        plot_shape_uncs(numerators=[{'histo' : btag_sb, 'label' : 'B (BTAG)', 'color' : 'k'}, {'histo' : iso_sb, 'label' : 'C (ISO)', 'color' : 'r'}],
-                            denom={'histo' : double_sb, 'label' : 'D (BTAG-ISO)', 'color' : 'b'}, 
-                            **{'xtitle':'%s $\otimes$ %s' % (xtitle, ytitle), 'xlims':(0, nbins), 'pltdir':unc_dir, 'hname': hname, 'jmult':jmult, 'vlines':vlines, 'fname':'Shape_Uncertainties_%s_%s_%s' % (args.lepton, jmult, hname)})
-
-
-                ## plot systematic variations after qcd estimation is made
+                ## plot systematic variations after bkg estimation is made
             #set_trace()
             for sys in systs_to_run:
                 if sys not in histo.axis('sys')._sorted:
                     print('\n\n   Systematic %s not available, skipping\n\n' % sys)
                     continue
-                print('QCD est:', jmult, sys, hname)
+                print('BKG est:', jmult, sys, hname)
                 #set_trace()
 
-                shape_reg = 'BTAG'
-                #for norm in ['Sideband']:
-                #for norm in ['ABCD-ML']:
-                for norm in ['ABCD']:
-                #for norm in ['ABCD', 'Sideband']:
+                for norm in ['SigMC']:
                     #set_trace()
-                    qcd_est_histo = Plotter.QCD_Est(sig_reg=sig_histo, iso_sb=iso_sb, btag_sb=btag_sb, double_sb=double_sb, norm_type=norm, shape_region=shape_reg, norm_region=shape_reg if norm=='Sideband' else None, sys=sys)
+                    bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=cen_sb, norm_type=norm, sys=sys, ignore_uncs=True)
                     #set_trace()
-                        # save post qcd-est dist to dict
-                    if norm == 'Sideband':
-                        if args.save_sys:
-                            post_qcd_est[(args.lepton, jmult, sys_to_name[sys], hname)] = qcd_est_histo
+
+                        # save post bkg-est dist to dict
+                    #if norm == 'Sideband':
+                    #    if args.save_sys:
+                    #        post_bkg_est[(args.lepton, jmult, sys_to_name[sys], hname)] = bkg_est_histo
 
                     if sys == 'nosys':                 
-                        qcd_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
-                        qcd_dir = os.path.join(outdir, args.lepton, jmult, 'QCD_Est', sys_to_name[sys], qcd_name)
-                        if not os.path.isdir(qcd_dir):
-                            os.makedirs(qcd_dir)
+                        bkg_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
+                        bkg_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', bkg_name, sys_to_name[sys])
+                        if not os.path.isdir(bkg_dir):
+                            os.makedirs(bkg_dir)
     
                         fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                         fig.subplots_adjust(hspace=.07)
    
                         if hname == 'Jets_njets':
-                            print('QCD est:', jmult, sys)
-                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(qcd_est_histo, data_lumi_year['%ss' % args.lepton]/1000., sys=sys)
-                            frac_name = '%s_yields_and_fracs_QCD_Est_%s' % ('_'.join([sys, jmult, args.lepton]), qcd_name)
-                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (qcd_dir, frac_name), print_output=True)
-                            print('%s/%s.txt written' % (qcd_dir, frac_name))
-                            with open('%s/%s.json' % (qcd_dir, frac_name), 'w') as out:
+                            print('BKG est:', jmult, sys)
+                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(bkg_est_histo, data_lumi_year['%ss' % args.lepton]/1000., sys=sys)
+                            frac_name = '%s_yields_and_fracs_BKG_Est_%s' % ('_'.join([sys, jmult, args.lepton]), bkg_name)
+                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (bkg_dir, frac_name), print_output=True)
+                            print('%s/%s.txt written' % (bkg_dir, frac_name))
+                            with open('%s/%s.json' % (bkg_dir, frac_name), 'w') as out:
                                 out.write(prettyjson.dumps(yields_json))
-    
+
                         #set_trace() 
-                        Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
-                            else Plotter.plot_stack1d(ax, rax, qcd_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
+                        Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
+                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
     
                             # add lepton/jet multiplicity label
                         ax.text(
@@ -1306,17 +1500,575 @@ if args.qcd_est:
                         hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
     
                         #set_trace()
-                        figname = '%s/%s_QCD_Est_%s' % (qcd_dir, '_'.join([sys, jmult, args.lepton, hname]), qcd_name)
+                        figname = os.path.join(bkg_dir, '%s_BKG_Est_%s' % ('_'.join([sys, jmult, args.lepton, hname]), bkg_name))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
 
 
-    if args.save_sys:
-        from coffea.util import save
-        outname = '%s/%s/%s_Post_QCD_Est_dict.coffea' % (outdir, args.lepton, args.lepton)
-        save(post_qcd_est, outname)
-        #outname = '%s/%s/%s_QCD_Est_mtt_ctstar_dict.coffea' % (outdir, args.lepton, args.lepton)
-        #save(mtt_ctstar_qcd_est, outname)
-        print('%s written' % outname)
+# plots with EWK+QCD estimation
+if args.vary_norm:
+    systs_to_run = ['nosys']
+    print('\nPlotting distributions for systematics:\n\t', *systs_to_run)
+
+    #set_trace()
+    ## combine EWK and QCD processes into BKG groups
+    proc_bin = hist.Cat("process", "process", sorting='placement')
+    bkg_groups = {proc:proc for proc in process_groups.keys()}
+    mc_procs = [proc for proc in bkg_groups.keys() if 'data' not in proc]
+    for proc in mc_procs:
+        del bkg_groups[proc]
+    bkg_groups['ttJets'] = ['ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_sl_tau', 'ttJets_other']
+    bkg_groups['singlet'] = ['singlet']
+    bkg_groups['BKG'] = ['EWK', 'QCD']
+
+    for hname in variables.keys():
+        if hname not in hdict.keys():
+            raise ValueError("%s not found in file" % hname)
+        histo = hdict[hname].group("process", proc_bin, bkg_groups) # group by EWK+QCD into BKG, all ttJets together
+        #set_trace()
+
+        if histo.dense_dim() == 1:
+            xtitle, xrebinning, x_lims, withData = variables[hname]
+            xaxis_name = histo.dense_axes()[0].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+    
+        if histo.dense_dim() == 2:
+            xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
+
+            if (hname == 'mtt_vs_tlep_ctstar_abs'):
+                withData = False
+            xaxis_name = histo.dense_axes()[0].name
+            yaxis_name = histo.dense_axes()[1].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+                ## rebin y axis
+            if isinstance(yrebinning, np.ndarray):
+                new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+            elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+                new_ybins = yrebinning
+            histo = histo.rebin(yaxis_name, new_ybins)
+
+
+        mc_opts = {
+        #    'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets'] if not ttJets_cats else ['QCD', 'EWK', 'singlet', 'ttJets_other', 'ttJets_unmatchable', 'ttJets_matchable', 'ttJets_right']
+            'maskData' : not withData,
+        }
+
+        vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
+        nbins = (len(xrebinning)-1)*(len(yrebinning)-1) if histo.dense_dim() == 2 else None
+    
+        if hname == 'Lep_iso':
+            x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
+    
+
+            # loop over different jet multiplicities
+        for jmult in sorted(set([key[3] for key in histo.values().keys()])):
+        #for jmult in ['3Jets']:
+        #for jmult in ['4PJets']:
+            #set_trace()
+            print(jmult)
+                # get sideband and signal region hists (hardcoded)
+            cen_sb_histo = histo[:, '0p1to0p4', :, jmult].integrate('jmult').integrate('btag')
+            sig_histo = histo[:, 'btagPass', jmult].integrate('jmult').integrate('btag')
+
+            if histo.dense_dim() == 1:
+                cen_sb = histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                sig_histo = histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult')
+            else:
+                cen_sb = Plotter.linearize_hist(histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                sig_histo = Plotter.linearize_hist(histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult'))
+
+                ## plot systematic variations after bkg estimation is made
+            #set_trace()
+            for sys in systs_to_run:
+                if sys not in histo.axis('sys')._sorted:
+                    print('\n\n   Systematic %s not available, skipping\n\n' % sys)
+                    continue
+                print('BKG est:', jmult, sys, hname)
+                #set_trace()
+
+                for norm in ['SigMC']:
+                    #set_trace()
+                    bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=cen_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    #set_trace()
+
+                    # create bkg hist variations with same shape but +100%, -50% yields compared to nominal
+                    bkg_shape, _ = Plotter.get_qcd_shape(bkg_est_histo[Plotter.bkg_mask].integrate('process'), overflow='none')
+                    bkg_norm = np.sum(bkg_est_histo[Plotter.bkg_mask].integrate('process').values()[()])
+                    st_tt_sumw = bkg_est_histo[Plotter.top_samples].integrate('process').values()[()]
+                        # +100% bkg yield (plus other MC contribution for plotting)
+                    bkg_up_sumw = bkg_shape*(bkg_norm*2) + st_tt_sumw
+                        # -50% bkg yield (plus other MC contribution for plotting)
+                    bkg_dw_sumw = bkg_shape*(bkg_norm*0.5) + st_tt_sumw
+
+                    if sys == 'nosys':                 
+                        bkg_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
+                        bkg_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', bkg_name, sys_to_name[sys], 'VARY_NORM')
+                        if not os.path.isdir(bkg_dir):
+                            os.makedirs(bkg_dir)
+    
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+   
+                        if hname == 'Jets_njets':
+                            print('BKG est:', jmult, sys)
+                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(bkg_est_histo, data_lumi_year['%ss' % args.lepton]/1000., sys=sys)
+                            frac_name = '%s_yields_and_fracs_BKG_Est_%s' % ('_'.join([sys, jmult, args.lepton]), bkg_name)
+                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (bkg_dir, frac_name), print_output=True)
+                            print('%s/%s.txt written' % (bkg_dir, frac_name))
+                            with open('%s/%s.json' % (bkg_dir, frac_name), 'w') as out:
+                                out.write(prettyjson.dumps(yields_json))
+
+                            # plot bkg variations
+                        Plotter.plot_1D(values=bkg_up_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='r', label='BKG +100%')
+                        Plotter.plot_1D(values=bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='b', label='BKG -50%')
+
+                        #set_trace() 
+                        Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
+                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
+
+                            # plot bkg variations
+                                # get ratio arrays
+                        if (hname != 'mtt_vs_tlep_ctstar_abs'):
+                            bkg_up_ratio_vals, bkg_up_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=bkg_up_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            bkg_dw_ratio_vals, bkg_dw_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=bkg_dw_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            rax.step(bkg_up_ratio_bins, bkg_up_ratio_vals, where='post', **{'linestyle' : '-', 'color' : 'r'})
+                            rax.step(bkg_dw_ratio_bins, bkg_dw_ratio_vals, where='post', **{'linestyle' : '-', 'color' : 'b'})
+    
+                            # add lepton/jet multiplicity label
+                        ax.text(
+                            0.02, 0.92, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+                            fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                        )
+                                ## draw vertical lines for distinguishing different ctstar bins
+                        if vlines is not None:
+                            for vline in vlines:
+                                ax.axvline(vline, color='k', linestyle='--')
+                                if rax is not None: rax.axvline(vline, color='k', linestyle='--')
+
+                            # plot unrolled x and y labels for each bin
+                        if histo.dense_dim() == 2:
+                            ## plot x labels
+                            if plot_xlabels is not None:
+                                rax.set_xticks(np.arange(len(plot_xlabels)))
+                                rax.set_xticklabels(plot_xlabels)
+                                ax.tick_params(which='minor', bottom=False, top=False)
+                                rax.tick_params(which='minor', bottom=False, top=False)
+                                plt.setp(rax.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams['font.size']*0.5)
+
+                            ## plot y labels
+                            if plot_ylabels is not None: # (binlabels, bin_locs)
+                                for idx, label in enumerate(plot_ylabels[0]):
+                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=('data', 'axes fraction'),
+                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
+
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    
+                        #set_trace()
+                        figname = os.path.join(bkg_dir, '%s_BKG_Est_VARY_NORM_%s' % ('_'.join([sys, jmult, args.lepton, hname]), bkg_name))
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
+
+
+if args.vary_shape:
+    systs_to_run = ['nosys']
+    print('\nPlotting distributions for systematics:\n\t', *systs_to_run)
+
+    #set_trace()
+    ## combine EWK and QCD processes into BKG groups
+    proc_bin = hist.Cat("process", "process", sorting='placement')
+    bkg_groups = {proc:proc for proc in process_groups.keys()}
+    mc_procs = [proc for proc in bkg_groups.keys() if 'data' not in proc]
+    for proc in mc_procs:
+        del bkg_groups[proc]
+    bkg_groups['ttJets'] = ['ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_sl_tau', 'ttJets_other']
+    bkg_groups['singlet'] = ['singlet']
+    bkg_groups['BKG'] = ['EWK', 'QCD']
+
+    for hname in variables.keys():
+        if hname not in hdict.keys():
+            raise ValueError("%s not found in file" % hname)
+        histo = hdict[hname].group("process", proc_bin, bkg_groups) # group by EWK+QCD into BKG, all ttJets together
+        #set_trace()
+
+        if histo.dense_dim() == 1:
+            xtitle, xrebinning, x_lims, withData = variables[hname]
+            xaxis_name = histo.dense_axes()[0].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+    
+        if histo.dense_dim() == 2:
+            xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
+
+            if (hname == 'mtt_vs_tlep_ctstar_abs'):
+                withData = False
+            xaxis_name = histo.dense_axes()[0].name
+            yaxis_name = histo.dense_axes()[1].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+                ## rebin y axis
+            if isinstance(yrebinning, np.ndarray):
+                new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+            elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+                new_ybins = yrebinning
+            histo = histo.rebin(yaxis_name, new_ybins)
+
+
+        mc_opts = {
+        #    'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets'] if not ttJets_cats else ['QCD', 'EWK', 'singlet', 'ttJets_other', 'ttJets_unmatchable', 'ttJets_matchable', 'ttJets_right']
+            'maskData' : not withData,
+        }
+
+        vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
+        nbins = (len(xrebinning)-1)*(len(yrebinning)-1) if histo.dense_dim() == 2 else None
+    
+        if hname == 'Lep_iso':
+            x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
+    
+
+            # loop over different jet multiplicities
+        for jmult in sorted(set([key[3] for key in histo.values().keys()])):
+        #for jmult in ['3Jets']:
+        #for jmult in ['4PJets']:
+            #set_trace()
+            print(jmult)
+
+            if histo.dense_dim() == 1:
+                cen_sb = histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                up_sb = histo[:, '0p2to0p5', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                dw_sb = histo[:, '0p0to0p2', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                sig_histo = histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult')
+            else:
+                cen_sb = Plotter.linearize_hist(histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                up_sb = Plotter.linearize_hist(histo[:, '0p2to0p5', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                dw_sb = Plotter.linearize_hist(histo[:, '0p0to0p2', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                sig_histo = Plotter.linearize_hist(histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult'))
+
+                ## plot systematic variations after bkg estimation is made
+            #set_trace()
+            for sys in systs_to_run:
+                if sys not in histo.axis('sys')._sorted:
+                    print('\n\n   Systematic %s not available, skipping\n\n' % sys)
+                    continue
+                print('BKG est:', jmult, sys, hname)
+                #set_trace()
+
+                for norm in ['SigMC']:
+                    #set_trace()
+                    bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=cen_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    up_bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=up_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    dw_bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=dw_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    #set_trace()
+
+                    # create bkg hist shape variations with same yield
+                        # bkg up variation yield (plus other MC contribution for plotting)
+                    bkg_up_sumw = up_bkg_est_histo[Plotter.mc_samples].integrate('process').values()[()]
+                        # bkg dw variation yield (plus other MC contribution for plotting)
+                    bkg_dw_sumw = dw_bkg_est_histo[Plotter.mc_samples].integrate('process').values()[()]
+
+                    if sys == 'nosys':                 
+                        bkg_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
+                        bkg_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', bkg_name, sys_to_name[sys], 'VARY_SHAPE')
+                        if not os.path.isdir(bkg_dir):
+                            os.makedirs(bkg_dir)
+    
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+   
+                        if hname == 'Jets_njets':
+                            print('BKG est:', jmult, sys)
+                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(bkg_est_histo, data_lumi_year['%ss' % args.lepton]/1000., sys=sys)
+                            frac_name = '%s_yields_and_fracs_BKG_Est_%s' % ('_'.join([sys, jmult, args.lepton]), bkg_name)
+                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (bkg_dir, frac_name), print_output=True)
+                            print('%s/%s.txt written' % (bkg_dir, frac_name))
+                            with open('%s/%s.json' % (bkg_dir, frac_name), 'w') as out:
+                                out.write(prettyjson.dumps(yields_json))
+
+                            # plot bkg variations
+                        Plotter.plot_1D(values=bkg_up_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='r', label='BKG UP')
+                        Plotter.plot_1D(values=bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='b', label='BKG DW')
+
+                        #set_trace() 
+                        Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
+                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
+
+                            # plot bkg variations
+                                # get ratio arrays
+                        if (hname != 'mtt_vs_tlep_ctstar_abs'):
+                            bkg_up_ratio_vals, bkg_up_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=bkg_up_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            bkg_dw_ratio_vals, bkg_dw_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=bkg_dw_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            rax.step(bkg_up_ratio_bins, bkg_up_ratio_vals, where='post', **{'linestyle' : '-', 'color' : 'r'})
+                            rax.step(bkg_dw_ratio_bins, bkg_dw_ratio_vals, where='post', **{'linestyle' : '-', 'color' : 'b'})
+    
+                            # add lepton/jet multiplicity label
+                        ax.text(
+                            0.02, 0.92, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+                            fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                        )
+                                ## draw vertical lines for distinguishing different ctstar bins
+                        if vlines is not None:
+                            for vline in vlines:
+                                ax.axvline(vline, color='k', linestyle='--')
+                                if rax is not None: rax.axvline(vline, color='k', linestyle='--')
+
+                            # plot unrolled x and y labels for each bin
+                        if histo.dense_dim() == 2:
+                            ## plot x labels
+                            if plot_xlabels is not None:
+                                rax.set_xticks(np.arange(len(plot_xlabels)))
+                                rax.set_xticklabels(plot_xlabels)
+                                ax.tick_params(which='minor', bottom=False, top=False)
+                                rax.tick_params(which='minor', bottom=False, top=False)
+                                plt.setp(rax.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams['font.size']*0.5)
+
+                            ## plot y labels
+                            if plot_ylabels is not None: # (binlabels, bin_locs)
+                                for idx, label in enumerate(plot_ylabels[0]):
+                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=('data', 'axes fraction'),
+                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
+
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    
+                        #set_trace()
+                        figname = os.path.join(bkg_dir, '%s_BKG_Est_VARY_SHAPE_%s' % ('_'.join([sys, jmult, args.lepton, hname]), bkg_name))
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
+
+
+if args.vary_shape_and_norm:
+    systs_to_run = ['nosys']
+    print('\nPlotting distributions for systematics:\n\t', *systs_to_run)
+
+    ## combine EWK and QCD processes into BKG groups
+    proc_bin = hist.Cat("process", "process", sorting='placement')
+    bkg_groups = {proc:proc for proc in process_groups.keys()}
+    mc_procs = [proc for proc in bkg_groups.keys() if 'data' not in proc]
+    for proc in mc_procs:
+        del bkg_groups[proc]
+    bkg_groups['ttJets'] = ['ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_sl_tau', 'ttJets_other']
+    bkg_groups['singlet'] = ['singlet']
+    bkg_groups['BKG'] = ['EWK', 'QCD']
+
+    for hname in variables.keys():
+        if hname not in hdict.keys():
+            raise ValueError("%s not found in file" % hname)
+        histo = hdict[hname].group("process", proc_bin, bkg_groups) # group by EWK+QCD into BKG, all ttJets together
+        #set_trace()
+
+        if histo.dense_dim() == 1:
+            xtitle, xrebinning, x_lims, withData = variables[hname]
+            xaxis_name = histo.dense_axes()[0].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+    
+        if histo.dense_dim() == 2:
+            xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
+
+            if (hname == 'mtt_vs_tlep_ctstar_abs'):
+                withData = False
+            xaxis_name = histo.dense_axes()[0].name
+            yaxis_name = histo.dense_axes()[1].name
+                ## rebin x axis
+            if isinstance(xrebinning, np.ndarray):
+                new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+            elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+                new_xbins = xrebinning
+            histo = histo.rebin(xaxis_name, new_xbins)
+                ## rebin y axis
+            if isinstance(yrebinning, np.ndarray):
+                new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+            elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+                new_ybins = yrebinning
+            histo = histo.rebin(yaxis_name, new_ybins)
+
+
+        mc_opts = {
+        #    'mcorder' : ['QCD', 'EWK', 'singlet', 'ttJets'] if not ttJets_cats else ['QCD', 'EWK', 'singlet', 'ttJets_other', 'ttJets_unmatchable', 'ttJets_matchable', 'ttJets_right']
+            'maskData' : not withData,
+        }
+
+        vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
+        nbins = (len(xrebinning)-1)*(len(yrebinning)-1) if histo.dense_dim() == 2 else None
+    
+        if hname == 'Lep_iso':
+            x_lims = (0., 0.15) if args.lepton == 'Muon' else (0., 0.1)
+    
+
+            # loop over different jet multiplicities
+        for jmult in sorted(set([key[3] for key in histo.values().keys()])):
+        #for jmult in ['3Jets']:
+        #for jmult in ['4PJets']:
+            #set_trace()
+            print(jmult)
+
+            if histo.dense_dim() == 1:
+                cen_sb = histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                up_sb = histo[:, '0p2to0p5', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                dw_sb = histo[:, '0p0to0p2', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult')
+                sig_histo = histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult')
+            else:
+                cen_sb = Plotter.linearize_hist(histo[:, '0p1to0p4', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                up_sb = Plotter.linearize_hist(histo[:, '0p2to0p5', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                dw_sb = Plotter.linearize_hist(histo[:, '0p0to0p2', 'nosys', jmult].integrate('btag').integrate('sys').integrate('jmult'))
+                sig_histo = Plotter.linearize_hist(histo[:, 'btagPass', :, jmult].integrate('btag').integrate('jmult'))
+
+                ## plot systematic variations after bkg estimation is made
+            #set_trace()
+            for sys in systs_to_run:
+                if sys not in histo.axis('sys')._sorted:
+                    print('\n\n   Systematic %s not available, skipping\n\n' % sys)
+                    continue
+                print('BKG est:', jmult, sys, hname)
+                #set_trace()
+
+                for norm in ['SigMC']:
+                    #set_trace()
+                    bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=cen_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    up_bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=up_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    dw_bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=dw_sb, norm_type=norm, sys=sys, ignore_uncs=True)
+                    #set_trace()
+
+                    # create bkg hists varying both shape and norm
+                    bkg_norm = np.sum(bkg_est_histo[Plotter.bkg_mask].integrate('process').values()[()])
+                    st_tt_sumw = bkg_est_histo[Plotter.top_samples].integrate('process').values()[()]
+                        # central sb
+                    cen_bkg_shape, _ = Plotter.get_qcd_shape(bkg_est_histo[Plotter.bkg_mask].integrate('process'), overflow='none')
+                            # +100% bkg yield (plus other MC contribution for plotting) for central sb region
+                    cen_bkg_up_sumw = cen_bkg_shape*(bkg_norm*2) + st_tt_sumw
+                            # -50% bkg yield (plus other MC contribution for plotting) for central sb region
+                    cen_bkg_dw_sumw = cen_bkg_shape*(bkg_norm*0.5) + st_tt_sumw
+
+                        # up sb
+                    up_bkg_shape, _ = Plotter.get_qcd_shape(up_bkg_est_histo[Plotter.bkg_mask].integrate('process'), overflow='none')
+                            # +100% bkg yield (plus other MC contribution for plotting) for up sb region
+                    up_bkg_up_sumw = up_bkg_shape*(bkg_norm*2) + st_tt_sumw
+                            # -50% bkg yield (plus other MC contribution for plotting) for up sb region
+                    up_bkg_dw_sumw = up_bkg_shape*(bkg_norm*0.5) + st_tt_sumw
+
+                        # down sb
+                    dw_bkg_shape, _ = Plotter.get_qcd_shape(dw_bkg_est_histo[Plotter.bkg_mask].integrate('process'), overflow='none')
+                            # +100% bkg yield (plus other MC contribution for plotting) for dw sb region
+                    dw_bkg_up_sumw = dw_bkg_shape*(bkg_norm*2) + st_tt_sumw
+                            # -50% bkg yield (plus other MC contribution for plotting) for dw sb region
+                    dw_bkg_dw_sumw = dw_bkg_shape*(bkg_norm*0.5) + st_tt_sumw
+
+                    if sys == 'nosys':                 
+                        bkg_name = '%s%s_Norm' % (shape_reg, norm) if norm == 'Sideband' else '%s_Norm' % norm
+                        bkg_dir = os.path.join(outdir, args.lepton, jmult, 'BKG_Est', bkg_name, sys_to_name[sys], 'VARY_SHAPE_AND_NORM')
+                        if not os.path.isdir(bkg_dir):
+                            os.makedirs(bkg_dir)
+    
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig.subplots_adjust(hspace=.07)
+   
+                        if hname == 'Jets_njets':
+                            print('BKG est:', jmult, sys)
+                            yields_txt, yields_json = Plotter.get_samples_yield_and_frac(bkg_est_histo, data_lumi_year['%ss' % args.lepton]/1000., sys=sys)
+                            frac_name = '%s_yields_and_fracs_BKG_Est_%s' % ('_'.join([sys, jmult, args.lepton]), bkg_name)
+                            plt_tools.print_table(yields_txt, filename='%s/%s.txt' % (bkg_dir, frac_name), print_output=True)
+                            print('%s/%s.txt written' % (bkg_dir, frac_name))
+                            with open('%s/%s.json' % (bkg_dir, frac_name), 'w') as out:
+                                out.write(prettyjson.dumps(yields_json))
+
+                            # plot bkg variations
+                                # central region
+                        Plotter.plot_1D(values=cen_bkg_up_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#e41a1c', label='BKG +100%')
+                        Plotter.plot_1D(values=cen_bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#377eb8', label='BKG -50%')
+                                # up region
+                        Plotter.plot_1D(values=up_bkg_up_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#4daf4a', label='BKG UP +100%')
+                        Plotter.plot_1D(values=up_bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#984ea3', label='BKG UP -50%')
+                                # down region
+                        Plotter.plot_1D(values=dw_bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#ff7f00', label='BKG DW +100%')
+                        Plotter.plot_1D(values=dw_bkg_dw_sumw, bins=bkg_est_histo.dense_axes()[0].edges(), xlabel=xtitle, xlimits=x_lims, ax=ax, color='#ffff33', label='BKG DW -50%')
+
+                        #set_trace() 
+                        Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
+                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel='%s $\otimes$ %s' % (xtitle, ytitle), xlimits=(0, nbins), **mc_opts)
+
+                            # plot bkg variations
+                                # get ratio arrays
+                        if (hname != 'mtt_vs_tlep_ctstar_abs'):
+                                # central sb region
+                            cen_bkg_up_ratio_vals, cen_bkg_up_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=cen_bkg_up_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            cen_bkg_dw_ratio_vals, cen_bkg_dw_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=cen_bkg_dw_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            rax.step(cen_bkg_up_ratio_bins, cen_bkg_up_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#e41a1c'})
+                            rax.step(cen_bkg_dw_ratio_bins, cen_bkg_dw_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#377eb8'})
+                                # up sb region
+                            up_bkg_up_ratio_vals, up_bkg_up_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=up_bkg_up_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            up_bkg_dw_ratio_vals, up_bkg_dw_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=up_bkg_dw_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            rax.step(up_bkg_up_ratio_bins, up_bkg_up_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#4daf4a'})
+                            rax.step(up_bkg_dw_ratio_bins, up_bkg_dw_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#984ea3'})
+                                # down sb region
+                            dw_bkg_up_ratio_vals, dw_bkg_up_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=dw_bkg_up_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            dw_bkg_dw_ratio_vals, dw_bkg_dw_ratio_bins = Plotter.get_ratio_arrays(num_vals=bkg_est_histo[Plotter.data_samples].integrate('process').values()[()], denom_vals=dw_bkg_dw_sumw, input_bins=bkg_est_histo.dense_axes()[0].edges())
+                            rax.step(dw_bkg_up_ratio_bins, dw_bkg_up_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#ff7f00'})
+                            rax.step(dw_bkg_dw_ratio_bins, dw_bkg_dw_ratio_vals, where='post', **{'linestyle' : '-', 'color' : '#ffff33'})
+    
+                            # add lepton/jet multiplicity label
+                        ax.text(
+                            0.02, 0.92, "%s, %s" % (objtypes['Lep'][args.lepton], jet_mults[jmult]),
+                            fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
+                        )
+                                ## draw vertical lines for distinguishing different ctstar bins
+                        if vlines is not None:
+                            for vline in vlines:
+                                ax.axvline(vline, color='k', linestyle='--')
+                                if rax is not None: rax.axvline(vline, color='k', linestyle='--')
+
+                            # plot unrolled x and y labels for each bin
+                        if histo.dense_dim() == 2:
+                            ## plot x labels
+                            if plot_xlabels is not None:
+                                rax.set_xticks(np.arange(len(plot_xlabels)))
+                                rax.set_xticklabels(plot_xlabels)
+                                ax.tick_params(which='minor', bottom=False, top=False)
+                                rax.tick_params(which='minor', bottom=False, top=False)
+                                plt.setp(rax.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams['font.size']*0.5)
+
+                            ## plot y labels
+                            if plot_ylabels is not None: # (binlabels, bin_locs)
+                                for idx, label in enumerate(plot_ylabels[0]):
+                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=('data', 'axes fraction'),
+                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords='offset points', va='top', ha='center', fontsize=rcParams['font.size']*0.5, rotation=45)
+
+                        hep.cms.label(ax=ax, data=withData, paper=False, year=args.year, lumi=round(data_lumi_year['%ss' % args.lepton]/1000., 1))
+    
+                        #set_trace()
+                        figname = os.path.join(bkg_dir, '%s_BKG_Est_VARY_SHAPE_AND_NORM_%s' % ('_'.join([sys, jmult, args.lepton, hname]), bkg_name))
+                        fig.savefig(figname)
+                        print('%s written' % figname)
+                        plt.close()
+
+
+#    if args.save_sys:
+#        from coffea.util import save
+#        outname = '%s/%s/%s_Post_QCD_Est_dict.coffea' % (outdir, args.lepton, args.lepton)
+#        save(post_bkg_est, outname)
+#        #outname = '%s/%s/%s_QCD_Est_mtt_ctstar_dict.coffea' % (outdir, args.lepton, args.lepton)
+#        #save(mtt_ctstar_bkg_est, outname)
+#        print('%s written' % outname)
 
