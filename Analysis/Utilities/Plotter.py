@@ -21,6 +21,7 @@ signal_samples = re.compile(r'((?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
 nonsignal_samples = re.compile(r'(?!(?:%s))' % '|'.join(['AtoTT*', 'HtoTT*']))
 top_samples = re.compile(r'((?:%s))' % '|'.join(['ttJets*', 'singlet*']))
 bkg_samples = re.compile(r'((?:%s))' % '|'.join(['QCD*', 'EWK*']))
+bkg_mask = re.compile('(BKG*)')
 
 hstyles = styles.styles
 stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
@@ -345,6 +346,68 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
     
     return output_qcd
 
+
+
+def BKG_Est(sig_reg, sb_reg, norm_type=None, sys='nosys', ignore_uncs=False):
+    #if not norm_type:
+    #    raise ValueError("Normalization type has to be specified for bkg estimation")
+    if norm_type != 'SigMC':
+        raise ValueError("Only SigMC supported for normalization type for bkg estimation right now.")
+
+    if sig_reg.sparse_dim() > 1:
+        if sys in systematics.ttJets_sys.values():
+            tt_dict = sig_reg['TT', sys].integrate('sys') if 'TT' in sorted(set([key[0] for key in sig_reg.values().keys()])) else sig_reg['ttJets*', sys].integrate('sys') # added if statement when making template files
+            non_tt_mc_dict = sig_reg[nonTT_mc_mask, 'nosys'].integrate('sys')
+            mc_dict = iso_sb.copy()
+            mc_dict.clear()
+            mc_dict.add(tt_dict)
+            mc_dict.add(non_tt_mc_dict)
+        else:
+            mc_dict = sig_reg[:, sys].integrate('sys')
+            mc_dict = mc_dict[mc_samples]
+        data_dict = sig_reg[:, 'nosys'].integrate('sys')
+        data_dict = data_dict[data_samples]
+            ## subsitute values into new sig_reg hist
+        sig_reg = sb_reg.copy()
+        sig_reg.clear()
+        sig_reg.add(mc_dict)
+        sig_reg.add(data_dict)
+
+        # data - (st + ttbar)
+    dmt_dict = {
+        'SB' : data_minus_top(sb_reg),
+        'SIG' : data_minus_top(sig_reg),
+    }
+        # (EWK + QCD) contributions
+    bkg_dict = {
+        'SB' : sb_reg[bkg_mask].integrate('process'),
+        'SIG' : sig_reg[bkg_mask].integrate('process'),
+    }
+
+        # get normalized bkg shape (bins < 0. not allowed)
+    bkg_norm_sumw, bkg_norm_sumw2 = get_qcd_shape(dmt_dict['SB'])
+
+    # find normalization
+    '''
+    SigMC norm: yield from signal region MC
+    '''
+    norm_sumw, norm_sumw2 = 0, 0
+    if norm_type == 'SigMC':
+        norm_sumw, norm_sumw2 = np.sum(bkg_dict['SIG'].values(overflow='all', sumw2=True)[()], axis=1)
+            # rescale yields and errors
+        bkg_est_sumw = bkg_norm_sumw*norm_sumw
+        bkg_est_sumw2 = np.zeros(bkg_norm_sumw.size) if ignore_uncs else bkg_norm_sumw*norm_sumw2
+
+    output_bkg = sig_reg.copy()
+        # substitute qcd_est array into original hist
+    for idx in range(len(bkg_est_sumw2)):
+        output_bkg.values(overflow='all', sumw2=True)[('BKG',)][0][idx] = bkg_est_sumw[idx]
+        output_bkg.values(overflow='all', sumw2=True)[('BKG',)][1][idx] = bkg_est_sumw2[idx]
+
+    return output_bkg
+
+
+
 def data_minus_prompt(histo):
     data_hist = histo[data_samples].integrate('process')
     pmc_hist  = histo[prompt_mc_mask].integrate('process')
@@ -587,6 +650,22 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=Fa
         output_histos[var] = output_hist
 
     return output_histos
+
+
+def np_array_TO_hist(sumw, sumw2, hist_template, cat, overflow='none'):
+    out_histo = hist_template.copy()
+    out_histo.clear()
+
+    fill_dict = {out_histo.sparse_axes()[0].name: cat}
+    fill_dict.update({out_histo.dense_axes()[0].name: np.zeros(0), 'weight': np.zeros(0)})
+    out_histo.fill(**fill_dict)
+
+        ## fill bins
+    for xbin in range(sumw.size):
+        out_histo.values(overflow=overflow, sumw2=True)[(cat,)][0][xbin] = sumw[xbin]
+        out_histo.values(overflow=overflow, sumw2=True)[(cat,)][1][xbin] = sumw2[xbin]
+
+    return out_histo 
 
 
 def get_ratio_arrays(num_vals, denom_vals, input_bins):
