@@ -193,6 +193,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
         self.mt_axis = hist.Bin("mt", "M_{T}", 200, 0., 1000.)
         self.mtop_axis = hist.Bin("mtop", "m(top) [GeV]", 300, 0, 300)
+        self.wmass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", 300, 0, 300)
         self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 360, 200, 2000)
         self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 300, 0, 30)
         self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 300, 0, 30)
@@ -307,6 +308,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         histo_dict = {}
         histo_dict['mtt']      = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.mtt_axis)
         histo_dict['mthad']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.mtop_axis)
+        histo_dict['mWHad']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.wmass_axis)
+        histo_dict['mWLep']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.wmass_axis)
         histo_dict['pt_thad']  = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.pt_axis)
         histo_dict['pt_tlep']  = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.pt_axis)
         histo_dict['pt_tt']    = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.pt_axis)
@@ -604,6 +607,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             dataset_name = '%s_%s' % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
             acc['mtt'].fill(     dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtt=ak.flatten(perm['TTbar'].mass)[perm_inds], weight=evt_wts[perm_inds])
             acc['mthad'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtop=ak.flatten(perm['THad'].mass)[perm_inds], weight=evt_wts[perm_inds])
+            acc['mWHad'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm['WHad'].mass)[perm_inds], weight=evt_wts[perm_inds])
+            acc['mWLep'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm['WLep'].mass)[perm_inds], weight=evt_wts[perm_inds])
             acc['pt_thad'].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm['THad'].pt)[perm_inds], weight=evt_wts[perm_inds])
             acc['pt_tlep'].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm['TLep'].pt)[perm_inds], weight=evt_wts[perm_inds])
             acc['pt_tt'].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm['TTbar'].pt)[perm_inds], weight=evt_wts[perm_inds])
