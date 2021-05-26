@@ -1,0 +1,17 @@
+#*.root
+*.png
+*.py[cod]
+Analysis/results
+Analysis/plots
+Analysis/*.coffea
+*.meta.json
+*.o
+*.so
+*.txt
+Analysis/BATCH*
+Analysis/con_*
+Analysis/signal_scripts/results
+Analysis/signal_scripts/inputs/ttJets_inputs
+Analysis/signal_scripts/inputs/signal/signal_*
+Analysis/signal_scripts/inputs/signal/*.root
+Analysis/signal_scripts/inputs/Validation
