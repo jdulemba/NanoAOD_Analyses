@@ -44,8 +44,8 @@ elif base_jobid == 'ULnanoAOD':
             'DeepCSV' : 'DeepCSV_106XUL17SF_used.csv',
         },
         '2018' : {
-            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_used.csv',
-            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_used.csv',
+            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_mujets_used.csv',
+            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_mujets_used.csv',
         },
     }
 else:
