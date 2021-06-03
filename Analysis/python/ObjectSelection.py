@@ -70,19 +70,21 @@ def remove_HEM_objs(obj, isData=None):
 
 def select_jets(jets, muons, electrons, year, cutflow=None):
 
+    #set_trace()
         ## pt and eta cuts
     pass_pt_eta_cuts = IDJet.make_pt_eta_cuts(jets)
     if cutflow is not None: cutflow['jets pass pT and eta cuts'] += ak.sum(pass_pt_eta_cuts)
     
         ## tightID
-    # check https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD for definitions
-    if year == '2016':
-        #jetId = 7 # pass loose, tight, tightLepVeto ID
-        jetId = 3 # pass loose and tight, but not tightLepVeto ID
-    else:
-        #jetId = 4 # pass tight and tightLepVeto ID
-        jetId = 2 # pass tight but not tightLepVeto ID
-    jet_ID = (jets['jetId'] >= jetId) # pass at least tight
+    # check https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL for definitions
+    #if year == '2016':
+    #    #jetId = 7 # pass loose, tight, tightLepVeto ID
+    #    jetId = 3 # pass loose and tight, but not tightLepVeto ID
+    #else:
+    #    #jetId = 4 # pass tight and tightLepVeto ID
+    #    jetId = 2 # pass tight but not tightLepVeto ID
+    #jet_ID = (jets['jetId'] >= jetId) # pass at least tight
+    jet_ID = jets.isTight # pass at least tight
     if cutflow is not None: cutflow['jets pass ID'] += ak.sum(jet_ID)
 
         ## remove jets that don't pass ID and pt/eta cuts
@@ -129,7 +131,7 @@ def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
     evt_sel.add('el_triggers', Filters_and_Triggers.get_triggers(HLT=events['HLT'], leptype='Electron', year=year, noIso=noIso))
 
     ### filter selection
-    evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(Flags=events['Flag'], year=year))
+    evt_sel.add('pass_filters', Filters_and_Triggers.get_filters(Flags=events['Flag'], year=year, isMC=not events.metadata['dataset'].startswith('data_Single')))
 
     ### lepton selection
     events['Muon'] = IDMuon.process_muons(events['Muon'], year)
