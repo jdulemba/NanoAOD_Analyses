@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
@@ -7,8 +10,8 @@ import awkward as ak
 from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
 
-from coffea.util import save, load
 from pdb import set_trace
+from coffea.util import save, load
 import os
 import python.ObjectSelection as objsel
 import Utilities.plot_tools as plt_tools
@@ -160,17 +163,24 @@ print('Running with event systematics:', *sorted(set(event_systematics_to_run).d
 print('  and reweight systematics:', *sorted(reweight_systematics_to_run), sep=', ')
 #set_trace()
 
+#btag_regions = {
+#    '0p05' : (0.0, 0.05),
+#    '0p10' : (0.05, 0.10),
+#    '0p15' : (0.10, 0.15),
+#    '0p20' : (0.15, 0.20),
+#    '0p25' : (0.20, 0.25),
+#    '0p30' : (0.25, 0.30),
+#    '0p35' : (0.30, 0.35),
+#    '0p40' : (0.35, 0.40),
+#    '0p45' : (0.40, 0.45),
+#    '0p50' : (0.45, 0.50),
+#}
 btag_regions = {
-    '0p05' : (0.0, 0.05),
-    '0p10' : (0.05, 0.10),
-    '0p15' : (0.10, 0.15),
-    '0p20' : (0.15, 0.20),
-    '0p25' : (0.20, 0.25),
-    '0p30' : (0.25, 0.30),
-    '0p35' : (0.30, 0.35),
-    '0p40' : (0.35, 0.40),
-    '0p45' : (0.40, 0.45),
-    '0p50' : (0.45, 0.50),
+    #'p00p10' : (0.0, 0.10),
+    #'p10p20' : (0.10, 0.20),
+    #'p20p30' : (0.20, 0.30),
+    #'p30p40' : (0.30, 0.40),
+    #'p40p50' : (0.40, 0.50),
 }
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -520,9 +530,11 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                 if semilep_evts.sum() > 0:
                                         # find matched permutations
                                     mp = ttmatcher.best_match(gen_hyp=events['SL'][cut], jets=jets, leptons=leptons, met=met)
+                                    #set_trace()
                                     perm_cat_array = compare_matched_best_perms(mp, best_perms, njets=jmult)
                                     bp_status[cut] = perm_cat_array
-                                    sl_tau_evts = ak.where(ak.fill_none(ak.pad_none(np.abs(events['SL']['Lepton'].pdgId) == 15, 1), False) == True)[0]
+                                    if ak.any(ak.num(events['SL']['Lepton'].pdgId) != 1): raise ValueError("Number of leptons is incorrect for classifying tau+jets events")
+                                    sl_tau_evts = ak.where(np.abs(events['SL']['Lepton'].pdgId) == 15)[0]
                                     bp_status[sl_tau_evts] = 4
 
                                 ## create MT regions
@@ -670,3 +682,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
