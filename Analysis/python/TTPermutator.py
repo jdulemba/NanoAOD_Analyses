@@ -137,7 +137,6 @@ def get_permutations(njets_array, jets, leptons, met, use_merged=False, btag_req
     return best_perms_ordering, best_perms_nus, best_perms_probs
 
 
-#@njit()
 def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     '''
     Inputs:
@@ -149,7 +148,7 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
     '''
 
-    jets_inputs = np.stack((ak.to_numpy(ak.ak.flatten(jets.px)), ak.to_numpy(ak.flatten(jets.py)), ak.to_numpy(ak.flatten(jets.pz)), ak.to_numpy(ak.flatten(jets.energy)), ak.to_numpy(ak.flatten(jets[btagWP]))), axis=1).astype('float64') # one row has (px, py, pyz, E)
+    jets_inputs = np.stack((ak.to_numpy(ak.flatten(jets.px)), ak.to_numpy(ak.flatten(jets.py)), ak.to_numpy(ak.flatten(jets.pz)), ak.to_numpy(ak.flatten(jets.energy)), ak.to_numpy(ak.flatten(jets[btagWP]))), axis=1).astype('float64') # one row has (px, py, pyz, E)
     leptons_inputs = np.stack((ak.to_numpy(ak.flatten(leptons.px)), ak.to_numpy(ak.flatten(leptons.py)), ak.to_numpy(ak.flatten(leptons.pz)), ak.to_numpy(ak.flatten(leptons.energy))), axis=1).astype('float64') # one row has (px, py, pyz, E)
     met_inputs = np.stack((ak.to_numpy(MET.px), ak.to_numpy(MET.py)), axis=1).astype('float64') # one row has (px, py)
     bp_ordering, bp_nus, bp_probs = get_permutations(njets_array=ak.num(jets), jets=jets_inputs, leptons=leptons_inputs, met=met_inputs, btag_req=btag_req)
