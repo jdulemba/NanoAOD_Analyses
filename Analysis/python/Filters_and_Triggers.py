@@ -104,7 +104,7 @@ met_filters["2018"] = [
 
 def get_filters(Flags, year, isMC, accumulator=None):
 
-    met_filters_to_use = met_filters[year]
+    met_filters_to_use = met_filters[year].copy()
     if 'BadPFMuonDzFilter' not in Flags.fields: met_filters_to_use.remove('BadPFMuonDzFilter')
     if (year == '2017') or (year == '2018'):
         if isMC: met_filters_to_use.remove('eeBadScFilter')
