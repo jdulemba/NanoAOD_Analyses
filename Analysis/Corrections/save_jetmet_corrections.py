@@ -10,6 +10,7 @@ from coffea.util import save
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--split_uncs', action='store_true', help='Use individual jec uncertainty sources file')
+parser.add_argument('--test', action='store_true', help="Output txt file named 'test_jetmet.txt'")
 
 args = parser.parse_args()
 
@@ -103,8 +104,8 @@ def make_name_map(jstack, isMC):
 
 
 years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-#years_to_run = ['2016APV', '2016', '2017', '2018']
-#years_to_run = ['2016']
+if args.test: years_to_run = ['2018']
+
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
     for dtype in ['DATA', 'MC']:
@@ -165,7 +166,8 @@ for year in years_to_run:
     print('Jet corrections for %s saved' % year)
 
 
-#set_trace()
 fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea')
+if args.test: fname = os.path.join(proj_dir, 'test_jetmet.coffea')
+
 save(jet_corrections, fname)
 print('\n%s written' % fname)
