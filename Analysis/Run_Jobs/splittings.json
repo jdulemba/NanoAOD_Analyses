@@ -4,7 +4,7 @@
     "ttJetsSL" : 1,
     "tt[WZ]*" : 5,
     "QCD*" : 10,
-    "data*" : 5,
+    "data*" : 2,
     "single*" : 5,
     "[AH]toTT*" : 5,
     "WJets" : 5,
