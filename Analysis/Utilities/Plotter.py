@@ -31,6 +31,8 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
 
     mcorder = mc_opts.get('mcorder')
     maskData = mc_opts.get('maskData', False)
+    overflow = mc_opts.get("overflow", "none")
+    logy = mc_opts.get('logy', False)
 
     #set_trace()
     if hdict.sparse_dim() > 1:
@@ -53,14 +55,20 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
         fill_opts=stack_fill_opts,
         error_opts=stack_error_opts,
         order=mcorder,
+        overflow=overflow,
+        overlay_overflow=overflow,
     )
     if not maskData:
         plot.plot1d(data_dict,
             overlay=data_dict.axes()[0].name,
             ax=ax,
             clear=False,
-            error_opts=hstyles['data_err_opts']
+            error_opts=hstyles['data_err_opts'],
+            overflow=overflow,
+            overlay_overflow=overflow,
         )
+    if logy:
+        ax.set_yscale('log')
     ax.autoscale()
     ax.set_ylim(0, ax.get_ylim()[1]*1.3)
     #ax.set_ylim(0, None)
@@ -89,7 +97,8 @@ def plot_stack1d(ax, rax, hdict, xlabel='', ylabel='', sys='nosys', xlimits=None
             error_opts=hstyles['data_err_opts'],
             denom_fill_opts={},
             guide_opts={},
-            unc='num'
+            unc='num',
+            overflow=overflow,
         )
     rax.set_ylabel('data/MC')
     rax.set_ylim(0.5, 1.5)
@@ -164,13 +173,15 @@ def plot_sys_variations(ax, rax, nom, up, dw, xlabel='', ylabel='', xlimits=None
 
 
 
-def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_styles=None, **mc_opts):
+def plot_mc1d(ax, hdict, xlabel='', ylabel='Events', xlimits=None, ylimits=None, hist_styles=None, **mc_opts):
 
     #set_trace()
     mcorder = mc_opts.get('mcorder')
     stack = mc_opts.get('stack', True)
     normalize = mc_opts.get('normalize', False)
     err_opts = mc_opts.get('error_opts', stack_error_opts)
+    overflow = mc_opts.get("overflow", "none")
+    logy = mc_opts.get('logy', False)
 
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
@@ -183,12 +194,16 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_
         error_opts=err_opts,
         order=mcorder,
         density=normalize,
+        overflow=overflow,
+        overlay_overflow=overflow,
     )
     #ax.autoscale(axis='x', tight=True)
-    #ylims = (0, ax.get_ylim()[1]*1.15) if ylimits is None else ylimits
+    if logy:
+        ax.set_yscale('log')
     ax.autoscale()
     ylims = (0, None) if ylimits is None else ylimits
     ax.set_ylim(ylims)
+    ax.set_ylim(0, ax.get_ylim()[1]*1.3)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_xlim(xlimits)
@@ -201,7 +216,7 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='', xlimits=None, ylimits=None, hist_
         handles[idx].set_facecolor(facecolor)
         labels[idx] = legname
     # call ax.legend() with the new values
-    ax.legend(handles,labels, loc='upper right')
+    ax.legend(handles,labels, loc='upper right', ncol=3)
     
     return ax
 
