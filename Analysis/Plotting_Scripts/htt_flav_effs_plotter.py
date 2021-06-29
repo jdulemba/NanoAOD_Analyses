@@ -91,49 +91,107 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
 
 
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
+combine_2016 = ('2016' in years_to_run) and ('2016APV' in years_to_run) and (base_jobid == 'ULnanoAOD')
+computed_combined_2016 = False
 
 for year in years_to_run:
-    input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
-    fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('TOT.coffea')]
-    if len(fnames) > 1:
-        raise ValueError("Only one TOT file should be used")
-    hdict = load(fnames[0])
-    hpass = hdict['%s_pass' % hname]
-    hall = hdict['%s_all' % hname]
+    print(year)
 
-    if not hpass.compatible(hall):
+    f_ext = 'TOT.coffea'
+    if combine_2016 and ('2016' in year):
+        if computed_combined_2016:
+            computed_combined_2016_year_to_copy = year
+            continue
+        input_dir_2016 = os.path.join(proj_dir, 'results', '2016_%s' % jobid, analyzer)
+        input_dir_2016APV = os.path.join(proj_dir, 'results', '2016APV_%s' % jobid, analyzer)
+        pltdir = os.path.join(proj_dir, 'plots', '2016Combined_%s' % jobid, analyzer)
+
+        fnames_2016 = sorted([os.path.join(input_dir_2016, fname) for fname in os.listdir(input_dir_2016) if fname.endswith(f_ext)])
+        fnames_2016APV = sorted([os.path.join(input_dir_2016APV, fname) for fname in os.listdir(input_dir_2016APV) if fname.endswith(f_ext)])
+
+        hdict_2016 = plt_tools.add_coffea_files(fnames_2016) if len(fnames_2016) > 1 else load(fnames_2016[0])
+        hdict_2016APV = plt_tools.add_coffea_files(fnames_2016APV) if len(fnames_2016APV) > 1 else load(fnames_2016APV[0])
+
+        lumi_to_use_2016 = (data_lumi_dict['2016']['Muons']+data_lumi_dict['2016']['Electrons'])/2000.
+        lumi_to_use_2016APV = (data_lumi_dict['2016APV']['Muons']+data_lumi_dict['2016APV']['Electrons'])/2000.
+        lumi_to_use = lumi_to_use_2016+lumi_to_use_2016APV
+
+        computed_combined_2016 = True
+        computed_combined_2016_year_key = year
+
+        hpass_16 = hdict_2016['%s_pass' % hname]
+        hall_16 = hdict_2016['%s_all' % hname]
+        hpass_16APV = hdict_2016APV['%s_pass' % hname]
+        hall_16APV = hdict_2016APV['%s_all' % hname]
+
+        #set_trace()
+            ## rescale hist by lumi for muons and electrons separately and then combine
+        hpass_mu_16 = hpass_16[:, :, :, 'Muon', :].integrate('leptype')
+        hpass_mu_16.scale(lumi_correction['2016']['Muons'], axis='dataset')
+        hpass_mu_16APV = hpass_16APV[:, :, :, 'Muon', :].integrate('leptype')
+        hpass_mu_16APV.scale(lumi_correction['2016APV']['Muons'], axis='dataset')
+        hpass_el_16 = hpass_16[:, :, :, 'Electron', :].integrate('leptype')
+        hpass_el_16.scale(lumi_correction['2016']['Electrons'], axis='dataset')
+        hpass_el_16APV = hpass_16APV[:, :, :, 'Electron', :].integrate('leptype')
+        hpass_el_16APV.scale(lumi_correction['2016APV']['Electrons'], axis='dataset')
+        hpass_tot = hpass_mu_16+hpass_el_16 + hpass_mu_16APV+hpass_el_16APV
+
+        hall_mu_16 = hall_16[:, :, :, 'Muon', :].integrate('leptype')
+        hall_mu_16.scale(lumi_correction['2016']['Muons'], axis='dataset')
+        hall_mu_16APV = hall_16APV[:, :, :, 'Muon', :].integrate('leptype')
+        hall_mu_16APV.scale(lumi_correction['2016APV']['Muons'], axis='dataset')
+        hall_el_16 = hall_16[:, :, :, 'Electron', :].integrate('leptype')
+        hall_el_16.scale(lumi_correction['2016']['Electrons'], axis='dataset')
+        hall_el_16APV = hall_16APV[:, :, :, 'Electron', :].integrate('leptype')
+        hall_el_16APV.scale(lumi_correction['2016APV']['Electrons'], axis='dataset')
+        hall_tot = hall_mu_16+hall_el_16 + hall_mu_16APV+hall_el_16APV
+
+        if not hpass_tot.compatible(hall_tot):
+            raise ValueError("Passing and All hists don't have the same binning!")
+
+    else:
+        input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (year, jobid), analyzer)
+        fnames = ['%s/%s' % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith('TOT.coffea')]
+        if len(fnames) > 1:
+            raise ValueError("Only one TOT file should be used")
+        hdict = load(fnames[0])
+
+            ## get data lumi and scale MC by lumi
+        lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
+    
+        pltdir = os.path.join(proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer)
+
+        hpass = hdict['%s_pass' % hname]
+        hall = hdict['%s_all' % hname]
+
+            ## rescale hist by lumi for muons and electrons separately and then combine
+        hpass_mu = hpass[:, :, :, 'Muon', :].integrate('leptype')
+        hpass_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
+        hpass_el = hpass[:, :, :, 'Electron', :].integrate('leptype')
+        hpass_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
+        hpass_tot = hpass_mu+hpass_el
+
+        hall_mu = hall[:, :, :, 'Muon', :].integrate('leptype')
+        hall_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
+        hall_el = hall[:, :, :, 'Electron', :].integrate('leptype')
+        hall_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
+        hall_tot = hall_mu+hall_el
+
+    if not hpass_tot.compatible(hall_tot):
         raise ValueError("Passing and All hists don't have the same binning!")
 
-    #set_trace()
-        ## rescale hist by lumi for muons and electrons separately and then combine
-    hpass_mu = hpass[:, :, :, 'Muon', :].integrate('leptype')
-    hpass_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
-    hpass_el = hpass[:, :, :, 'Electron', :].integrate('leptype')
-    hpass_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
-    hpass_lep = hpass_mu+hpass_el
-
-    hall_mu = hall[:, :, :, 'Muon', :].integrate('leptype')
-    hall_mu.scale(lumi_correction[year]['Muons'], axis='dataset')
-    hall_el = hall[:, :, :, 'Electron', :].integrate('leptype')
-    hall_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
-    hall_lep = hall_mu+hall_el
-
-        ## get data lumi and scale MC by lumi
-    lumi_to_use = (data_lumi_dict[year]['Muons']+data_lumi_dict[year]['Electrons'])/2000.
-
-    pltdir = os.path.join(proj_dir, 'plots', '%s_%s' % (year, jobid), analyzer)
     if not os.path.isdir(pltdir):
         os.makedirs(pltdir)
 
-    for wp in hpass_lep.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
-        for jmult in hpass_lep.axis('jmult')._sorted: #['3Jets', '4PJets']
-            for flav in hpass_lep.axis('hFlav')._sorted: # [bjet, cjet, ljet]
+    for wp in hpass_tot.axis('btagger')._sorted: # [DEEPCSVMEDIUM, DEEPJETMEDIUM]
+        for jmult in hpass_tot.axis('jmult')._sorted: #['3Jets', '4PJets']
+            for flav in hpass_tot.axis('hFlav')._sorted: # [bjet, cjet, ljet]
                 print(wp, jmult, flav)
                 #set_trace()
                     # get passing and all hists for 3 and 4+ jets separately, only as a function of pT and eta
-                h_pass = hpass_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
+                h_pass = hpass_tot[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
                 h_pass = h_pass.rebin('pt', pt_bins).rebin('eta', eta_bins)
-                h_all = hall_lep[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
+                h_all = hall_tot[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
                 h_all = h_all.rebin('pt', pt_bins).rebin('eta', eta_bins)
 
                 edges = (h_pass.axis('pt').edges(), h_pass.axis('eta').edges())
@@ -155,6 +213,11 @@ for year in years_to_run:
 wp_name = list(set(working_points))[0]
     # save files
 flav_effs_name = os.path.join(outdir, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp_name, jobid))
+
+    # 2016 and 2016APV are the same if they're computed together
+if combine_2016:
+    flav_effs[computed_combined_2016_year_to_copy] = flav_effs[computed_combined_2016_year_key]
+    
 save(flav_effs, flav_effs_name)
 print('\n', flav_effs_name, 'written')
 
