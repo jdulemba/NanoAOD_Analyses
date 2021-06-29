@@ -3,6 +3,7 @@ from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import numpy as np
 import os
+from cachetools import LRUCache
 
 btag_values = {}
 if os.environ['base_jobid'] == 'NanoAODv6':
@@ -151,8 +152,8 @@ def process_jets(events, year, corrections=None):
             jet_factory = corrections['MC']['JetsFactory']
             met_factory = corrections['MC']['METFactory']
 
-        events_cache = events.caches[0]
-        corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=events_cache)
+        cache = LRUCache(int(1e10), lambda a: a.nbytes)
+        corrected_jets = jet_factory.build(jets, lazy_cache=cache)
+        corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=cache)
 
     return corrected_jets, corrected_met
