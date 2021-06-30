@@ -9,6 +9,7 @@ import os
 import numpy as np
 from numba import njit
 from coffea.util import load
+import awkward as ak
 
 class TTSolver(object):
 
@@ -23,6 +24,7 @@ class TTSolver(object):
 
             ## create arrays for binning and values separately for each dist because njit can't handle constant dictionaries currently
         self.USEMASS = cfg_pars['USEMASS']
+        self.WTmass_right = probs['4PJets']['mWHad_vs_mTHad']
         WTmass_right = probs['4PJets']['mWHad_vs_mTHad']
         self.WTmass_right_binning = WTmass_right._axes
         self.WTmass_right_values  = WTmass_right._values
@@ -34,10 +36,12 @@ class TTSolver(object):
         
         self.USE3JLOST = cfg_pars['USE3JLOST']
         Mass_3J_Lost_right = probs['3Jets']['Lost_mTHadProxy']
+        self.Mass_3J_Lost_right = probs['3Jets']['Lost_mTHadProxy']
         self.Mass_3J_Lost_right_binning = Mass_3J_Lost_right._axes
         self.Mass_3J_Lost_right_values  = Mass_3J_Lost_right._values
         
         self.USENS = cfg_pars['USENS']
+        self.NS_4PJ_right = probs['4PJets']['nusolver_dist']
         NS_4PJ_right = probs['4PJets']['nusolver_dist']
         #NS_4PJ_right = probs['4PJets']['nusolver_chi2']
         self.NS_4PJ_right_binning = NS_4PJ_right._axes
@@ -50,11 +54,24 @@ class TTSolver(object):
         self.NS_3J_Merged_right_values  = NS_3J_Merged_right._values
         
         # lost 3 jet vars
+        self.NS_3J_Lost_right = probs['3Jets']['Lost_nusolver_dist']
         NS_3J_Lost_right = probs['3Jets']['Lost_nusolver_dist']
         #NS_3J_Lost_right = probs['3Jets']['Lost_nusolver_chi2']
         self.NS_3J_Lost_right_binning = NS_3J_Lost_right._axes
         self.NS_3J_Lost_right_values  = NS_3J_Lost_right._values
 
+    def ak_solve_4PJ(self, mthad, mwhad, nschi):
+        'Inputs: m(thad_proxy), m(whad_proxy), and the NS solver sqrt(chi2) values (mthad, mwhad, nschi)\nOutputs: numpy array of the mass and NS disriminants (MassDiscr, NuDiscr)'
+        #set_trace()
+        mass_discval = self.WTmass_right(mthad, mwhad)/np.sum(self.WTmass_right._values)
+        masstest = -1*np.log(mass_discval)
+    
+        nu_discval = ak.where(nschi < self.NS_4PJ_right._axes[-1], self.NS_4PJ_right(nschi)/np.sum(self.NS_4PJ_right._values), ak.ones_like(nschi)*np.nan)
+        nstest = -1*np.log(nu_discval)
+        nstest = ak.nan_to_num(nstest, nan=np.inf)
+
+        return masstest, nstest
+        
     
     def solve_4PJ(self, mthad, mwhad, nschi):
         'Inputs: m(thad), m(whad), and the NS solver chi2 values (mthad, mwhad, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
@@ -117,6 +134,19 @@ class TTSolver(object):
     
         return np.array([result, masstest, nstest])
 
+    def ak_solve_3J_lost(self, m2jets, nschi):
+        'Inputs: m(j1+j2) and the NS solver sqrt(chi2) values (m2jets, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (MassDiscr, NuDiscr)'
+        #set_trace()
+        mass_discval = self.Mass_3J_Lost_right(m2jets)/np.sum(self.Mass_3J_Lost_right._values)
+        masstest = -1*np.log(mass_discval)
+    
+        nu_discval = ak.where(nschi < self.NS_3J_Lost_right._axes[-1], self.NS_3J_Lost_right(nschi)/np.sum(self.NS_3J_Lost_right._values), ak.ones_like(nschi)*np.nan)
+        nstest = -1*np.log(nu_discval)
+        nstest = ak.nan_to_num(nstest, nan=np.inf)
+
+        return masstest, nstest
+        
+    
     def solve_3J_lost(self, mbpjet, nschi):
         'Inputs: m(b+jet) and the NS solver chi2 values (mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
         ns_pars = (self.USENS, self.NS_3J_Lost_right_binning, self.NS_3J_Lost_right_values)
