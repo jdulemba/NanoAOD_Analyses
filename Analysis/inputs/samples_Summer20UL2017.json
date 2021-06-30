@@ -1,0 +1,454 @@
+[
+    {
+        "DBSName": "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_ueDOWN"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_ueUP"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_hdampDOWN"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_hdampUP"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1665"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1695"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1715"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1735"
+    },
+    {
+        "DBSName": "/TTTo2L2Nu_mtop175p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1755"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_mtop1785"
+    },
+
+    {
+        "DBSName": "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_ueDOWN"
+    },
+    {
+        "DBSName": "/TTToHadronic_TuneCP5up_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_ueUP"
+    },
+    {
+        "DBSName": "/TTToHadronic_hdampDOWN_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_hdampDOWN"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_hdampUP"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1665"
+    },
+    {
+        "DBSName": "/TTToHadronic_mtop169p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1695"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1715"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1735"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1755"
+    },
+    {
+        "DBSName": "/TTToHadronic_mtop178p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_mtop1785"
+    },
+
+    {
+        "DBSName": "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_TuneCP5down_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_ueDOWN"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_ueUP"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_hdampDOWN"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToSemiLeptonic_hdampUP_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_hdampUP"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_mtop166p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1665"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1695"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1715"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1735"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1755"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_mtop178p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_mtop1785"
+    },
+
+
+
+
+    {
+        "DBSName": "/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.2149,
+        "name": "ttWlnu"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 0.4316,
+        "name": "ttWqq"
+    },
+    {
+        "DBSName": "/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.2432,
+        "name": "ttZll"
+    },
+    {
+        "DBSName": "/TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.5104,
+        "name": "ttZqq"
+    },
+
+
+
+
+    {
+        "DBSName": "NOT PRESENT",
+        "DBSName_old": "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
+        "xsection": 3.45,
+        "name": "singlet_schannel"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "DBSName_old": "/ST_t-channel_antitop_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
+        "xsection": 80.95,
+        "name": "singletbar_tchannel"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "DBSName_old": "/ST_t-channel_top_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
+        "xsection": 136.02,
+        "name": "singlet_tchannel"
+    },
+    {
+        "DBSName": "/ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection_old": 35.85,
+        "xsection": 19.466,
+        "name": "singlet_tW"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "DBSName_old": "/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
+        "xsection_old": 35.85,
+        "xsection": 19.466,
+        "name": "singletbar_tW"
+    },
+
+
+
+    {
+        "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv2-Pilot_106X_mc2017_realistic_v8-v3/NANOAODSIM",
+        "xsection": 6077.22,
+        "name": "ZJets"
+    },
+    {
+        "DBSName": "/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 6077.22,
+        "name": "ZJets_Madgraph"
+    },
+    {
+        "DBSName": "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_100to200"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_200to400"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_400to600"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_600to800"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_800to1200"
+    },
+    {
+        "DBSName": "/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 61526.7,
+        "name": "WJets_HT_1200to2500"
+    },
+
+
+    {
+        "DBSName": "/WZ_TuneCP5_13TeV-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 27.6,
+        "name": "WZ"
+    },
+    {
+        "DBSName": "/WW_TuneCP5_13TeV-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 118.7,
+        "name": "WW"
+    },
+    {
+        "DBSName": "/ZZ_TuneCP5_13TeV-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 12.14,
+        "name": "ZZ"
+    },
+
+
+
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 2799000.0,
+        "name": "QCD_Mu_15to20"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 2526000.0,
+        "name": "QCD_Mu_20to30"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 1362000.0,
+        "name": "QCD_Mu_30to50"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 376600.0,
+        "name": "QCD_Mu_50to80"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 88930.0,
+        "name": "QCD_Mu_80to120"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 21230.0,
+        "name": "QCD_Mu_120to170"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 7055.0,
+        "name": "QCD_Mu_170to300"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 619.3,
+        "name": "QCD_Mu_300to470"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 59.24,
+        "name": "QCD_Mu_470to600"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 18.21,
+        "name": "QCD_Mu_600to800"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 3.275,
+        "name": "QCD_Mu_800to1000"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 1.078,
+        "name": "QCD_Mu_1000toInf"
+    },
+
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 1327000.0,
+        "name": "QCD_EM_15to20"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 4908000.0,
+        "name": "QCD_EM_20to30"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 6396000.0,
+        "name": "QCD_EM_30to50"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 1989000.0,
+        "name": "QCD_EM_50to80"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 366500.0,
+        "name": "QCD_EM_80to120"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 66490.0,
+        "name": "QCD_EM_120to170"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 16480.0,
+        "name": "QCD_EM_170to300"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 1099.0,
+        "name": "QCD_EM_300toInf"
+    },
+
+
+
+
+    {
+        "DBSName": "/SingleMuon/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleMuon_2017B",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleMuon/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleMuon_2017C",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleMuon/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleMuon_2017D",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleMuon/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD",
+        "name": "data_SingleMuon_2017E",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleMuon/Run2017F-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD",
+        "name": "data_SingleMuon_2017F",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+
+
+    {
+        "DBSName": "/SingleElectron/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleElectron_2017B",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleElectron/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleElectron_2017C",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleElectron/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleElectron_2017D",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleElectron/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD",
+        "name": "data_SingleElectron_2017E",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    },
+    {
+        "DBSName": "/SingleElectron/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+        "name": "data_SingleElectron_2017F",
+        "lumimask": "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"
+    }
+]
