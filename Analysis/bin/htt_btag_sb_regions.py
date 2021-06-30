@@ -176,11 +176,18 @@ print('  and reweight systematics:', *sorted(reweight_systematics_to_run), sep='
 #    '0p50' : (0.45, 0.50),
 #}
 btag_regions = {
-    #'p00p10' : (0.0, 0.10),
-    #'p10p20' : (0.10, 0.20),
-    #'p20p30' : (0.20, 0.30),
-    #'p30p40' : (0.30, 0.40),
-    #'p40p50' : (0.40, 0.50),
+    'p00p15' : (0.00, 0.15),
+    'p15p30' : (0.15, 0.30),
+    'p30p45' : (0.30, 0.45),
+    #'p00p05' : (0.00, 0.05),
+    #'p05p10' : (0.05, 0.10),
+    #'p10p15' : (0.10, 0.15),
+    #'p15p20' : (0.15, 0.20),
+    #'p20p25' : (0.20, 0.25),
+    #'p25p30' : (0.25, 0.30),
+    #'p30p35' : (0.30, 0.35),
+    #'p35p40' : (0.35, 0.40),
+    #'p40p45' : (0.40, 0.45),
 }
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
@@ -193,10 +200,12 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.btag_axis = hist.Cat("btag", "BTag Region")
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 200, -5., 5.)
+        self.deepcsv_discr_axis = hist.Bin("deepcsv_bdisc", "DeepCSV bDiscr", 100, 0., 1.)
+        self.deepjet_discr_axis = hist.Bin("deepjet_bdisc", "DeepJet bDiscr", 100, 0., 1.)
+        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 100, 0, 1000)
+        self.eta_axis = hist.Bin("eta", r"$\eta$", 100, -5., 5.)
         self.eta_2d_axis = hist.Bin("eta_2d", r"$\eta$", np.array([-3.0, -2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5, 3.0]))
-        self.phi_axis = hist.Bin("phi", r"$\phi$", 160, -4, 4)
+        self.phi_axis = hist.Bin("phi", r"$\phi$", 80, -4, 4)
         self.phi_2d_axis = hist.Bin("phi_2d", r"$\phi$", np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]))
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
         self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
@@ -309,8 +318,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         histo_dict['Lep_iso']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepIso_axis)
         histo_dict['Lep_phi']   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.phi_axis)
         histo_dict['Lep_phi_vs_eta'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.phi_2d_axis, self.eta_2d_axis)
-    #    histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.eta_axis)
-    #    histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.energy_axis)
+        ##histo_dict['Lep_etaSC'] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.eta_axis)
+        ##histo_dict['Lep_energy']= hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.energy_axis)
 
         return histo_dict
 
@@ -497,8 +506,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 evt_weights = mu_evt_weights if lepton == 'Muon' else el_evt_weights
                 for btagregion in self.regions[evt_sys][lepton].keys():
                     for jmult in self.regions[evt_sys][lepton][btagregion].keys():
-                        cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][btagregion][jmult])
                         #set_trace()
+                        cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][btagregion][jmult])
 
                         output['cutflow_%s' % evt_sys]['nEvts %s' % ', '.join([lepton, btagregion, jmult])] += cut.sum()
 
@@ -525,6 +534,22 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                             bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
                                 # get matched permutation (semilep ttbar only)
                             if isTTbar_:
+                                ## find gen level particles for ttbar system and other ttbar corrections
+                                #set_trace()
+                                #if isTTSL_:
+                                #    genpsel.select(events, mode='NORMAL')
+                                #    {selection[sys].add('semilep', ak.num(events['SL']) > 0) for sys in selection.keys()}
+                                #else:
+                                #    {selection[sys].add('semilep', np.zeros(len(events), dtype=bool)) for sys in selection.keys()}
+                                #if 'NNLO_Rewt' in self.corrections.keys():
+                                #    if not isTTSL_:
+                                #        genpsel.select(events, mode='NORMAL')
+                                #        {selection[sys].add('semilep', ak.num(events['SL']) > 0) for sys in selection.keys()}
+                                #    nnlo_wts = MCWeights.get_nnlo_weights(self.corrections['NNLO_Rewt'], events)
+                                #    mu_evt_weights.add('%s_reweighting' % corrections['NNLO_Rewt']['Var'], nnlo_wts)
+                                #    el_evt_weights.add('%s_reweighting' % corrections['NNLO_Rewt']['Var'], nnlo_wts)
+                                ###
+
                                 semilep_evts = selection[evt_sys].require(semilep=True)
                                 bp_status[~semilep_evts] = 5
                                 if semilep_evts.sum() > 0:
@@ -613,6 +638,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         thad_ctstar, tlep_ctstar = ak.flatten(thad_ctstar, axis=None), ak.flatten(tlep_ctstar, axis=None)
 
         pt_sorted_jets = jets[ak.argsort(jets.pt, ascending=False)]
+        deepcsv_sorted_jets = jets[ak.argsort(jets.btagDeepB, ascending=False)]
+        deepjet_sorted_jets = jets[ak.argsort(jets.btagDeepFlavB, ascending=False)]
 
         for permval in np.unique(permarray).tolist():
             perm_inds = np.where(permarray == permval)
@@ -662,6 +689,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             acc['MT'].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mt=ak.flatten(MTvals)[perm_inds], weight=evt_wts[perm_inds])
 
+
         return acc        
 
     def postprocess(self, accumulator):
@@ -676,7 +704,7 @@ output = processor.run_uproot_job(
     processor_instance=htt_btag_sb_regions(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=10000 if to_debug else 100000,
+    #chunksize=5000,
     chunksize=100000,
 )
 
