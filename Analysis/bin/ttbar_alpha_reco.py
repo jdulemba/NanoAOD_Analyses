@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
@@ -271,7 +274,8 @@ class ttbar_alpha_reco(processor.ProcessorABC):
                 bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
                 perm_cat_array = compare_matched_best_perms(mp, best_perms, njets='3Jets')
                 bp_status[cut] = perm_cat_array
-                sl_tau_evts = ak.where(ak.fill_none(ak.pad_none(np.abs(events['SL']['Lepton'].pdgId) == 15, 1), False) == True)[0]
+                if ak.any(ak.num(events['SL']['Lepton'].pdgId) != 1): raise ValueError("Number of leptons is incorrect for classifying tau+jets events")
+                sl_tau_evts = ak.where(np.abs(events['SL']['Lepton'].pdgId) == 15)[0]
                 bp_status[sl_tau_evts] = 4
 
                     ## create MT regions
@@ -324,3 +328,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
