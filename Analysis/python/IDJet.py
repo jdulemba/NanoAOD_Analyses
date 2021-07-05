@@ -44,8 +44,8 @@ if os.environ['base_jobid'] == 'NanoAODv6':
         }
     }
     
-elif os.environ['base_jobid'] == 'ULnanoAOD':
-        # 2016(APV) values are still old ones
+else: # UL era values
+        # 2016APV values are still old ones
     btag_values["2016APV"] = {
         'btagDeepB' : {
             'DeepCSVLoose' : 0.2217,
@@ -60,14 +60,14 @@ elif os.environ['base_jobid'] == 'ULnanoAOD':
     }
     btag_values["2016"] = {
         'btagDeepB' : {
-            'DeepCSVLoose' : 0.2217,
-            'DeepCSVMedium': 0.6321,
-            'DeepCSVTight' : 0.8953,
+            'DeepCSVLoose' : 0.1918,
+            'DeepCSVMedium': 0.5847,
+            'DeepCSVTight' : 0.8767,
         },
         'btagDeepFlavB' : {
-            'DeepJetLoose' : 0.0614,
-            'DeepJetMedium': 0.3093,
-            'DeepJetTight' : 0.7221
+            'DeepJetLoose' : 0.0480,
+            'DeepJetMedium': 0.2489,
+            'DeepJetTight' : 0.6377
         }
     }
     btag_values["2017"] = {
