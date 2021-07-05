@@ -11,7 +11,7 @@ proj_dir = os.environ['PROJECT_DIR']
 user = os.environ['USER']
 
 ## once jobs are finished, merge all output coffea files for each sample into one
-jobdir = args.jobdir if (args.jobdir).startswith('/afs/cern.ch/work/j/%s/' % user) else os.path.join(proj_dir, args.jobdir)
+jobdir = args.jobdir if (args.jobdir).startswith(os.path.join('afs', 'cern.ch', 'work', 'j', user)) else os.path.join(proj_dir, args.jobdir)
 jobdir = jobdir[:-1] if jobdir.endswith('/') else jobdir
 if not os.path.isdir(jobdir):
     raise IOError('Directory: %s does not exist' % jobdir)
@@ -68,7 +68,7 @@ tot_files = {}
 def merge_files(jobdir, samples):
     #set_trace()
     for sample in samples:
-        merged_fname = '%s/%s/%s_TOT.coffea' % (jobdir, sample, sample)
+        merged_fname = os.path.join(jobdir, sample, '%s_TOT.coffea' % sample)
         output_files = ['%s/%s/%s' % (jobdir, sample, fname) for fname in os.listdir('%s/%s' % (jobdir, sample)) if fname.endswith('.coffea')]
             # don't re-merge files if this has already been done
         if merged_fname in output_files:
@@ -98,9 +98,9 @@ while not escape:
     for sample in samples:
         if sample in finished_samples: continue
             ## checks how many lines correspond to jobdir/sample 
-        sample_njobs = len([line for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line])
+        sample_njobs = len([line for line in stdout.split(b'\n') if (os.path.join(jobdir, '%s/' % sample)).encode() in line])
         if sample_njobs == 0:
-            isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+            isCorrect, nfails, alreadyComplete = check_correctness(os.path.join(jobdir, sample), dump_rescue=True)
             if isCorrect == True:
                 status = 'MERGED' if alreadyComplete else 'COMPLETE' # jobs are already merged or (completed but still need to be merged)
             else:
@@ -108,13 +108,13 @@ while not escape:
             samples_status[sample] = (status, nfails)
         else:
                 ## get lines corresponding to sample
-            job_lines = [line.decode() for line in stdout.split(b'\n') if ('%s/%s' % (jobdir, sample)).encode() in line]
+            job_lines = [line.decode() for line in stdout.split(b'\n') if (os.path.join(jobdir, '%s/' % sample)).encode() in line]
                 ## get job statuses
             job_statuses = [''.join(line).split()[5] for line in job_lines] # 5 is hardcoded
                 ## check how many jobs haven't been removed
             njobs_running = len([status for status in job_statuses if not (status == 'X')])
             if njobs_running == 0:
-                isCorrect, nfails, alreadyComplete = check_correctness('%s/%s' % (jobdir, sample), dump_rescue=True)
+                isCorrect, nfails, alreadyComplete = check_correctness(os.path.join(jobdir, sample), dump_rescue=True)
                 if isCorrect == True:
                     status = 'MERGED' if alreadyComplete else 'COMPLETE' # jobs are already merged or (completed but still need to be merged)
                 else:
