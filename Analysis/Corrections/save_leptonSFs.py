@@ -7,7 +7,7 @@ import os
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
-base_jobid = jobid.split('_')[0]
+base_jobid = os.environ['base_jobid']
 
 outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
@@ -22,7 +22,8 @@ leptons = {
         },
         'eta' : 'eta_ElTOT',
         'fnames' : {
-            '2016' : 'SF_El_V16010b.root', # NanoAOD versions
+            #'2016APV' : '.root',
+            '2016' : 'SF_El_V160400b.root', # NanoAOD versions
             '2017' : 'SF_El_V170400b.root',
             '2018' : 'SF_El_V180400b.root',
         }
@@ -34,7 +35,8 @@ leptons = {
         },
         'eta' : 'eta_MuTOT',
         'fnames' : {
-            '2016' : 'SF_Mu_V16010.root', # NanoAOD versions
+            #'2016APV' : '.root',
+            '2016' : 'SF_Mu_V160400.root', # NanoAOD versions
             '2017' : 'SF_Mu_V170400.root',
             '2018' : 'SF_Mu_V180400.root',
         }
@@ -82,8 +84,8 @@ for lep in leptons.keys():
             sf_output[year][lep]['Trig']['Central']['eta_bin%i' % idx] = dense_lookup(*(sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')][0], sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')][1][0]))
             sf_output[year][lep]['Trig']['Error']['eta_bin%i' % idx] = dense_lookup(*(sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')][0], sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')][1][0]))
 
-    # temporary while no SFs for 2016(APV) UL
-if base_jobid == 'ULnanoAOD':
+    # temporary while no SFs for 2016APV UL
+if base_jobid != 'NanoAODv6':
     sf_output['2016APV'] = sf_output['2016']
 
 lepSF_name = os.path.join(outdir, 'leptonSFs.coffea')
