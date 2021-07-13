@@ -95,9 +95,6 @@ else: # UL era values
         }
     }
 
-else:
-    raise ValueError("base_jobid not set")
-    
 jet_pars = prettyjson.loads(open(os.path.join(os.environ['PROJECT_DIR'], 'cfg_files', 'cfg_pars_%s.json' % os.environ['jobid'])).read())['Jets']
 
 valid_taggers = ['DeepCSV', 'DeepJet']
@@ -155,5 +152,9 @@ def process_jets(events, year, corrections=None):
         cache = LRUCache(int(1e10), lambda a: a.nbytes)
         corrected_jets = jet_factory.build(jets, lazy_cache=cache)
         corrected_met = met_factory.build(events['MET'], corrected_jets, lazy_cache=cache)
+
+    else:
+        corrected_jets = jets
+        corrected_met = events['MET']
 
     return corrected_jets, corrected_met
