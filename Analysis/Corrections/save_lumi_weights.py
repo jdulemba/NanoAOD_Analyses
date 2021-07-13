@@ -16,7 +16,7 @@ data_lumi = prettyjson.loads(open(os.path.join(proj_dir,'inputs', '%s_lumis_data
 
 proj_dir = os.environ['PROJECT_DIR']
 
-years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+years_to_run = ['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018']
 lumi_weights = {year:{'Electrons' : {}, 'Muons' : {}} for year in years_to_run}
 
 # for each year, read sumGenWeights from all meta.json files
