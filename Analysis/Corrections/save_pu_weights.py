@@ -15,7 +15,7 @@ if not os.path.isdir(outdir):
 
 pu_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'Pileup')
 
-years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
+years_to_run = ['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018']
 mc_pu_weights = {year: {} for year in years_to_run}
 data_pu_dists = {year: {} for year in years_to_run}
 
