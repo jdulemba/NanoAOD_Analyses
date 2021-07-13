@@ -15,7 +15,7 @@
         "name": "ttJetsDiLep_ueUP"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTTo2L2Nu_hdampDOWN_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 87.3348,
         "name": "ttJetsDiLep_hdampDOWN"
     },
@@ -40,17 +40,17 @@
         "name": "ttJetsDiLep_mtop1715"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTTo2L2Nu_mtop173p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 87.3348,
         "name": "ttJetsDiLep_mtop1735"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTTo2L2Nu_mtop175p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 87.3348,
         "name": "ttJetsDiLep_mtop1755"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTTo2L2Nu_mtop178p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 87.3348,
         "name": "ttJetsDiLep_mtop1785"
     },
@@ -120,7 +120,7 @@
         "name": "ttJetsSL_ueDOWN"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToSemiLeptonic_TuneCP5up_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 364.31088,
         "name": "ttJetsSL_ueUP"
     },
@@ -130,7 +130,7 @@
         "name": "ttJetsSL_hdampDOWN"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToSemiLeptonic_hdampUP_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 364.31088,
         "name": "ttJetsSL_hdampUP"
     },
@@ -160,7 +160,7 @@
         "name": "ttJetsSL_mtop1755"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToSemiLeptonic_mtop178p5_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection": 364.31088,
         "name": "ttJetsSL_mtop1785"
     },
@@ -189,8 +189,7 @@
 
 
     {
-        "DBSName": "NOT PRESENT",
-        "DBSName_old": "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
+        "DBSName": "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
         "xsection_old": 6.35,
         "xsection": 3.45,
         "name": "singlet_schannel"
@@ -238,40 +237,44 @@
     },
     {
         "DBSName": "/WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1443.6560,
         "name": "WJets_HT_70to100"
     },
     {
         "DBSName": "/WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1434.5189,
         "name": "WJets_HT_100to200"
     },
     {
         "DBSName": "/WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 383.1856,
         "name": "WJets_HT_200to400"
     },
     {
         "DBSName": "/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 51.6815,
         "name": "WJets_HT_400to600"
     },
     {
         "DBSName": "/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 12.5292,
         "name": "WJets_HT_600to800"
     },
     {
         "DBSName": "/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 5.6341,
         "name": "WJets_HT_800to1200"
     },
     {
         "DBSName": "/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1.3249,
         "name": "WJets_HT_1200to2500"
     },
-
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 0.0093,
+        "name": "WJets_HT_2500toInf"
+    },
 
     {
         "DBSName": "/WZ_TuneCP5_13TeV-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",

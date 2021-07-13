@@ -169,7 +169,7 @@
 
 
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 0.2149,
         "name": "ttWlnu"
     },
@@ -239,39 +239,45 @@
     },
     {
         "DBSName": "/WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1443.6560,
         "name": "WJets_HT_70to100"
     },
     {
         "DBSName": "/WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1434.5189,
         "name": "WJets_HT_100to200"
     },
     {
         "DBSName": "/WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 383.1856,
         "name": "WJets_HT_200to400"
     },
     {
         "DBSName": "/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 51.6815,
         "name": "WJets_HT_400to600"
     },
     {
         "DBSName": "/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 12.5292,
         "name": "WJets_HT_600to800"
     },
     {
         "DBSName": "/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 5.6341,
         "name": "WJets_HT_800to1200"
     },
     {
         "DBSName": "/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "xsection": 61526.7,
+        "xsection": 1.3249,
         "name": "WJets_HT_1200to2500"
     },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": 0.0093,
+        "name": "WJets_HT_2500toInf"
+    },
+
 
     {
         "DBSName": "/WZ_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
@@ -302,7 +308,7 @@
         "name": "QCD_Mu_20to30"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 1362000.0,
         "name": "QCD_Mu_30to50"
     },
@@ -317,12 +323,12 @@
         "name": "QCD_Mu_80to120"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 21230.0,
         "name": "QCD_Mu_120to170"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 7055.0,
         "name": "QCD_Mu_170to300"
     },
@@ -337,12 +343,12 @@
         "name": "QCD_Mu_470to600"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 18.21,
         "name": "QCD_Mu_600to800"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 3.275,
         "name": "QCD_Mu_800to1000"
     },
