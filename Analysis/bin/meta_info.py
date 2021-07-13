@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 import awkward as ak
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
@@ -157,3 +160,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
