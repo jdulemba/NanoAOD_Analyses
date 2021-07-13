@@ -14,7 +14,6 @@ parser.add_argument('--test', action='store_true', help="Output txt file named '
 
 args = parser.parse_args()
 
-#jobid = os.environ['jobid']
 proj_dir = os.environ['PROJECT_DIR']
 base_jobid = os.environ['base_jobid']
 
@@ -38,20 +37,20 @@ jecfiles = {
         'eras' : ['BCD', 'EF'],
     },
     '2016' : {
-        'tag' : 'Summer19UL16' if base_jobid == 'ULnanoAOD' else 'Summer16_07Aug2017',
-        'v' : 'V7' if base_jobid == 'ULnanoAOD' else 'V11',
-        'DATA' : ['RunFGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
-        'eras' : ['FGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
+        'tag' : 'Summer16_07Aug2017' if base_jobid == 'NanoAODv6' else 'Summer19UL16',
+        'v' : 'V11' if base_jobid == 'NanoAODv6' else 'V7',
+        'DATA' : ['BCD', 'EF', 'GH'] if base_jobid == 'NanoAODv6' else ['RunFGH'],
+        'eras' : ['BCD', 'EF', 'GH'] if base_jobid == 'NanoAODv6' else ['FGH'],
     },
     '2017' : {
-        'tag' : 'Summer19UL17' if base_jobid == 'ULnanoAOD' else 'Fall17_17Nov2017',
-        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V32',
-        'DATA' : ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
-        'eras' : ['B', 'C', 'D', 'E', 'F'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
+        'tag' : 'Fall17_17Nov2017' if base_jobid == 'NanoAODv6' else 'Summer19UL17',
+        'v' : 'V32' if base_jobid == 'NanoAODv6' else 'V5',
+        'DATA' : ['B', 'C', 'DE', 'F'] if base_jobid == 'NanoAODv6' else ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'],
+        'eras' : ['B', 'C', 'DE', 'F'] if base_jobid == 'NanoAODv6' else ['B', 'C', 'D', 'E', 'F'],
     },
     '2018' : {
-        'tag' : 'Summer19UL18' if base_jobid == 'ULnanoAOD' else 'Autumn18',
-        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V19',
+        'tag' : 'Autumn18' if base_jobid == 'NanoAODv6' else 'Summer19UL18',
+        'v' : 'V19' if base_jobid == 'NanoAODv6' else 'V5',
         'DATA' : ['RunA', 'RunB', 'RunC', 'RunD'],
         'eras' : ['A', 'B', 'C', 'D'],
     },
@@ -64,17 +63,17 @@ jerfiles = {
         'JERSF' : 'SF',
     },
     '2016' : {
-        'tag' : 'Summer20UL16_JRV3' if base_jobid == 'ULnanoAOD' else 'Summer16_25nsV1',
+        'tag' : 'Summer16_25nsV1' if base_jobid == 'NanoAODv6' else 'Summer20UL16_JRV3',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2017' : {
-        'tag' : 'Summer19UL17_JRV2' if base_jobid == 'ULnanoAOD' else 'Fall17_V3',
+        'tag' : 'Fall17_V3' if base_jobid == 'NanoAODv6' else 'Summer19UL17_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2018' : {
-        'tag' : 'Summer19UL18_JRV2' if base_jobid == 'ULnanoAOD' else 'Autumn18_V7',
+        'tag' : 'Autumn18_V7' if base_jobid == 'NanoAODv6' else 'Summer19UL18_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
