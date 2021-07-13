@@ -1,4 +1,5 @@
-import os, subprocess, time
+import os, subprocess
+import time, datetime
 from pdb import set_trace
 import tools
 import Utilities.prettyjson as prettyjson
@@ -18,12 +19,7 @@ parser.add_argument('analyzer', help='Analyzer to use.')
 parser.add_argument('jobdir', help='Directory name to be created in nobackup area.')
 parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('--opts', nargs='*', action=ParseKwargs, help='Options to pass to analyzers.')
-#parser.add_argument('--sample', type=str, help='Use specific sample')
 parser.add_argument('--submit', action='store_true', help='Submit jobs')
-#parser.add_argument('--signal', type=str, default='.*', help='Signal sample to use, regex')
-#parser.add_argument('--evt_sys', type=str, default='NONE', help='Specify event systematics to run, will be capitalized. Default is NONE')
-#parser.add_argument('--rewt_sys', type=str, default='NONE', help='Specify reweighting systematics to run, will be capitalized. Default is NONE')
-#parser.add_argument('--only_sys', type=int, default=0, help='Only run specified systematics and not nominal weights (nosys)')
 args = parser.parse_args()
 
 #set_trace()
@@ -40,9 +36,14 @@ proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 nano_dir = os.environ['NANODIR']
-jobdir = args.jobdir
 analyzer=args.analyzer
 proxy_path = '/afs/cern.ch/work/j/jdulemba/private/x509up_u81826'
+    # get jobdir
+year, month, day = time.localtime().tm_year, time.localtime().tm_mon, time.localtime().tm_mday
+dtime = datetime.datetime(year, month, day)
+dtime.strftime("%d%B%Y")
+jobdir = '_'.join([args.jobdir, dtime.strftime("%d%B%Y"), args.year, jobid])
+jobdir = "BATCH_%s" % jobdir if not jobdir.startswith("BATCH") else jobdir
 
 def create_batch_job():
     batch_job="""#!/bin/bash
