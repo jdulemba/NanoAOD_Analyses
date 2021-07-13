@@ -11,7 +11,8 @@
 #export jobid=ULnanoAOD_noMT_noLJpt_NNLO
 #export jobid=ULnanoAOD_mujets_btagSFs
 
-export jobid=Summer20UL
+#export jobid=Summer20UL
+export jobid=Summer20UL_mujets_btagSFs
 
 if [[ $jobid == *"NanoAODv6"* ]]; then
     export base_jobid=NanoAODv6
