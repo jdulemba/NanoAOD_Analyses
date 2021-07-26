@@ -3,12 +3,12 @@ import fnmatch
 import os
 import matplotlib.pyplot as plt
 
-base_jobid = os.environ['jobid']
+base_jobid = os.environ['base_jobid']
 
 #dataset_groups = {'2016APV' : {}, '2016' : {}, '2017' : {}, '2018' : {}}
 dataset_groups = {
     year : {
-        'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
+        'EWK' : ['[WZ][WZ]', 'ZJets*', 'WJets_HT*', 'tt[WZ]*'] if base_jobid == 'Summer20UL' else ['[WZ][WZ]', '[WZ]Jets*', 'tt[WZ]*'],
         'ttJets_right' : ['ttJets*_right'],
         'ttJets_matchable' : ['ttJets*_matchable'],
         'ttJets_unmatchable' : ['ttJets*_unmatchable'],
@@ -22,33 +22,6 @@ dataset_groups = {
     }
     for year in ['2016APV', '2016', '2017', '2018']
 }
-#dataset_groups['2016APV'] = dataset_groups['2016']
-#dataset_groups['2017'] = {
-#    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-#    'ttJets_right' : ['ttJets*_right'],
-#    'ttJets_matchable' : ['ttJets*_matchable'],
-#    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
-#    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
-#    'ttJets_other' : ['ttJets*_other'],
-#    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-#    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
-#    'singlet' : ['single*'],
-#    'QCD' : ['QCD*'],
-#    'data' : ['data_Single*'],
-#}
-#dataset_groups['2018'] = {
-#    'EWK' : ['[WZ][WZ]', '[WZ]Jets', 'tt[WZ]*'],
-#    'ttJets_right' : ['ttJets*_right'],
-#    'ttJets_matchable' : ['ttJets*_matchable'],
-#    'ttJets_unmatchable' : ['ttJets*_unmatchable'],
-#    'ttJets_sl_tau' : ['ttJets*_sl_tau'],
-#    'ttJets_other' : ['ttJets*_other'],
-#    'ttJets' : ['ttJetsSL', 'ttJetsDiLep', 'ttJetsHad'],#, 'ttJets_right', 'ttJets_matchable', 'ttJets_unmatchable', 'ttJets_other'],
-#    'ttJets_Sys' : ['ttJetsSL_*DOWN', 'ttJetsDiLep_*DOWN', 'ttJetsHad_*DOWN', 'ttJetsSL_*UP', 'ttJetsDiLep_*UP', 'ttJetsHad_*UP'],
-#    'singlet' : ['single*'],
-#    'QCD' : ['QCD*'],
-#    'data' : ['data_Single*'],
-#}
 
     ## dataset groupings for making templates to be used in fit
 #template_groups = {'2016APV' : {}, '2016' : {}, '2017' : {}, '2018' : {}}
