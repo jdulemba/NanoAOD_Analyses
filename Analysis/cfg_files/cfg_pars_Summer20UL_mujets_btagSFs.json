@@ -162,12 +162,12 @@
             "looseb": "Medium"
         },
         "btagging": {
-            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_ULnanoAOD_mujets_btagSFs.coffea",
-            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_ULnanoAOD_mujets_btagSFs.coffea"
+            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_Summer20UL_mujets_btagSFs.coffea",
+            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_Summer20UL_mujets_btagSFs.coffea"
         }
     },
     "ttsolver": {
-        "filename": "prob_ULnanoAOD_mujets_btagSFs.coffea",
+        "filename": "prob_Summer20UL_mujets_btagSFs.coffea",
         "USENS": 1,
         "USEMASS": 1,
         "USE3JMERGED": 1,
