@@ -28,6 +28,8 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--year', type=str, help='What year is the ntuple from.')
 parser.add_argument('--njets', type=str, help='Choose jet multiplicity.')
+parser.add_argument('--combine_2016', action='store_true', help='Combine 2016APV and 2016 distributions into one')
+parser.add_argument('--force_save', action='store_true', help='Force the dict of probabilities to be saved.')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -35,12 +37,12 @@ jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 analyzer = 'permProbComputer'
 
-if base_jobid == 'ULnanoAOD':
-    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
-    max_years = 4
-else:
+if base_jobid == 'NanoAODv6':
     years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
     max_years = 3
+else:
+    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
+    max_years = 4
 
 njets_to_run = ['3', '4+']
 if args.njets == '3':
@@ -50,7 +52,7 @@ elif args.njets == '4+':
 else:
     njets_to_run = ['3', '4+']
 
-combine_2016 = ('2016' in years_to_run) and ('2016APV' in years_to_run) and (base_jobid == 'ULnanoAOD')
+combine_2016 = ('2016' in years_to_run) and ('2016APV' in years_to_run) and (base_jobid != 'NanoAODv6') and (args.combine_2016)
 permProbs = {year : {'3Jets' : {},'4PJets' : {}}  for year in years_to_run}
 
 jet_mults = {
@@ -63,7 +65,8 @@ jet_mults = {
 
 lep_cats = {
     'LoT' : 'loose or tight $e/\mu$',
-    'Tight' : 'tight $e/\mu$',
+    'Tight' : '$e/\mu$',
+    #'Tight' : 'tight $e/\mu$',
 }
 
 perm_cats = {
@@ -88,16 +91,16 @@ if '3' in njets_to_run:
     variables.update({
         'Lost_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True, True),
         'Lost_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True, True),
-        'Lost_mTHadProxy' : ('m($t_{h}^{proxy}$) [GeV]', 1, (0., 500.), True, True),
+        'Lost_mTHadProxy' : ('$m_{t_{h}^{proxy}}$ [GeV]', 1, (0., 500.), True, True),
         'Merged_nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True, True),
         'Merged_nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True, True),
-        'Merged_mTHadProxy_vs_maxmjet' : ('max m(jet) [GeV]', 'm($t_{h}^{proxy}$) [GeV]', 1, (0., 150.), 1, (0., 500.), True, True),
+        'Merged_mTHadProxy_vs_maxmjet' : ('max m(jet) [GeV]', '$m_{t_{h}^{proxy}}$ [GeV]', 1, (0., 150.), 1, (0., 500.), True, True),
     })
 if '4+' in njets_to_run:
     variables.update({
         'nusolver_chi2' : ('$\\chi_{\\nu}^{2}$', 5, (0., 1000.), True, False),
         'nusolver_dist' : ('$D_{\\nu, min}$ [GeV]', 1, (0., 150.), True, False),
-        'mWHad_vs_mTHad' : ('m($t_{h}$) [GeV]', 'm($W_{h}$) [GeV]', 10, (0., 500.), 10, (0., 500.), True, False),
+        'mWHad_vs_mTHad' : ('$m_{t_{h}}$ [GeV]', '$m_{W_{h}}$ [GeV]', 10, (0., 500.), 10, (0., 500.), True, False),
     })
 
 
@@ -259,7 +262,7 @@ for year in years_to_run:
                     hep.cms.label(ax=ax, data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
                     #set_trace()
-                    figname = os.path.join(pltdir, '_'.join(['3Jets', lepcat, hname]))
+                    figname = os.path.join(pltdir, '_'.join([year, jobid, '3Jets', lepcat, hname]))
                     fig.savefig(figname)
                     print('%s written' % figname)
                     plt.close()
@@ -332,7 +335,7 @@ for year in years_to_run:
                             ## set axes labels and titles
                         hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
-                        figname = os.path.join(pltdir, '_'.join(['3Jets', lepcat, topo, yvar if dax == 0 else xvar]))
+                        figname = os.path.join(pltdir, '_'.join([year, jobid, '3Jets', lepcat, topo, yvar if dax == 0 else xvar]))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
@@ -365,7 +368,7 @@ for year in years_to_run:
                         )
                         hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
-                        figname = os.path.join(pltdir, '_'.join(['3Jets', lepcat, hname, cat, 'norm']))
+                        figname = os.path.join(pltdir, '_'.join([year, jobid, '3Jets', lepcat, hname, cat, 'norm']))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
@@ -431,7 +434,7 @@ for year in years_to_run:
                         ## set axes labels and titles
                     hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
-                    figname = os.path.join(pltdir, '_'.join(['4PJets', lepcat, hname]))
+                    figname = os.path.join(pltdir, '_'.join([year, jobid, '4PJets', lepcat, hname]))
                     fig.savefig(figname)
                     print('%s written' % figname)
                     plt.close()
@@ -500,7 +503,7 @@ for year in years_to_run:
                             ## set axes labels and titles
                         hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
     
-                        figname = os.path.join(pltdir, '_'.join(['4PJets', lepcat, hname.split('_vs_')[0] if dax == 0 else hname.split('_vs_')[1]]))
+                        figname = os.path.join(pltdir, '_'.join([year, jobid, '4PJets', lepcat, hname.split('_vs_')[0] if dax == 0 else hname.split('_vs_')[1]]))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
@@ -532,7 +535,7 @@ for year in years_to_run:
                         )
                         hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
-                        figname = os.path.join(pltdir, '_'.join(['4PJets', lepcat, hname, cat, 'norm', 'orig']))
+                        figname = os.path.join(pltdir, '_'.join([year, jobid, '4PJets', lepcat, hname, cat, 'norm', 'orig']))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
@@ -582,7 +585,7 @@ for year in years_to_run:
                         )
                         hep.cms.label(ax=ax, fontsize=rcParams['font.size'], data=False, paper=False, year='2016APV+2016' if (combine_2016 and ('2016' in year)) else year, lumi=round(lumi_to_use, 1))
         
-                        figname = os.path.join(pltdir, '_'.join(['4PJets', lepcat, hname, cat, 'norm', 'interp']))
+                        figname = os.path.join(pltdir, '_'.join([year, jobid, '4PJets', lepcat, hname, cat, 'norm', 'interp']))
                         fig.savefig(figname)
                         print('%s written' % figname)
                         plt.close()
@@ -590,7 +593,7 @@ for year in years_to_run:
 
 
     # write corrections to coffea file
-if (len(njets_to_run) == 2) and (len(years_to_run) == max_years):
+if ((len(njets_to_run) == 2) and (len(years_to_run) == max_years)) or (args.force_save):
     corrdir = os.path.join(proj_dir, 'Corrections', jobid)
     if not os.path.isdir(corrdir):
         os.makedirs(corrdir)
