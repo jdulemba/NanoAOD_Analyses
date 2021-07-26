@@ -182,6 +182,7 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='Events', xlimits=None, ylimits=None,
     err_opts = mc_opts.get('error_opts', stack_error_opts)
     overflow = mc_opts.get("overflow", "none")
     logy = mc_opts.get('logy', False)
+    leg_ncols = mc_opts.get('leg_ncols', 1)
 
         ## plot MC and data
     plot.plot1d(hdict[mc_samples],
@@ -203,11 +204,11 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='Events', xlimits=None, ylimits=None,
     ax.autoscale()
     ylims = (0, None) if ylimits is None else ylimits
     ax.set_ylim(ylims)
-    ax.set_ylim(0, ax.get_ylim()[1]*1.3)
+    #ax.set_ylim(0, ax.get_ylim()[1]*1.3)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_xlim(xlimits)
-    
+
         ## set legend and corresponding colors
     handles, labels = ax.get_legend_handles_labels()
     for idx, sample in enumerate(labels):
@@ -216,7 +217,8 @@ def plot_mc1d(ax, hdict, xlabel='', ylabel='Events', xlimits=None, ylimits=None,
         handles[idx].set_facecolor(facecolor)
         labels[idx] = legname
     # call ax.legend() with the new values
-    ax.legend(handles,labels, loc='upper right', ncol=3)
+    #labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+    ax.legend(handles,labels, loc='upper right', ncol=leg_ncols)
     
     return ax
 
@@ -624,7 +626,8 @@ def linearize_hist(histo, overflow=False, no_transpose=False, debug=False):
 
 
 
-def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=False):
+def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], dense_axes_list=[], overflow=False, transpose_da=False):
+#def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=False):
     '''
     Inputs:
         dict : dictionary made from coffea 'convert_histo_root_file'
@@ -636,31 +639,43 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], overflow=Fa
     '''
     from coffea import hist
 
+    #set_trace()
     output_histos = {}
     for var in vars:
         if not (var, 'dense_lookup') in dict.keys():
             raise ValueError("%s not found in dense_lookup_dict" % var)
         sumw = dict[(var, 'dense_lookup')][0]
         sumw2 = dict[('%s_error' % var, 'dense_lookup')][0]
-        edges = dict[(var, 'dense_lookup')][1][0]
+        #edges = dict[(var, 'dense_lookup')][1][0]
+        edges = dict[(var, 'dense_lookup')][1]
 
         sparse_axes = [hist.Cat(sparse_axis['name'], sparse_axis['label']) for sparse_axis in sparse_axes_list]
+        dense_axes = [hist.Bin(dense_axis['name'], dense_axis['name'], edges[dense_axis['idx']]) for dense_axis in dense_axes_list]
         output_hist = hist.Hist(
             'Events',
             *sparse_axes,
-            hist.Bin('xaxis', var, edges)
+            #hist.Bin('xaxis', var, edges)
+            *dense_axes,
         )
 
         fill_dict = {sparse_axis['name'] : sparse_axis['fill'] for sparse_axis in sparse_axes_list}
-        fill_dict.update({'xaxis' : np.zeros(0), 'weight' : np.zeros(0)})
+        fill_dict.update({dense_axis['name'] : np.zeros(0) for dense_axis in dense_axes_list})
+        fill_dict.update({'weight' : np.zeros(0)})
+        #fill_dict.update({'xaxis' : np.zeros(0), 'weight' : np.zeros(0)})
             ## initialize output_hist to have empty bins
         output_hist.fill(**fill_dict)
 
             ## fill bins
         for cat in output_hist.values().keys():
-            for xbin in range(len(edges)-1):
-                output_hist.values(sumw2=True)[cat][0][xbin] = sumw[xbin]
-                output_hist.values(sumw2=True)[cat][1][xbin] = sumw2[xbin]
+            if len(edges) == 1:
+                for xbin in range(len(edges)-1):
+                    output_hist.values(sumw2=True)[cat][0][xbin] = sumw[xbin]
+                    output_hist.values(sumw2=True)[cat][1][xbin] = sumw2[xbin]
+            elif len(edges) == 2:
+                for xbin in range(len(edges[0])-1):
+                    output_hist.values(sumw2=True)[cat][0][xbin] = sumw.T[xbin] if transpose_da else sumw[xbin]
+                    output_hist.values(sumw2=True)[cat][1][xbin] = sumw2.T[xbin] if transpose_da else sumw2[xbin]
+            else: raise ValueError("Only 1D and 2D hists supported")
 
         output_histos[var] = output_hist
 
