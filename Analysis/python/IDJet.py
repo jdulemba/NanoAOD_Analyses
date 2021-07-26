@@ -48,14 +48,14 @@ else: # UL era values
         # 2016APV values are still old ones
     btag_values["2016APV"] = {
         'btagDeepB' : {
-            'DeepCSVLoose' : 0.2217,
-            'DeepCSVMedium': 0.6321,
-            'DeepCSVTight' : 0.8953,
+            'DeepCSVLoose' : 0.2027,
+            'DeepCSVMedium': 0.6001,
+            'DeepCSVTight' : 0.8819,
         },
         'btagDeepFlavB' : {
-            'DeepJetLoose' : 0.0614,
-            'DeepJetMedium': 0.3093,
-            'DeepJetTight' : 0.7221
+            'DeepJetLoose' : 0.0508,
+            'DeepJetMedium': 0.2598,
+            'DeepJetTight' : 0.6502
         }
     }
     btag_values["2016"] = {
