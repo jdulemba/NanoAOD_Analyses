@@ -29,13 +29,12 @@ parser.add_argument('--opts', nargs='*', action=ParseKwargs, help='Options to pa
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-base_jobid = os.environ['base_jobid']
 analyzer=args.analyzer
-#set_trace()
 
 # define dictionary of options to pass
 opts_dict = args.opts
+base_jobid = opts_dict['base_jobid'] if 'base_jobid' in opts_dict.keys() else os.environ['base_jobid']
+jobid = opts_dict['jobid'] if 'jobid' in opts_dict.keys() else os.environ['jobid']
 
     ## get samples to use
 indir = os.path.join(proj_dir, 'inputs', '%s_%s' % (args.year, base_jobid))

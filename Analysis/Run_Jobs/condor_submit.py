@@ -32,9 +32,14 @@ opts_dict['rewt_sys'] = opts_dict.get('rewt_sys', 'NONE')
 opts_dict['only_sys'] = opts_dict.get('only_sys', 'False')
 opts_dict['debug'] = opts_dict.get('debug', 'False')
 
+opts_dict['base_jobid'] = opts_dict.get('base_jobid', os.environ['base_jobid'])
+opts_dict['jobid'] = opts_dict.get('jobid', os.environ['jobid'])
+if not opts_dict['base_jobid'] in opts_dict['jobid']:
+    raise ValueError("base_jobid=%s must be in jobid=%s" % (opts_dict['base_jobid'], opts_dict['jobid']))
+
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-base_jobid = os.environ['base_jobid']
+jobid = opts_dict['jobid']
+base_jobid = opts_dict['base_jobid']
 nano_dir = os.environ['NANODIR']
 analyzer=args.analyzer
 proxy_path = '/afs/cern.ch/work/j/jdulemba/private/x509up_u81826'
@@ -44,6 +49,7 @@ dtime = datetime.datetime(year, month, day)
 dtime.strftime("%d%B%Y")
 jobdir = '_'.join([args.jobdir, dtime.strftime("%d%B%Y"), args.year, jobid])
 jobdir = "BATCH_%s" % jobdir if not jobdir.startswith("BATCH") else jobdir
+print("%s written" % (os.path.join(proj_dir, jobdir)))
 
 def create_batch_job():
     batch_job="""#!/bin/bash
