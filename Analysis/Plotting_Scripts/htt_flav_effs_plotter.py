@@ -20,6 +20,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--year', type=str, help='What year is the ntuple from.')
 parser.add_argument('--construct_btag', action='store_false', help='Makes btag SF constructor (default is True)')
+parser.add_argument('--force_save', action='store_true', help='Force the efficiencies to be saved.')
 args = parser.parse_args()
 
 proj_dir = os.environ['PROJECT_DIR']
@@ -31,8 +32,13 @@ outdir = os.path.join(proj_dir, 'Corrections', jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-if args.year: years_to_run = [args.year]
+if base_jobid == 'NanoAODv6':
+    years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
+    max_years = 3
+else:
+    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
+    max_years = 4
+
 flav_effs = {year : {'DeepJet' : {'3Jets' : {}, '4PJets' : {}}, 'DeepCSV' : {'3Jets' : {},'4PJets' : {},} } for year in years_to_run}
 
 if args.construct_btag:
@@ -68,7 +74,7 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     ax.add_collection(pc)
     if clear:
         fig.colorbar(pc, ax=ax, label='%s Efficiency, %s %s' % (flav_to_name[flav], btagger, wp), pad=0.)
-    ax.autoscale(axis='x', tight=True)
+    ax.autoscale()#axis='x', tight=True)
     ax.set_xlim(xedges[0], xedges[-1])
     ax.set_ylim(yedges[0], yedges[-1])
     
@@ -93,6 +99,10 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
 combine_2016 = ('2016' in years_to_run) and ('2016APV' in years_to_run) and (base_jobid == 'ULnanoAOD')
 computed_combined_2016 = False
+
+    # ZJets Summer20UL samples have too many negative contributions
+import re
+non_ZJets_samples = re.compile('(?!ZJets*)')
 
 for year in years_to_run:
     print(year)
@@ -177,6 +187,14 @@ for year in years_to_run:
         hall_el.scale(lumi_correction[year]['Electrons'], axis='dataset')
         hall_tot = hall_mu+hall_el
 
+        # rebin
+    hpass_tot = hpass_tot.rebin('pt', pt_bins).rebin('eta', eta_bins)
+    hall_tot = hall_tot.rebin('pt', pt_bins).rebin('eta', eta_bins)
+
+        # remove ZJets
+    hpass_tot = hpass_tot[:, non_ZJets_samples]
+    hall_tot = hall_tot[:, non_ZJets_samples]
+
     if not hpass_tot.compatible(hall_tot):
         raise ValueError("Passing and All hists don't have the same binning!")
 
@@ -190,9 +208,7 @@ for year in years_to_run:
                 #set_trace()
                     # get passing and all hists for 3 and 4+ jets separately, only as a function of pT and eta
                 h_pass = hpass_tot[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
-                h_pass = h_pass.rebin('pt', pt_bins).rebin('eta', eta_bins)
                 h_all = hall_tot[wp, :, jmult, flav].integrate('btagger').integrate('dataset').integrate('jmult').integrate('hFlav')
-                h_all = h_all.rebin('pt', pt_bins).rebin('eta', eta_bins)
 
                 edges = (h_pass.axis('pt').edges(), h_pass.axis('eta').edges())
                 pass_lookup = dense_lookup(*(h_pass.values().values()), edges)
@@ -211,15 +227,17 @@ for year in years_to_run:
                 plot_effs(eff_lookup, edges, lumi_to_use, year, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
 
 wp_name = list(set(working_points))[0]
-    # save files
-flav_effs_name = os.path.join(outdir, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp_name, jobid))
 
-    # 2016 and 2016APV are the same if they're computed together
-if combine_2016:
-    flav_effs[computed_combined_2016_year_to_copy] = flav_effs[computed_combined_2016_year_key]
+    # save files
+if (len(years_to_run) == max_years) or (args.force_save):
+    flav_effs_name = os.path.join(outdir, 'htt_3PJets_%s_flavour_efficiencies_%s.coffea' % (wp_name, jobid))
     
-save(flav_effs, flav_effs_name)
-print('\n', flav_effs_name, 'written')
+        # 2016 and 2016APV are the same if they're computed together
+    if combine_2016:
+        flav_effs[computed_combined_2016_year_to_copy] = flav_effs[computed_combined_2016_year_key]
+
+    save(flav_effs, flav_effs_name)
+    print('\n', flav_effs_name, 'written')
 
 
 if args.construct_btag:
@@ -245,6 +263,7 @@ if args.construct_btag:
                 btag_contructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
 
         # save files
-    btagSFs_name = os.path.join(outdir, 'htt_3PJets_%s_btag_scalefactors_%s.coffea' % (wp_name, jobid))
-    save(btag_contructs_dict, btagSFs_name)
-    print('\n', btagSFs_name, 'written')
+    if (len(years_to_run) == max_years) or (args.force_save):
+        btagSFs_name = os.path.join(outdir, 'htt_3PJets_%s_btag_scalefactors_%s.coffea' % (wp_name, jobid))
+        save(btag_contructs_dict, btagSFs_name)
+        print('\n', btagSFs_name, 'written')
