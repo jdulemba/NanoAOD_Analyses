@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
 from pdb import set_trace
@@ -16,14 +19,14 @@ import python.IDJet as IDJet
 import python.GenParticleSelector as genpsel
 
 proj_dir = os.environ['PROJECT_DIR']
+base_jobid = os.environ['base_jobid']
 jobid = os.environ['jobid']
 analyzer = 'htt_flav_effs'
-base_jobid = os.environ['base_jobid']
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 
@@ -40,11 +43,15 @@ opts_dict = prettyjson.loads(odict)
     ## set config options passed through argparse
 import ast
 to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
+base_jobid = opts_dict['base_jobid'] if 'base_jobid' in opts_dict.keys() else base_jobid
+jobid = opts_dict['jobid'] if 'jobid' in opts_dict.keys() else jobid
 
-allowed_samples = ['ttJets*', 'WJets', 'ZJets', 'singlet*']
+allowed_samples = ['ttJets*', 'WJets*', 'singlet*', 'ZJets*']
 for fname in fileset.keys():
     if not any([fnmatch.fnmatch(fname, sample) for sample in allowed_samples]):
         raise IOError("Sample %s not valid for finding btag efficiencies. Only %s are allowed" % (fname, allowed_samples))
+
+print(f"\tbase_jobid={base_jobid}\n\tjobid={jobid}")
 
 ## load corrections for event weights
 pu_correction = load(os.path.join(proj_dir, 'Corrections', base_jobid, 'MC_PU_Weights.coffea'))[args.year]
@@ -213,7 +220,8 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 evt_weights = mu_evt_weights if lepton == 'Muon' else el_evt_weights
                 for jmult in regions[lepton].keys():
                     cut = selection.all(*regions[lepton][jmult])
- 
+
+                    if to_debug: set_trace()
                     evt_weights_to_use = evt_weights.weight()
                     jets = events['SelectedJets'][cut]
                         ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
@@ -263,3 +271,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
