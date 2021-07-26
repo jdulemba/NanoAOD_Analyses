@@ -64,8 +64,9 @@ for sample in samples_to_run:
         raise ValueError("No DBSName found for sample: %s" % sample['name'])
 
 if args.test: set_trace()
+if args.sample: set_trace()
 analyzer_inputs_name = os.path.join(outdir, 'analyzer_inputs.txt')
-analyzer_inputs_out = open(analyzer_inputs_name, 'w')
+analyzer_inputs_out = open(analyzer_inputs_name, 'a') if os.path.isfile(analyzer_inputs_name) else open(analyzer_inputs_name, 'w')
 analyzer_inputs_out.write('\n'.join(analyzer_inputs))
 analyzer_inputs_out.close()
 print("%s written" % analyzer_inputs_name)
