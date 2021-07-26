@@ -101,9 +101,8 @@ def make_name_map(jstack, isMC):
 
     return name_map
 
-
-years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-if args.test: years_to_run = ['2018']
+years_to_run = ['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018']
+#if args.test: years_to_run = ['2018']
 
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
@@ -153,6 +152,9 @@ for year in years_to_run:
     MC_JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
     MC_JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
         # make JEC stack of all corrections
+    #print("JER/JERSF set to None")
+    #set_trace()
+    #MC_JECStack = JECStack({}, jec=MC_JECcorrector, junc=MC_JECuncertainties, jer=None, jersf=None)
     MC_JECStack = JECStack({}, jec=MC_JECcorrector, junc=MC_JECuncertainties, jer=MC_JER, jersf=MC_JERsf)
         # make jet and met factory
     MC_name_map = make_name_map(MC_JECStack, isMC=True)
