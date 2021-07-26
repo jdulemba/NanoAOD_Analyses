@@ -27,7 +27,7 @@ analyzer = 'meta_info'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 args = parser.parse_args()
 
 mc_input_dir = os.path.join(proj_dir, 'results', '%s_%s' % (args.year, base_jobid), analyzer)
@@ -65,11 +65,6 @@ if not os.path.isdir(outdir):
 
     # get lumi info
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, 'inputs', '%s_lumis_data.json' % base_jobid)).read())
-#        ## temporary
-#if base_jobid == 'ULnanoAOD':
-#    lumi_to_use = data_lumi_dict[args.year]['Muons']/1000. if args.year == '2018' else data_lumi_dict[args.year]['Electrons']/1000.
-#else:
-#    lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
 lumi_to_use = (data_lumi_dict[args.year]['Muons']+data_lumi_dict[args.year]['Electrons'])/2000.
 
 
@@ -100,7 +95,7 @@ plot.plot1d(
 ax.set_ylabel('Probability Density')
 ax.set_xlabel('Number of Pileup Interactions')
 ax.set_xlim((0, 100))
-ax.autoscale(axis='x', tight=True)
+ax.autoscale()#axis='x', tight=True)
 ax.set_ylim(0, ax.get_ylim()[1]*1.15)
 
     ## set legend and corresponding colors
@@ -163,7 +158,7 @@ plot.plot1d(
 ax_all.set_ylabel('Probability Density')
 ax_all.set_xlabel('Number of Pileup Interactions')
 ax_all.set_xlim((0, 100))
-ax_all.autoscale(axis='x', tight=True)
+ax_all.autoscale()#axis='x', tight=True)
 ax_all.set_ylim(0, ax_all.get_ylim()[1]*1.15)
 
     ## set legend and corresponding colors
