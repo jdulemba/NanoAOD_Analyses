@@ -22,8 +22,8 @@ leptons = {
         },
         'eta' : 'eta_ElTOT',
         'fnames' : {
-            #'2016APV' : '.root',
-            '2016' : 'SF_El_V160400b.root', # NanoAOD versions
+            '2016APV' : 'SF_El_V161400b.root',
+            '2016' : 'SF_El_V160400b.root', 
             '2017' : 'SF_El_V170400b.root',
             '2018' : 'SF_El_V180400b.root',
         }
@@ -35,15 +35,15 @@ leptons = {
         },
         'eta' : 'eta_MuTOT',
         'fnames' : {
-            #'2016APV' : '.root',
-            '2016' : 'SF_Mu_V160400.root', # NanoAOD versions
+            '2016APV' : 'SF_Mu_V161400.root',
+            '2016' : 'SF_Mu_V160400.root',
             '2017' : 'SF_Mu_V170400.root',
             '2018' : 'SF_Mu_V180400.root',
         }
     }
 }
 
-years_to_run = ['2016', '2017', '2018']
+years_to_run = ['2016APV', '2016', '2017', '2018']
 sf_output = {
     year: {
         'Electrons' : {
@@ -83,10 +83,6 @@ for lep in leptons.keys():
                 # trigger SFs
             sf_output[year][lep]['Trig']['Central']['eta_bin%i' % idx] = dense_lookup(*(sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')][0], sf_file[(leptons[lep]['pt']['trig'][idx], 'dense_lookup')][1][0]))
             sf_output[year][lep]['Trig']['Error']['eta_bin%i' % idx] = dense_lookup(*(sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')][0], sf_file[('%s_error' % leptons[lep]['pt']['trig'][idx], 'dense_lookup')][1][0]))
-
-    # temporary while no SFs for 2016APV UL
-if base_jobid != 'NanoAODv6':
-    sf_output['2016APV'] = sf_output['2016']
 
 lepSF_name = os.path.join(outdir, 'leptonSFs.coffea')
 save(sf_output, lepSF_name)    
