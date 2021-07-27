@@ -23,7 +23,7 @@ leptons = {
         'eta' : 'eta_ElTOT',
         'fnames' : {
             '2016APV' : 'SF_El_V161400b.root',
-            '2016' : 'SF_El_V160400b.root', 
+            '2016' : 'SF_El_V162400b.root', 
             '2017' : 'SF_El_V170400b.root',
             '2018' : 'SF_El_V180400b.root',
         }
@@ -36,7 +36,7 @@ leptons = {
         'eta' : 'eta_MuTOT',
         'fnames' : {
             '2016APV' : 'SF_Mu_V161400.root',
-            '2016' : 'SF_Mu_V160400.root',
+            '2016' : 'SF_Mu_V162400.root',
             '2017' : 'SF_Mu_V170400.root',
             '2018' : 'SF_Mu_V180400.root',
         }
