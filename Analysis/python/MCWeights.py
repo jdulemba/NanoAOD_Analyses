@@ -43,17 +43,17 @@ def get_event_weights(events, year: str, corrections, isTTbar=False):
         ## PS and LHE weights for ttbar events
         if isTTbar:
             ## PS Weight variations
-            # PSWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#PSWeight
+            # PSWeight definitions can be found here: https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_X/PhysicsTools/NanoAOD/plugins/GenWeightsTableProducer.cc#L543-L546
             psweights = events['PSWeight']
             weights.add('ISR',
                 np.ones(len(events)),
-                psweights[:, 2], # (ISR=2, FSR=1)
-                psweights[:, 0], # (ISR=0.5, FSR=1)
+                psweights[:, 0], # (ISR=2, FSR=1)
+                psweights[:, 2], # (ISR=0.5, FSR=1)
             )
             weights.add('FSR',
                 np.ones(len(events)),
-                psweights[:, 3], # (ISR=1, FSR=2)
-                psweights[:, 1], # (ISR=1, FSR=0.5)
+                psweights[:, 1], # (ISR=1, FSR=2)
+                psweights[:, 3], # (ISR=1, FSR=0.5)
             )
 
             ## LHEScale Weight Variations
