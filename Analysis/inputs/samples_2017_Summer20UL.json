@@ -61,7 +61,7 @@
         "name": "ttJetsHad"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToHadronic_TuneCP5down_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
         "xsection": 380.11432,
         "name": "ttJetsHad_ueDOWN"
     },
@@ -76,7 +76,7 @@
         "name": "ttJetsHad_hdampDOWN"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/TTToHadronic_hdampUP_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
         "xsection": 380.11432,
         "name": "ttJetsHad_hdampUP"
     },
@@ -242,7 +242,7 @@
         "name": "WJets"
     },
     {
-        "DBSName": "NOT PRESENT",
+        "DBSName": "/WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
         "xsection": 1443.6560,
         "name": "WJets_HT_70to100"
     },
@@ -403,6 +403,87 @@
         "name": "QCD_EM_300toInf"
     },
 
+
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m1000_w25p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.149712,
+        "name": "AtoTTJetsSL_M1000_W2p5_Int"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m1000_w25p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.247111,
+        "name": "AtoTTJetsSL_M1000_W2p5_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": -2.47928,
+        "name": "AtoTTJetsSL_M400_W2p5_Int"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 4.11319,
+        "name": "AtoTTJetsSL_M400_W2p5_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m1000_w25p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.0596973,
+        "name": "AtoTTJetsDiLep_M1000_W2p5_Int"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m1000_w25p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.0928709,
+        "name": "AtoTTJetsDiLep_M1000_W2p5_Res"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": -0.939818,
+        "name": "AtoTTJetsDiLep_M400_W2p5_Int"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 1.53527,
+        "name": "AtoTTJetsDiLep_M400_W2p5_Res"
+    },
+    {
+        "DBSName": "/HscalarToTTTo1L1Nu2J_m1000_w25p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.0274907,
+        "name": "HtoTTJetsSL_M1000_W2p5_Int"
+    },
+    {
+        "DBSName": "/HscalarToTTTo1L1Nu2J_m1000_w25p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.134784,
+        "name": "HtoTTJetsSL_M1000_W2p5_Res"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "xsection": -0.704552,
+        "name": "HtoTTJetsSL_M400_W2p5_Int"
+    },
+    {
+        "DBSName": "/HscalarToTTTo1L1Nu2J_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.36974,
+        "name": "HtoTTJetsSL_M400_W2p5_Res"
+    },
+    {
+        "DBSName": "/HscalarToTTTo2L2Nu_m1000_w25p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.00922158,
+        "name": "HtoTTJetsDiLep_M1000_W2p5_Int"
+    },
+    {
+        "DBSName": "/HscalarToTTTo2L2Nu_m1000_w25p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.0504745,
+        "name": "HtoTTJetsDiLep_M1000_W2p5_Res"
+    },
+    {
+        "DBSName": "/HscalarToTTTo2L2Nu_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": -0.26541,
+        "name": "HtoTTJetsDiLep_M400_W2p5_Int"
+    },
+    {
+        "DBSName": "/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+        "xsection": 0.138895,
+        "name": "HtoTTJetsDiLep_M400_W2p5_Res"
+    },
 
 
 
