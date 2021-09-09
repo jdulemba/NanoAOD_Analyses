@@ -186,57 +186,57 @@ def select_normal(genparts, w_decay_momid):
     ## make "table" of gen objects for certain decays
         ## DILEP
     DILEP_evts = ak.zip({
-        "TTbar"       : ak.unflatten(Gen_TTbar[dilep_evts], ak.values_astype(dilep_evts, int)),
-        "Top"         : ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "Tbar"        : ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "B"           : ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "Bbar"        : ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "Wplus"       : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "Wminus"      : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
-        "First_plus"  : ak.unflatten(gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # charged lepton always made leading
-        "Second_plus" : ak.unflatten(gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # neutral lepton always made subleading
-        "First_minus" : ak.unflatten(gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # charged lepton always made leading
-        "Second_minus": ak.unflatten(gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # neutral lepton always made subleading
-        "Up_plus"     : ak.unflatten(gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as second plus
-        "Down_plus"   : ak.unflatten(gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as first plus
-        "Up_minus"    : ak.unflatten(gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as second minus
-        "Down_minus"  : ak.unflatten(gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as first minus
+        "TTbar"       : Gen_TTbar[dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_TTbar[dilep_evts], ak.values_astype(dilep_evts, int)),
+        "Top"         : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "Tbar"        : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "B"           : Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "Bbar"        : Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "Wplus"       : Gen_W_Pairs[Gen_W_Pairs.charge == 1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == 1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "Wminus"      : Gen_W_Pairs[Gen_W_Pairs.charge == -1][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == -1][dilep_evts], ak.values_astype(dilep_evts, int)),
+        "First_plus"  : gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # charged lepton always made leading
+        "Second_plus" : gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # neutral lepton always made subleading
+        "First_minus" : gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # charged lepton always made leading
+        "Second_minus": gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # neutral lepton always made subleading
+        "Up_plus"     : gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_neutral_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as second plus
+        "Down_plus"   : gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_charged_leps[gen_charged_leps.charge > 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as first plus
+        "Up_minus"    : gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_neutral_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as second minus
+        "Down_minus"  : gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts] if ak.any(dilep_evts) else ak.unflatten(gen_charged_leps[gen_charged_leps.charge < 0][dilep_evts], ak.values_astype(dilep_evts, int)), # same as first minus
     })
 
         ## HAD
     HAD_evts = ak.zip({
-        "TTbar"       : ak.unflatten(Gen_TTbar[had_evts], ak.values_astype(had_evts, int)),
-        "Top"         : ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][had_evts], ak.values_astype(had_evts, int)),
-        "Tbar"        : ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][had_evts], ak.values_astype(had_evts, int)),
-        "B"           : ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][had_evts], ak.values_astype(had_evts, int)),
-        "Bbar"        : ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][had_evts], ak.values_astype(had_evts, int)),
-        "Wplus"       : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == 1][had_evts], ak.values_astype(had_evts, int)),
-        "Wminus"      : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == -1][had_evts], ak.values_astype(had_evts, int)),
-        "First_plus"  : ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 0], ak.values_astype(had_evts, int)), # leading positively-charged parton
-        "Second_plus" : ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 1], ak.values_astype(had_evts, int)), # subleading positively-charged parton
-        "First_minus" : ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 0], ak.values_astype(had_evts, int)), # leading negatively-charged parton
-        "Second_minus": ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 1], ak.values_astype(had_evts, int)), # subleading negatively-charged parton
-        "Up_plus"     : ak.unflatten(gen_wpartons_up[gen_wpartons_up.charge > 0][had_evts], ak.values_astype(had_evts, int)), # positively-charged up-type parton
-        "Down_plus"   : ak.unflatten(gen_wpartons_dw[gen_wpartons_dw.charge > 0][had_evts], ak.values_astype(had_evts, int)), # positively-charged down-type parton
-        "Up_minus"    : ak.unflatten(gen_wpartons_up[gen_wpartons_up.charge < 0][had_evts], ak.values_astype(had_evts, int)), # negatively-charged up-type parton
-        "Down_minus"  : ak.unflatten(gen_wpartons_dw[gen_wpartons_dw.charge < 0][had_evts], ak.values_astype(had_evts, int)), # negatively-charged down-type parton
+        "TTbar"       : Gen_TTbar[had_evts] if ak.any(had_evts) else ak.unflatten(Gen_TTbar[had_evts], ak.values_astype(had_evts, int)),
+        "Top"         : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][had_evts], ak.values_astype(had_evts, int)),
+        "Tbar"        : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][had_evts], ak.values_astype(had_evts, int)),
+        "B"           : Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == -1][had_evts], ak.values_astype(had_evts, int)),
+        "Bbar"        : Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_B_Pairs[np.sign(Gen_B_Pairs.charge) == 1][had_evts], ak.values_astype(had_evts, int)),
+        "Wplus"       : Gen_W_Pairs[Gen_W_Pairs.charge == 1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == 1][had_evts], ak.values_astype(had_evts, int)),
+        "Wminus"      : Gen_W_Pairs[Gen_W_Pairs.charge == -1][had_evts] if ak.any(had_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.charge == -1][had_evts], ak.values_astype(had_evts, int)),
+        "First_plus"  : Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 0] if ak.any(had_evts) else ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 0], ak.values_astype(had_evts, int)), # leading positively-charged parton
+        "Second_plus" : Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 1] if ak.any(had_evts) else ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge > 0][:, 1], ak.values_astype(had_evts, int)), # subleading positively-charged parton
+        "First_minus" : Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 0] if ak.any(had_evts) else ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 0], ak.values_astype(had_evts, int)), # leading negatively-charged parton
+        "Second_minus": Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 1] if ak.any(had_evts) else ak.unflatten(Gen_Wparton_Pairs[had_evts][Gen_Wparton_Pairs[had_evts].charge < 0][:, 1], ak.values_astype(had_evts, int)), # subleading negatively-charged parton
+        "Up_plus"     : gen_wpartons_up[gen_wpartons_up.charge > 0][had_evts] if ak.any(had_evts) else ak.unflatten(gen_wpartons_up[gen_wpartons_up.charge > 0][had_evts], ak.values_astype(had_evts, int)), # positively-charged up-type parton
+        "Down_plus"   : gen_wpartons_dw[gen_wpartons_dw.charge > 0][had_evts] if ak.any(had_evts) else ak.unflatten(gen_wpartons_dw[gen_wpartons_dw.charge > 0][had_evts], ak.values_astype(had_evts, int)), # positively-charged down-type parton
+        "Up_minus"    : gen_wpartons_up[gen_wpartons_up.charge < 0][had_evts] if ak.any(had_evts) else ak.unflatten(gen_wpartons_up[gen_wpartons_up.charge < 0][had_evts], ak.values_astype(had_evts, int)), # negatively-charged up-type parton
+        "Down_minus"  : gen_wpartons_dw[gen_wpartons_dw.charge < 0][had_evts] if ak.any(had_evts) else ak.unflatten(gen_wpartons_dw[gen_wpartons_dw.charge < 0][had_evts], ak.values_astype(had_evts, int)), # negatively-charged down-type parton
     })
 
         ## SEMILEP
     SEMILEP_evts = ak.zip({
-        "TTbar"   : ak.unflatten(Gen_TTbar[semilep_evts], ak.values_astype(semilep_evts, int)),
-        "THad"    : ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)), 
-        "TLep"    : ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "BHad"    : ak.unflatten(Gen_B_Pairs[Gen_B_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "BLep"    : ak.unflatten(Gen_B_Pairs[Gen_B_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "WHad"    : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "WLep"    : ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "Lepton"  : ak.unflatten(gen_charged_leps[semilep_evts], ak.values_astype(semilep_evts, int)),
-        "Nu"      : ak.unflatten(gen_neutral_leps[semilep_evts], ak.values_astype(semilep_evts, int)),
-        "WJa"     : ak.unflatten(Gen_Wparton_Pairs[:, 0][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "WJb"     : ak.unflatten(Gen_Wparton_Pairs[:, 1][semilep_evts], ak.values_astype(semilep_evts, int)),
-        "Up_Had"  : ak.unflatten(gen_wpartons_up[semilep_evts], ak.values_astype(semilep_evts, int)),
-        "Down_Had": ak.unflatten(gen_wpartons_dw[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "TTbar"   : Gen_TTbar[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_TTbar[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "THad"    : Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 2][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)), 
+        "TLep"    : Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "BHad"    : Gen_B_Pairs[Gen_B_Pairs.decaytype == 2][semilep_evts]if ak.any(semilep_evts) else ak.unflatten(Gen_B_Pairs[Gen_B_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "BLep"    : Gen_B_Pairs[Gen_B_Pairs.decaytype == 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_B_Pairs[Gen_B_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "WHad"    : Gen_W_Pairs[Gen_W_Pairs.decaytype == 2][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "WLep"    : Gen_W_Pairs[Gen_W_Pairs.decaytype == 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_W_Pairs[Gen_W_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Lepton"  : gen_charged_leps[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(gen_charged_leps[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Nu"      : gen_neutral_leps[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(gen_neutral_leps[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "WJa"     : Gen_Wparton_Pairs[:, 0][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Wparton_Pairs[:, 0][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "WJb"     : Gen_Wparton_Pairs[:, 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Wparton_Pairs[:, 1][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Up_Had"  : gen_wpartons_up[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(gen_wpartons_up[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Down_Had": gen_wpartons_dw[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(gen_wpartons_dw[semilep_evts], ak.values_astype(semilep_evts, int)),
     })
 
         # make dictionary to return

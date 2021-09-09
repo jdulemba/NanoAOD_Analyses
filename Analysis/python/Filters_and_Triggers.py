@@ -65,7 +65,9 @@ met_filters["2016APV"] = [
     "HBHENoiseFilter",
     "HBHENoiseIsoFilter",
     "EcalDeadCellTriggerPrimitiveFilter",
-    "BadPFMuonFilter"
+    "BadPFMuonFilter",
+    "BadPFMuonDzFilter",
+    "eeBadScFilter",
 ]
 met_filters["2016"] = [
     "goodVertices",
@@ -73,7 +75,9 @@ met_filters["2016"] = [
     "HBHENoiseFilter",
     "HBHENoiseIsoFilter",
     "EcalDeadCellTriggerPrimitiveFilter",
-    "BadPFMuonFilter"
+    "BadPFMuonFilter",
+    "BadPFMuonDzFilter",
+    "eeBadScFilter",
 ]
 met_filters["2017"] = [
     "goodVertices",
@@ -82,7 +86,9 @@ met_filters["2017"] = [
     "HBHENoiseIsoFilter",
     "EcalDeadCellTriggerPrimitiveFilter",
     "BadPFMuonFilter",
-    #"ecalBadCalibFilter", ## should not be used now
+    "BadPFMuonDzFilter",
+    "eeBadScFilter",
+    "ecalBadCalibFilter",
 ]
 met_filters["2018"] = [
     "goodVertices",
@@ -91,12 +97,19 @@ met_filters["2018"] = [
     "HBHENoiseIsoFilter",
     "EcalDeadCellTriggerPrimitiveFilter",
     "BadPFMuonFilter",
-    #"ecalBadCalibFilter", ## should not be used now
+    "BadPFMuonDzFilter",
+    "eeBadScFilter",
+    "ecalBadCalibFilter",
 ]
 
-def get_filters(Flags, year, accumulator=None):
+def get_filters(Flags, year, isMC, accumulator=None):
 
-    pass_filters = ak.all((Flags[i] for i in met_filters[year]), axis=0)
+    met_filters_to_use = met_filters[year].copy()
+    if 'BadPFMuonDzFilter' not in Flags.fields: met_filters_to_use.remove('BadPFMuonDzFilter')
+    if (year == '2017') or (year == '2018'):
+        if isMC: met_filters_to_use.remove('eeBadScFilter')
+        
+    pass_filters = ak.all((Flags[i] for i in met_filters_to_use), axis=0)
 
     if accumulator:
         accumulator['cutflow']['pass filters'] += ak.sum(pass_filters)

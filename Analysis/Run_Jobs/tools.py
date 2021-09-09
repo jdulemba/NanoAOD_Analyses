@@ -1,7 +1,7 @@
 import os
 from pdb import set_trace
 import fnmatch
-import Utilities.prettyjson as prettyjson
+import Run_Jobs.splittings as splitting_dicts
 
 def get_sample_list(indir, sample=None, text_file=None):
 
@@ -43,8 +43,14 @@ def get_file_range(lst, n):
     franges = ['%i:%i' % (chunk[0], chunk[-1]) for chunk in file_chunks]
     return franges
 
-def get_file_splitting(sample):
-    splittings = prettyjson.loads(open('%s/Run_Jobs/splittings.json' % os.environ['PROJECT_DIR']).read())
+def get_file_splitting(sample, analyzer):
+    if analyzer == 'meta_info':
+        splittings = splitting_dicts.meta_dict
+    elif analyzer == 'htt_flav_effs':
+        splittings = splitting_dicts.hflav_dict
+    else:
+        splittings = splitting_dicts.other_dict
+
     if '*' in splittings.keys():
         f_split = splittings['*']
     elif b'*' in splittings.keys():

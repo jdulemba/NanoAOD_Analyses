@@ -10,10 +10,10 @@ from coffea.util import save
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--split_uncs', action='store_true', help='Use individual jec uncertainty sources file')
+parser.add_argument('--test', action='store_true', help="Output txt file named 'test_jetmet.txt'")
 
 args = parser.parse_args()
 
-#jobid = os.environ['jobid']
 proj_dir = os.environ['PROJECT_DIR']
 base_jobid = os.environ['base_jobid']
 
@@ -37,20 +37,20 @@ jecfiles = {
         'eras' : ['BCD', 'EF'],
     },
     '2016' : {
-        'tag' : 'Summer19UL16' if base_jobid == 'ULnanoAOD' else 'Summer16_07Aug2017',
-        'v' : 'V7' if base_jobid == 'ULnanoAOD' else 'V11',
-        'DATA' : ['RunFGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
-        'eras' : ['FGH'] if base_jobid == 'ULnanoAOD' else['BCD', 'EF', 'GH'],
+        'tag' : 'Summer16_07Aug2017' if base_jobid == 'NanoAODv6' else 'Summer19UL16',
+        'v' : 'V11' if base_jobid == 'NanoAODv6' else 'V7',
+        'DATA' : ['BCD', 'EF', 'GH'] if base_jobid == 'NanoAODv6' else ['RunFGH'],
+        'eras' : ['BCD', 'EF', 'GH'] if base_jobid == 'NanoAODv6' else ['FGH'],
     },
     '2017' : {
-        'tag' : 'Summer19UL17' if base_jobid == 'ULnanoAOD' else 'Fall17_17Nov2017',
-        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V32',
-        'DATA' : ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
-        'eras' : ['B', 'C', 'D', 'E', 'F'] if base_jobid == 'ULnanoAOD' else ['B', 'C', 'DE', 'F'],
+        'tag' : 'Fall17_17Nov2017' if base_jobid == 'NanoAODv6' else 'Summer19UL17',
+        'v' : 'V32' if base_jobid == 'NanoAODv6' else 'V5',
+        'DATA' : ['B', 'C', 'DE', 'F'] if base_jobid == 'NanoAODv6' else ['RunB', 'RunC', 'RunD', 'RunE', 'RunF'],
+        'eras' : ['B', 'C', 'DE', 'F'] if base_jobid == 'NanoAODv6' else ['B', 'C', 'D', 'E', 'F'],
     },
     '2018' : {
-        'tag' : 'Summer19UL18' if base_jobid == 'ULnanoAOD' else 'Autumn18',
-        'v' : 'V5' if base_jobid == 'ULnanoAOD' else 'V19',
+        'tag' : 'Autumn18' if base_jobid == 'NanoAODv6' else 'Summer19UL18',
+        'v' : 'V19' if base_jobid == 'NanoAODv6' else 'V5',
         'DATA' : ['RunA', 'RunB', 'RunC', 'RunD'],
         'eras' : ['A', 'B', 'C', 'D'],
     },
@@ -63,17 +63,17 @@ jerfiles = {
         'JERSF' : 'SF',
     },
     '2016' : {
-        'tag' : 'Summer20UL16_JRV3' if base_jobid == 'ULnanoAOD' else 'Summer16_25nsV1',
+        'tag' : 'Summer16_25nsV1' if base_jobid == 'NanoAODv6' else 'Summer20UL16_JRV3',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2017' : {
-        'tag' : 'Summer19UL17_JRV2' if base_jobid == 'ULnanoAOD' else 'Fall17_V3',
+        'tag' : 'Fall17_V3' if base_jobid == 'NanoAODv6' else 'Summer19UL17_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
     '2018' : {
-        'tag' : 'Summer19UL18_JRV2' if base_jobid == 'ULnanoAOD' else 'Autumn18_V7',
+        'tag' : 'Autumn18_V7' if base_jobid == 'NanoAODv6' else 'Summer19UL18_JRV2',
         'JER' : 'PtResolution',
         'JERSF' : 'SF',
     },
@@ -101,10 +101,9 @@ def make_name_map(jstack, isMC):
 
     return name_map
 
+years_to_run = ['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018']
+#if args.test: years_to_run = ['2018']
 
-years_to_run = ['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018']
-#years_to_run = ['2016APV', '2016', '2017', '2018']
-#years_to_run = ['2016']
 Jetext = extractor()
 for dirid in ['jec', 'junc', 'jr', 'jersf']:
     for dtype in ['DATA', 'MC']:
@@ -153,6 +152,9 @@ for year in years_to_run:
     MC_JER = JetResolution(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JER'], jet_type)]})
     MC_JERsf = JetResolutionScaleFactor(**{name:Jetevaluator[name] for name in ['%s_MC_%s_%s' % (jer_tag, jerfiles[year]['JERSF'], jet_type)]})
         # make JEC stack of all corrections
+    #print("JER/JERSF set to None")
+    #set_trace()
+    #MC_JECStack = JECStack({}, jec=MC_JECcorrector, junc=MC_JECuncertainties, jer=None, jersf=None)
     MC_JECStack = JECStack({}, jec=MC_JECcorrector, junc=MC_JECuncertainties, jer=MC_JER, jersf=MC_JERsf)
         # make jet and met factory
     MC_name_map = make_name_map(MC_JECStack, isMC=True)
@@ -165,7 +167,8 @@ for year in years_to_run:
     print('Jet corrections for %s saved' % year)
 
 
-#set_trace()
 fname = os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections_UncSources.coffea') if args.split_uncs else os.path.join(proj_dir, 'Corrections', base_jobid, 'JetMETCorrections.coffea')
+if args.test: fname = os.path.join(proj_dir, 'test_jetmet.coffea')
+
 save(jet_corrections, fname)
 print('\n%s written' % fname)
