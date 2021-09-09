@@ -113,6 +113,13 @@ lep_cats = {
     "Loose" : "loose %s" % objtypes["Lep"][args.lepton],
 }
 
+bkg_groups = {
+    "BKG" : ["EWK", "QCD"],
+    "ttJets" : ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"],
+    "singlet" : ["singlet"],
+    "data" : ["data"],
+}
+
 linearize_binning = (
     #np.array([300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1500.0]),
     #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]), # orig
@@ -1554,14 +1561,14 @@ if args.sys:
 
     ## combine EWK and QCD processes into BKG groups
     proc_bin = hist.Cat("process", "process", sorting="placement")
-    bkg_groups = {proc:proc for proc in process_groups.keys()}
-    mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
-    for proc in mc_procs:
-        del bkg_groups[proc]
-    bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
-    bkg_groups["singlet"] = ["singlet"]
-    bkg_groups["EWK"] = ["EWK"]
-    bkg_groups["QCD"] = ["QCD"]
+    #bkg_groups = {proc:proc for proc in process_groups.keys()}
+    #mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
+    #for proc in mc_procs:
+    #    del bkg_groups[proc]
+    #bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
+    #bkg_groups["singlet"] = ["singlet"]
+    #bkg_groups["EWK"] = ["EWK"]
+    #bkg_groups["QCD"] = ["QCD"]
     #bkg_groups["BKG"] = ["EWK", "QCD"]
     #set_trace()
     #    ## save post qcd-est dists for all systematics
@@ -1580,6 +1587,7 @@ if args.sys:
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -1627,6 +1635,9 @@ if args.sys:
         for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             #set_trace()
             #print(jmult)
                 # get sideband and signal region hists
@@ -1850,6 +1861,7 @@ if args.bkg_shapes:
         
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -1891,6 +1903,9 @@ if args.bkg_shapes:
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
         for jmult in sorted(set([key[2] for key in histo.values().keys()])):
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             shape_dir = os.path.join(outdir, args.lepton, jmult, "BKG_Est_orthog", "Shapes", "DMT")
             if not os.path.isdir(shape_dir): os.makedirs(shape_dir)
             comp_dir = os.path.join(outdir, args.lepton, jmult, "BKG_Est_orthog", "Shapes", "MC_DD_Comp")
@@ -2024,12 +2039,15 @@ if args.bkg_est:
     #systs_to_run = sorted(sys_to_name.keys()) if args.save_sys else ["nosys"]
     print("\nPlotting distributions for systematics:\n\t", *systs_to_run)
 
+    #set_trace()
     ## combine EWK and QCD processes into BKG groups
     proc_bin = hist.Cat("process", "process", sorting="placement")
-    bkg_groups = {proc:proc for proc in process_groups.keys()}
-    del bkg_groups["EWK"]
-    del bkg_groups["QCD"]
-    bkg_groups["BKG"] = ["EWK", "QCD"]
+    #bkg_groups = {
+    #    "BKG" : ["EWK", "QCD"],
+    #    "ttJets" : ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"],
+    #    "singlet" : ["singlet"],
+    #    "data" : ["data"],
+    #}
     
     #set_trace()
     #    ## save post qcd-est dists for all systematics
@@ -2048,6 +2066,7 @@ if args.bkg_est:
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -2076,11 +2095,12 @@ if args.bkg_est:
                 new_ybins = yrebinning
             histo = histo.rebin(yaxis_name, new_ybins)
 
+        #histo = histo[Plotter.nonsignal_samples]
 
         mc_opts = {
-        #    "mcorder" : ["QCD", "EWK", "singlet", "ttJets"] if not ttJets_cats else ["QCD", "EWK", "singlet", "ttJets_other", "ttJets_unmatchable", "ttJets_matchable", "ttJets_right"]
             "maskData" : not withData,
             "overflow" : "under" if hname == "DeepCSV_bDisc" else "none",
+            "leg_ncols" : 1,
         }
 
         vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
@@ -2094,6 +2114,9 @@ if args.bkg_est:
         for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             #set_trace()
             print(jmult)
                 # get sideband and signal region hists
@@ -2192,13 +2215,13 @@ if args.vary_norm:
     #set_trace()
     ## combine EWK and QCD processes into BKG groups
     proc_bin = hist.Cat("process", "process", sorting="placement")
-    bkg_groups = {proc:proc for proc in process_groups.keys()}
-    mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
-    for proc in mc_procs:
-        del bkg_groups[proc]
-    bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
-    bkg_groups["singlet"] = ["singlet"]
-    bkg_groups["BKG"] = ["EWK", "QCD"]
+    #bkg_groups = {proc:proc for proc in process_groups.keys()}
+    #mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
+    #for proc in mc_procs:
+    #    del bkg_groups[proc]
+    #bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
+    #bkg_groups["singlet"] = ["singlet"]
+    #bkg_groups["BKG"] = ["EWK", "QCD"]
 
     for hname in variables.keys():
         if hname not in hdict.keys():
@@ -2209,6 +2232,7 @@ if args.vary_norm:
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -2242,6 +2266,7 @@ if args.vary_norm:
         #    "mcorder" : ["QCD", "EWK", "singlet", "ttJets"] if not ttJets_cats else ["QCD", "EWK", "singlet", "ttJets_other", "ttJets_unmatchable", "ttJets_matchable", "ttJets_right"]
             "maskData" : not withData,
             "overflow" : "under" if hname == "DeepCSV_bDisc" else "none",
+            #"leg_ncols": 1
         }
 
         vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
@@ -2255,6 +2280,9 @@ if args.vary_norm:
         for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             #set_trace()
             print(jmult)
                 # get sideband and signal region hists (hardcoded)
@@ -2368,13 +2396,13 @@ if args.vary_shape:
     #set_trace()
     ## combine EWK and QCD processes into BKG groups
     proc_bin = hist.Cat("process", "process", sorting="placement")
-    bkg_groups = {proc:proc for proc in process_groups.keys()}
-    mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
-    for proc in mc_procs:
-        del bkg_groups[proc]
-    bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
-    bkg_groups["singlet"] = ["singlet"]
-    bkg_groups["BKG"] = ["EWK", "QCD"]
+    #bkg_groups = {proc:proc for proc in process_groups.keys()}
+    #mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
+    #for proc in mc_procs:
+    #    del bkg_groups[proc]
+    #bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
+    #bkg_groups["singlet"] = ["singlet"]
+    #bkg_groups["BKG"] = ["EWK", "QCD"]
 
     for hname in variables.keys():
         if hname not in hdict.keys():
@@ -2385,6 +2413,7 @@ if args.vary_shape:
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -2418,6 +2447,7 @@ if args.vary_shape:
         #    "mcorder" : ["QCD", "EWK", "singlet", "ttJets"] if not ttJets_cats else ["QCD", "EWK", "singlet", "ttJets_other", "ttJets_unmatchable", "ttJets_matchable", "ttJets_right"]
             "maskData" : not withData,
             "overflow" : "under" if hname == "DeepCSV_bDisc" else "none",
+            #"leg_ncols": 1
         }
 
         vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
@@ -2431,6 +2461,9 @@ if args.vary_shape:
         for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             #set_trace()
             print(jmult)
 
@@ -2545,13 +2578,13 @@ if args.vary_shape_and_norm:
 
     ## combine EWK and QCD processes into BKG groups
     proc_bin = hist.Cat("process", "process", sorting="placement")
-    bkg_groups = {proc:proc for proc in process_groups.keys()}
-    mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
-    for proc in mc_procs:
-        del bkg_groups[proc]
-    bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
-    bkg_groups["singlet"] = ["singlet"]
-    bkg_groups["BKG"] = ["EWK", "QCD"]
+    #bkg_groups = {proc:proc for proc in process_groups.keys()}
+    #mc_procs = [proc for proc in bkg_groups.keys() if "data" not in proc]
+    #for proc in mc_procs:
+    #    del bkg_groups[proc]
+    #bkg_groups["ttJets"] = ["ttJets_right", "ttJets_matchable", "ttJets_unmatchable", "ttJets_sl_tau", "ttJets_other"]
+    #bkg_groups["singlet"] = ["singlet"]
+    #bkg_groups["BKG"] = ["EWK", "QCD"]
 
     for hname in variables.keys():
         if hname not in hdict.keys():
@@ -2562,6 +2595,7 @@ if args.vary_shape_and_norm:
 
         if histo.dense_dim() == 1:
             xtitle, xrebinning, x_lims, withData = variables[hname]
+            orig_xtitle = xtitle
             xaxis_name = histo.dense_axes()[0].name
                 ## rebin x axis
             if isinstance(xrebinning, np.ndarray):
@@ -2595,6 +2629,7 @@ if args.vary_shape_and_norm:
         #    "mcorder" : ["QCD", "EWK", "singlet", "ttJets"] if not ttJets_cats else ["QCD", "EWK", "singlet", "ttJets_other", "ttJets_unmatchable", "ttJets_matchable", "ttJets_right"]
             "maskData" : not withData,
             "overflow" : "under" if hname == "DeepCSV_bDisc" else "none",
+            "leg_ncols": 1
         }
 
         vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
@@ -2608,6 +2643,9 @@ if args.vary_shape_and_norm:
         for jmult in sorted(set([key[3] for key in histo.values().keys()])):
         #for jmult in ["3Jets"]:
         #for jmult in ["4PJets"]:
+            if "disc" in hname:
+                xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
+   
             #set_trace()
             print(jmult)
 
