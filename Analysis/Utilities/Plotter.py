@@ -9,7 +9,11 @@ import re
 from pdb import set_trace
 import numpy as np
 import Utilities.systematics as systematics
-from iminuit import minimize
+#from iminuit import minimize
+
+    # smoothing
+import statsmodels.nonparametric.smoothers_lowess as sm
+LOWESS = sm.lowess
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile("(?!data*)")
@@ -369,6 +373,7 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
 def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False):
     #if not norm_type:
     #    raise ValueError("Normalization type has to be specified for bkg estimation")
+    #set_trace()
     if norm_type != "SigMC":
         raise ValueError("Only SigMC supported for normalization type for bkg estimation right now.")
 
@@ -386,7 +391,8 @@ def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False):
         data_dict = sig_reg[:, "nosys"].integrate("sys")
         data_dict = data_dict[data_samples]
             ## subsitute values into new sig_reg hist
-        sig_reg = sb_reg.copy()
+        #sig_reg = sb_reg.copy()
+        sig_reg = mc_dict.copy()
         sig_reg.clear()
         sig_reg.add(mc_dict)
         sig_reg.add(data_dict)
@@ -709,41 +715,60 @@ def get_ratio_arrays(num_vals, denom_vals, input_bins):
     return ratio_vals, ratio_bins
 
 
-### define negative log-likelihood function
-def negLogLikelihood(params, N_data, N_prompt, N_qcd):
-    """ the negative log-Likelihood-Function"""
-    scale, N_qcd_A = params
-
-    lnl_sig = -1*N_data["SIG"]*np.log(scale*N_prompt["SIG"]+N_qcd_A)+(scale*N_prompt["SIG"]+N_qcd_A)
-    lnl_btag = -1*N_data["BTAG"]*np.log(scale*N_prompt["BTAG"]+N_qcd["BTAG"])+(scale*N_prompt["BTAG"]+N_qcd["BTAG"])
-    lnl_iso = -1*N_data["ISO"]*np.log(scale*N_prompt["ISO"]+N_qcd["ISO"])+(scale*N_prompt["ISO"]+N_qcd["ISO"])
-    lnl_double = -1*N_data["DOUBLE"]*np.log(scale*N_prompt["DOUBLE"]+((N_qcd["BTAG"]*N_qcd["ISO"])/N_qcd_A))+(scale*N_prompt["DOUBLE"]+((N_qcd["BTAG"]*N_qcd["ISO"])/N_qcd_A))
-    lnl = np.sum(lnl_sig+lnl_btag+lnl_iso+lnl_double)
-
-    return lnl
-
-def get_ml_qcd_yield(data, prompt, qcd):
-    ### minimize the negative log-Likelihood
-    N_data = {key: np.sum(data[key].values(overflow="all")[()]) for key in data.keys()}
-    N_prompt = {key: np.sum(prompt[key].values(overflow="all")[()]) for key in prompt.keys()}
-    N_qcd = {key: np.sum(qcd[key].values(overflow="all")[()]) for key in qcd.keys()} # is data-prompt estmimate for qcd
-        ## test range of values for consistency
-    #results = []
-    #for scale in np.linspace(0, 2, 21):
-    #    for n_qcd_a in np.linspace(1000., 20000., 20):
-    #        results.append((scale, n_qcd_a, minimize(negLogLikelihood, x0=[scale, n_qcd_a], args=(N_data, N_prompt, N_qcd)).x[1]))
-    init_point = [1., 2000]
-    #set_trace()
-    # result is basically a scipy optimize result object
-    result = minimize(negLogLikelihood, x0=init_point, args=(N_data, N_prompt, N_qcd))
-    fit_val, fit_err = result.x[1], np.sqrt(result.hess_inv[1,1])
-    return fit_val, fit_err
-
-
 ## get uncertainty on ratio between A and B
 def get_ratio_and_uncertainty(a_val, a_err, b_val, b_err):
         # c = a/b
     c_val = a_val/b_val
     c_err = np.sqrt( (a_err/a_val)**2 + (b_err/b_val)**2 )*c_val
     return c_val, c_err
+
+
+
+def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=False, **fit_opts):
+
+    frac_val = fit_opts.get("frac", 0.5) # fraction of the data used when estimating each y-value
+    it_val = fit_opts.get("it", 3)
+
+    if debug: set_trace()
+        # np array of original bin values
+    nom_vals = nosys if isinstance(nosys, np.ndarray) else nosys.values()[()]
+    systematic_vals = systematic if isinstance(systematic, np.ndarray) else systematic.values()[()]
+    total_array = np.zeros(nbinsx*nbinsy)
+
+        # loop over each bin of cos theta
+    #set_trace()
+    for ybin in range(nbinsy):
+        yin = (systematic_vals[ybin*nbinsx:(ybin+1)*nbinsx] - nom_vals[ybin*nbinsx:(ybin+1)*nbinsx])/nom_vals[ybin*nbinsx:(ybin+1)*nbinsx] # relative deviation from nosys
+        total_array[ybin*nbinsx:(ybin+1)*nbinsx] = LOWESS(yin, mtt_centers, frac=frac_val, it=it_val, return_sorted=False)
+
+    if debug: set_trace()
+        # substitute smoothed array into copy of original hist
+    #set_trace()
+    if isinstance(systematic, np.ndarray):
+        smoothed_histo = (1+total_array)*nom_vals
+    else:
+        smoothed_histo = systematic.copy()
+        for idx in range(nbinsx*nbinsy):
+            smoothed_histo.values()[()][idx] = (1+total_array[idx])*nom_vals[idx]
+
+    if debug: set_trace()
+    return smoothed_histo
+
+
+
+
+    # function that flattens systematic variations
+def flatten(nosys, systematic):
+        # np array of original bin values
+    nom_vals = nosys.values()[()]
+    systematic_vals = systematic.values()[()]
+
+    flat_val= np.sum(systematic_vals)/np.sum(nom_vals)
+
+        # substitute flattened array into copy of original hist
+    flattened_histo = systematic.copy()
+    for idx in range(nom_vals.size):
+        flattened_histo.values()[()][idx] = flat_val*nom_vals[idx]
+
+    return flattened_histo
 
