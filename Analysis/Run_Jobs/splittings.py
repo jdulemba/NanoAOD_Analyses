@@ -1,0 +1,39 @@
+meta_dict = {
+    "*" : 10,
+    "ttJets*" : 5,
+    "ttJetsSL" : 5,
+    "tt[WZ]*" : 5,
+    "QCD*" : 10,
+    "data*" : 5,
+    "single*" : 5,
+    "[AH]toTT*" : 5,
+    "WJets*" : 5,
+    "ZJets*" : 5,
+    "[WZ][WZ]" : 5
+}
+hflav_dict = {
+    "*" : 10,
+    "ttJets*" : 5,
+    "ttJetsSL" : 5,
+    "tt[WZ]*" : 5,
+    "QCD*" : 10,
+    "data*" : 5,
+    "single*" : 5,
+    "[AH]toTT*" : 5,
+    "WJets*" : 5,
+    "ZJets*" : 5,
+    "[WZ][WZ]" : 5
+}
+other_dict = {
+    "*" : 10,
+    "ttJets*" : 5,
+    "ttJetsSL" : 1,
+    "tt[WZ]*" : 5,
+    "QCD*" : 10,
+    "data*" : 2,
+    "single*" : 5,
+    "[AH]toTT*" : 5,
+    "WJets*" : 5,
+    "ZJets*" : 5,
+    "[WZ][WZ]" : 5
+}

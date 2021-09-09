@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 import awkward as ak
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
@@ -11,13 +14,12 @@ import numpy as np
 import coffea.lumi_tools.lumi_tools as lumi_tools
 
 proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
 base_jobid = os.environ['base_jobid']
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 
@@ -31,10 +33,6 @@ if len(fileset.keys()) > 1:
     raise ValueError("Only one topology run at a time in order to determine which corrections and systematics to run")
 samplename = list(fileset.keys())[0]
 
-isData_ = samplename.startswith('data')
-if isData_:
-    lumiMask_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'LumiMasks', '%s_GoldenJson_%s.txt' % (args.year, base_jobid))
-
 # convert input string of options dictionary to actual dictionary
 odict = (args.opts).replace("\'", "\"")
 opts_dict = prettyjson.loads(odict)
@@ -42,7 +40,11 @@ opts_dict = prettyjson.loads(odict)
     ## set config options passed through argparse
 import ast
 to_debug = ast.literal_eval(opts_dict.get('debug', 'False'))
+base_jobid = opts_dict['base_jobid'] if 'base_jobid' in opts_dict.keys() else base_jobid
 
+isData_ = samplename.startswith('data')
+if isData_:
+    lumiMask_path = os.path.join(proj_dir, 'inputs', 'data', base_jobid, 'LumiMasks', '%s_GoldenJson_%s.txt' % (args.year, base_jobid))
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
@@ -100,7 +102,9 @@ class Meta_Analyzer(processor.ProcessorABC):
                 output['%s_runs_to_lumis' % self.sample_name].add(list(lumi_map.items()))
 
         else:
+            #set_trace()
             genWeights = events['genWeight']
+
                 # split interference into pos/neg weighted events
             if 'Int' in self.sample_name:
                 pos_evts = ak.where(genWeights > 0)
@@ -157,3 +161,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))

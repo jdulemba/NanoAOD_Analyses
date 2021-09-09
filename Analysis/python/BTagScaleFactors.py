@@ -28,7 +28,7 @@ if base_jobid == 'NanoAODv6':
             'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
         },
     }
-elif base_jobid == 'ULnanoAOD':
+else:
     btag_csvFiles = {
             # 2016(APV) are same as EOY for now!!
         '2016APV' : {
@@ -40,16 +40,14 @@ elif base_jobid == 'ULnanoAOD':
             'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
         },
         '2017' : {
-            'DeepJet' : 'DeepJet_106XUL17SF_used.csv',
-            'DeepCSV' : 'DeepCSV_106XUL17SF_used.csv',
+            'DeepJet' : 'DeepJet_106XUL17SF_WPonly_V2p1_mujets_used.csv',
+            'DeepCSV' : 'DeepCSV_106XUL17SF_WPonly_V2p1_mujets_used.csv',
         },
         '2018' : {
-            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_used.csv',
-            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_used.csv',
+            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_mujets_used.csv',
+            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_mujets_used.csv',
         },
     }
-else:
-    raise ValueError("%s not currently supported" % base_jobid)
 
 wp_lookup = [
     'Loose',

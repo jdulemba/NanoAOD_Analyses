@@ -8,10 +8,18 @@
 #export jobid=ULnanoAOD
 #export jobid=ULnanoAOD_jpt30_ljpt50_MT40_cutBasedEl
 #export jobid=ULnanoAOD_noMT_noLJpt
-export jobid=ULnanoAOD_noMT_noLJpt_NNLO
+#export jobid=ULnanoAOD_noMT_noLJpt_NNLO
+#export jobid=ULnanoAOD_mujets_btagSFs
+
+#export jobid=Summer20UL
+export jobid=Summer20UL_mujets_btagSFs
 
 if [[ $jobid == *"NanoAODv6"* ]]; then
     export base_jobid=NanoAODv6
-else
+elif [[ $jobid == *"Summer20UL"* ]]; then
+    export base_jobid=Summer20UL
+elif [[ $jobid == *"ULnanoAOD"* ]]; then
     export base_jobid=ULnanoAOD
+else
+    echo "base_jobid NOT SET"
 fi

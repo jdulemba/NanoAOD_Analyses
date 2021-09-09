@@ -28,7 +28,7 @@ analyzer = 'ttbar_post_alpha_reco'
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018'], help='What year is the ntuple from.')
 parser.add_argument('--plot', default='all', choices=['nosys', 'uncs', 'all'], help='Make plots for no systematics, variations of JES/JER systematics, or both.')
 args = parser.parse_args()
 
@@ -49,7 +49,8 @@ jet_mults = {
     '5PJets' : '5+ jets',
 }
 
-blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
+#blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
+blurb = '$e/\mu$+3 jets\n$n_{btags} \geq$ 2'
 
 alpha_corrections = {
     'E_All_1D' : ('$\\alpha_{E}$ All Lin.', '#377eb8', 2), ## blue
@@ -63,6 +64,11 @@ alpha_corrections = {
 
 corr_to_use = 'E_All_2D'
 comp_3j_mask = re.compile(r'((?:%s))' % '|'.join(['E_All_2D*', 'Uncorrected*']))
+alpha_corrections_mask = {
+    'E_All_2D' : ('$\\alpha_{E}$', '#e42a2c', 2), ## red
+    'Uncorrected' : ('Uncorrected', 'k', 2),
+}
+
 
 systematics = {
     'nosys' : ('Nominal', 'k', 2),
@@ -73,13 +79,13 @@ systematics = {
 }
 
 variables = {
-    #'Reco_mtt': ('m($t\\bar{t}$) [GeV]', 2, (200., 2000.)),
-    'Reco_mtt': ('m($t\\bar{t}$) [GeV]', 2, (200., 1000.)),
-    'Reco_mthad': ('m($t_{h}$) [GeV]', 2, (0., 300.)),
+    #'Reco_mtt': ('$m_{t\\bar{t}}$ [GeV]', 2, (200., 2000.)),
+    'Reco_mtt': ('$m_{t\\bar{t}}$ [GeV]', 2, (200., 1000.)),
+    'Reco_mthad': ('$m_{t_{h}}$ [GeV]', 2, (0., 300.)),
     'Reco_thad_ctstar': ('cos($\\theta^{*}_{t_{h}}$)', 2, (-1., 1.)),
     'Reco_thad_ctstar_abs': ('|cos($\\theta^{*}_{t_{h}}$)|', 2, (0., 1.)),
-    'Reso_mtt': ('m($t\\bar{t}$) Resolution [GeV]', 1, (-300., 300.)),
-    'Reso_mthad': ('m($t_{h}$) Resolution [GeV]', 2, (-200., 200.)),
+    'Reso_mtt': ('$m_{t\\bar{t}}$ Resolution [GeV]', 1, (-300., 300.)),
+    'Reso_mthad': ('$m_{t_{h}}$ Resolution [GeV]', 2, (-200., 200.)),
     'Reso_thad_ctstar': ('cos($\\theta^{*}_{t_{h}}$) Resolution', 2, (-1., 1.)),
     'Reso_thad_ctstar_abs': ('|cos($\\theta^{*}_{t_{h}}$)| Resolution', 2, (-1., 1.)),
 }
@@ -171,12 +177,13 @@ for hname in variables.keys():
                     # add perm category 
                 #set_trace()
                 ax.text(
-                    0.02, 0.85, 'tight $e/\mu$, %s\n%s' % (jet_mults[jmult], hstyles[cat]['name']),
+                    0.02, 0.84, '$e/\mu$, %s\n$n_{btags} \geq$ 2\n%s' % (jet_mults[jmult], hstyles[cat]['name']),
+                    #0.02, 0.85, 'tight $e/\mu$, %s\n%s' % (jet_mults[jmult], hstyles[cat]['name']),
                     horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
                 hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
     
-                figname = os.path.join(pltdir, '_'.join([jmult, cat, hname]))
+                figname = os.path.join(pltdir, '_'.join([args.year, jobid, jmult, cat, hname]))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -212,7 +219,7 @@ for hname in variables.keys():
                 #set_trace()
                 for corr in sorted(hslice.values().keys()):
                     Plotter.plot_1D(values=hslice.values()[corr]/np.sum(hslice.values()[corr]), bins=hslice.dense_axes()[0].edges(),
-                        ax=ax_norm, xlimits=x_lims, xlabel=xtitle, ylabel='A.U.', label=corr[0], histtype='step')
+                        ax=ax_norm, xlimits=x_lims, xlabel=xtitle, ylabel='Probability Density', label=corr[0], histtype='step')
 
                 ## set legend and corresponding colors
             handles, labels = ax.get_legend_handles_labels()
@@ -226,9 +233,9 @@ for hname in variables.keys():
                     handles[idx].set_color('g')
                     handles[idx].set_linewidth(2)
                 else:
-                    labels[idx] = '3 jets, %s' % alpha_corrections[label][0]
-                    handles[idx].set_color(alpha_corrections[label][1])
-                    handles[idx].set_linewidth(alpha_corrections[label][2])
+                    labels[idx] = '3 jets, %s' % alpha_corrections_mask[label][0]
+                    handles[idx].set_color(alpha_corrections_mask[label][1])
+                    handles[idx].set_linewidth(alpha_corrections_mask[label][2])
 
             # set axes and call ax.legend() with the new values
             ax.autoscale(axis='x', tight=True)
@@ -240,12 +247,13 @@ for hname in variables.keys():
     
                 # add perm category 
             ax.text(
-                0.02, 0.85, 'tight $e/\mu$\n%s' % hstyles[cat]['name'],
+                0.02, 0.84, '$e/\mu$\n$n_{btags} \geq$ 2\n%s' % hstyles[cat]['name'],
+                #0.02, 0.85, 'tight $e/\mu$\n%s' % hstyles[cat]['name'],
                 horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
             hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
 
-            figname = os.path.join(pltdir, '_'.join(['Comp_JMults', cat, hname]))
+            figname = os.path.join(pltdir, '_'.join([args.year, jobid, 'Comp_JMults', cat, hname]))
             fig.savefig(figname)
             print('%s written' % figname)
             plt.close(fig)
@@ -262,28 +270,29 @@ for hname in variables.keys():
                     handles[idx].set_color('g')
                     handles[idx].set_linewidth(2)
                 else:
-                    labels[idx] = '3 jets, %s' % alpha_corrections[label][0]
-                    handles[idx].set_color(alpha_corrections[label][1])
-                    handles[idx].set_linewidth(alpha_corrections[label][2])
+                    labels[idx] = '3 jets, %s' % alpha_corrections_mask[label][0]
+                    handles[idx].set_color(alpha_corrections_mask[label][1])
+                    handles[idx].set_linewidth(alpha_corrections_mask[label][2])
 
             # set axes and call ax.legend() with the new values
             ax_norm.autoscale(axis='x', tight=True)
             ax_norm.set_ylim(0, ax_norm.get_ylim()[1]*1.15)
             ax_norm.set_xlabel(xtitle)
-            ax_norm.set_ylabel('A.U.')
+            ax_norm.set_ylabel('Probability Density')
             ax_norm.set_xlim(x_lims)
                 
             ax_norm.legend(handles,labels, loc='upper right')
     
                 # add perm category 
             ax_norm.text(
-                0.02, 0.85, 'tight $e/\mu$\n%s\n' % hstyles[cat]['name'],
+                0.02, 0.84, '$e/\mu$\n$n_{btags} \geq$ 2\n%s' % hstyles[cat]['name'],
+                #0.02, 0.85, 'tight $e/\mu$\n%s\n' % hstyles[cat]['name'],
                 horizontalalignment='left', verticalalignment='bottom', transform=ax_norm.transAxes
             )
             hep.cms.label(ax=ax_norm, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1))
             #set_trace()
     
-            figname_norm = os.path.join(pltdir, '_'.join(['Comp_JMults', cat, hname, 'Norm']))
+            figname_norm = os.path.join(pltdir, '_'.join([args.year, jobid, 'Comp_JMults', cat, hname, 'Norm']))
             fig_norm.savefig(figname_norm)
             print('%s written' % figname_norm)
             plt.close(fig_norm)
@@ -346,14 +355,14 @@ for hname in variables.keys():
     
                     # add lepton/jet mult, and tt perm category 
                 ax.text(
-                    0.02, 0.87, 'tight $e/\mu$, %s\n%s' % (jet_mults['3Jets'], hstyles[cat]['name']),
-                    fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', 
-                    transform=ax.transAxes
+                    0.02, 0.80, '$e/\mu$, %s\n$n_{btags} \geq$ 2\n%s' % (jet_mults['3Jets'], hstyles[cat]['name']),
+                    #0.02, 0.87, 'tight $e/\mu$, %s\n%s' % (jet_mults['3Jets'], hstyles[cat]['name']),
+                    fontsize=rcParams['font.size']*0.9, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
                 hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams['font.size'])
     
                 #set_trace()
-                figname = os.path.join(pltdir, '_'.join(['3Jets', cat, corr, hname, 'Sys_Comp']))
+                figname = os.path.join(pltdir, '_'.join([args.year, jobid, '3Jets', cat, corr, hname, 'Sys_Comp']))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()

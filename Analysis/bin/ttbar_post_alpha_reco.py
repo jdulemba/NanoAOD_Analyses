@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 from coffea import hist, processor
 from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
@@ -30,7 +33,7 @@ analyzer = 'ttbar_post_alpha_reco'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('fset', type=str, help='Fileset dictionary (in string form) to be used for the processor')
-parser.add_argument('year', choices=['2016APV', '2016', '2017', '2018'] if base_jobid == 'ULnanoAOD' else ['2016', '2017', '2018'], help='Specify which year to run over')
+parser.add_argument('year', choices=['2016', '2017', '2018'] if base_jobid == 'NanoAODv6' else ['2016APV', '2016', '2017', '2018'], help='Specify which year to run over')
 parser.add_argument('outfname', type=str, help='Specify output filename, including directory and file extension')
 parser.add_argument('opts', type=str, help='Fileset dictionary (in string form) to be used for the processor')
 args = parser.parse_args()
@@ -311,7 +314,7 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
                         bp_status = np.zeros(cut.size, dtype=int) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
                         perm_cat_array = compare_matched_best_perms(mp, best_perms, njets='3Jets' if jmult == '3Jets' else '4PJets')
                         bp_status[cut] = perm_cat_array
-                        sl_tau_evts = ak.where(ak.fill_none(ak.pad_none(np.abs(events['SL']['Lepton'].pdgId) == 15, 1), False) == True)[0]
+                        sl_tau_evts = ak.where(np.abs(events['SL']['Lepton'].pdgId) == 15)[0]
                         bp_status[sl_tau_evts] = 4
         
                             ## create MT regions
@@ -321,7 +324,7 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
 
                         wts = (evt_weights.weight()*deepcsv_cen)[cut][valid_perms][MTHigh]   
 
-                        if to_debug: print('    sysname:', evt_sys)
+                        if to_debug: print(*[lepton, jmult, evt_sys], sep=', ')
                         output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=events['SL'][cut][valid_perms][MTHigh], bp=best_perms[valid_perms][MTHigh], evt_wts=wts)
 
         return output
@@ -408,3 +411,6 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print('%s has been written' % args.outfname)
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))

@@ -34,25 +34,31 @@ analyzer = 'ttbar_alpha_reco'
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('--year', type=str, help='Choose year(s) to run')
+parser.add_argument('--force_save', action='store_true', help='Force the efficiencies to be saved.')
 args = parser.parse_args()
 
-if base_jobid == 'ULnanoAOD':
-    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
-    max_years = 4
-else:
+if base_jobid == 'NanoAODv6':
     years_to_run = [args.year] if args.year else ['2016', '2017', '2018']
     max_years = 3
+else:
+    years_to_run = [args.year] if args.year else ['2016APV', '2016', '2017', '2018']
+    max_years = 4
+    #years_to_run = [args.year] if args.year else ['2017', '2018']
+    #max_years = 2
 
 #blurb = 'tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2'
-blurb = 'tight $e/\mu$\n$n_{jets}$=3\n$n_{btags} \geq$ 2'
+#blurb = 'tight $e/\mu$\n$n_{jets}$=3\n$n_{btags} \geq$ 2'
+blurb = '$e/\mu$, 3 jets\n$n_{btags} \geq$ 2'
 
 
 alpha_corrections = {year : {'E' : {}, 'P' : {}} for year in years_to_run}
 
 
 variables = {
-    'Alpha_THad_P' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen P($t_{h}$)/Reco P($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
-    'Alpha_THad_E' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen E($t_{h}$)/Reco E($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    #'Alpha_THad_P' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen P($t_{h}$)/Reco P($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    #'Alpha_THad_E' : ('172.5/Reco m($t_{h}$)', 1, (0., 5.), 'Gen E($t_{h}$)/Reco E($t_{h}$)', 1, (0., 5.), 'Reco m($t\\bar{t}$) [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_P' : ('172.5/$m_{t_{h}^{Reco}}$', 1, (0., 5.), '$P_{t_{h}^{Gen}}$/$P_{t_{h}^{Reco}}$', 1, (0., 5.), 'Reco $m_{t\\bar{t}}$ [GeV]', 1, (200., 2000.)),
+    'Alpha_THad_E' : ('172.5/$m_{t_{h}^{Reco}}$', 1, (0., 5.), '$E_{t_{h}^{Gen}}$/$E_{t_{h}^{Reco}}$', 1, (0., 5.), 'Reco $m_{t\\bar{t}}$ [GeV]', 1, (200., 2000.)),
 }
 
 
@@ -261,7 +267,8 @@ for year in years_to_run:
                 os.makedirs(pltdir)
             
             histo = h_tot[cat].integrate('process')
-            opts = {'cmap_label' : 'Events'}
+            opts = {'cmap_label' : '%s $t\\bar{t}$ Events' % hstyles[cat]['name'].split(' ')[-1].capitalize()}
+            #opts = {'cmap_label' : 'Events'}
             #set_trace()
 
             mthad_edges = histo.axis('norm_mthad').edges()
@@ -293,22 +300,23 @@ for year in years_to_run:
                     values=np.ma.masked_where(hslice.values()[()] <= 0., hslice.values()[()]),
                     xlimits=mthad_lims, ylimits=alpha_lims, xlabel=mthad_title, ylabel=alpha_title, ax=ax, **opts)
 
+                mtt_label = '$m_{t\\bar{t}}^{Reco}$ $\geq$ %s' % bin_min if idx == len(mtt_bin_ranges)-1 else '%s $\leq$ $m_{t\\bar{t}}^{Reco}$ $<$ %s' % (bin_min, bin_max)
                    # add lepton/jet multiplicity label
                 ax.text(
-                    0.02, 0.85, blurb,
+                    0.02, 0.84, "%s\n%s" % (blurb, mtt_label),
+                    #0.02, 0.88, blurb,
                     horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
                 )
-                    # add perm category and mtt region
-                mtt_label = 'Reco m($t\\bar{t}$) $\geq$ %s' % bin_min if idx == len(mtt_bin_ranges)-1 else '%s $\leq$ Reco m($t\\bar{t}$) $<$ %s' % (bin_min, bin_max)
-                ax.text(
-                    0.98, 0.90, '%s\n%s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_label),
-                    horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
-                )
+                #    # add perm category and mtt region
+                #ax.text(
+                #    0.98, 0.90, mtt_label,
+                #    horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
+                #)
                     ## add lumi/cms label
                 hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
                 #set_trace()
-                figname = os.path.join(pltdir, '_'.join([hname, 'Mtt%sto%s' % (int(bin_min), int(bin_max))]))
+                figname = os.path.join(pltdir, '_'.join([year, jobid, hname, 'Mtt%sto%s' % (int(bin_min), int(bin_max))]))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -326,10 +334,10 @@ for year in years_to_run:
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
 
-                Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='Reco m($t\\bar{t}$) [GeV]', ax=ax,
+                Plotter.plot_2d_norm(histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel='$m_{t\\bar{t}}^{Reco}$) [GeV]', ax=ax,
                     values=fitvals_mtt.T, xbins=lookup_mtt._axes[0], ybins=lookup_mtt._axes[1], **{'cmap_label' : '%s Fit Values' % alpha_title.split('=')[0]})
                 hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
-                figname = os.path.join(pltdir, '%s_Mtt_FitVals' % hname)
+                figname = os.path.join(pltdir, '_'.join([year, jobid, hname, 'Mtt_FitVals']))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -357,14 +365,17 @@ for year in years_to_run:
                 fig.subplots_adjust(hspace=.07)
 
                 #set_trace()
-                plt.plot(lookup_all_1d._axes, fitvals_all_1d, color='r', label='Linear Fit, $\\chi^2$/ndof=%.4f' % chisq_1d)
-                plt.plot(lookup_all_2d._axes, fitvals_all_2d, color='b', label='Quadratic Fit, $\\chi^2$/ndof=%.4f' % chisq_2d)
+                #plt.plot(lookup_all_1d._axes, fitvals_all_1d, color='r', label='Linear Fit, $\\chi^2$/ndof=%.4f' % chisq_1d)
+                #plt.plot(lookup_all_2d._axes, fitvals_all_2d, color='b', label='Quadratic Fit, $\\chi^2$/ndof=%.4f' % chisq_2d)
+                plt.plot(lookup_all_2d._axes, fitvals_all_2d, color='b', label='$\\alpha_E$ Quadratic Fit, $\\chi^2$/ndof=%.4f' % chisq_2d if hname == 'Alpha_THad_E' else '$\\alpha_P$ Quadratic Fit, $\\chi^2$/ndof=%.4f' % chisq_2d)
                 plt.errorbar(valid_mthad_bins, valid_medians_all, marker='o', color='black', fmt='.', label='Medians')
+                ax.autoscale()
+                ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.05)
                 ax.legend(loc='upper right')
                 ax.set_xlabel(mthad_title)
                 ax.set_ylabel(alpha_title.split('=')[0])
                 hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
-                figname = os.path.join(pltdir, '%s_All_FitVals' % hname)
+                figname = os.path.join(pltdir, '_'.join([year, jobid, hname, 'All_FitVals']))
                 fig.savefig(figname)
                 print('%s written' % figname)
                 plt.close()
@@ -380,26 +391,28 @@ for year in years_to_run:
 
                # add lepton/jet multiplicity label
             ax.text(
-                0.02, 0.85, blurb,
+                0.02, 0.84, "%s\n$m_{t\\bar{t}}^{Reco}$ $\geq$ %s" % (blurb, mtt_range),
+                #0.02, 0.88, blurb,
                 horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes
             )
-                # add perm category and mtt region
-            ax.text(
-                0.98, 0.90, '%s\nReco m($t\\bar{t}$) $\geq$ %s' % (hstyles[cat]['name'].split(' ')[-1].capitalize(), mtt_range),
-                horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
-            )
+            #    # add perm category and mtt region
+            #ax.text(
+            #    0.98, 0.90, '$m_{t\\bar{t}}^{Reco}$ $\geq$ %s' % mtt_range,
+            #    horizontalalignment='right', verticalalignment='bottom', transform=ax.transAxes
+            #)
                 ## add lumi/cms label
             hep.cms.label(ax=ax, data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
 
             #set_trace()
-            figname = os.path.join(pltdir, '_'.join([hname, 'All']))
+            figname = os.path.join(pltdir, '_'.join([year, jobid, hname, 'All']))
             fig.savefig(figname)
             print('%s written' % figname)
             plt.close()
 
 
     ## save corrections
-if len(years_to_run) == max_years:
+if (len(years_to_run) == max_years) or (args.force_save):
+    #set_trace()
     corrdir = os.path.join(proj_dir, 'Corrections', jobid)
     if not os.path.isdir(corrdir):
         os.makedirs(corrdir)

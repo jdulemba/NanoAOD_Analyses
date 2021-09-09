@@ -1,7 +1,7 @@
-'''
+"""
 This file computes the probabilities from mass and neutrino solver distributions (and their sums)
 for different jet multiplicities (4+ jets, 3 jets lost, 3 jets merged)
-'''
+"""
 
 import Utilities.prettyjson as prettyjson
 from pdb import set_trace
@@ -9,55 +9,74 @@ import os
 import numpy as np
 from numba import njit
 from coffea.util import load
+import awkward as ak
 
 class TTSolver(object):
 
     def __init__(self, year):
-        print('TTBarSolver:', year)
-        proj_dir = os.environ['PROJECT_DIR']
-        jobid = os.environ['jobid']
-        base_jobid = os.environ['base_jobid']
-        cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, 'cfg_files', 'cfg_pars_%s.json' % jobid)).read())['ttsolver']
+        print("TTBarSolver:", year)
+        proj_dir = os.environ["PROJECT_DIR"]
+        jobid = os.environ["jobid"]
+        base_jobid = os.environ["base_jobid"]
+        cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", "cfg_pars_%s.json" % jobid)).read())["ttsolver"]
         
-        probs = load(os.path.join(proj_dir, 'Corrections', base_jobid, cfg_pars['filename']))[year]
+        probs = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["filename"]))[year]
 
-            ## create arrays for binning and values separately for each dist because njit can't handle constant dictionaries currently
-        self.USEMASS = cfg_pars['USEMASS']
-        WTmass_right = probs['4PJets']['mWHad_vs_mTHad']
+            ## create arrays for binning and values separately for each dist because njit can"t handle constant dictionaries currently
+        self.USEMASS = cfg_pars["USEMASS"]
+        self.WTmass_right = probs["4PJets"]["mWHad_vs_mTHad"]
+        WTmass_right = probs["4PJets"]["mWHad_vs_mTHad"]
         self.WTmass_right_binning = WTmass_right._axes
         self.WTmass_right_values  = WTmass_right._values
         
-        self.USE3JMERGED = cfg_pars['USE3JMERGED']
-        Mass_3J_Merged_right = probs['3Jets']['Merged_mTHadProxy_vs_maxmjet']
+        self.USE3JMERGED = cfg_pars["USE3JMERGED"]
+        Mass_3J_Merged_right = probs["3Jets"]["Merged_mTHadProxy_vs_maxmjet"]
         self.Mass_3J_Merged_right_binning = Mass_3J_Merged_right._axes
         self.Mass_3J_Merged_right_values  = Mass_3J_Merged_right._values
         
-        self.USE3JLOST = cfg_pars['USE3JLOST']
-        Mass_3J_Lost_right = probs['3Jets']['Lost_mTHadProxy']
+        self.USE3JLOST = cfg_pars["USE3JLOST"]
+        Mass_3J_Lost_right = probs["3Jets"]["Lost_mTHadProxy"]
+        self.Mass_3J_Lost_right = probs["3Jets"]["Lost_mTHadProxy"]
         self.Mass_3J_Lost_right_binning = Mass_3J_Lost_right._axes
         self.Mass_3J_Lost_right_values  = Mass_3J_Lost_right._values
         
-        self.USENS = cfg_pars['USENS']
-        NS_4PJ_right = probs['4PJets']['nusolver_dist']
-        #NS_4PJ_right = probs['4PJets']['nusolver_chi2']
+        self.USENS = cfg_pars["USENS"]
+        self.NS_4PJ_right = probs["4PJets"]["nusolver_dist"]
+        NS_4PJ_right = probs["4PJets"]["nusolver_dist"]
+        #NS_4PJ_right = probs["4PJets"]["nusolver_chi2"]
         self.NS_4PJ_right_binning = NS_4PJ_right._axes
         self.NS_4PJ_right_values  = NS_4PJ_right._values
         
         # merged 3 jet vars
-        NS_3J_Merged_right = probs['3Jets']['Merged_nusolver_dist']
-        #NS_3J_Merged_right = probs['3Jets']['Merged_nusolver_chi2']
+        NS_3J_Merged_right = probs["3Jets"]["Merged_nusolver_dist"]
+        #NS_3J_Merged_right = probs["3Jets"]["Merged_nusolver_chi2"]
         self.NS_3J_Merged_right_binning = NS_3J_Merged_right._axes
         self.NS_3J_Merged_right_values  = NS_3J_Merged_right._values
         
         # lost 3 jet vars
-        NS_3J_Lost_right = probs['3Jets']['Lost_nusolver_dist']
-        #NS_3J_Lost_right = probs['3Jets']['Lost_nusolver_chi2']
+        self.NS_3J_Lost_right = probs["3Jets"]["Lost_nusolver_dist"]
+        NS_3J_Lost_right = probs["3Jets"]["Lost_nusolver_dist"]
+        #NS_3J_Lost_right = probs["3Jets"]["Lost_nusolver_chi2"]
         self.NS_3J_Lost_right_binning = NS_3J_Lost_right._axes
         self.NS_3J_Lost_right_values  = NS_3J_Lost_right._values
 
+    def ak_solve_4PJ(self, mthad, mwhad, nschi):
+        "Inputs: m(thad_proxy), m(whad_proxy), and the NS solver sqrt(chi2) values (mthad, mwhad, nschi)\nOutputs: numpy array of the mass and NS disriminants (MassDiscr, NuDiscr)"
+        #set_trace()
+        mass_discval = ak.where((mthad < self.WTmass_right._axes[0][-1]) & (mwhad < self.WTmass_right._axes[1][-1]), 
+            self.WTmass_right(mthad, mwhad)/np.sum(self.WTmass_right._values), ak.ones_like(mthad)*np.nan)
+        masstest = -1*np.log(mass_discval)
+        masstest = ak.nan_to_num(masstest, nan=np.inf)
+    
+        nu_discval = ak.where(nschi < self.NS_4PJ_right._axes[-1], self.NS_4PJ_right(nschi)/np.sum(self.NS_4PJ_right._values), ak.ones_like(nschi)*np.nan)
+        nstest = -1*np.log(nu_discval)
+        nstest = ak.nan_to_num(nstest, nan=np.inf)
+
+        return masstest, nstest
+        
     
     def solve_4PJ(self, mthad, mwhad, nschi):
-        'Inputs: m(thad), m(whad), and the NS solver chi2 values (mthad, mwhad, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: m(thad), m(whad), and the NS solver chi2 values (mthad, mwhad, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
         ns_pars = (self.USENS, self.NS_4PJ_right_binning, self.NS_4PJ_right_values)
         mass_pars = (self.USEMASS, self.WTmass_right_binning, self.WTmass_right_values)
         return self._solve_4PJ(mthad, mwhad, nschi, ns_pars, mass_pars)
@@ -65,7 +84,7 @@ class TTSolver(object):
     @staticmethod
     @njit()
     def _solve_4PJ(mthad, mwhad, nschi, ns_pars, mass_pars):
-        'Inputs: m(thad), m(whad), and the NS solver chi2 values (mthad, mwhad, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: m(thad), m(whad), and the NS solver chi2 values (mthad, mwhad, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
         ## initialize values used to build up likelihood
         result = 0.
         nstest = np.inf
@@ -117,8 +136,22 @@ class TTSolver(object):
     
         return np.array([result, masstest, nstest])
 
+    def ak_solve_3J_lost(self, m2jets, nschi):
+        "Inputs: m(j1+j2) and the NS solver sqrt(chi2) values (m2jets, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (MassDiscr, NuDiscr)"
+        #set_trace()
+        mass_discval = ak.where(m2jets < self.Mass_3J_Lost_right._axes[-1], self.Mass_3J_Lost_right(m2jets)/np.sum(self.Mass_3J_Lost_right._values), ak.ones_like(m2jets)*np.nan)
+        masstest = -1*np.log(mass_discval)
+        masstest = ak.nan_to_num(masstest, nan=np.inf)
+    
+        nu_discval = ak.where(nschi < self.NS_3J_Lost_right._axes[-1], self.NS_3J_Lost_right(nschi)/np.sum(self.NS_3J_Lost_right._values), ak.ones_like(nschi)*np.nan)
+        nstest = -1*np.log(nu_discval)
+        nstest = ak.nan_to_num(nstest, nan=np.inf)
+
+        return masstest, nstest
+        
+    
     def solve_3J_lost(self, mbpjet, nschi):
-        'Inputs: m(b+jet) and the NS solver chi2 values (mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: m(b+jet) and the NS solver chi2 values (mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
         ns_pars = (self.USENS, self.NS_3J_Lost_right_binning, self.NS_3J_Lost_right_values)
         mass_pars = (self.USE3JLOST, self.Mass_3J_Lost_right_binning, self.Mass_3J_Lost_right_values)
         return self._solve_3J_lost(mbpjet, nschi, ns_pars, mass_pars)
@@ -127,7 +160,7 @@ class TTSolver(object):
     @staticmethod
     @njit()
     def _solve_3J_lost(mbpjet, nschi, ns_pars, mass_pars):
-        'Inputs: m(b+jet) and the NS solver chi2 values (mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: m(b+jet) and the NS solver chi2 values (mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
             ## initialize values used to build up likelihood
         result = 0.
         nstest = np.inf
@@ -171,7 +204,7 @@ class TTSolver(object):
         return np.array([result, masstest, nstest])
     
     def solve_3J_merged(self, maxmjet, mbpjet, nschi):
-        'Inputs: max(jet mass), m(b+jet), and the NS solver chi2 values (maxmjet, mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: max(jet mass), m(b+jet), and the NS solver chi2 values (maxmjet, mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
         ns_pars = (self.USENS, self.NS_3J_Merged_right_binning, self.NS_3J_Merged_right_values)
         mass_pars = (self.USE3JLOST, self.Mass_3J_Merged_right_binning, self.Mass_3J_Merged_right_values)
         return self._solve_3J_merged(maxmjet, mbpjet, nschi, ns_pars, mass_pars)
@@ -180,7 +213,7 @@ class TTSolver(object):
     @staticmethod
     @njit()
     def _solve_3J_merged(maxmjet, mbpjet, nschi, ns_pars, mass_pars):
-        'Inputs: max(jet mass), m(b+jet), and the NS solver chi2 values (maxmjet, mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)'
+        "Inputs: max(jet mass), m(b+jet), and the NS solver chi2 values (maxmjet, mbpjet, nschi)\nOutputs: numpy array of the combined, mass, and NS disriminants (Prob, MassDiscr, NuDiscr)"
             ## initialize values used to build up likelihood
         result = 0.
         nstest = np.inf

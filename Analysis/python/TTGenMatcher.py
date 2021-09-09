@@ -31,6 +31,7 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
         raise ValueError("Not all events for matching are semileptonic")
 
     jets_ak = ak.with_name(jets[["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
+    leps_ak = ak.with_name(leptons[["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
 
         # init dict of objects
     matched_objects = {}
@@ -39,7 +40,7 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
     for genobj in ['BHad', 'BLep', 'WJa', 'WJb']:
         genobj_ak = ak.with_name(gen_hyp[genobj][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
         jets_akc, genobj_akc = ak.unzip(ak.cartesian([jets_ak, genobj_ak], nested=False))
-        deltaRs = ak.flatten(jets_akc.delta_r(genobj_akc), axis=2)  # find deltaRs between jets and gen object
+        deltaRs = jets_akc.delta_r(genobj_akc)  # find deltaRs between jets and gen object
         indexOfMin = ak.unflatten(ak.argmin(deltaRs, axis=1), ak.num(genobj_ak))
         passing_inds = deltaRs[indexOfMin] < 0.4
 
@@ -56,8 +57,10 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
         }, with_name="PtEtaPhiMLorentzVector")
         
         # match lepton closest to gen lepton
-    lepDRs = ak.flatten(leptons.delta_r(gen_hyp['Lepton']), axis=2)
-    lepIdxOfMin = ak.unflatten(ak.argmin(lepDRs, axis=1), ak.num(gen_hyp['Lepton']))
+    genlep_ak = ak.with_name(gen_hyp['Lepton'][["pt", "eta", "phi", "mass"]],"PtEtaPhiMLorentzVector")
+    lep_akc, genlep_akc = ak.unzip(ak.cartesian([leps_ak, genlep_ak], nested=False))
+    lepDRs = lep_akc.delta_r(genlep_akc)
+    lepIdxOfMin = ak.unflatten(ak.argmin(lepDRs, axis=1), ak.num(genlep_ak))
     passing_inds = lepDRs[lepIdxOfMin] < 0.4
     matched_leps_inds = lepIdxOfMin[passing_inds]
     matched_leps = leptons[matched_leps_inds]
