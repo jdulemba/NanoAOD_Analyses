@@ -1,0 +1,2 @@
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer19UL17NanoAOD/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mc2017_realistic_v6-v1/100000/E0A7DA10-8BA5-E24F-816A-54DA73C73FB2.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer19UL17NanoAOD/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mc2017_realistic_v6-v1/70000/A9428FD4-2DC6-4541-A5F6-814D03A040E2.root
