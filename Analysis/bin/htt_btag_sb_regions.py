@@ -80,7 +80,8 @@ ttpermutator.year_to_run(year=args.year)
 ## load lumimask for data and corrections for event weights
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_PU_Weights.coffea"))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "leptonSFs.coffea"))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections.coffea"))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections_UncSources.coffea"))[args.year]
+#jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections.coffea"))[args.year]
 alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid,"alpha_correction_%s.coffea" % jobid))[args.year]["E"]["All_2D"] # E, All_2D determined by post application plots
 nnlo_var = "mtt_vs_thad_ctstar_Interp"
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, "NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea" % base_jobid))[args.year]
@@ -359,8 +360,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ## make event weights
                 # data or MC distinction made internally
         #set_trace()
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_)
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
         #set_trace()
 
             ## initialize selections
@@ -653,9 +654,17 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         deepcsv_sorted_jets = jets[ak.argsort(jets.btagDeepB, ascending=False)]
         deepjet_sorted_jets = jets[ak.argsort(jets.btagDeepFlavB, ascending=False)]
 
+        #set_trace()
         for permval in np.unique(permarray).tolist():
             perm_inds = np.where(permarray == permval)
             dataset_name = "%s_%s" % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
+
+            acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, sys=sys,  jmult=jetmult, leptype=leptype, btag=btagregion,
+                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+
+                # only fill 2D signal hist for systematics to save space and time
+            if sys != "nosys": continue
+
             acc["mtt"].fill(     dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], weight=evt_wts[perm_inds])
             acc["mthad"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtop=ak.flatten(perm["THad"].mass)[perm_inds], weight=evt_wts[perm_inds])
             acc["mWHad"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm["WHad"].mass)[perm_inds], weight=evt_wts[perm_inds])
@@ -677,9 +686,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             acc["MET_pt"].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["MET"].pt)[perm_inds], weight=evt_wts[perm_inds])
             acc["MET_phi"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(perm["MET"].phi)[perm_inds], weight=evt_wts[perm_inds])
-
-            acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, sys=sys,  jmult=jetmult, leptype=leptype, btag=btagregion,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
 
             acc["Jets_pt"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(jets.pt[perm_inds]), weight=ak.flatten((ak.ones_like(jets.pt)*evt_wts)[perm_inds]))
             acc["Jets_eta"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.eta)*evt_wts)[perm_inds]))
