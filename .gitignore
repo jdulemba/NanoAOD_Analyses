@@ -13,7 +13,7 @@ Analysis/con_*
 Analysis/Corrections/Summer20UL_*
 Analysis/Corrections/ULnanoAOD*
 Analysis/Corrections/NanoAODv6*
-Analysis/inputs/*NanoAODv6
-Analysis/inputs/*ULnanoAOD
+Analysis/inputs/*NanoAODv6*
+Analysis/inputs/*ULnanoAOD*
 Analysis/inputs/data/ULnanoAOD/
 Analysis/inputs/data/NanoAODv6/
