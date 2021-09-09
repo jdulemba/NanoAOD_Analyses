@@ -10,12 +10,10 @@ Analysis/*.coffea
 *.txt
 Analysis/BATCH*
 Analysis/con_*
-Analysis/signal_scripts/results
-Analysis/signal_scripts/inputs/ttJets_inputs
-Analysis/signal_scripts/inputs/signal/signal_*
-Analysis/signal_scripts/inputs/signal/*.root
-Analysis/signal_scripts/inputs/Validation
 Analysis/Corrections/Summer20UL_*
-Analysis/Corrections/ULnanoAOD_*
-Analysis/inputs/201*
+Analysis/Corrections/ULnanoAOD*
+Analysis/Corrections/NanoAODv6*
+Analysis/inputs/*NanoAODv6
+Analysis/inputs/*ULnanoAOD
 Analysis/inputs/data/ULnanoAOD/
+Analysis/inputs/data/NanoAODv6/
