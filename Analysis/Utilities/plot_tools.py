@@ -64,21 +64,27 @@ signal_groups = {
     ## dataset groupings for making templates to be used in fit
 template_groups = {
     year: {
-        "QCD" : ["QCD*"],
-        "TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
-        "VV" : ["[WZ][WZ]"],
-        "TTV" : ["tt[WZ]*"],
-        "WJets" : ["WJets_HT*"],
-        "ZJets" : ["ZJets*"],
-        "sChannel" : ["single*_schannel*"],
-        "tChannel" : ["single*_tchannel*"],
-        "tWChannel" : ["single*_tW*"],
+        "BKG" : ["QCD*", "[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["QCD*", "[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
+        #"QCD" : ["QCD*"],
+        #"TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
+        #"VV" : ["[WZ][WZ]"],
+        #"TTV" : ["tt[WZ]*"],
+        #"WJets" : ["WJets_HT*"],
+        #"ZJets" : ["ZJets*"],
+        #"qcd" : ["QCD*"],
+        "ttJets" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
+        #"vv" : ["[WZ][WZ]"],
+        #"ttv" : ["tt[WZ]*"],
+        #"wjets" : ["WJets_HT*"],
+        #"dy" : ["ZJets*"],
+        "singletSChannel" : ["single*_schannel*"],
+        "singletTChannel" : ["single*_tchannel*"],
+        "singletTWChannel" : ["single*_tW*"],
         "data_obs" : ["data_Single*"],
     }
     for year in ["2016APV", "2016", "2017", "2018"]
 }
 
-#set_trace()
 ## create groups for signal samples and add them to dataset/template_groups
 {year: dataset_groups[year].update(signal_groups[year]) for year in dataset_groups.keys()}
 {year: template_groups[year].update(signal_groups[year]) for year in template_groups.keys()}
