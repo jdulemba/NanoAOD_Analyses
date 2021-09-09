@@ -12,9 +12,8 @@ outdir = os.path.join(proj_dir, "Corrections", base_jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-data_lumi = prettyjson.loads(open(os.path.join(proj_dir,"inputs", "%s_lumis_data.json" % base_jobid)).read()) # file with integrated luminosity for all three years
-
-proj_dir = os.environ["PROJECT_DIR"]
+data_lumi = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_lumis_data.json" % base_jobid)).read()) # file with integrated luminosity for all three years
+signal_xsecs = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_xsecs.json")).read()) # file with signal cross sections
 
 years_to_run = ["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"]
 lumi_weights = {year:{"Electrons" : {}, "Muons" : {}} for year in years_to_run}
@@ -40,7 +39,7 @@ for year in years_to_run:
                 print(f"\t{sample}_{wt_type}")
                 meta_json = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_%s" % (year, base_jobid), "%s_%s.meta.json" % (sample, wt_type))).read())
                 sumGenWeights = meta_json["sumGenWeights"]
-                xsec = dataset["xsection"]
+                xsec = signal_xsecs[sample]
                 for lep in ["Electrons", "Muons"]:
                     lumi_weights[year][lep]["%s_%s" % (sample, wt_type)] = data_lumi[year][lep]/abs(sumGenWeights/xsec)
 
@@ -51,12 +50,13 @@ for year in years_to_run:
             print(f"\t{sample}")
             meta_json = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_%s" % (year, base_jobid), "%s.meta.json" % sample)).read())
             sumGenWeights = meta_json["sumGenWeights"]
-            xsec = dataset["xsection"]
+            xsec = signal_xsecs[sample] if (sample.startswith("AtoTT") or sample.startswith("HtoTT")) else dataset["xsection"]
             for lep in ["Electrons", "Muons"]:
                 lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
     print(f"{year} calculated")
 
+#set_trace()
     # save files
 mcweights_name = os.path.join(outdir, "MC_LumiWeights.coffea")
 save(lumi_weights, mcweights_name)
