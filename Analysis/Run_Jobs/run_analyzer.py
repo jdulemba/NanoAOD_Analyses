@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-import os#, subprocess, time
+import os
 from pdb import set_trace
 import Run_Jobs.tools as tools
-#import Utilities.prettyjson as prettyjson
-#import fnmatch
 
 import argparse
 class ParseKwargs(argparse.Action):
@@ -27,12 +25,13 @@ analyzer=args.analyzer
 
 # define dictionary of options to pass
 opts_dict = args.opts
-base_jobid = opts_dict["base_jobid"] if "base_jobid" in opts_dict.keys() else os.environ["base_jobid"]
-jobid = opts_dict["jobid"] if "jobid" in opts_dict.keys() else os.environ["jobid"]
+if not opts_dict: opts_dict = {}
+base_jobid = opts_dict.get("base_jobid", os.environ["base_jobid"])
+jobid = opts_dict.get("jobid", os.environ["jobid"])
 
     ## get samples to use
 #set_trace()
-indir = os.path.join(proj_dir, "inputs", "%s_%s" % (args.year, base_jobid))
+indir = os.path.join(proj_dir, "inputs", f"{args.year}_{base_jobid}")
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample)
 
 fileset = {}
@@ -65,32 +64,27 @@ print(fileset)
     ## save output to coffea pkl file
 #set_trace()
 if (args.frange).lower() == "all":
-    outdir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), analyzer)
     if "outfname" in opts_dict.keys():
         cfname = opts_dict["outfname"]
     elif args.sample:
-        cfname = os.path.join(outdir, f"{args.sample}.coffea")
+        cfname = f"{args.sample}.coffea"
     else:
-        cfname = os.path.join(outdir,"test_%s.coffea" % analyzer)
+        cfname = f"test_{analyzer}.coffea"
 else:
     if ":" in args.frange:
-        outdir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), analyzer)
         if "outfname" in opts_dict.keys():
             cfname = opts_dict["outfname"]
         elif args.sample:
-            cfname = os.path.join(outdir, "%s_%sto%s.coffea" % (args.sample, file_start, file_stop))
+            cfname = f"{args.sample}_{file_start}to{file_stop}.coffea"
         else:
-            cfname = os.path.join(outdir, "test_%sto%s.coffea" % (file_start, file_stop))
+            cfname = f"test_{file_start}to{file_stop}.coffea"
     else:
-        outdir = proj_dir
         if "outfname" in opts_dict.keys():
             cfname = opts_dict["outfname"]
         elif args.sample:
-            cfname = os.path.join(outdir, "%s_%s_%s.test.coffea" % (args.sample, args.year, analyzer))
+            cfname = f"{args.sample}_{args.year}_{analyzer}.test.coffea"
         else:
-            cfname = os.path.join(outdir, "%s_%s.test.coffea" % (args.year, analyzer))
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
+            cfname = f"{args.year}_{analyzer}.test.coffea"
 
 
 run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} "{OPTS}" """.format(
