@@ -166,7 +166,7 @@ def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
 
     return evt_sel.require(lep_and_filter_pass=True)
 
-def jets_selection(events, year, cutflow=None, shift=None, hem_15_16=False):
+def jets_selection(events, year, cutflow=None, shift="", hem_15_16=False):
         # get jet selection for systematic shift (can only support one at a time)
     #set_trace()
     if "JES" in shift:
