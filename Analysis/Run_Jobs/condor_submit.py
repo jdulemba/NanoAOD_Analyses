@@ -35,16 +35,20 @@ if sample: opts_dict.pop("sample")
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
-nano_dir = os.environ["NANODIR"]
 analyzer=args.analyzer
 proxy_path = "/afs/cern.ch/work/j/jdulemba/private/x509up_u81826"
+abs_proj_dir = "/afs/cern.ch/work/j/jdulemba/Test_Coffea/Analysis"
+if args.submit: set_trace()
+print(f"\n\tThe 'project directory' being used for this file is {abs_proj_dir}!! MAKE SURE this is the correct directory for non-singularity use!!!\n\n")
+
     # get jobdir
 year, month, day = time.localtime().tm_year, time.localtime().tm_mon, time.localtime().tm_mday
 dtime = datetime.datetime(year, month, day)
 dtime.strftime("%d%B%Y")
 jobdir = "_".join([args.jobdir, dtime.strftime("%d%B%Y"), args.year, jobid])
 jobdir = "BATCH_%s" % jobdir if not jobdir.startswith("BATCH") else jobdir
-print("%s written" % (os.path.join(proj_dir, jobdir)))
+print("%s written" % (os.path.join(abs_proj_dir, jobdir)))
+
 
 def create_batch_job():
     batch_job="""#!/bin/bash
@@ -53,16 +57,14 @@ export X509_USER_PROXY=$1
 #voms-proxy-info -all
 #voms-proxy-info -all -file $1
 
-echo "source {NANODIR}/environment.sh"
-source {NANODIR}/environment.sh
-
-echo "source {PROJECTDIR}/environment.sh"
-source {PROJECTDIR}/environment.sh
-
 EXE="${{@:2}}"
-echo "Executing python {PROJECTDIR}/Run_Jobs/run_analyzer.py " $EXE
-python {PROJECTDIR}/Run_Jobs/run_analyzer.py $EXE
-""".format(NANODIR=nano_dir, PROJECTDIR=proj_dir, ANALYZER=analyzer)
+echo "Executing python Run_Jobs/run_analyzer.py " $EXE from within singularity
+
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Run_Jobs/run_analyzer.py $EXE"
+
+#echo "Executing python {PROJECTDIR}/Run_Jobs/run_analyzer.py " $EXE
+#python {PROJECTDIR}/Run_Jobs/run_analyzer.py $EXE
+""".format(PROJECTDIR=abs_proj_dir)
 
     return batch_job
 
@@ -72,9 +74,8 @@ Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
 +MaxRuntime = 10800
-requirements = (OpSysAndVer =?= "CentOS7")
 Proxy_path = {PROXYPATH}
-""".format(BATCHDIR=batch_dir, PROXYPATH=proxy_path)
+""".format(BATCHDIR=os.path.join(abs_proj_dir, jobdir, sample_name), PROXYPATH=proxy_path)
     return condorfile
 
 
@@ -116,7 +117,7 @@ for sample in samples_to_use:
     for idx, chunk in enumerate(file_chunks):
             # make list of options to pass to analyzers
         tmp_opts_dict = deepcopy(opts_dict)
-        tmp_opts_dict["outfname"] = os.path.join(batch_dir, "%s_out_%s.coffea" % (sample_name, idx))
+        tmp_opts_dict["outfname"] = f"{sample_name}_out_{idx}.coffea"
         opts_list = ["%s=%s" % (key, val) for key, val in tmp_opts_dict.items()]
 
         condor_cmd += add_condor_jobs(idx, chunk, sample_name, " ".join(opts_list))
