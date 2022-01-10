@@ -9,6 +9,7 @@ import fnmatch
 import Utilities.systematics as systematics
 import Utilities.Plotter as Plotter
 from scipy.stats import chisquare
+import Utilities.final_analysis_binning as final_binning
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -48,7 +49,7 @@ def plot_bkg_templates(fnames_to_run):
             proc = tname.split("_")[0] if not "data_obs" in tname else "data_obs"
             sys = sorted(filter(None, tname.split(f"{proc}_")))[0]
 
-            if proc == "BKG": continue
+            if proc == "EWQCD": continue
             #if sys not in ["hdampUP", "hdampDOWN", "mtop1665", "mtop1695", "mtop1715", "mtop1735", "mtop1755", "mtop1785", "ueUP", "ueDOWN"]: continue
             if sys == "nosys": continue
             print(args.lepton, jmult, sys, proc)
@@ -174,11 +175,8 @@ if __name__ == "__main__":
 
         # define variables used for smoothing
     linearize_binning = (
-        #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]), # orig
-        np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-            700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
-        #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
-        np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+        final_binning.mtt_binning,
+        final_binning.ctstar_abs_binning
     )
     mtt_centers =  [(linearize_binning[0][idx]+linearize_binning[0][idx+1])/2 for idx in range(len(linearize_binning[0])-1)]
 
