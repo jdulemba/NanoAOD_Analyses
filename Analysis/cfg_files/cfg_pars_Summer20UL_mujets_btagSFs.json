@@ -172,5 +172,19 @@
         "USEMASS": 1,
         "USE3JMERGED": 1,
         "USE3JLOST": 1
+    },
+    "corrections":{
+        "nnlo": {
+            "var": "mtt_vs_top_ctstar",
+            "filename": "NNLO_to_Tune_Ratios_Summer20UL_CombineYears.coffea"
+        },
+        "ewk": {"file": "EWK_to_QCD_Ratios.coffea", "wt": "Afiq"},
+        "jetmet": {
+            "tot": "JetMETCorrections.coffea",
+            "sources": "JetMETCorrections_UncSources.coffea"
+        },
+        "lepton": "leptonSFs.coffea",
+        "pu": "MC_PU_Weights.coffea",
+        "alpha": "alpha_correction_Summer20UL_mujets_btagSFs.coffea"
     }
 }
