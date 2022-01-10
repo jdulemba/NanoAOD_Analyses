@@ -13,6 +13,7 @@ from fnmatch import fnmatch
 from pdb import set_trace
 import Utilities.prettyjson as prettyjson
 import Utilities.das as das
+from site_mapping import site_name_to_xrootd
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -52,7 +53,18 @@ for sample in samples_to_run:
         txtname = os.path.join(outdir, "%s_tmp.txt" % sample["name"]) if args.test else os.path.join(outdir, "%s.txt" % sample["name"])
 
         flist = das.query("file dataset=%s instance=%s" % (sample["DBSName"], sample["tier"])) if "tier" in sample else das.query("file dataset=%s" % sample["DBSName"])#, True)
-        flist = [fname.replace("/store", "root://cmsxrootd.fnal.gov//store") for fname in flist] # add xrootd redirector
+        #set_trace()
+        for idx, fname in enumerate(flist):
+            site_list = das.query(f"site file={fname}")
+            already_changed = False
+            for site in site_list:
+                if already_changed: continue
+                if site in site_name_to_xrootd.keys():
+                    flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
+                    already_changed = True
+
+            if not already_changed: print("No site found for {fname}")
+
         fnames = "\n".join(sorted(flist))
 
         txt_out = open(txtname, "w")
