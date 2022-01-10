@@ -4,7 +4,6 @@ import time
 tic = time.time()
 
 from coffea import hist, processor
-from coffea.nanoevents import NanoAODSchema
 from pdb import set_trace
 import os
 from coffea.util import save, load
@@ -15,8 +14,9 @@ import python.MCWeights as MCWeights
 import fnmatch
 from coffea.analysis_tools import PackedSelection
 import awkward as ak
+from coffea.nanoevents.methods import vector
+ak.behavior.update(vector.behavior)
 import python.IDJet as IDJet
-import python.GenParticleSelector as genpsel
 
 proj_dir = os.environ["PROJECT_DIR"]
 base_jobid = os.environ["base_jobid"]
@@ -26,7 +26,7 @@ analyzer = "htt_flav_effs"
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("fset", type=str, help="Fileset dictionary (in string form) to be used for the processor")
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("outfname", type=str, help="Specify output filename, including directory and file extension")
 parser.add_argument("opts", type=str, help="Fileset dictionary (in string form) to be used for the processor")
 
@@ -43,32 +43,33 @@ opts_dict = prettyjson.loads(odict)
     ## set config options passed through argparse
 import ast
 to_debug = ast.literal_eval(opts_dict.get("debug", "False"))
-base_jobid = opts_dict["base_jobid"] if "base_jobid" in opts_dict.keys() else base_jobid
-jobid = opts_dict["jobid"] if "jobid" in opts_dict.keys() else jobid
 
 allowed_samples = ["ttJets*", "WJets*", "singlet*", "ZJets*"]
 for fname in fileset.keys():
     if not any([fnmatch.fnmatch(fname, sample) for sample in allowed_samples]):
         raise IOError(f"Sample {fname} not valid for finding btag efficiencies. Only {allowed_samples} are allowed")
 
-#print(f"\tbase_jobid={base_jobid}\n\tjobid={jobid}")
+samplename = list(fileset.keys())[0]
+isTTbar_ = samplename.startswith("ttJets")
 
 ## load corrections for event weights
-pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_PU_Weights.coffea"))[args.year]
-lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "leptonSFs.coffea"))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections.coffea"))[args.year]
-nnlo_var = "mtt_vs_thad_ctstar_Interp"
-nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, "NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea" % base_jobid))[args.year]
+cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
+pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
+lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["tot"]))[args.year]
+nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
+ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
     "Pileup" : pu_correction,
     "Prefire" : True,
     "LeptonSF" : lepSF_correction,
     "JetCor" : jet_corrections,
     "BTagSF" : False,
-    "NNLO_Rewt" : {"Var" : nnlo_var, "Correction" : nnlo_reweighting[nnlo_var]},
+    "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
+    "EWK_Rewt" : {"Correction" : ewk_reweighting, "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
 }
 
-jet_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", "cfg_pars_%s.json" % jobid)).read())["Jets"]
+jet_pars = cfg_pars["Jets"]
 wps_to_use = list(set([jet_pars["permutations"]["tightb"], jet_pars["permutations"]["looseb"]]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
@@ -84,8 +85,8 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.hflav_axis = hist.Cat("hFlav", "Hadron Flavour")
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 200, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 120, -3, 3)
+        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", np.around(np.linspace(0., 1000., 201), decimals=0))
+        self.eta_axis = hist.Bin("eta", r"$\eta$", np.around(np.linspace(-3., 3., 121), decimals=2))
 
             ## make dictionary of hists
         histo_dict = {}
@@ -99,39 +100,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         self.sample_name = ""
         self.corrections = corrections
 
-    
-    @property
-    def accumulator(self):
-        return self._accumulator
-
-
-    def make_jet_hists(self):
-        histo_dict = {}
-        #histo_dict["Jets_pt_all"]     = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
-        #histo_dict["Jets_eta_all"]    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
-        histo_dict["Jets_pt_eta_all"] = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
-        #histo_dict["Jets_pt_pass"]    = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis)
-        #histo_dict["Jets_eta_pass"]   = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.eta_axis)
-        histo_dict["Jets_pt_eta_pass"]= hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
-
-        return histo_dict
-
-
-
-    def process(self, events):
-        output = self.accumulator.identity()
-
-        self.sample_name = events.metadata["dataset"]
-        isTTbar = self.sample_name.startswith("ttJets")
-
-            ## make event weights
-                # data or MC distinction made internally
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
-
-            ## initialize selections and regions
-        selection = PackedSelection()
-        regions = {
+        self.regions = {
             "Muon" : {
                 "3Jets"  : {
                     "lep_and_filter_pass", "passing_jets", "jets_3", "loose_or_tight_MU"
@@ -143,6 +112,41 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                 },
             },
         }
+        if isTTbar_:
+            ## add 4+ jets categories for ttbar events
+            self.regions["Muon"].update({
+                "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4+", "loose_or_tight_MU"}
+            })
+            self.regions["Electron"].update({
+                "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4+", "loose_or_tight_EL"}
+            })
+    
+    @property
+    def accumulator(self):
+        return self._accumulator
+
+
+    def make_jet_hists(self):
+        histo_dict = {}
+        histo_dict["Jets_pt_eta_all"] = hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
+        histo_dict["Jets_pt_eta_pass"]= hist.Hist("Events", self.btagger_axis, self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.hflav_axis, self.pt_axis, self.eta_axis)
+
+        return histo_dict
+
+
+
+    def process(self, events):
+        output = self.accumulator.identity()
+
+        self.sample_name = events.metadata["dataset"]
+
+            ## make event weights
+                # data or MC distinction made internally
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections)
+
+            ## initialize selections and regions
+        selection = PackedSelection()
 
             # get all passing leptons
         lep_and_filter_pass = objsel.select_leptons(events, year=args.year, cutflow=output["cutflow"])
@@ -195,35 +199,61 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             el_evt_weights.add("RECO", np.copy(el_reco_cen), np.copy(el_reco_cen+el_reco_err), np.copy(el_reco_cen-el_reco_err))
             el_evt_weights.add("TRIG", np.copy(el_trig_cen), np.copy(el_trig_cen+el_trig_err), np.copy(el_trig_cen-el_trig_err))
 
-        if isTTbar:
+        if isTTbar_:
             ## add 4+ jets categories for ttbar events
             selection.add("jets_4+", ak.num(events["SelectedJets"]) > 3)
-            regions["Muon"].update({
-                "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4+", "loose_or_tight_MU"}
-            })
-            regions["Electron"].update({
-                "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4+", "loose_or_tight_EL"}
-            })
+
+            EWcorr_cen = np.ones(len(events))
+            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
-                genpsel.select(events, mode="NORMAL")
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                mu_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], nnlo_wts)
-                el_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], nnlo_wts)
+                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+
+            if "EWK_Rewt" in self.corrections.keys():
+                    ## NLO EW weights
+                if self.corrections["EWK_Rewt"]["wt"] == "Otto":
+                    ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
+                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
+
+                    mu_evt_weights.add("EWcorr",
+                        np.copy(EWcorr_cen),
+                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    )
+                    el_evt_weights.add("EWcorr",
+                        np.copy(EWcorr_cen),
+                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    )
+
+                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
+                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
+                    
+                    mu_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(EWcorr_cen),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    )
+                    el_evt_weights.add("Yukawa",
+                        np.copy(EWcorr_cen),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    )
 
 
         btag_wps = [wp for wp in events["SelectedJets"].fields if wps_to_use[0] in wp]
         #set_trace()
         ## fill hists for each region
         for btag_wp in btag_wps:
-            for lepton in regions.keys():
+            for lepton in self.regions.keys():
                 evt_weights = mu_evt_weights if lepton == "Muon" else el_evt_weights
-                for jmult in regions[lepton].keys():
-                    cut = selection.all(*regions[lepton][jmult])
+                for jmult in self.regions[lepton].keys():
+                    cut = selection.all(*self.regions[lepton][jmult])
 
                     evt_weights_to_use = evt_weights.weight()
                     jets = events["SelectedJets"][cut]
-                    if to_debug: set_trace()
+                    #if to_debug: set_trace()
                         ## hadronFlavour definitions found here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
                     bjets = jets[(jets["hadronFlavour"] == 5)]
                     cjets = jets[(jets["hadronFlavour"] == 4)]
@@ -241,15 +271,11 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
     def fill_jet_hists_all(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #acc["Jets_pt_all"].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj["pt"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
-        #acc["Jets_eta_all"].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=ak.flatten(obj["eta"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
         acc["Jets_pt_eta_all"].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj["pt"]), eta=ak.flatten(obj["eta"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
         return acc        
 
     def fill_jet_hists_pass(self, acc, btag_wp, jetmult, leptype, hadFlav, obj, evt_weights):
         #set_trace()
-        #acc["Jets_pt_pass"].fill(    btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj["pt"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
-        #acc["Jets_eta_pass"].fill(   btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, eta=ak.flatten(obj["eta"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
         acc["Jets_pt_eta_pass"].fill(btagger=btag_wp, dataset=self.sample_name, jmult=jetmult, leptype=leptype, hFlav=hadFlav, pt=ak.flatten(obj["pt"]), eta=ak.flatten(obj["eta"]), weight=ak.flatten((ak.ones_like(obj["pt"])*evt_weights)))
         return acc        
 
@@ -259,7 +285,7 @@ class Htt_Flav_Effs(processor.ProcessorABC):
 
 
 proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
+proc_exec_args = {"schema": processor.NanoAODSchema} if to_debug else {"schema": processor.NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
