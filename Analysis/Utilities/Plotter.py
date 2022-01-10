@@ -9,11 +9,6 @@ import re
 from pdb import set_trace
 import numpy as np
 import Utilities.systematics as systematics
-#from iminuit import minimize
-
-    # smoothing
-import statsmodels.nonparametric.smoothers_lowess as sm
-LOWESS = sm.lowess
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile("(?!data*)")
@@ -25,7 +20,8 @@ signal_samples = re.compile(r"((?:%s))" % "|".join(["AtoTT*", "HtoTT*"]))
 nonsignal_samples = re.compile(r"(?!(?:%s))" % "|".join(["AtoTT*", "HtoTT*"]))
 top_samples = re.compile(r"((?:%s))" % "|".join(["ttJets*", "singlet*"]))
 bkg_samples = re.compile(r"((?:%s))" % "|".join(["QCD*", "EWK*"]))
-bkg_mask = re.compile("(BKG*)")
+#bkg_mask = re.compile("(BKG*)")
+bkg_mask = re.compile("(EWQCD*)")
 
 hstyles = styles.styles
 stack_fill_opts = {"alpha": 0.8, "edgecolor":(0,0,0,.5)}
@@ -227,7 +223,7 @@ def plot_mc1d(ax, hdict, xlabel="", ylabel="Events", xlimits=None, ylimits=None,
     
     return ax
 
-def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel="", ylabel="", mask=None, ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
+def plot_2d_norm(values, xlimits, ylimits, xlabel="", ylabel="", hdict=None, mask=None, ax=None, xaxis_name=None, yaxis_name=None, xbins=None, ybins=None, **opts):
     if ax is None:
         ax = plt.gca()
 
@@ -252,7 +248,6 @@ def plot_2d_norm(hdict, values, xlimits, ylimits, xlabel="", ylabel="", mask=Non
     cmap_label = opts.get("cmap_label", "")
     plt.colorbar(pc, ax=ax, label=cmap_label, pad=0.)
 
-    #ax.autoscale(axis="x", tight=True)
     ax.autoscale()
     ax.set_xlim(xlimits)
     ax.set_ylim(ylimits)
@@ -425,8 +420,8 @@ def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False):
     output_bkg = sig_reg.copy()
         # substitute qcd_est array into original hist
     for idx in range(len(bkg_est_sumw2)):
-        output_bkg.values(overflow="all", sumw2=True)[("BKG",)][0][idx] = bkg_est_sumw[idx]
-        output_bkg.values(overflow="all", sumw2=True)[("BKG",)][1][idx] = bkg_est_sumw2[idx]
+        output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][0][idx] = bkg_est_sumw[idx]
+        output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][1][idx] = bkg_est_sumw2[idx]
 
     return output_bkg
 
@@ -686,18 +681,35 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], dense_axes_
     return output_histos
 
 
-def np_array_TO_hist(sumw, sumw2, hist_template, cat, overflow="none"):
+def np_array_TO_hist(sumw, sumw2, hist_template, cat=None, overflow="none"):
     out_histo = hist_template.copy()
     out_histo.clear()
 
-    fill_dict = {out_histo.sparse_axes()[0].name: cat}
-    fill_dict.update({out_histo.dense_axes()[0].name: np.zeros(0), "weight": np.zeros(0)})
+    fill_dict = {out_histo.sparse_axes()[0].name: cat} if len(out_histo.sparse_axes()) == 1 else {}
+    fill_dict.update({out_histo.dense_axes()[idx].name: np.zeros(0) for idx in range(len(out_histo.dense_axes()))})
+    fill_dict.update({"weight" : np.zeros(0)})
     out_histo.fill(**fill_dict)
 
         ## fill bins
-    for xbin in range(sumw.size):
-        out_histo.values(overflow=overflow, sumw2=True)[(cat,)][0][xbin] = sumw[xbin]
-        out_histo.values(overflow=overflow, sumw2=True)[(cat,)][1][xbin] = sumw2[xbin]
+    if len(out_histo.dense_axes()) == 1:
+        if cat is None:
+            for xbin in range(sumw.size):
+                out_histo.values(overflow=overflow, sumw2=True)[()][0][xbin] = sumw[xbin]
+                out_histo.values(overflow=overflow, sumw2=True)[()][1][xbin] = sumw2[xbin]
+        else:
+            for xbin in range(sumw.size):
+                out_histo.values(overflow=overflow, sumw2=True)[(cat,)][0][xbin] = sumw[xbin]
+                out_histo.values(overflow=overflow, sumw2=True)[(cat,)][1][xbin] = sumw2[xbin]
+    elif len(out_histo.dense_axes()) == 2:
+        if cat is None:
+            for xbin in range(sumw.shape[0]):
+                out_histo.values(overflow=overflow, sumw2=True)[()][0][xbin] = sumw[xbin]
+                out_histo.values(overflow=overflow, sumw2=True)[()][1][xbin] = sumw2[xbin]
+        else:
+            for xbin in range(sumw.shape[0]):
+                out_histo.values(overflow=overflow, sumw2=True)[(cat,)][0][xbin] = sumw[xbin]
+                out_histo.values(overflow=overflow, sumw2=True)[(cat,)][1][xbin] = sumw2[xbin]
+    else: raise ValueError("Only 1D and 2D hists supported")
 
     return out_histo 
 
@@ -725,6 +737,10 @@ def get_ratio_and_uncertainty(a_val, a_err, b_val, b_err):
 
 
 def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=False, **fit_opts):
+        # smoothing
+    import statsmodels.nonparametric.smoothers_lowess as sm
+    LOWESS = sm.lowess
+
 
     frac_val = fit_opts.get("frac", 0.5) # fraction of the data used when estimating each y-value
     it_val = fit_opts.get("it", 3)
@@ -739,7 +755,7 @@ def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=Fals
     #set_trace()
     for ybin in range(nbinsy):
         yin = (systematic_vals[ybin*nbinsx:(ybin+1)*nbinsx] - nom_vals[ybin*nbinsx:(ybin+1)*nbinsx])/nom_vals[ybin*nbinsx:(ybin+1)*nbinsx] # relative deviation from nosys
-        total_array[ybin*nbinsx:(ybin+1)*nbinsx] = LOWESS(yin, mtt_centers, frac=frac_val, it=it_val, return_sorted=False)
+        total_array[ybin*nbinsx:(ybin+1)*nbinsx] = np.nan_to_num(LOWESS(yin, mtt_centers, frac=frac_val, it=it_val, return_sorted=False)) # fill nan values with 0
 
     if debug: set_trace()
         # substitute smoothed array into copy of original hist
