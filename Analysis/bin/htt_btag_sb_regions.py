@@ -4,7 +4,6 @@ import time
 tic = time.time()
 
 from coffea import hist, processor
-from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
 import awkward as ak
 from coffea.nanoevents.methods import vector
@@ -37,7 +36,7 @@ analyzer = "htt_btag_sb_regions"
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("fset", type=str, help="Fileset dictionary (in string form) to be used for the processor")
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("outfname", type=str, help="Specify output filename, including directory and file extension")
 parser.add_argument("opts", type=str, help="Fileset dictionary (in string form) to be used for the processor")
 args = parser.parse_args()
@@ -53,15 +52,17 @@ samplename = list(fileset.keys())[0]
 # get dataset classification, used for corrections/systematics
 isTTbar_ = samplename.startswith("ttJets")
 isTTSL_ = samplename.startswith("ttJetsSL")
+isSingleTop_ = samplename.startswith("singlet")
+isTopSample_ = isTTbar_ or isSingleTop_ # ttbar or single top samples
 isSignal_ = (samplename.startswith("AtoTT") or samplename.startswith("HtoTT"))
 isInt_ = isSignal_ and ("Int" in samplename)
 isData_ = samplename.startswith("data")
 isSE_Data_ = samplename.startswith("data_SingleElectron")
 isSM_Data_ = samplename.startswith("data_SingleMuon")
 if isData_:
-    lumiMask_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "LumiMasks", "%s_GoldenJson_%s.txt" % (args.year, base_jobid))
+    lumiMask_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "LumiMasks", f"{args.year}_GoldenJson_{base_jobid}.txt")
 
-Nominal_ttJets = ["ttJets_PS"] if ((args.year == "2016") and (base_jobid == "NanoAODv6")) else ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]
+Nominal_ttJets = ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]
 isNominal_ttJets_ = samplename in Nominal_ttJets
 isTTShift_ = isTTbar_ and (samplename.endswith("UP") or samplename.endswith("DOWN") or "mtop" in samplename)
 
@@ -77,26 +78,26 @@ apply_hem = ast.literal_eval(opts_dict.get("apply_hem", "True"))
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
 
-## load lumimask for data and corrections for event weights
-pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_PU_Weights.coffea"))[args.year]
-lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "leptonSFs.coffea"))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections_UncSources.coffea"))[args.year]
-#jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, "JetMETCorrections.coffea"))[args.year]
-alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid,"alpha_correction_%s.coffea" % jobid))[args.year]["E"]["All_2D"] # E, All_2D determined by post application plots
-nnlo_var = "mtt_vs_thad_ctstar_Interp"
-nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, "NNLO_to_Tune_Orig_Interp_Ratios_%s.coffea" % base_jobid))[args.year]
+#set_trace()
+cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
+## load corrections for event weights
+pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
+lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["sources"]))[args.year]
+alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]["E"]["All_2D"]
+nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
+ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
     "Pileup" : pu_correction,
     "Prefire" : True,
     "LeptonSF" : lepSF_correction,
-    #"BTagSF" : False,
     "BTagSF" : not isData_,
     "JetCor" : jet_corrections,
     "Alpha" : alpha_corrections,
-    "NNLO_Rewt" : {"Var" : nnlo_var, "Correction" : nnlo_reweighting[nnlo_var]},
+    "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
+    "EWK_Rewt" : {"Correction" : ewk_reweighting, "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
 }
 
-cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", "cfg_pars_%s.json" % jobid)).read())
     ## parameters for b-tagging
 jet_pars = cfg_pars["Jets"]
 btaggers = ["DeepCSV"]
@@ -135,7 +136,8 @@ perm_cats = {
 evt_sys_to_run = opts_dict.get("evt_sys", "NONE").upper()
 rewt_sys_to_run = opts_dict.get("rewt_sys", "NONE").upper()
 only_sys = ast.literal_eval(opts_dict.get("only_sys", "False"))
-if isData_ or isTTShift_: # data or separate systematics dataset
+#set_trace()
+if (isData_ or isTTShift_ or (not isTopSample_)) and (not isSignal_): # data or separate systematics dataset
     event_systematics_to_run = ["nosys"]
     reweight_systematics_to_run = ["nosys"]
     if only_sys and isData_: raise ValueError("Data can't be run without 'nosys'")
@@ -170,20 +172,36 @@ print("  and reweight systematics:", *sorted(reweight_systematics_to_run), sep="
 if isSignal_:
     btag_regions = {}
 else:
-    btag_regions = {
-        "p00p15" : (0.00, 0.15),
-        "p15p30" : (0.15, 0.30),
-        "p30p45" : (0.30, 0.45),
-        ##"p00p05" : (0.00, 0.05),
-        ##"p05p10" : (0.05, 0.10),
-        ##"p10p15" : (0.10, 0.15),
-        ##"p15p20" : (0.15, 0.20),
-        ##"p20p25" : (0.20, 0.25),
-        ##"p25p30" : (0.25, 0.30),
-        ##"p30p35" : (0.30, 0.35),
-        ##"p35p40" : (0.35, 0.40),
-        ##"p40p45" : (0.40, 0.45),
-    }
+        # sideband regions are determined by dividing deepcsv medium wp values by 3 for each year
+    if args.year == "2016APV":
+        btag_regions = {
+            "p00p20" : (0.00, 0.20),
+            "p20p40" : (0.20, 0.40),
+            "p40p60" : (0.40, 0.60),
+        }
+    if args.year == "2016":
+        btag_regions = {
+            "p00p1949" : (0.00, 0.1949),
+            "p1949p3898" : (0.1949, 0.3898),
+            "p3898p5847" : (0.3898, 0.5847),
+        }
+    if args.year == "2017":
+        btag_regions = {
+            "p00p1502" : (0.00, 0.1502),
+            "p1502p3004" : (0.1502, 0.3004),
+            "p3004p4506" : (0.3004, 0.4506),
+        }
+    if args.year == "2018":
+        btag_regions = {
+            "p00p1389" : (0.00, 0.1389),
+            "p1389p2779" : (0.1389, 0.2779),
+            "p2779p4168" : (0.2779, 0.4168),
+        }
+    #btag_regions = {
+    #    "p00p15" : (0.00, 0.15),
+    #    "p15p30" : (0.15, 0.30),
+    #    "p30p45" : (0.30, 0.45),
+    #}
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class htt_btag_sb_regions(processor.ProcessorABC):
@@ -195,28 +213,29 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         self.jetmult_axis = hist.Cat("jmult", "nJets")
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
         self.btag_axis = hist.Cat("btag", "BTag Region")
-        self.deepcsv_discr_axis = hist.Bin("deepcsv_bdisc", "DeepCSV bDiscr", 100, 0., 1.)
-        self.deepjet_discr_axis = hist.Bin("deepjet_bdisc", "DeepJet bDiscr", 100, 0., 1.)
-        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", 100, 0, 1000)
-        self.eta_axis = hist.Bin("eta", r"$\eta$", 100, -5., 5.)
-        self.eta_2d_axis = hist.Bin("eta_2d", r"$\eta$", np.array([-3.0, -2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5, 3.0]))
-        self.phi_axis = hist.Bin("phi", r"$\phi$", 80, -4, 4)
-        self.phi_2d_axis = hist.Bin("phi_2d", r"$\phi$", np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]))
+
+        self.deepcsv_discr_axis = hist.Bin("deepcsv_bdisc", "DeepCSV bDiscr", np.around(np.linspace(0., 1., 101), decimals=2))
+        self.deepjet_discr_axis = hist.Bin("deepjet_bdisc", "DeepJet bDiscr", np.around(np.linspace(0., 1., 101), decimals=2))
+        self.pt_axis = hist.Bin("pt", "p_{T} [GeV]", np.around(np.linspace(0., 1000., 101), decimals=0))
+        self.eta_axis = hist.Bin("eta", r"$\eta$", np.around(np.linspace(-5., 5., 101), decimals=1))
+        self.eta_2d_axis = hist.Bin("eta_2d", r"$\eta$", np.around(np.array([-3.0, -2.5, -1.3, -0.7, 0., 0.7, 1.3, 2.5, 3.0]), decimals=1))
+        self.phi_axis = hist.Bin("phi", r"$\phi$", np.around(np.linspace(-4., 4., 81), decimals=1))
+        self.phi_2d_axis = hist.Bin("phi_2d", r"$\phi$", np.around(np.array([-3.2, -2.4, -1.57, -0.87, 0., 0.87, 1.57, 2.4, 3.2]), decimals=2))
         #self.energy_axis = hist.Bin("energy", "E [GeV]", 200, 0, 1000)
-        self.njets_axis = hist.Bin("njets", "n_{jets}", 20, 0, 20)
-        self.lepIso_axis = hist.Bin("iso", "pfRelIso", 100, 0., 1.)
-        self.mt_axis = hist.Bin("mt", "M_{T}", 200, 0., 1000.)
-        self.mtop_axis = hist.Bin("mtop", "m(top) [GeV]", 300, 0, 300)
-        self.wmass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", 300, 0, 300)
-        self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", 360, 200, 2000)
-        self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", 300, 0, 30)
-        self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", 300, 0, 30)
-        self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", 300, 0, 30)
-        self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$", 150, 0., 150.)
-        self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 200, -1., 1.)
-        #self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", 40, -1., 1.)
-        self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 200, 0., 1.)
-        #self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", 20, 0., 1.)
+        self.njets_axis = hist.Bin("njets", "n_{jets}", np.around(np.linspace(0., 20., 21), decimals=0))
+        self.lepIso_axis = hist.Bin("iso", "pfRelIso", np.around(np.linspace(0., 1., 101), decimals=2))
+        self.mt_axis = hist.Bin("mt", "M_{T}", np.around(np.linspace(0., 1000., 201), decimals=0))
+        self.mtop_axis = hist.Bin("mtop", "m(top) [GeV]", np.around(np.linspace(0., 300., 301), decimals=0))
+        self.wmass_axis = hist.Bin("wmass", "m(W_{had}) [GeV]", np.around(np.linspace(0., 300., 301), decimals=0))
+        self.mtt_axis = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(200., 2000., 361), decimals=0))
+        self.probDisc_axis = hist.Bin("prob", "$\lambda_{C}$", np.around(np.linspace(0., 30., 301), decimals=1))
+        self.massDisc_axis = hist.Bin("massdisc", "$\lambda_{M}$", np.around(np.linspace(0., 30., 301), decimals=1))
+        self.nsDisc_axis = hist.Bin("nsdisc", "$\lambda_{NS}$", np.around(np.linspace(0., 30., 301), decimals=1))
+        self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$", np.around(np.linspace(0., 150., 151), decimals=0))
+        self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 41), decimals=2))
+        self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 21), decimals=2))
+        #self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 201), decimals=2))
+        #self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 201), decimals=3))
 
             ## make dictionary of hists
         histo_dict = {}
@@ -237,7 +256,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             ## make dict of cutflow for each systematic variation
         for sys in self.event_systematics_to_run:
-            histo_dict["cutflow_%s" % sys] = processor.defaultdict_accumulator(int)
+            histo_dict[f"cutflow_{sys}"] = processor.defaultdict_accumulator(int)
     
         self._accumulator = processor.dict_accumulator(histo_dict)
 
@@ -261,14 +280,14 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         if "nosys" in self.event_systematics_to_run:
             self.regions["nosys"]["Muon"].update({
                 key : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", "DeepCSV_%s" % key},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", "DeepCSV_%s" % key},
+                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"DeepCSV_{key}"},
+                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"DeepCSV_{key}"},
                 } for key in btag_regions.keys()
             })
             self.regions["nosys"]["Electron"].update({
                 key : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", "DeepCSV_%s" % key},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", "DeepCSV_%s" % key},
+                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"DeepCSV_{key}"},
+                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"DeepCSV_{key}"},
                 } for key in btag_regions.keys()
             })
 
@@ -352,7 +371,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
 
     def process(self, events):
-        #np.random.seed(10) # sets seed so values from random distributions are reproducible (JER corrections)
         output = self.accumulator.identity()
 
         self.sample_name = events.metadata["dataset"]
@@ -435,27 +453,57 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
+            EWcorr_cen = np.ones(len(events))
+            EWcorr_unc = np.ones(len(events))
+            if "NNLO_Rewt" in self.corrections.keys():
+                    # find gen level particles for ttbar system
+                nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
+                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+
+            if "EWK_Rewt" in self.corrections.keys():
+                    ## NLO EW weights
+                if self.corrections["EWK_Rewt"]["wt"] == "Otto":
+                    ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
+                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
+
+                    mu_evt_weights.add("EWcorr",
+                        np.copy(EWcorr_cen),
+                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    )
+                    el_evt_weights.add("EWcorr",
+                        np.copy(EWcorr_cen),
+                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    )
+
+                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
+                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
+
+                    mu_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(EWcorr_cen),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    )
+                    el_evt_weights.add("Yukawa",
+                        np.copy(EWcorr_cen),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
+                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    )
+
             if isTTSL_:
                 genpsel.select(events, mode="NORMAL")
                 {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()}
             else:
                 {selection[sys].add("semilep", np.zeros(len(events), dtype=bool)) for sys in selection.keys()}
-            if "NNLO_Rewt" in self.corrections.keys():
-                if not isTTSL_:
-                    genpsel.select(events, mode="NORMAL")
-                    {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()}
-                nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                mu_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
-                el_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
-
 
         #if to_debug: set_trace()
             # run over systematics that require changes to event objects (jets+MET)
         for evt_sys in self.event_systematics_to_run:
-            output["cutflow_%s" % evt_sys]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
+            output[f"cutflow_{evt_sys}"]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
                 # jet selection
-            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output["cutflow_%s" % evt_sys], shift=evt_sys, hem_15_16=apply_hem)
-            output["cutflow_%s" % evt_sys]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
+            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output[f"cutflow_{evt_sys}"], shift=evt_sys, hem_15_16=apply_hem)
+            output[f"cutflow_{evt_sys}"]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
             selection[evt_sys].add("passing_jets", passing_jets)
             selection[evt_sys].add("jets_3",  ak.num(events["SelectedJets"]) == 3)
             selection[evt_sys].add("jets_4p",  ak.num(events["SelectedJets"]) > 3) # only for getting btag weights
@@ -467,48 +515,36 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 # btag sidebands
             deepcsv_sorted = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)]["btagDeepB"]
             for btag_reg, (low_bound, up_bound) in btag_regions.items():
-                selection[evt_sys].add("DeepCSV_%s" % btag_reg, (ak.max(deepcsv_sorted, axis=1) > low_bound) & (ak.max(deepcsv_sorted, axis=1) <= up_bound))
+                selection[evt_sys].add(f"DeepCSV_{btag_reg}", (ak.max(deepcsv_sorted, axis=1) > low_bound) & (ak.max(deepcsv_sorted, axis=1) <= up_bound))
 
                 ## apply btagging SFs to MC
             if (not isData_) and (corrections["BTagSF"] == True):
-                deepcsv_cen   = np.ones(len(events))
-                deepcsv_bc_up = np.ones(len(events))
-                deepcsv_bc_dw = np.ones(len(events))
-                deepcsv_l_up = np.ones(len(events))
-                deepcsv_l_dw = np.ones(len(events))
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
-                deepcsv_bc_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_down"], axis=1)
-                deepcsv_l_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_down"], axis=1)
+
+                    # fll dict of btag weights
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
     
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["central"], axis=1)
-                deepcsv_bc_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_down"], axis=1)
-                deepcsv_l_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_down"], axis=1)
-                    # make dict of btag weights
-                btag_weights = {
-                    "DeepCSV_CEN" : deepcsv_cen,
-                    "DeepCSV_bc_UP" : deepcsv_bc_up,
-                    "DeepCSV_bc_DW" : deepcsv_bc_dw,
-                    "DeepCSV_l_UP" : deepcsv_l_up,
-                    "DeepCSV_l_DW" : deepcsv_l_dw,
-                }
-            else:
-                btag_weights = {
-                    "DeepCSV_CEN"   : np.ones(len(events)),
-                    "DeepCSV_bc_UP" : np.ones(len(events)),
-                    "DeepCSV_bc_DW" : np.ones(len(events)),
-                    "DeepCSV_l_UP"  : np.ones(len(events)),
-                    "DeepCSV_l_DW"  : np.ones(len(events)),
-                }
 
+                    # fll dict of btag weights
+                for wt_name in deepcsv_4pj_wts.keys():
+                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
+            else:
+                raise ValueError("BTag SFs not applied")
+                set_trace()
+                #btag_weights = {
+                #    "DeepCSV_CEN"   : np.ones(len(events)),
+                #    "DeepCSV_bc_UP" : np.ones(len(events)),
+                #    "DeepCSV_bc_DW" : np.ones(len(events)),
+                #    "DeepCSV_l_UP"  : np.ones(len(events)),
+                #    "DeepCSV_l_DW"  : np.ones(len(events)),
+                #}
+                #btag_weights = np.ones(len(events))
 
             #set_trace()
             ## fill hists for each region
@@ -519,17 +555,17 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         #set_trace()
                         cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][btagregion][jmult])
 
-                        output["cutflow_%s" % evt_sys]["nEvts %s" % ", ".join([lepton, btagregion, jmult])] += cut.sum()
+                        output[f"cutflow_{evt_sys}"]["nEvts %s" % ", ".join([lepton, btagregion, jmult])] += cut.sum()
 
                         if to_debug: print(lepton, btagregion, jmult)
                         if cut.sum() > 0:
                             ltype = "MU" if lepton == "Muon" else "EL"
-                            if "loose_or_tight_%s" % ltype in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][((events[lepton][cut]["TIGHT%s" % ltype] == True) | (events[lepton][cut]["LOOSE%s" % ltype] == True))]
-                            elif "tight_%s" % ltype in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][(events[lepton][cut]["TIGHT%s" % ltype] == True)]
-                            elif "loose_%s" % ltype in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][(events[lepton][cut]["LOOSE%s" % ltype] == True)]
+                            if f"loose_or_tight_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
+                                leptons = events[lepton][cut][((events[lepton][cut][f"TIGHT{ltype}"] == True) | (events[lepton][cut][f"LOOSE{ltype}"] == True))]
+                            elif f"tight_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
+                                leptons = events[lepton][cut][(events[lepton][cut][f"TIGHT{ltype}"] == True)]
+                            elif f"loose_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
+                                leptons = events[lepton][cut][(events[lepton][cut][f"LOOSE{ltype}"] == True)]
                             else:
                                 raise ValueError("Not sure what lepton type to choose for event")
 
@@ -539,27 +575,11 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                 # find best permutations
                             best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wps[0], btag_req=True if btagregion == "btagPass" else False)
                             valid_perms = ak.num(best_perms["TTbar"].pt) > 0
-                            output["cutflow_%s" % evt_sys]["nEvts %s: valid perms" % ", ".join([lepton, btagregion, jmult])] += ak.sum(valid_perms)
+                            output[f"cutflow_{evt_sys}"]["nEvts %s: valid perms" % ", ".join([lepton, btagregion, jmult])] += ak.sum(valid_perms)
 
                             bp_status = np.zeros(cut.size, dtype=int) # 0 == "" (no gen matching), 1 == "right", 2 == "matchable", 3 == "unmatchable", 4 == "sl_tau", 5 == "noslep"
                                 # get matched permutation (semilep ttbar only)
                             if isTTbar_:
-                                ## find gen level particles for ttbar system and other ttbar corrections
-                                #set_trace()
-                                #if isTTSL_:
-                                #    genpsel.select(events, mode="NORMAL")
-                                #    {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()}
-                                #else:
-                                #    {selection[sys].add("semilep", np.zeros(len(events), dtype=bool)) for sys in selection.keys()}
-                                #if "NNLO_Rewt" in self.corrections.keys():
-                                #    if not isTTSL_:
-                                #        genpsel.select(events, mode="NORMAL")
-                                #        {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()}
-                                #    nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                                #    mu_evt_weights.add("%s_reweighting" % corrections["NNLO_Rewt"]["Var"], nnlo_wts)
-                                #    el_evt_weights.add("%s_reweighting" % corrections["NNLO_Rewt"]["Var"], nnlo_wts)
-                                ###
-
                                 semilep_evts = selection[evt_sys].require(semilep=True)
                                 bp_status[~semilep_evts] = 5
                                 if semilep_evts.sum() > 0:
@@ -575,11 +595,10 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                 ## create MT regions
                             MT = make_vars.MT(leptons, met)
                             MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
-                            output["cutflow_%s" % evt_sys]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
+                            output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
 
                                 # fill hists for each systematic
                             if to_debug: print("  evt sys:", evt_sys)
-                            #set_trace()
                             if evt_sys == "nosys":
                                 for rewt_sys in self.reweight_systematics_to_run:
                                     #if to_debug: set_trace()
@@ -588,15 +607,16 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                                     if to_debug: print("    sysname:", rewt_sys)
 
+                                    #set_trace()
                                     if rewt_sys == "nosys":
-                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("btag"):
-                                        wts = (evt_weights.weight()*btag_weights[rewt_sys.replace("btag", btaggers[0])])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight()*btag_weights[rewt_sys.split("btag_")[-1]])[cut][valid_perms][MTHigh]
                                     else:
                                         if rewt_sys not in evt_weights._modifiers.keys():
                                             print(f"{rewt_sys} not option in event weights. Skipping")
                                             continue
-                                        wts = (evt_weights.weight(rewt_sys)*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight(rewt_sys)*btag_weights["central"])[cut][valid_perms][MTHigh]
 
                                     sysname = events.metadata["dataset"].split("_")[-1] if isTTShift_ else rewt_sys
 
@@ -620,7 +640,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                             else:
                                 if to_debug: print("    sysname:", evt_sys)
                                 #if to_debug: set_trace()
-                                wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                                wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                                         # fill hists for interference samples
                                 if isInt_:
                                     #set_trace()
@@ -716,19 +736,18 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
 
 proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
-proc_exec_args = {"schema": NanoAODSchema} if to_debug else {"schema": NanoAODSchema, "workers": 8}
+proc_exec_args = {"schema": processor.NanoAODSchema} if to_debug else {"schema": processor.NanoAODSchema, "workers": 8}
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
     processor_instance=htt_btag_sb_regions(),
     executor=proc_executor,
     executor_args=proc_exec_args,
-    #chunksize=5000,
     chunksize=100000,
 )
 
 save(output, args.outfname)
-print("%s has been written" % args.outfname)
+print(f"{args.outfname} has been written")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))
