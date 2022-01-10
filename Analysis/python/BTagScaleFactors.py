@@ -1,4 +1,5 @@
-from coffea.lookup_tools.csv_converters import convert_btag_csv_file
+from Utilities.convert_btag_csv_file import convert_btag_csv_file
+#from coffea.lookup_tools.csv_converters import convert_btag_csv_file
 import numpy as np
 from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
 from collections import defaultdict
@@ -9,78 +10,99 @@ import os
 from coffea.util import load
 import awkward as ak
 
-proj_dir = os.environ['PROJECT_DIR']
-jobid = os.environ['jobid']
-base_jobid = os.environ['base_jobid']
+proj_dir = os.environ["PROJECT_DIR"]
+jobid = os.environ["jobid"]
+base_jobid = os.environ["base_jobid"]
 
-if base_jobid == 'NanoAODv6':
+if base_jobid == "NanoAODv6":
     btag_csvFiles = {
-        '2016' : {
-            'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
-            'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+        "2016" : {
+            "DeepJet" : "DeepJet_2016LegacySF_V1_used.csv",
+            "DeepCSV" : "DeepCSV_2016LegacySF_V1_used.csv",
         },
-        '2017' : {
-            'DeepJet' : 'DeepJet_2017SF_V4_B_F_used.csv',
-            'DeepCSV' : 'DeepCSV_2017SF_V5_B_F_used.csv',
+        "2017" : {
+            "DeepJet" : "DeepJet_2017SF_V4_B_F_used.csv",
+            "DeepCSV" : "DeepCSV_2017SF_V5_B_F_used.csv",
         },
-        '2018' : {
-            'DeepJet' : 'DeepJet_2018SF_V1_used.csv',
-            'DeepCSV' : 'DeepCSV_2018SF_V1_used.csv',
+        "2018" : {
+            "DeepJet" : "DeepJet_2018SF_V1_used.csv",
+            "DeepCSV" : "DeepCSV_2018SF_V1_used.csv",
         },
     }
 else:
     btag_csvFiles = {
-            # 2016(APV) are same as EOY for now!!
-        '2016APV' : {
-            'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
-            'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+        "2016APV" : {
+            #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
+            #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
+            "DeepJet" : "DeepJet_106XUL16preVFPSF_v1_used.csv",
+            "DeepCSV" : "DeepCSV_106XUL16preVFPSF_v1_used.csv",
         },
-        '2016' : {
-            'DeepJet' : 'DeepJet_2016LegacySF_V1_used.csv',
-            'DeepCSV' : 'DeepCSV_2016LegacySF_V1_used.csv',
+        "2016" : {
+            #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
+            #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
+            "DeepJet" : "DeepJet_106XUL16postVFPSF_v2_used.csv",
+            "DeepCSV" : "DeepCSV_106XUL16postVFPSF_v2_used.csv",
         },
-        '2017' : {
-            'DeepJet' : 'DeepJet_106XUL17SF_WPonly_V2p1_mujets_used.csv',
-            'DeepCSV' : 'DeepCSV_106XUL17SF_WPonly_V2p1_mujets_used.csv',
+        "2017" : {
+            #"DeepJet" : "DeepJet_106XUL17SF_WPonly_V2p1_mujets_used.csv",
+            #"DeepCSV" : "DeepCSV_106XUL17SF_WPonly_V2p1_mujets_used.csv",
+            "DeepJet" : "wp_deepJet_106XUL17_v3_used.csv",
+            "DeepCSV" : "wp_deepCSV_106XUL17_v3_used.csv",
         },
-        '2018' : {
-            'DeepJet' : 'DeepJet_106XUL18SF_WPonly_mujets_used.csv',
-            'DeepCSV' : 'DeepCSV_106XUL18SF_WPonly_mujets_used.csv',
+        "2018" : {
+            #"DeepJet" : "DeepJet_106XUL18SF_WPonly_mujets_used.csv",
+            #"DeepCSV" : "DeepCSV_106XUL18SF_WPonly_mujets_used.csv",
+            "DeepJet" : "wp_deepJet_106XUL18_v2_used.csv",
+            "DeepCSV" : "wp_deepCSV_106XUL18_v2_used.csv",
         },
     }
 
+wp_lookup_dict = {
+    "L" : "Loose",
+    "M" : "Medium",
+    "T" : "Tight",
+    "R" : "Reshape"
+}
 wp_lookup = [
-    'Loose',
-    'Medium',
-    'Tight',
-    'Reshape'
+    "Loose",
+    "Medium",
+    "Tight",
+    "Reshape"
 ]
 
-flav_2_name = ['B', 'C', 'UDSG']
+flav_2_name_dict = {"5" : "B", "4" : "C", "0" : "UDSG"}
+flav_2_name = ["B", "C", "UDSG"]
 
 import awkward
-def reshuffle_sf_dict(sf_dict, label_modifier = lambda x: x):
+def reshuffle_sf_dict(sf_dict, label_modifier = lambda x: x, algorithm = None):
+    #set_trace()
     retval = nested_dict()
     for key, val in sf_dict.items():
         label, check = key
-        if check != 'dense_evaluated_lookup':
-            raise ValueError(f'Value for label {label} is not a dense_evaluated_lookup')
+        if check != "dense_evaluated_lookup":
+            raise ValueError(f"Value for label {label} is not a dense_evaluated_lookup")
         
         label = label_modifier(label)
-        split = label.split('_')
+        split = label.split("_")
         if len(split) == 5:
             algo, wp, source, sys, flav = tuple(split)
         elif len(split) == 6:
             algo, wp, source, sys, up_down, flav = tuple(split)
-            sys = '_'.join([sys, up_down])
+            sys = "_".join([sys, up_down])
         else:
-            raise RuntimeError(f'This should not happen {label}')
-            
-        retval[algo][source][wp_lookup[int(wp)]]['_'.join([flav_2_name[int(flav)], sys])] = val
+            raise RuntimeError(f"This should not happen {label}")
+
+        if (algo == "btagsf") and (algorithm is not None):
+            algo = algorithm
+
+        #set_trace()            
+        retval[algo][source][wp_lookup_dict[str(wp)]]["_".join([flav_2_name_dict[str(flav)], sys])] = val
+        #retval[algo][source][wp_lookup[int(wp)]]["_".join([flav_2_name[int(flav)], sys])] = val
+    #set_trace()
     return retval
 
 def recursive_compile(sf_dict):
-    '''compiles the values of the dict into coffea functions'''
+    """compiles the values of the dict into coffea functions"""
     retval = {}
     for key, val in sf_dict.items():
         if isinstance(val, dict):
@@ -92,37 +114,54 @@ def recursive_compile(sf_dict):
 from copy import deepcopy
 class BTagSF(object):
     def __init__(self, csv = None, wp_key = None, effs = None):
-        '''SF computation according to method 1a of 
+        """SF computation according to method 1a of 
         https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
         Inputs: csv, wp_key, eff_file, pattern
         csv: path to a b-tagging CSV file
         wp_key: a tuple of three elements containing (Algo name, SF method, WP name) 
-        effs: dictionary containing the efficiencies for each flavour as dense_lookups'''
+        effs: dictionary containing the efficiencies for each flavour as dense_lookups"""
+        #set_trace()
         parsed_csv = reshuffle_sf_dict(
-            convert_btag_csv_file(csv)
+            convert_btag_csv_file(csv),
+            algorithm = wp_key[0]
             )
         self.sf_ = recursive_compile(parsed_csv[wp_key[0]][wp_key[1]][wp_key[2]])
+        #set_trace()
         # FIXME: move to correlated/uncorrelated
         # Define, by hand, the proper correlation among taggers, 
         # somewhere unfortunately needs to be hardcoded by hand
         # tuple of names for UDSG, B, C
         self.schema_ = { 
-            'central' : ('UDSG_central', 'C_central', 'B_central'),
-            'bc_up' : ('UDSG_central', 'C_up', 'B_up'),
-            'bc_down' : ('UDSG_central', 'C_down', 'B_down'),
-            'udsg_up' : ('UDSG_up', 'C_central', 'B_central'),
-            'udsg_down' : ('UDSG_down', 'C_central', 'B_central'),
+            "central" : ("UDSG_central", "C_central", "B_central"),
+            "bc_up" : ("UDSG_central", "C_up", "B_up"),
+            "bc_up_correlated" : ("UDSG_central", "C_up_correlated", "B_up_correlated"),
+            "bc_up_uncorrelated" : ("UDSG_central", "C_up_uncorrelated", "B_up_uncorrelated"),
+            "bc_down" : ("UDSG_central", "C_down", "B_down"),
+            "bc_down_correlated" : ("UDSG_central", "C_down_correlated", "B_down_correlated"),
+            "bc_down_uncorrelated" : ("UDSG_central", "C_down_uncorrelated", "B_down_uncorrelated"),
+            "l_up" : ("UDSG_up", "C_central", "B_central"),
+            "l_up_correlated" : ("UDSG_up_correlated", "C_central", "B_central"),
+            "l_up_uncorrelated" : ("UDSG_up_uncorrelated", "C_central", "B_central"),
+            "l_down" : ("UDSG_down", "C_central", "B_central"),
+            "l_down_correlated" : ("UDSG_down_correlated", "C_central", "B_central"),
+            "l_down_uncorrelated" : ("UDSG_down_uncorrelated", "C_central", "B_central"),
+            #"udsg_up" : ("UDSG_up", "C_central", "B_central"),
+            #"udsg_up_correlated" : ("UDSG_up_correlated", "C_central", "B_central"),
+            #"udsg_up_uncorrelated" : ("UDSG_up_uncorrelated", "C_central", "B_central"),
+            #"udsg_down" : ("UDSG_down", "C_central", "B_central"),
+            #"udsg_down_correlated" : ("UDSG_down_correlated", "C_central", "B_central"),
+            #"udsg_down_uncorrelated" : ("UDSG_down_uncorrelated", "C_central", "B_central"),
             }
 
         self.eff_ = {
-            'B'    : effs['bottom'],
-            'C'    : effs['charm' ],
-            'UDSG' : effs['light' ],
+            "B"    : effs["bottom"],
+            "C"    : effs["charm" ],
+            "UDSG" : effs["light" ],
         }
 
     def match_flav_(self, light, charm, bottom, flav):
-        '''returns a np.array with the correct output matched
-        according to the flavour'''
+        """returns a np.array with the correct output matched
+        according to the flavour"""
         ret = deepcopy(light)
         is_c = (flav == 4)
         is_b = (flav == 5)
@@ -131,18 +170,18 @@ class BTagSF(object):
         return ret
 
     def efficiency_(self, pt, eta, flav):
-        ''''computes the efficiency under each 
-        flavour assumption and then matches it'''
-        eff_l = self.eff_['UDSG'](pt, eta)
-        eff_c = self.eff_['C'](pt, eta)
-        eff_b = self.eff_['B'](pt, eta)
+        """"computes the efficiency under each 
+        flavour assumption and then matches it"""
+        eff_l = self.eff_["UDSG"](pt, eta)
+        eff_c = self.eff_["C"](pt, eta)
+        eff_b = self.eff_["B"](pt, eta)
         return self.match_flav_(eff_l, eff_c, eff_b, flav)
 
     def get_scale_factor(self, jets, passing_cut):
-        '''Starting from a jet collection and a string pointing to 
+        """Starting from a jet collection and a string pointing to 
         the flag defining if the jet is b-tagged or not computes the 
         per-jet weight to be used. Supports only a single WP for the 
-        moment'''
+        moment"""
         # First of all flatten everything to make it easier to handle
         pt = ak.to_numpy(ak.flatten(jets.pt))
         eta = ak.to_numpy(ak.flatten(jets.eta))
@@ -162,10 +201,9 @@ class BTagSF(object):
         for key, lcb in self.schema_.items(): 
             # populate cache if needed
             for i in range(3):
-                flavour_sf_cache[lcb[i]] = flavour_sf_cache.get(
-                    # for some reason there is an additional dimension, pass_wp has no effect
-                    lcb[i], self.sf_[lcb[i]](eta, pt, pass_wp) 
-                )
+                # protect against using prelim csv files that don't have UDSG wps
+                flavour_sf_cache[lcb[i]] = np.ones(eta.size) if lcb[i] not in self.sf_.keys() else flavour_sf_cache.get(lcb[i], self.sf_[lcb[i]](eta, pt, pass_wp))
+                
             scale_factors[key] = eff * self.match_flav_(
                 flavour_sf_cache[lcb[0]],
                 flavour_sf_cache[lcb[1]],
@@ -183,13 +221,13 @@ class BTagSF(object):
                 for key, i in p_data.items()}
 
 
-## evts = NanoEvents.from_file('/afs/cern.ch/work/j/jdulemba/public/ttJets2016Nano_0.root')
-## evts['Jet']['DeepCSVMedium'] = evts['Jet']['btagDeepB'] > 0.8
+## evts = NanoEvents.from_file("/afs/cern.ch/work/j/jdulemba/public/ttJets2016Nano_0.root")
+## evts["Jet"]["DeepCSVMedium"] = evts["Jet"]["btagDeepB"] > 0.8
 ## 
 ## sf_computer = BTagSF(
-##     csv = 'DeepJet_2016LegacySF_V1.csv', 
-##     wp_key = ('DeepJet', 'used', 'Medium'), 
-##     eff_file = 'htt_DeepJet_2016Legacy_j20l50MT40_1lep_DEEPJETMEDIUM_DEEPJETMEDIUM_3PJets_efficiencies.root', 
-##     pattern = '{0}/DEEPJETMEDIUM_eff_3Jets'
+##     csv = "DeepJet_2016LegacySF_V1.csv", 
+##     wp_key = ("DeepJet", "used", "Medium"), 
+##     eff_file = "htt_DeepJet_2016Legacy_j20l50MT40_1lep_DEEPJETMEDIUM_DEEPJETMEDIUM_3PJets_efficiencies.root", 
+##     pattern = "{0}/DEEPJETMEDIUM_eff_3Jets"
 ## )
-## sf_weight = sf_computer.get_scale_factor(evts['Jet'], 'DeepCSVMedium')
+## sf_weight = sf_computer.get_scale_factor(evts["Jet"], "DeepCSVMedium")
