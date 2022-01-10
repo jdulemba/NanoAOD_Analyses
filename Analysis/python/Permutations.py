@@ -17,27 +17,28 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
     isWLepComplete = (ak.num(lepton.pt) == 1) & (ak.num(nu.pt) == 1)
     isTLepComplete = isWLepComplete & (ak.num(blep.pt) == 1)
 
+    #set_trace()
     WLep = ak.Array({
-        'pt'    : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).pt, []),
-        'eta'   : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).eta, []),
-        'phi'   : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).phi, []),
-        'mass'  : ak.fill_none( (ak.mask(lepton, isWLepComplete)+ak.mask(nu, isWLepComplete)).mass, []),
-        'charge': ak.fill_none( (ak.mask(lepton, isWLepComplete)).charge, []),
+        "pt"    : ak.fill_none( (ak.mask(lepton, isWLepComplete) + ak.mask(nu, isWLepComplete)).pt, [], axis=0),
+        "eta"   : ak.fill_none( (ak.mask(lepton, isWLepComplete) + ak.mask(nu, isWLepComplete)).eta, [], axis=0),
+        "phi"   : ak.fill_none( (ak.mask(lepton, isWLepComplete) + ak.mask(nu, isWLepComplete)).phi, [], axis=0),
+        "mass"  : ak.fill_none( (ak.mask(lepton, isWLepComplete) + ak.mask(nu, isWLepComplete)).mass, [], axis=0),
+        "charge": ak.fill_none( (ak.mask(lepton, isWLepComplete)).charge, [], axis=0),
     }, with_name="PtEtaPhiMLorentzVector")
     TLep = ak.Array({
-        'pt'    : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).pt, []),
-        'eta'   : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).eta, []),
-        'phi'   : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).phi, []),
-        'mass'  : ak.fill_none( (ak.mask(WLep, isTLepComplete)+ak.mask(blep, isTLepComplete)).mass, []),
+        "pt"    : ak.fill_none( (ak.mask(WLep, isTLepComplete) + ak.mask(blep, isTLepComplete)).pt, [], axis=0),
+        "eta"   : ak.fill_none( (ak.mask(WLep, isTLepComplete) + ak.mask(blep, isTLepComplete)).eta, [], axis=0),
+        "phi"   : ak.fill_none( (ak.mask(WLep, isTLepComplete) + ak.mask(blep, isTLepComplete)).phi, [], axis=0),
+        "mass"  : ak.fill_none( (ak.mask(WLep, isTLepComplete) + ak.mask(blep, isTLepComplete)).mass, [], axis=0),
     }, with_name="PtEtaPhiMLorentzVector")
 
 
     ## Event categories
         # fill empty [] events with values for easier comparisons
-    bhad_jetIdx = ak.fill_none(ak.pad_none(bhad, 1).jetIdx, -999)
-    blep_jetIdx = ak.fill_none(ak.pad_none(blep, 1).jetIdx, -999)
-    wja_jetIdx = ak.fill_none(ak.pad_none(wja, 1).jetIdx, -999)
-    wjb_jetIdx = ak.fill_none(ak.pad_none(wjb, 1).jetIdx, -999)
+    bhad_jetIdx = ak.fill_none(ak.pad_none(bhad, 1).jetIdx, -999, axis=1)
+    blep_jetIdx = ak.fill_none(ak.pad_none(blep, 1).jetIdx, -999, axis=1)
+    wja_jetIdx = ak.fill_none(ak.pad_none(wja, 1).jetIdx, -999, axis=1)
+    wjb_jetIdx = ak.fill_none(ak.pad_none(wjb, 1).jetIdx, -999, axis=1)
 
         # merged jets event categories
             # only bhad and blep merged
@@ -94,58 +95,57 @@ def make_perm_table(bhad, blep, wja, wjb, lepton, met, nu):
 
             # inds where only WJb p4 is used as WHad
     use_wjb_inds = ak.flatten(Merged_BHadWJa | Merged_BLepWJa | Merged_WJets | Lost_WJa)
-    whad_pt[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.pt, 1), np.nan)[use_wjb_inds]))
-    whad_eta[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.eta, 1), np.nan)[use_wjb_inds]))
-    whad_phi[use_wjb_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.phi, 1), np.nan)[use_wjb_inds]))
-    whad_mass[use_wjb_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb.mass, 1), np.nan)[use_wjb_inds]))
+    whad_pt[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb, 1), np.nan, axis=1).pt[use_wjb_inds]))
+    whad_eta[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb, 1), np.nan, axis=1).eta[use_wjb_inds]))
+    whad_phi[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb, 1), np.nan, axis=1).phi[use_wjb_inds]))
+    whad_mass[use_wjb_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wjb, 1), np.nan, axis=1).mass[use_wjb_inds]))
 
             # inds where only WJa p4 is used as WHad
     use_wja_inds = ak.flatten(Merged_BHadWJb | Merged_BLepWJb | Lost_WJb)
-    whad_pt[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.pt, 1), np.nan)[use_wja_inds]))
-    whad_eta[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.eta, 1), np.nan)[use_wja_inds]))
-    whad_phi[use_wja_inds] = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.phi, 1), np.nan)[use_wja_inds]))
-    whad_mass[use_wja_inds]= ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja.mass, 1), np.nan)[use_wja_inds]))
+    whad_pt[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja, 1), np.nan, axis=1).pt[use_wja_inds]))
+    whad_eta[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja, 1), np.nan, axis=1).eta[use_wja_inds]))
+    whad_phi[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja, 1), np.nan, axis=1).phi[use_wja_inds]))
+    whad_mass[use_wja_inds]  = ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(wja, 1), np.nan, axis=1).mass[use_wja_inds]))
 
             # inds where combined p4 from WJa and WJb is used as WHad (all other inds)
     use_comb_inds = ~(use_wjb_inds | use_wja_inds)
-    whad_pt[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).pt[use_comb_inds] ))
-    whad_eta[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).eta[use_comb_inds] ))
-    whad_phi[use_comb_inds] = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).phi[use_comb_inds] ))
-    whad_mass[use_comb_inds]= ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0) + ak.fill_none(ak.pad_none( wjb, 1), 0)).mass[use_comb_inds] ))
+    whad_pt[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0, axis=1) + ak.fill_none(ak.pad_none( wjb, 1), 0, axis=1)).pt[use_comb_inds] ))
+    whad_eta[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0, axis=1) + ak.fill_none(ak.pad_none( wjb, 1), 0, axis=1)).eta[use_comb_inds] ))
+    whad_phi[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0, axis=1) + ak.fill_none(ak.pad_none( wjb, 1), 0, axis=1)).phi[use_comb_inds] ))
+    whad_mass[use_comb_inds]  = ak.to_numpy(ak.flatten( (ak.fill_none(ak.pad_none( wja, 1), 0, axis=1) + ak.fill_none(ak.pad_none( wjb, 1), 0, axis=1)).mass[use_comb_inds] ))
     whad_pt[whad_pt == 0.] = np.nan
     whad_eta[whad_eta == 0.] = np.nan
     whad_phi[whad_phi == 0.] = np.nan
     whad_mass[whad_mass == 0.] = np.nan
     
     WHad = ak.Array({
-        'pt'    : ak.unflatten(whad_pt[~np.isnan(whad_pt)], (~np.isnan(whad_pt)).astype(int)),
-        'eta'   : ak.unflatten(whad_eta[~np.isnan(whad_eta)], (~np.isnan(whad_eta)).astype(int)),
-        'phi'   : ak.unflatten(whad_phi[~np.isnan(whad_phi)], (~np.isnan(whad_phi)).astype(int)),
-        'mass'  : ak.unflatten(whad_mass[~np.isnan(whad_mass)], (~np.isnan(whad_mass)).astype(int)),
-        'charge': -1*ak.fill_none(ak.mask(WLep, ~np.isnan(whad_mass)).charge, []), # opposite charge as WLep for events that exist
+        "pt"    : ak.unflatten(whad_pt[~np.isnan(whad_pt)], (~np.isnan(whad_pt)).astype(int)),
+        "eta"   : ak.unflatten(whad_eta[~np.isnan(whad_eta)], (~np.isnan(whad_eta)).astype(int)),
+        "phi"   : ak.unflatten(whad_phi[~np.isnan(whad_phi)], (~np.isnan(whad_phi)).astype(int)),
+        "mass"  : ak.unflatten(whad_mass[~np.isnan(whad_mass)], (~np.isnan(whad_mass)).astype(int)),
+        "charge": -1*ak.fill_none(ak.mask(WLep, ~np.isnan(whad_mass)).charge, [], axis=0), # opposite charge as WLep for events that exist
     }, with_name="PtEtaPhiMLorentzVector")
 
 
     isWHadComplete = (ak.num(WHad.pt) == 1)
     isTHadComplete = (isWHadComplete) & (ak.num(bhad.pt) == 1)
 
-    #set_trace()
-
     # create THad
     THad = ak.Array({
-        'pt'    : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).pt, []),
-        'eta'   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).eta, []),
-        'phi'   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).phi, []),
-        'mass'  : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).mass, []),
+        "pt"    : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).pt, [], axis=0),
+        "eta"   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).eta, [], axis=0),
+        "phi"   : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).phi, [], axis=0),
+        "mass"  : ak.fill_none( (ak.mask(WHad, isTHadComplete)+ak.mask(bhad, isTHadComplete)).mass, [], axis=0),
     }, with_name="PtEtaPhiMLorentzVector")
 
     # create TTbar
     isComplete = isTHadComplete & isTLepComplete
+
     TTbar = ak.Array({
-        'pt'    : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).pt, []),
-        'eta'   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).eta, []),
-        'phi'   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).phi, []),
-        'mass'  : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).mass, []),
+        "pt"    : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).pt, [], axis=0),
+        "eta"   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).eta, [], axis=0),
+        "phi"   : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).phi, [], axis=0),
+        "mass"  : ak.fill_none( (ak.mask(THad, isComplete)+ak.mask(TLep, isComplete)).mass, [], axis=0),
     }, with_name="PtEtaPhiMLorentzVector")
 
     
@@ -191,23 +191,22 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
     Compare object assignments across two permutations.
     Inputs: matched perm, best perm, njets category, matched perm mask, best perm mask
     '''
-    if len(mp['BLep']) != len(bp['BLep']):
+    if len(mp["BLep"]) != len(bp["BLep"]):
         raise ValueError("Permutations must have the same size in order to be compared!")
-    if not ((njets == '3Jets') or (njets == '4PJets')):
+    if not ((njets == "3Jets") or (njets == "4PJets")):
         raise ValueError("Only 3Jets or 4+ jets categorizations are supported")
 
-    #set_trace()
-    mp_blep_idx = ak.fill_none(ak.pad_none(mp['BLep'].jetIdx, 1), -999)
-    mp_bhad_idx = ak.fill_none(ak.pad_none(mp['BHad'].jetIdx, 1), -999)
-    mp_wja_idx = ak.fill_none(ak.pad_none(mp['WJa'].jetIdx, 1), -999)
-    mp_wjb_idx = ak.fill_none(ak.pad_none(mp['WJb'].jetIdx, 1), -999)
-    mp_lep_pt = ak.fill_none(ak.pad_none(mp['Lepton'].pt, 1), -999)
+    mp_blep_idx = ak.fill_none(ak.pad_none(mp["BLep"].jetIdx, 1), -999, axis=1)
+    mp_bhad_idx = ak.fill_none(ak.pad_none(mp["BHad"].jetIdx, 1), -999, axis=1)
+    mp_wja_idx = ak.fill_none(ak.pad_none(mp["WJa"].jetIdx, 1), -999, axis=1)
+    mp_wjb_idx = ak.fill_none(ak.pad_none(mp["WJb"].jetIdx, 1), -999, axis=1)
+    mp_lep_pt = ak.fill_none(ak.pad_none(mp["Lepton"].pt, 1), -999, axis=1)
 
-    bp_blep_idx = ak.fill_none(ak.pad_none(bp['BLep'].jetIdx, 1), -999)
-    bp_bhad_idx = ak.fill_none(ak.pad_none(bp['BHad'].jetIdx, 1), -999)
-    bp_wja_idx = ak.fill_none(ak.pad_none(bp['WJa'].jetIdx, 1), -999)
-    bp_wjb_idx = ak.fill_none(ak.pad_none(bp['WJb'].jetIdx, 1), -999)
-    bp_lep_pt = ak.fill_none(ak.pad_none(bp['Lepton'].pt, 1), -999)
+    bp_blep_idx = ak.fill_none(ak.pad_none(bp["BLep"].jetIdx, 1), -999, axis=1)
+    bp_bhad_idx = ak.fill_none(ak.pad_none(bp["BHad"].jetIdx, 1), -999, axis=1)
+    bp_wja_idx = ak.fill_none(ak.pad_none(bp["WJa"].jetIdx, 1), -999, axis=1)
+    bp_wjb_idx = ak.fill_none(ak.pad_none(bp["WJb"].jetIdx, 1), -999, axis=1)
+    bp_lep_pt = ak.fill_none(ak.pad_none(bp["Lepton"].pt, 1), -999, axis=1)
 
         # index comparisons
     same_blep = (mp_blep_idx == bp_blep_idx) & (mp_blep_idx >= 0)
@@ -217,19 +216,19 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
 
     same_bs = same_blep & same_bhad
 
-    cats = np.zeros(len(mp['BLep'])) # 0 == '' (no gen matching), 1 == 'right', 2 == 'matchable', 3 == 'unmatchable', 4 == 'sl_tau', 5 == 'noslep'
-    if njets == '3Jets':
-        valid_evts = (ak.num(mp['TTbar'].pt) > 0) & (ak.flatten(mp['unique_matches'] >= 3))
+    cats = np.zeros(len(mp["BLep"])) # 0 == "" (no gen matching), 1 == "right", 2 == "matchable", 3 == "unmatchable", 4 == "sl_tau", 5 == "noslep"
+    if njets == "3Jets":
+        valid_evts = (ak.num(mp["TTbar"].pt) > 0) & (ak.flatten(mp["unique_matches"] >= 3))
 
             # merged events
-        merged_evts = valid_evts & ak.flatten(mp['Merged_Event'])
-        correct_merged = merged_evts & ak.flatten(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets'])
-        wrong_merged = merged_evts & ak.flatten(~(mp['Merged_BHadWJa'] | mp['Merged_BHadWJb'] | mp['Merged_WJets']))
+        merged_evts = valid_evts & ak.flatten(mp["Merged_Event"])
+        correct_merged = merged_evts & ak.flatten(mp["Merged_BHadWJa"] | mp["Merged_BHadWJb"] | mp["Merged_WJets"])
+        wrong_merged = merged_evts & ak.flatten(~(mp["Merged_BHadWJa"] | mp["Merged_BHadWJb"] | mp["Merged_WJets"]))
 
             # lost events
-        lost_evts = valid_evts & ak.flatten(mp['Lost_Event'])
-        correct_lost = lost_evts & ak.flatten(mp['Lost_WJa'] | mp['Lost_WJb'])
-        wrong_lost = lost_evts & ak.flatten(~(mp['Lost_WJa'] | mp['Lost_WJb']))
+        lost_evts = valid_evts & ak.flatten(mp["Lost_Event"])
+        correct_lost = lost_evts & ak.flatten(mp["Lost_WJa"] | mp["Lost_WJb"])
+        wrong_lost = lost_evts & ak.flatten(~(mp["Lost_WJa"] | mp["Lost_WJb"]))
 
             # bs are matched correctly, bp wjet is matched to one of the matched perm wjets, leptons are correctly matched
         right_matching = same_bs & (((bp_wja_idx == mp_wja_idx) | (bp_wja_idx == mp_wjb_idx)) & (bp_wja_idx >= 0)) & (bp_lep_pt == mp_lep_pt) 
@@ -243,7 +242,7 @@ def compare_matched_best_perms(mp, bp, njets, bp_mask=None):
         matchable_evts = ak.flatten((correct_lost & ~right_matching) | (correct_merged & ~right_matching)) # matched perm is correct event type but wrong object matching
 
     else:
-        valid_evts = (ak.num(mp['TTbar'].pt) > 0) & (ak.flatten(mp['unique_matches'] == 4))
+        valid_evts = (ak.num(mp["TTbar"].pt) > 0) & (ak.flatten(mp["unique_matches"] == 4))
         isWHadCorrect = ((bp_wja_idx == mp_wja_idx) & (bp_wjb_idx == mp_wjb_idx)) | ((bp_wja_idx == mp_wjb_idx) & (bp_wjb_idx == mp_wja_idx))
         isTHadCorrect = same_bhad & isWHadCorrect
         isTLepCorrect = same_blep & (bp_lep_pt == mp_lep_pt)
