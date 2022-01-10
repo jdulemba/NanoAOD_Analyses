@@ -12,20 +12,21 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 import uproot3
-from rootpy.io import root_open
 import coffea.processor as processor    
 import Utilities.systematics as systematics
+import Utilities.final_analysis_binning as final_binning
 
 base_jobid = os.environ["base_jobid"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
+parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("--njets", default="all", nargs="?", choices=["3", "4+", "all"], help="Specify which jet multiplicity to use.")
 parser.add_argument("--only_bkg", action="store_true", help="Make background templates only.")
 parser.add_argument("--only_sig", action="store_true", help="Make signal templates only.")
 parser.add_argument("--maskData", action="store_false", help="Mask templates for data, default is True.")
-parser.add_argument("--naming", choices=["dir", "name"], default="name", help="Naming in output root files has separate names within one directory (name) or same naming in separate directories (dir). Default is name.")
+parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
+parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
 
 njets_to_run = []
@@ -34,16 +35,38 @@ if (args.njets == "3") or (args.njets == "all"):
 if (args.njets == "4+") or (args.njets == "all"):
     njets_to_run += ["4PJets"]
 
+if args.year == "2016APV":
+    btag_reg_names_dict = {
+        "Signal" : {"reg" : "btagPass"},
+        "Down"   : {"reg" : "p00p20", "label" : "Down (0.0-0.2)", "color" : "b"},
+        "Central": {"reg" : "p20p40", "label" : "Cen (0.2-0.4)", "color" : "k"},
+        "Up"     : {"reg" : "p40p60", "label" : "Up (0.4-0.6)", "color" : "r"},
+    }
+if args.year == "2016":
+    btag_reg_names_dict = {
+        "Signal" : {"reg" : "btagPass"},
+        "Down"   : {"reg" : "p00p1949", "label" : "Down (0.0-0.1949)", "color" : "b"},
+        "Central": {"reg" : "p1949p3898", "label" : "Cen (0.1949-0.3898)", "color" : "k"},
+        "Up"     : {"reg" : "p3898p5847", "label" : "Up (0.3898-0.5847)", "color" : "r"},
+    }
+if args.year == "2017":
+    btag_reg_names_dict = {
+        "Signal" : {"reg" : "btagPass"},
+        "Down"   : {"reg" : "p00p1502", "label" : "Down (0.0-0.1502)", "color" : "b"},
+        "Central": {"reg" : "p1502p3004", "label" : "Cen (0.1502-0.3004)", "color" : "k"},
+        "Up"     : {"reg" : "p3004p4506", "label" : "Up (0.3004-0.4506)", "color" : "r"},
+    }
+if args.year == "2018":
+    btag_reg_names_dict = {
+        "Signal" : {"reg" : "btagPass"},
+        "Down"   : {"reg" : "p00p1389", "label" : "Down (0.0-0.1389)", "color" : "b"},
+        "Central": {"reg" : "p1389p2779", "label" : "Cen (0.1389-0.2779)", "color" : "k"},
+        "Up"     : {"reg" : "p2779p4168", "label" : "Up (0.2779-0.4168)", "color" : "r"},
+    }
 
-btag_reg_names_dict = {
-    "Signal" : {"reg" : "btagPass"},
-    "Central": {"reg" : "p15p30", "label" : "Cen (0.15-0.3)", "color" : "k"},
-    "Up"     : {"reg" : "p30p45", "label" : "Up (0.3-0.45)", "color" : "r"},
-    "Down"   : {"reg" : "p00p15", "label" : "Down (0.0-0.15)", "color" : "b"}
-}
 
 
-def get_bkg_templates(tmp_rname):
+def get_bkg_templates():
     """
     Function that writes linearized mtt vs costheta distributions to root file.
     """
@@ -53,7 +76,7 @@ def get_bkg_templates(tmp_rname):
         # get correct hist and rebin
     hname_to_use = "mtt_vs_tlep_ctstar_abs"
     if hname_to_use not in hdict.keys():
-        raise ValueError("%s not found in file" % hname_to_use)
+        raise ValueError(f"{hname_to_use} not found in file")
     xrebinning, yrebinning = linearize_binning
     histo = hdict[hname_to_use][Plotter.nonsignal_samples] # process, sys, jmult, leptype, btag, lepcat
     
@@ -81,21 +104,15 @@ def get_bkg_templates(tmp_rname):
     process = hist.Cat("process", "Process", sorting="placement")
     process_cat = "dataset"
 
-        # need to save coffea hist objects to file so they can be opened by uproot in the proper format
-    upfout = uproot3.recreate(tmp_rname, compression=uproot3.ZLIB(4)) if os.path.isfile(tmp_rname) else uproot3.create(tmp_rname)
-
     if "3Jets" in njets_to_run:
         histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
     if "4PJets" in njets_to_run:
         histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
 
     for lep in ["Muon", "Electron"]:
-        orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
-
         #set_trace()    
         ## make groups based on process
         process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, gdict="templates")
-        #process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, gdict="dataset")
         
         lumi_correction = lumi_corr_dict[args.year]["%ss" % lep]
                 # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
@@ -107,6 +124,15 @@ def get_bkg_templates(tmp_rname):
     
         histo = rebin_histo.copy()
         histo.scale(lumi_correction, axis="dataset")
+        for nom_tt in ["ttJetsSL", "ttJetsDiLep", "ttJetsHad"]:
+            for cat in ttJets_permcats:
+                # rescale LHEscale systematics correctly
+                for hname, dname in tt_LHEscale_wts_name_dict.items():
+                    if f"{nom_tt}_{cat[1:]}" not in ttJets_cats: continue
+                    #print(f"{nom_tt}_{cat[1:]}_{dname}")
+                    lhe_scale = lumi_correction[f"{nom_tt}_{dname}"]/lumi_correction[f"{nom_tt}_{cat[1:]}"]
+                    histo.scale({(f"{nom_tt}_{cat[1:]}", hname) : lhe_scale}, axis=("dataset", "sys"))
+
         histo = histo.group(process_cat, process, process_groups)[:, :, :, lep, :, :].integrate("leptype")
 
         #set_trace()
@@ -115,63 +141,86 @@ def get_bkg_templates(tmp_rname):
 
             # loop over each jet multiplicity
         for jmult in njets_to_run:
-            lepdir = orig_lepdir.replace("NJETS", jmult.lower())
-
                 # get sideband and signal region hists
             cen_sb_histo = Plotter.linearize_hist(histo[:, "nosys", jmult, btag_reg_names_dict["Central"]["reg"]].integrate("jmult").integrate("btag").integrate("sys"))
-            #up_sb_histo = histo[:, "nosys", jmult, btag_reg_names_dict["Up"]["reg"]].integrate("jmult").integrate("btag")
-            #dw_sb_histo = histo[:, "nosys", jmult, btag_reg_names_dict["Down"]["reg"]].integrate("jmult").integrate("btag")
+            up_sb_histo = Plotter.linearize_hist(histo[:, "nosys", jmult, btag_reg_names_dict["Up"]["reg"]].integrate("jmult").integrate("btag").integrate("sys"))
+            dw_sb_histo = Plotter.linearize_hist(histo[:, "nosys", jmult, btag_reg_names_dict["Down"]["reg"]].integrate("jmult").integrate("btag").integrate("sys"))
             sig_histo = Plotter.linearize_hist(histo[:, :, jmult, btag_reg_names_dict["Signal"]["reg"]].integrate("jmult").integrate("btag"))
 
                 # loop over each systematic
             for sys in systs:
+                #set_trace()
                 if sys not in systematics.template_sys_to_name[args.year].keys(): continue
 
-                sys_histo = sig_histo[:, sys].integrate("sys") if sys in systematics.ttJets_sys.values() else Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True)
+                    # EWQCD background estimation only needed for 'nosys'
+                sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
+                #sys_histo = sig_histo[:, sys].integrate("sys")
 
                     ## write nominal and systematic variations for each topology to file
-                #for proc in sorted(set([key[0] for key in sig_histo.values().keys()])):
                 for proc in sorted(set([key[0] for key in sys_histo.values().keys()])):
-                    if ("tt" not in proc) and (sys in systematics.ttJets_sys.values()): continue
+                    if ("TT" not in proc) and (sys in systematics.ttJets_sys.values()): continue
                     #if (proc != "tt") and (sys in systematics.ttJets_sys.values()): continue
                     if (proc == "data_obs") and not (sys == "nosys"): continue
                     if not sys_histo[proc].values().keys():
-                    #if not sig_histo[proc, sys].values().keys():
                         print(f"Systematic {sys} for {lep} {jmult} {proc} not found, skipping")
                         continue
+                    if (proc == "EWQCD"):
+                        if sys != "nosys": continue
+                        print(args.year, lep, jmult, sys, proc)
 
-                    print(args.year, lep, jmult, sys, proc)
-                    #set_trace()
-                    outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][sys][0], lepdir, (args.year)[-2:]])))
-                    if "LEP" in outhname: outhname = outhname.replace("LEP", "muon") if lep == "Muon" else outhname.replace("LEP", "electron")
+                            # get original nominal distribution
+                        template_histo = sys_histo[proc].integrate("process")
 
-                    template_histo = sys_histo[proc].integrate("process")
-                    #template_histo = sig_histo[proc, sys].integrate("process").integrate("sys")
+                        # get shape variations from btag sb regions
+                            # Up region
+                        bkg_shapeUp = Plotter.data_minus_top(up_sb_histo) # find data - (tt+st) distributions
+                        bkg_shapeUp.scale(np.sum(template_histo.values()[()])/np.sum(bkg_shapeUp.values()[()])) # normalize to mc yield in signal region
+                        print(args.year, lep, jmult, "shapeUp", proc)
+                            # Down region
+                        bkg_shapeDown = Plotter.data_minus_top(dw_sb_histo) # find data - (tt+st) distributions
+                        bkg_shapeDown.scale(np.sum(template_histo.values()[()])/np.sum(bkg_shapeDown.values()[()])) # normalize to mc yield in signal region
+                        print(args.year, lep, jmult, "shapeDown", proc)
 
-                    #set_trace()
-                        ## save template histos to coffea dict
-                    if jmult == "3Jets":
-                        histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
-                    if jmult == "4PJets":
-                        histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
+                            ## save template histos to coffea dict
+                        if jmult == "3Jets":
+                            histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
+                            histo_dict_3j[lep][f"{proc}_shapeUp"] = bkg_shapeUp.copy()
+                            histo_dict_3j[lep][f"{proc}_shapeDown"] = bkg_shapeDown.copy()
+                        if jmult == "4PJets":
+                            histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
+                            histo_dict_4pj[lep][f"{proc}_shapeUp"] = bkg_shapeUp.copy()
+                            histo_dict_4pj[lep][f"{proc}_shapeDown"] = bkg_shapeDown.copy()
+                    else:
+                        print(args.year, lep, jmult, sys, proc)
+                        #if "EWcorr" in sys: set_trace()
+                        template_histo = sys_histo[proc].integrate("process")
 
-                        ## save template histo to root file
-                    upfout[outhname] = hist.export1d(template_histo)
+                            # scale relative deviation for mtop3GeV by 1/6
+                        if ("MTOP3GEV" in systematics.template_sys_to_name[args.year][sys].upper()) and (args.scale_mtop3gev):
+                            #set_trace()
+                            nominal_histo = histo_dict_3j[lep][f"{proc}_nosys"].copy() if jmult == "3Jets" else histo_dict_4pj[lep][f"{proc}_nosys"].copy()
+                            MTOP3GEV_scaled_var_yields = nominal_histo.values()[()] + (template_histo.values()[()] - nominal_histo.values()[()]) * 1./6.
+                            template_histo = Plotter.np_array_TO_hist(sumw=MTOP3GEV_scaled_var_yields, sumw2=np.zeros(MTOP3GEV_scaled_var_yields.size), hist_template=nominal_histo)
 
+                        #set_trace()
+                            ## save template histos to coffea dict
+                        if jmult == "3Jets":
+                            histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
+                        if jmult == "4PJets":
+                            histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
+
+    #set_trace()
     if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(outdir, f"test_raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
+        coffea_out_3j = os.path.join(outdir, f"raw_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
         save(histo_dict_3j, coffea_out_3j)
         print(f"{coffea_out_3j} written")
     if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(outdir, f"test_raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
+        coffea_out_4pj = os.path.join(outdir, f"raw_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
         save(histo_dict_4pj, coffea_out_4pj)
         print(f"{coffea_out_4pj} written")
 
-    upfout.close()
-    print(f"{tmp_rname} written")
 
-
-def get_sig_templates(tmp_rname):
+def get_sig_templates():
     """
     Function that writes linearized mtt vs costheta distributions to root file.
     """
@@ -215,18 +264,14 @@ def get_sig_templates(tmp_rname):
     systs = sorted(set([key[1] for key in rebin_histo.values().keys()]))
     systs.insert(0, systs.pop(systs.index("nosys"))) # move "nosys" to the front
 
-        # need to save coffea hist objects to file so they can be opened by uproot in the proper format
-    upfout = uproot3.recreate(tmp_rname, compression=uproot3.ZLIB(4)) if os.path.isfile(tmp_rname) else uproot3.create(tmp_rname)
-
     if "3Jets" in njets_to_run:
         histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
     if "4PJets" in njets_to_run:
         histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
 
+    #set_trace()
         # write signal dists to temp file        
     for lep in ["Muon", "Electron"]:
-        orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
-
             # scale by lumi
         lumi_correction = lumi_corr_dict[args.year]["%ss" % lep]
         histo = rebin_histo.copy()
@@ -235,8 +280,6 @@ def get_sig_templates(tmp_rname):
         histo = histo.group("dataset", hist.Cat("process", "Process", sorting="placement"), process_groups)
     
         for jmult in njets_to_run:
-            lepdir = orig_lepdir.replace("NJETS", jmult.lower())
-
             #set_trace()
             lin_histo = Plotter.linearize_hist(histo[:, :, jmult, lep].integrate("jmult").integrate("leptype"))
             for signal in signals:
@@ -252,12 +295,13 @@ def get_sig_templates(tmp_rname):
                     if not lin_histo[signal, sys].values().keys():
                         print(f"Systematic {sys} for {lep} {jmult} {signal} not found, skipping")
                         continue
-    
-                    print(args.year, lep, jmult, sub_name, sys)
-                    outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][sys][0], lepdir, (args.year)[-2:]])))
-                    if "LEP" in outhname: outhname = outhname.replace("LEP", "muon") if lep == "Muon" else outhname.replace("LEP", "electron")
 
+                    print(args.year, lep, jmult, sub_name, sys)
                     template_histo = lin_histo[signal, sys].integrate("process").integrate("sys")
+                    if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
+                        #set_trace()
+                        lhe_scale = lumi_correction[f"{signal}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal]
+                        template_histo.scale(lhe_scale)
 
                         ## save template histos to coffea dict
                     if jmult == "3Jets":
@@ -265,160 +309,63 @@ def get_sig_templates(tmp_rname):
                     if jmult == "4PJets":
                         histo_dict_4pj[lep][f"{signal}_{sys}"] = template_histo.copy()
 
-                        ## save template histo to root file
-                    upfout[outhname] = hist.export1d(template_histo)
-
     if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(outdir, f"test_raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")
+        coffea_out_3j = os.path.join(outdir, f"raw_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")
         save(histo_dict_3j, coffea_out_3j)
         print(f"{coffea_out_3j} written")
     if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(outdir, f"test_raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")
+        coffea_out_4pj = os.path.join(outdir, f"raw_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")
         save(histo_dict_4pj, coffea_out_4pj)
         print(f"{coffea_out_4pj} written")
 
-    upfout.close()
-    print(f"{tmp_rname} written")
-
-
-def write_correct_template_format(in_fname, isSignal=None):
-    """
-    Opens temporary root file where template distributions are and then saves them with the correct structure/naming
-    """
-    if isSignal is None:
-        raise ValueError("isSignal needs to be set to True to write signal templates, False for background")
-    signame = "sig" if isSignal else "bkg"
-
-    rfile = root_open(in_fname) if in_fname.endswith(".root") else root_open("%s.root" % in_fname)
-
-    if args.naming == "dir":
-        out_rfile = os.path.join(outdir, "%s.root" % "_".join(["test", "raw", "templates", "lj", signame, args.year, jobid, "SeparateDirs"]))
-
-        mu_3j_dirs = sorted(set(["_".join((key.name).split("_")[-2:]) for key in rfile.keys() if "mu3jets" in key.name])) if "3Jets" in njets_to_run else None
-        el_3j_dirs = sorted(set(["_".join((key.name).split("_")[-2:]) for key in rfile.keys() if "e3jets" in key.name])) if "3Jets" in njets_to_run else None
-        mu_4pj_dirs = sorted(set(["_".join((key.name).split("_")[-2:]) for key in rfile.keys() if "mu4pjets" in key.name])) if "4PJets" in njets_to_run else None
-        el_4pj_dirs = sorted(set(["_".join((key.name).split("_")[-2:]) for key in rfile.keys() if "e4pjets" in key.name])) if "4PJets" in njets_to_run else None
-
-        #set_trace()
-        with root_open(out_rfile, "w") as rout:
-                # mu, 3jets
-            for dirname in mu_3j_dirs:
-                mu_3j_dir = rout.mkdir(dirname)
-                mu_3j_dir.cd()
-                keys = [key.name for key in rfile.keys() if dirname in key.name]
-                for key in keys:
-                    hname = key.split("_%s" % dirname)[0]
-                    histo = rfile.Get(key)
-                    histo.name = hname
-                    if (hname == "data_obs") and (args.maskData):
-                        histo.Reset()
-                    mu_3j_dir.WriteTObject(histo, hname)
-        
-                # el, 3jets
-            for dirname in el_3j_dirs:
-                el_3j_dir = rout.mkdir(dirname)
-                el_3j_dir.cd()
-                keys = [key.name for key in rfile.keys() if dirname in key.name]
-                for key in keys:
-                    hname = key.split("_%s" % dirname)[0]
-                    histo = rfile.Get(key)
-                    histo.name = hname
-                    if (hname == "data_obs") and (args.maskData):
-                        histo.Reset()
-                    el_3j_dir.WriteTObject(histo, hname)
-        
-                # mu, 4pjets
-            for dirname in mu_4pj_dirs:
-                mu_4pj_dir = rout.mkdir(dirname)
-                mu_4pj_dir.cd()
-                keys = [key.name for key in rfile.keys() if dirname in key.name]
-                for key in keys:
-                    hname = key.split("_%s" % dirname)[0]
-                    histo = rfile.Get(key)
-                    histo.name = hname
-                    if (hname == "data_obs") and (args.maskData):
-                        histo.Reset()
-                    mu_4pj_dir.WriteTObject(histo, hname)
-        
-                # el, 4pjets
-            for dirname in el_4pj_dirs:
-                el_4pj_dir = rout.mkdir(dirname)
-                el_4pj_dir.cd()
-                keys = [key.name for key in rfile.keys() if dirname in key.name]
-                for key in keys:
-                    hname = key.split("_%s" % dirname)[0]
-                    histo = rfile.Get(key)
-                    histo.name = hname
-                    if (hname == "data_obs") and (args.maskData):
-                        histo.Reset()
-                    el_4pj_dir.WriteTObject(histo, hname)
-
-    if args.naming == "name":
-        out_rfile = os.path.join(outdir, "%s.root" % "_".join(["test", "raw", "templates", "lj", signame, args.year, jobid, "SeparateNames"]))
-
-        mu_keys = [key.name for key in rfile.keys() if (("mu3jets" in key.name) or ("mu4pjets" in key.name))]
-        el_keys = [key.name for key in rfile.keys() if (("e3jets" in key.name) or ("e4pjets" in key.name))]
-
-        #set_trace()
-        with root_open(out_rfile, "w") as rout:
-                # mu
-            mu_dir = rout.mkdir("mujets")
-            mu_dir.cd()
-            for key in mu_keys:
-                histo = rfile.Get(key)
-                if ("data_obs" in key) and (args.maskData):
-                    histo.Reset()
-                mu_dir.WriteTObject(histo, key)
-        
-                # el
-            el_dir = rout.mkdir("ejets")
-            el_dir.cd()
-            for key in el_keys:
-                histo = rfile.Get(key)
-                if ("data_obs" in key) and (args.maskData):
-                    histo.Reset()
-                el_dir.WriteTObject(histo, key)
-    
-    print(f"{out_rfile} written")
 
 
 
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
-    
-    f_ext = "TOT.coffea"
+
         ## initialize lumi scaling files 
-    lumi_corr_dict = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights.coffea"))
+    lumi_corr_dict = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights_kfactors.coffea" if args.kfactors else "MC_LumiWeights.coffea"))
 
     #set_trace()
         # define variables to get histogram for signal
-    #sig_analyzer = "htt_signal_reweight"
     sig_analyzer = "htt_btag_sb_regions"
-    sig_input_dir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), sig_analyzer)
+    sig_input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", sig_analyzer)
     if os.path.isdir(sig_input_dir):
-        sig_fnames = sorted(["%s/%s" % (sig_input_dir, fname) for fname in os.listdir(sig_input_dir) if fname.endswith(f_ext)])
+        sig_fnames = fnmatch.filter(os.listdir(sig_input_dir), "*SIG*TOT.coffea")
+        sig_fnames = [os.path.join(sig_input_dir, fname) for fname in sig_fnames]
     else: print("No signal file found.")
     
         # define variables to get histogram for background    
-    #bkg_analyzer = "htt_btag_iso_cut"
     bkg_analyzer = "htt_btag_sb_regions"
-    bkg_input_dir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), bkg_analyzer)
+    bkg_input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", bkg_analyzer)
     if os.path.isdir(bkg_input_dir):
-        bkg_fnames = sorted(["%s/%s" % (bkg_input_dir, fname) for fname in os.listdir(bkg_input_dir) if fname.endswith(f_ext)])
+        bkg_fnames = fnmatch.filter(os.listdir(bkg_input_dir), "*BKG*TOT.coffea")
+        bkg_fnames = [os.path.join(bkg_input_dir, fname) for fname in bkg_fnames]
     else: print("No background file found.")
     
-    outdir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), "Templates_%s" % bkg_analyzer)
+    outdir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{bkg_analyzer}")
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
-    
+  
+    signal_LHEscale_wts_name_dict = {
+        "AH_FACTORDown" : "uF_down",
+        "AH_FACTORUp"   : "uF_up",
+        "AH_RENORMDown" : "uR_down",
+        "AH_RENORMUp"   : "uR_up",
+    }
+    tt_LHEscale_wts_name_dict = {
+        "FACTORDown" : "uF_down",
+        "FACTORUp"   : "uF_up",
+        "RENORMDown" : "uR_down",
+        "RENORMUp"   : "uR_up",
+    }
+
     linearize_binning = (
-        #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]), # orig
-        np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-            700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
-        #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
-        np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
-    )
+        final_binning.mtt_binning,
+        final_binning.ctstar_abs_binning
+    ) 
     #    # binning for signal 2d dists
     #mtt_ctstar_2d_binning = (
     #    np.arange(300., 2005., 5.),
@@ -428,28 +375,13 @@ if __name__ == "__main__":
     #)
 
     if not args.only_sig:
-        try:
-            temp_bkg_rname = "tmp_bkg.root"
-            print("Creating background templates")
-            get_bkg_templates(temp_bkg_rname)
-            write_correct_template_format(temp_bkg_rname, isSignal=False)
-            os.system("rm %s" % temp_bkg_rname)
-            print(f"{temp_bkg_rname} deleted")
-            
-        except:
-            print("Could not write background templates to file")
+        print("Creating background templates")
+        get_bkg_templates()
 
     if not args.only_bkg:
-        try:
-            temp_sig_rname = "tmp_sig.root"
-            print("Creating signal templates")
-            get_sig_templates(temp_sig_rname)
-            write_correct_template_format(temp_sig_rname, isSignal=True)
-            os.system("rm %s" % temp_sig_rname)
-            print(f"{temp_sig_rname} deleted")
-            
-        except:
-            print("Could not write signal templates to file")
+        print("Creating signal templates")
+        #set_trace()
+        get_sig_templates()
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
