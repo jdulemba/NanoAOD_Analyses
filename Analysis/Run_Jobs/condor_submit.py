@@ -1,4 +1,4 @@
-import os, subprocess
+import os
 import time, datetime
 from pdb import set_trace
 import tools
@@ -37,9 +37,6 @@ jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer=args.analyzer
 proxy_path = "/afs/cern.ch/work/j/jdulemba/private/x509up_u81826"
-abs_proj_dir = "/afs/cern.ch/work/j/jdulemba/Test_Coffea/Analysis"
-if args.submit: set_trace()
-print(f"\n\tThe 'project directory' being used for this file is {abs_proj_dir}!! MAKE SURE this is the correct directory for non-singularity use!!!\n\n")
 
     # get jobdir
 year, month, day = time.localtime().tm_year, time.localtime().tm_mon, time.localtime().tm_mday
@@ -47,7 +44,7 @@ dtime = datetime.datetime(year, month, day)
 dtime.strftime("%d%B%Y")
 jobdir = "_".join([args.jobdir, dtime.strftime("%d%B%Y"), args.year, jobid])
 jobdir = "BATCH_%s" % jobdir if not jobdir.startswith("BATCH") else jobdir
-print("%s written" % (os.path.join(abs_proj_dir, jobdir)))
+print("%s written" % (os.path.join(proj_dir, jobdir)))
 
 
 def create_batch_job():
@@ -61,10 +58,7 @@ EXE="${{@:2}}"
 echo "Executing python Run_Jobs/run_analyzer.py " $EXE from within singularity
 
 singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Run_Jobs/run_analyzer.py $EXE"
-
-#echo "Executing python {PROJECTDIR}/Run_Jobs/run_analyzer.py " $EXE
-#python {PROJECTDIR}/Run_Jobs/run_analyzer.py $EXE
-""".format(PROJECTDIR=abs_proj_dir)
+""".format(PROJECTDIR=proj_dir)
 
     return batch_job
 
@@ -75,7 +69,8 @@ WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
 +MaxRuntime = 10800
 Proxy_path = {PROXYPATH}
-""".format(BATCHDIR=os.path.join(abs_proj_dir, jobdir, sample_name), PROXYPATH=proxy_path)
+Requirements = HasSingularity
+""".format(BATCHDIR=os.path.join(proj_dir, jobdir, sample_name), PROXYPATH=proxy_path)
     return condorfile
 
 
@@ -117,7 +112,7 @@ for sample in samples_to_use:
     for idx, chunk in enumerate(file_chunks):
             # make list of options to pass to analyzers
         tmp_opts_dict = deepcopy(opts_dict)
-        tmp_opts_dict["outfname"] = f"{sample_name}_out_{idx}.coffea"
+        tmp_opts_dict["outfname"] = f"{jobdir}_{sample_name}_out_{idx}.coffea"
         opts_list = ["%s=%s" % (key, val) for key, val in tmp_opts_dict.items()]
 
         condor_cmd += add_condor_jobs(idx, chunk, sample_name, " ".join(opts_list))
