@@ -14,6 +14,7 @@ import uproot3
 from rootpy.io import root_open
 import coffea.processor as processor    
 import Utilities.systematics as systematics
+import Utilities.final_analysis_binning as final_binning
     
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -327,18 +328,22 @@ if __name__ == "__main__":
         "data_obs" : False,
     }
     
-    
     linearize_binning = (
-        np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]),
-        #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
-        np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+        final_binning.mtt_binning,
+        final_binning.ctstar_abs_binning
     )
+    #linearize_binning = (
+    #    #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]),
+    #    np.array([300.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 1000.0, 1200.0]),
+    #    #np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 650., 700.0, 750.0, 800.0, 850.0, 900.0, 2000.0]),
+    #    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+    #)
         # binning for signal 2d dists
-    mtt_ctstar_2d_binning = (
-        np.arange(300., 1205., 5.),
-        #1,
-        np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
-    )
+    #mtt_ctstar_2d_binning = (
+    #    np.arange(300., 1205., 5.),
+    #    #1,
+    #    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+    #)
 
     if not args.only_sig:
         try:
