@@ -46,428 +46,191 @@ style_dict = {
 if base_jobid != "NanoAODv6":
     style_dict["2016APV"] = ("2016 pre-VFP", "#984ea3") # purple
 
-save_dict = {year: {"thad_pt": {}, "mtt_vs_thad_ctstar": {}} for year in style_dict.keys()}
+save_dict = {year: {"mtt_vs_thad_ctstar": {}} for year in style_dict.keys()}
 
-mtt_binning = np.array([250., 420., 520., 620., 800., 1000., 3500.])
-mtt_binlabels = ["%s $\leq$ m($t\\bar{t}$) $\leq$ %s" % (mtt_binning[bin], mtt_binning[bin+1]) for bin in range(len(mtt_binning)-1)]
-mtt_bin_locs = np.linspace(3, 33, 6)
-ctstar_binning = np.array([-1., -0.65, -0.3, 0., 0.3, 0.65, 1.])
-ctstar_binlabels = ["%s $\leq$ cos($\\theta^{*}_{t_{h}}$) $\leq$ %s" % (ctstar_binning[bin], ctstar_binning[bin+1]) for bin in range(len(ctstar_binning)-1)]*len(mtt_binlabels)
 
     ## get values from NNLO root file
 nnlo_fname = "MATRIX_ttmVStheta.root" # "xsec_central" dist has only statistical uncs
-#nnlo_fname = "matrixhists_NNPDF.root" # "cen" dist has only statistical uncs
-#nnlo_fname = "MATRIX_17_abs.root" # has scale and statistical uncs
 nnlo_file = convert_histo_root_file(os.path.join(proj_dir, "NNLO_files", nnlo_fname))
-if nnlo_fname == "MATRIX_ttmVStheta.root":
-    variables = [
-        ("mtt_vs_thad_ctstar", "xsec_central", "m($t\\bar{t}$) $\otimes$ cos($\\theta^{*}_{t_{h}}$)", "$\dfrac{d^{2} \\sigma}{d m(t\\bar{t}) d cos(\\theta^{*}_{t_{h}})}$",
-        True),
-        #True, [6*ybin for ybin in range(1, 6)]), # last element is hardcoded from binning
-    ]
-    nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=[val[1] for val in variables],
-        sparse_axes_list=[{"name": "dataset", "label" : "Event Process", "fill" : "nnlo"}],
-        dense_axes_list=[{"name": "mtt", "idx" : 1}, {"name" : "ctstar", "idx" : 0}],
-        transpose_da=True,
-        #dense_axes_list=[{"name" : "ctstar", "idx" : 0}, {"name": "mtt", "idx" : 1}],
-    )
+#set_trace()
+nnlo_var = "xsec_central"
+#nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=[nnlo_var],
+nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=["xsec_central", "xsec_down", "xsec_up"],
+    sparse_axes_list=[{"name": "dataset", "label" : "Event Process", "fill" : "nnlo"}],
+    dense_axes_list=[{"name" : "ctstar", "idx" : 0}, {"name": "mtt", "idx" : 1}],
+)
+nnlo_histo = nnlo_dict[nnlo_var].integrate("dataset")
+   # normalized
+nnlo_normed_histo = nnlo_histo.copy()
+nnlo_normed_histo.scale(1./nnlo_normed_histo.values(overflow="all")[()].sum())
 
-    mtt_binning = nnlo_dict["xsec_central"].axis("mtt").edges()
-    #mtt_binlabels = ["%s $\leq$ m($t\\bar{t}$) $\leq$ %s" % (mtt_binning[bin], mtt_binning[bin+1]) for bin in range(len(mtt_binning)-1)]
-    ctstar_binning = nnlo_dict["xsec_central"].axis("ctstar").edges()
-    vlines = [(len(mtt_binning)-1)*ybin for ybin in range(1, len(ctstar_binning)-1)]
-    #set_trace()
-    # linearize nnlo_hist
-    nnlo_dict = {name: Plotter.linearize_hist(nnlo_dict[name].integrate("dataset")) for name in nnlo_dict.keys()}
+nnlo_down_normed_histo = nnlo_dict["xsec_down"].integrate("dataset").copy()
+nnlo_down_normed_histo.scale(1./nnlo_down_normed_histo.values(overflow="all")[()].sum())
 
-    png_ext = "StatUncs"
-    nnlo_leg = "(Stat.)"
-else:
-    variables = [
-        ("thad_pt", "thadpt_cen" if nnlo_fname == "matrixhists_NNPDF.root" else "thadpth_xs", "$p_{T}$($t_{h}$) [GeV]", "$\dfrac{d \\sigma}{d p_{T}(t_{h})}$", False, None),
-        ("mtt_vs_thad_ctstar", "ttm+cts_cen" if nnlo_fname == "matrixhists_NNPDF.root" else "ttm+cts_xs", "m($t\\bar{t}$) $\otimes$ cos($\\theta^{*}_{t_{h}}$)", "$\dfrac{d^{2} \\sigma}{d m(t\\bar{t}) d cos(\\theta^{*}_{t_{h}})}$", True, [6*ybin for ybin in range(1, 6)]), # last element is hardcoded from binning
-    ]
+nnlo_up_normed_histo = nnlo_dict["xsec_up"].integrate("dataset").copy()
+nnlo_up_normed_histo.scale(1./nnlo_up_normed_histo.values(overflow="all")[()].sum())
 
-    nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=[val[1] for val in variables],
-        sparse_axes_list=[{"name": "dataset", "label" : "Event Process", "fill" : "nnlo"}],
-    )
+mtt_binning = np.around(nnlo_dict[nnlo_var].axis("mtt").edges(), decimals=0)
+ctstar_binning = np.around(nnlo_dict[nnlo_var].axis("ctstar").edges(), decimals=2)
+#set_trace()
+vlines = [(len(mtt_binning)-1)*ybin for ybin in range(1, len(ctstar_binning)-1)]
+png_ext = "StatUncs"
+nnlo_leg = "(Stat.)"
 
-    png_ext = "StatUncs" if nnlo_fname == "matrixhists_NNPDF.root" else "Scale_StatUncs"
-    nnlo_leg = "(Stat.)" if nnlo_fname == "matrixhists_NNPDF.root" else "(Scale+Stat.)"
+axis_labels_dict = {
+    "mtt" : "$m_{t\\bar{t}}$",
+    "ctstar" : "cos($\\theta^{*}_{t_{h}}$)"
+}
+
+        # histo plotting params
+xtitle, ytitle = axis_labels_dict[nnlo_histo.dense_axes()[0].name], axis_labels_dict[nnlo_histo.dense_axes()[1].name]
+ztitle = "$\dfrac{d^{2} \\sigma}{d m_{t\\bar{t}} d cos(\\theta^{*}_{t_{h}})}$"
+opts = {"cmap_label" : ztitle}
+norm_opts = {"cmap_label" : "$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]" % ztitle}
+x_lims = (np.min(nnlo_histo.dense_axes()[0].edges()), np.max(nnlo_histo.dense_axes()[0].edges()))
+y_lims = (np.min(nnlo_histo.dense_axes()[1].edges()), np.max(nnlo_histo.dense_axes()[1].edges()))
+
 #set_trace()
 
+tune_var = "mtt_vs_thad_ctstar"
 
-for tune_var, nnlo_var, xtitle, ytitle, linearize in variables:
-#for tune_var, nnlo_var, xtitle, ytitle, linearize, vlines in variables:
-    ## make plots and save distributions for top pt reweighting
-    logy_min, logy_max = 0., 0.
-    normed_logy_min, normed_logy_max = 0., 0.
+if args.save_ratios:
+    from Utilities import HistExport
+    import uproot3
+    outrname = os.path.join(proj_dir, "NNLO_files", f"NNLO_to_Tune_Ratios_{base_jobid}.root")
+    upfout = uproot3.recreate(outrname, compression=uproot3.ZLIB(4)) if os.path.isfile(outrname) else uproot3.create(outrname)
+
+#years_to_run = ["2018"]
+#years_to_run = ["2017"]
+years_to_run = ["2016APV", "2016", "2017", "2018"]    
+for year in years_to_run:
+    input_dir = os.path.join(proj_dir, "results", f"{year}_{base_jobid}", analyzer)
+    fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
+    hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+
+        ## get NLO values from hdict
+    ttSL = "ttJetsSL"
+    xsec_file = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"samples_{year}_{base_jobid}.json")).read())
+    tt_dataset = list(filter(lambda x: fnmatch(x["name"], ttSL), xsec_file))[0]
+    xsec = tt_dataset["xsection"]
+    meta_json = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{year}_{base_jobid}", f"{ttSL}.meta.json")).read())
+    sumGenWeights = meta_json["sumGenWeights"]
     
         # orig
-    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    tune_histo = hdict[tune_var].integrate("dataset")
+    tune_histo.scale(xsec/sumGenWeights)
+
+    #set_trace()
+        # rebin
+    tune_histo = tune_histo.rebin("mtt", hist.Bin("mtt", "mtt", mtt_binning))
+    tune_histo = tune_histo.rebin("ctstar", hist.Bin("ctstar", "ctstar", ctstar_binning))
+
+        # save integral to make normalized hist
+    tune_integral = tune_histo.values(overflow="all")[()].sum()
+
+        # make normalized hist
+    tune_normed_histo = tune_histo.copy()
+    tune_normed_histo.scale(1./tune_integral)
+
+        # plot yield 2d version of MC hist for each year
+    fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
-        # orig logy
-    fig_logy, (ax_logy, rax_logy) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    fig_logy.subplots_adjust(hspace=.07)
-        # norm
-    fig_norm, (ax_norm, rax_norm) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    fig_norm.subplots_adjust(hspace=.07)
-        # norm logy
-    fig_norm_logy, (ax_norm_logy, rax_norm_logy) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    fig_norm_logy.subplots_adjust(hspace=.07)
+
+    tune_vals = tune_histo.values()[()]        
+    tune_vals = np.where(abs(tune_vals) < 1e-10, 0, tune_vals) # set values that are less than 1e-10 to 0
+    Plotter.plot_2d_norm(tune_histo, xaxis_name=tune_histo.dense_axes()[0].name, yaxis_name=tune_histo.dense_axes()[1].name,
+        values=np.ma.masked_where(tune_vals <= 0.0, tune_vals), # mask nonzero probabilities for plotting
+        xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_histo.dense_axes()[1].name],
+        ax=ax, **opts)
     
-    
-        ## get values from NNLO root file
     #set_trace()
-    #nnlo_binning = nnlo_dict[nnlo_var].axis("xaxis").edges()
-    #nnlo_bins = hist.Bin("xaxis", "xaxis", nnlo_binning) # axis needs same name as nnlo hist
-    
-        # raw histo
-    nnlo_histo = nnlo_dict[nnlo_var]#.integrate("dataset")
-            # orig
-    plot.plot1d(nnlo_histo,
-        ax=ax, clear=False,
-        line_opts={"linestyle" : "-", "color" : "k"},
-    )
-    plot.plot1d(nnlo_histo, ## need to plot errorbar separately
-        ax=ax, clear=False,
-        error_opts={"color": "k", "marker" : None},
-    )
-            # orig logy
-    plot.plot1d(nnlo_histo,
-        ax=ax_logy, clear=False,
-        line_opts={"linestyle" : "-", "color" : "k"},
-    )
-    plot.plot1d(nnlo_histo, ## need to plot errorbar separately
-        ax=ax_logy, clear=False,
-        error_opts={"color": "k", "marker" : None},
-    )
-       # normalized
-    nnlo_normed_histo = nnlo_histo.copy()
-    nnlo_normed_histo.scale(1./nnlo_normed_histo.values(overflow="all")[()].sum())
-            # norm
-    plot.plot1d(nnlo_normed_histo,
-        ax=ax_norm, clear=False,
-        line_opts={"linestyle" : "-", "color" : "k"},
-    )
-    plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
-        ax=ax_norm, clear=False,
-        error_opts={"color": "k", "marker" : None},
-    )
-            # logy
-    plot.plot1d(nnlo_normed_histo,
-        ax=ax_norm_logy, clear=False,
-        line_opts={"linestyle" : "-", "color" : "k"},
-    )
-    plot.plot1d(nnlo_normed_histo, ## need to plot errorbar separately
-        ax=ax_norm_logy, clear=False,
-        error_opts={"color": "k", "marker" : None},
-    )
-
-    # update max/min values
-    logy_min, logy_max = np.min(nnlo_histo.values()[()]), np.max(nnlo_histo.values()[()]) 
-    normed_logy_min, normed_logy_max = np.min(nnlo_normed_histo.values()[()]), np.max(nnlo_normed_histo.values()[()]) 
-
-    years_to_run = ["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"]    
-    for year in years_to_run:
-        input_dir = os.path.join(proj_dir, "results", "%s_%s" % (year, base_jobid), analyzer)
-        fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
-        hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
-    
-            ## get NLO values from hdict
-        ttSL = "ttJets_PS" if ((year == "2016") and (base_jobid == "NanoAODv6")) else "ttJetsSL"
-        xsec_file = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "samples_%s_%s.json" % (year, base_jobid))).read())
-        tt_dataset = list(filter(lambda x: fnmatch(x["name"], ttSL), xsec_file))[0]
-        xsec = tt_dataset["xsection"]
-        meta_json = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_%s" % (year, base_jobid), "%s.meta.json" % ttSL)).read())
-        sumGenWeights = meta_json["sumGenWeights"]
-        
-            # orig
-        tune_histo = hdict[tune_var].integrate("dataset")
-        tune_histo.scale(xsec/sumGenWeights)
-        if linearize:
-            #set_trace()
-            tune_histo = tune_histo.rebin(tune_histo.dense_axes()[0].name, hist.Bin(tune_histo.dense_axes()[0].name, tune_histo.dense_axes()[0].name, mtt_binning))
-            tune_histo = tune_histo.rebin(tune_histo.dense_axes()[1].name, hist.Bin(tune_histo.dense_axes()[1].name, tune_histo.dense_axes()[1].name, ctstar_binning))
-
-            # save integral to make normalized hist
-        tune_integral = tune_histo.values(overflow="all")[()].sum()
-        if linearize:
-            tune_histo = Plotter.linearize_hist(tune_histo)
-            #tune_histo = Plotter.linearize_hist(tune_histo, no_transpose=True)
-
-            # make normalized hist
-        tune_normed_histo = tune_histo.copy()
-        tune_normed_histo.scale(1./tune_integral)
-        ## rebin
-        #xaxis_name = tune_histo.dense_axes()[0].name
-        #tune_histo = tune_histo.rebin(xaxis_name, nnlo_bins)
-        #tune_normed_histo = tune_normed_histo.rebin(xaxis_name, nnlo_bins)
-    
-            # plot yields    
-        plot.plot1d(tune_histo,
-            ax=ax, clear=False,
-            line_opts={"linestyle" : "-", "color" : style_dict[year][1]},
-        )
-        plot.plot1d(tune_histo, ## need to plot errorbar separately
-            ax=ax, clear=False,
-            error_opts={"color": style_dict[year][1], "marker" : None},
-        )
-                # logy
-        plot.plot1d(tune_histo,
-            ax=ax_logy, clear=False,
-            line_opts={"linestyle" : "-", "color" : style_dict[year][1]},
-        )
-        plot.plot1d(tune_histo, ## need to plot errorbar separately
-            ax=ax_logy, clear=False,
-            error_opts={"color": style_dict[year][1], "marker" : None},
-        )
-
-                ## plot ratios
-        ratio_vals, ratio_bins = Plotter.get_ratio_arrays(num_vals=nnlo_histo.values()[()], denom_vals=tune_histo.values()[()], input_bins=nnlo_histo.dense_axes()[0].edges())
-                    # orig
-        rax.step(ratio_bins, ratio_vals, where="post", **{"linestyle" : "-", "color" : style_dict[year][1]})
-                    # logy
-        rax_logy.step(ratio_bins, ratio_vals, where="post", **{"linestyle" : "-", "color" : style_dict[year][1]})
-
-            # plot normalized
-        tune_normed_histo = tune_histo.copy()
-        tune_normed_histo.scale(1./tune_normed_histo.values()[()].sum())
-                    # orig
-        plot.plot1d(tune_normed_histo,
-            ax=ax_norm, clear=False,
-            line_opts={"linestyle" : "-", "color" : style_dict[year][1]},
-        )
-        plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
-            ax=ax_norm, clear=False,
-            error_opts={"color": style_dict[year][1], "marker" : None},
-        )
-                    # logy
-        plot.plot1d(tune_normed_histo,
-            ax=ax_norm_logy, clear=False,
-            line_opts={"linestyle" : "-", "color" : style_dict[year][1]},
-        )
-        plot.plot1d(tune_normed_histo, ## need to plot errorbar separately
-            ax=ax_norm_logy, clear=False,
-            error_opts={"color": style_dict[year][1], "marker" : None},
-        )
-                ## plot ratios
-        normed_ratio_vals, normed_ratio_bins = Plotter.get_ratio_arrays(num_vals=nnlo_normed_histo.values()[()], denom_vals=tune_normed_histo.values()[()], input_bins=nnlo_normed_histo.dense_axes()[0].edges())
-                    # orig
-        rax_norm.step(normed_ratio_bins, normed_ratio_vals, where="post", **{"linestyle" : "-", "color" : style_dict[year][1]})
-                    # logy
-        rax_norm_logy.step(normed_ratio_bins, normed_ratio_vals, where="post", **{"linestyle" : "-", "color" : style_dict[year][1]})
-    
-            ## update min/max values
-        if np.min(tune_histo.values()[()]) < logy_min: logy_min = np.min(tune_histo.values()[()])
-        if np.max(tune_histo.values()[()]) > logy_max: logy_max = np.max(tune_histo.values()[()])
-        if np.min(tune_normed_histo.values()[()]) < normed_logy_min: normed_logy_min = np.min(tune_normed_histo.values()[()])
-        if np.max(tune_normed_histo.values()[()]) > normed_logy_max: normed_logy_max = np.max(tune_normed_histo.values()[()])
-
-        if args.save_ratios:
-            set_trace()
-            save_dict[year][tune_var] = dense_lookup(normed_ratio_vals[:-1], (nnlo_binning)) if vlines is None else dense_lookup(normed_ratio_vals[:-1].reshape(len(mtt_binning)-1,len(ctstar_binning)-1), (mtt_binning, ctstar_binning))
-
-
-    # plot yields
-        # format axes
-    ax.autoscale()#axis="x", tight=True)
-    ax.set_ylim(None, ax.get_ylim()[1]*1.15)
-    ax.set_xlabel(None)
-    ax.set_ylabel("%s [pb/GeV]" % ytitle)
-    
-    rax.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax.set_ylabel("NNLO/Tune")
-    if vlines is None: rax.set_xlabel(xtitle)
-    
-    # set plotting styles
-       ## set legend and corresponding colors
-    handles, labels = ax.get_legend_handles_labels()
-    new_handles, new_labels = [], []
-    for idx, handle in enumerate(handles):
-        if isinstance(handle, mpl.container.ErrorbarContainer): #set_trace()
-            continue
-        hstyle = [val for val in style_dict.values() if handle.get_c() in val[1]]
-        if not hstyle:
-            labels[idx] = "NNLO %s" % nnlo_leg
-        else:
-            labels[idx] = hstyle[0][0]
-        new_handles.append(handles[idx])
-        new_labels.append(labels[idx])
-    # call ax.legend() with the new values
-    ax.legend(new_handles, new_labels, loc="upper right")
-
     ax.text(
-        0.02, 0.86,
-        "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+        0.98, 0.90, "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes, color="w",
     )
-
-    #set_trace()
-    if vlines is not None:
-        ## plot ctstar labels
-        #rax.set_xticks(np.arange(len(ctstar_binlabels)))
-        #rax.set_xticklabels(ctstar_binlabels)
-        #ax.tick_params(which="minor", bottom=False, top=False)
-        #rax.tick_params(which="minor", bottom=False, top=False)
-
-        #plt.setp(rax.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams["font.size"]*0.5)
-
-        # plot vertical lines for mtt vs ctstar
-        for vline in vlines:
-                # orig
-            ax.axvline(vline, color="k", linestyle="--")
-            rax.axvline(vline, color="k", linestyle="--")
-                # orig logy
-            ax_logy.axvline(vline, color="k", linestyle="--")
-            rax_logy.axvline(vline, color="k", linestyle="--")
-                # orig norm
-            ax_norm.axvline(vline, color="k", linestyle="--")
-            rax_norm.axvline(vline, color="k", linestyle="--")
-                # orig norm logy
-            ax_norm_logy.axvline(vline, color="k", linestyle="--")
-            rax_norm_logy.axvline(vline, color="k", linestyle="--")
+    hep.cms.label(ax=ax, data=False, year=year)
     
-        ## plot mtt labels
-        #for idx, label in enumerate(mtt_binlabels):
-        #    rax.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
-        #        xytext=(0, -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
-    
-    hep.cms.label(ax=ax, year="")
-
-    #set_trace()
-    figname = os.path.join(outdir, "%s_ttJets_xsec_%s_Comp_%s" % (base_jobid, tune_var, png_ext))
+    figname = os.path.join(outdir, f"{year}_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}")
     fig.savefig(figname)
     print(f"{figname} written")
-    
-    
-    # plot orig logy
-        # format axes
-    ax_logy.autoscale(axis="x", tight=True)
-    ax_logy.set_xlabel(None)
-    ax_logy.set_ylabel("%s [pb/GeV]" % ytitle)
-    ax_logy.set_yscale("log")
-    ax_logy.set_ylim(logy_min, 15.*logy_max)
-    
-    rax_logy.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax_logy.set_ylabel("NNLO/Tune")
-    if vlines is None: rax_logy.set_xlabel(xtitle)
-    
-    ## set plotting styles
-    ax_logy.legend(new_handles, new_labels, loc="upper right")
-    
-    ax_logy.text(
-        0.02, 0.86,
-        "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_logy.transAxes
-    )
 
-    #if vlines is not None:
-    #    # plot ctstar labels
-    #    rax_logy.set_xticks(np.arange(len(ctstar_binlabels)))
-    #    rax_logy.set_xticklabels(ctstar_binlabels)
-    #    ax_logy.tick_params(which="minor", bottom=False, top=False)
-    #    rax_logy.tick_params(which="minor", bottom=False, top=False)
 
-    #    plt.setp(rax_logy.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams["font.size"]*0.5)
-
-    #    # plot mtt labels
-    #    for idx, label in enumerate(mtt_binlabels):
-    #        rax_logy.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
-    #            xytext=(0, -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+        # plot normalized 2d version of MC hists for each year
+    fig_norm, ax_norm = plt.subplots()
+    fig_norm.subplots_adjust(hspace=.07)
     
-    hep.cms.label(ax=ax_logy, year="")
-    
-    figname_logy = os.path.join(outdir, "%s_ttJets_xsec_%s_Comp_Logy_%s" % (base_jobid, tune_var, png_ext))
-    fig_logy.savefig(figname_logy)
-    print(f"{figname_logy} written")
-    
-    
-    # plot normalized
-        # format axes
-    ax_norm.autoscale(axis="x", tight=True)
-    ax_norm.set_ylim(None, ax_norm.get_ylim()[1]*1.15)
-    ax_norm.set_xlabel(None)
-    ax_norm.set_ylabel("$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]" % ytitle)
-    
-    rax_norm.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax_norm.set_ylabel("NNLO/Tune")
-    if vlines is None: rax_norm.set_xlabel(xtitle)
-    
-    ## set plotting styles
-    ax_norm.legend(new_handles, new_labels, loc="upper right")
+    tune_norm_vals = tune_normed_histo.values()[()]
+    tune_norm_vals = np.where(abs(tune_norm_vals) < 1e-10, 0, tune_norm_vals) # set values that are less than 1e-10 to 0
+    Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+        values=np.ma.masked_where(tune_norm_vals <= 0.0, tune_norm_vals), # mask nonzero probabilities for plotting
+        xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
+        ax=ax_norm, **norm_opts)
     
     ax_norm.text(
-        0.02, 0.86,
-        "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_norm.transAxes
+        0.98, 0.90, "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_norm.transAxes, color="w",
     )
-
-    #if vlines is not None:
-    #    # plot ctstar labels
-    #    rax_norm.set_xticks(np.arange(len(ctstar_binlabels)))
-    #    rax_norm.set_xticklabels(ctstar_binlabels)
-    #    ax_norm.tick_params(which="minor", bottom=False, top=False)
-    #    rax_norm.tick_params(which="minor", bottom=False, top=False)
-
-    #    plt.setp(rax_norm.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams["font.size"]*0.5)
-
-    #    # plot mtt labels
-    #    for idx, label in enumerate(mtt_binlabels):
-    #        rax_norm.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
-    #            xytext=(0, -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+    hep.cms.label(ax=ax_norm, data=False, year=year)
     
-    hep.cms.label(ax=ax_norm, year="")
-    
-    figname_norm = os.path.join(outdir, "%s_ttJets_xsec_%s_Comp_Norm_%s" % (base_jobid, tune_var, png_ext))
+    figname_norm = os.path.join(outdir, f"{year}_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}_Norm")
     fig_norm.savefig(figname_norm)
     print(f"{figname_norm} written")
+
+
+        # plot NNLO/year (weights) each year
+    fig_ratio, ax_ratio = plt.subplots()
+    fig_ratio.subplots_adjust(hspace=.07)
+
+    #set_trace()
+    normed_ratio_vals = nnlo_normed_histo.values()[()].T/tune_norm_vals
+    normed_ratio_vals = np.where(normed_ratio_vals <= 0, 1, normed_ratio_vals)
+    normed_ratio_vals = np.where(normed_ratio_vals == np.inf, 1, normed_ratio_vals)
+    Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+        values=np.ma.masked_where(normed_ratio_vals <= 0.0, normed_ratio_vals), # mask nonzero probabilities for plotting
+        xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
+        ax=ax_ratio, **{"cmap_label" : "NNLO/Tune"})
     
-    
-    # plot normed logy
-        # format axes
-    ax_norm_logy.autoscale(axis="x", tight=True)
-    ax_norm_logy.set_xlabel(None)
-    ax_norm_logy.set_ylabel("$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]" % ytitle)
-    ax_norm_logy.set_yscale("log")
-    ax_norm_logy.set_ylim(normed_logy_min, 15.*normed_logy_max)
-    
-    rax_norm_logy.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax_norm_logy.set_ylabel("NNLO/Tune")
-    if vlines is None: rax_norm_logy.set_xlabel(xtitle)
-    
-        ## set legend and corresponding colors
-    ax_norm_logy.legend(new_handles, new_labels, loc="upper right")
-    
-    ax_norm_logy.text(
-        0.02, 0.86,
-        "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_norm_logy.transAxes
+    ax_ratio.text(
+        0.98, 0.90, "$t\\bart \\rightarrow e/\mu + jets$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_ratio.transAxes, color="w",
     )
-
-    #if vlines is not None:
-    #    # plot ctstar labels
-    #    rax_norm_logy.set_xticks(np.arange(len(ctstar_binlabels)))
-    #    rax_norm_logy.set_xticklabels(ctstar_binlabels)
-    #    ax_norm_logy.tick_params(which="minor", bottom=False, top=False)
-    #    rax_norm_logy.tick_params(which="minor", bottom=False, top=False)
-
-    #    plt.setp(rax_norm_logy.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams["font.size"]*0.5)
-
-    #    # plot mtt labels
-    #    for idx, label in enumerate(mtt_binlabels):
-    #        rax_norm_logy.annotate(label, xy=(mtt_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
-    #            xytext=(0, -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+    hep.cms.label(ax=ax_ratio, data=False, year=year)
     
-    hep.cms.label(ax=ax_norm_logy, year="")
-    
-    figname_norm_logy = os.path.join(outdir, "%s_ttJets_xsec_%s_Comp_Norm_Logy_%s" % (base_jobid, tune_var, png_ext))
-    fig_norm_logy.savefig(figname_norm_logy)
-    print(f"{figname_norm_logy} written")
+    figname_ratio = os.path.join(outdir, f"{year}_{base_jobid}_NNLO_to_Tune_Ratio_xsec_{tune_var}")
+    fig_ratio.savefig(figname_ratio)
+    print(f"{figname_ratio} written")
 
+    if args.save_ratios:
+        #set_trace()
+        save_dict[year][tune_var] = dense_lookup(normed_ratio_vals, (mtt_binning, ctstar_binning))
+            # central
+        tmp_central_hist = Plotter.np_array_TO_hist(sumw=normed_ratio_vals, sumw2=np.zeros(normed_ratio_vals.shape), hist_template=tune_normed_histo)
+        upfout[f"MATRIX_xsec_central_to_{year}_Normalized_Ratios_{base_jobid}"] = HistExport.export2d(tmp_central_hist)
+            # down
+        normed_down_ratio_vals = nnlo_down_normed_histo.values()[()].T/tune_norm_vals
+        normed_down_ratio_vals = np.where(normed_down_ratio_vals <= 0, 1, normed_down_ratio_vals)
+        normed_down_ratio_vals = np.where(normed_down_ratio_vals == np.inf, 1, normed_down_ratio_vals)
+        tmp_down_hist = Plotter.np_array_TO_hist(sumw=normed_down_ratio_vals, sumw2=np.zeros(normed_down_ratio_vals.shape), hist_template=tune_normed_histo)
+        upfout[f"MATRIX_xsec_down_to_{year}_Normalized_Ratios_{base_jobid}"] = HistExport.export2d(tmp_down_hist)
+            # up
+        normed_up_ratio_vals = nnlo_up_normed_histo.values()[()].T/tune_norm_vals
+        normed_up_ratio_vals = np.where(normed_up_ratio_vals <= 0, 1, normed_up_ratio_vals)
+        normed_up_ratio_vals = np.where(normed_up_ratio_vals == np.inf, 1, normed_up_ratio_vals)
+        tmp_up_hist = Plotter.np_array_TO_hist(sumw=normed_up_ratio_vals, sumw2=np.zeros(normed_up_ratio_vals.shape), hist_template=tune_normed_histo)
+        upfout[f"MATRIX_xsec_up_to_{year}_Normalized_Ratios_{base_jobid}"] = HistExport.export2d(tmp_up_hist)
+
+            # tune histo
+        upfout[f"{year}_{base_jobid}_xsec"] = HistExport.export2d(tune_histo)
+        #save_dict.update({year: dense_lookup(normed_ratio_vals, (mtt_binning, ctstar_binning))})
 
 # save weights
 if args.save_ratios:
-    ratios_fname = os.path.join(proj_dir, "NNLO_files", "NNLO_to_Tune_Ratios_%s.coffea" % base_jobid)
+    ratios_fname = os.path.join(proj_dir, "NNLO_files", f"NNLO_to_Tune_Ratios_{base_jobid}.coffea")
     save(save_dict, ratios_fname)
-    print(f"\n{ratios_fname} written")    
+    print(f"\n{ratios_fname} written")
+
+    upfout["MATRIX_xec_central"] = HistExport.export2d(nnlo_histo)
+    upfout["MATRIX_xec_down"] = HistExport.export2d(nnlo_dict["xsec_down"].integrate("dataset"))
+    upfout["MATRIX_xec_up"] = HistExport.export2d(nnlo_dict["xsec_up"].integrate("dataset"))
+    upfout.close()
+    print(f"{outrname} written") 
