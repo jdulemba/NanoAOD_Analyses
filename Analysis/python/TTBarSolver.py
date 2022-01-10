@@ -18,7 +18,7 @@ class TTSolver(object):
         proj_dir = os.environ["PROJECT_DIR"]
         jobid = os.environ["jobid"]
         base_jobid = os.environ["base_jobid"]
-        cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", "cfg_pars_%s.json" % jobid)).read())["ttsolver"]
+        cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())["ttsolver"]
         
         probs = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["filename"]))[year]
 
