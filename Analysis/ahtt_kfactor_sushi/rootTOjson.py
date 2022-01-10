@@ -35,13 +35,34 @@ widthTOname = lambda width : str(float(width)).replace('.', 'p')
 #    vals = dense_lookup(*fdict[(sig_dname, "dense_lookup")])
 #    errs = dense_lookup(*fdict[(f"{sig_dname}_error", "dense_lookup")])
 
-    # create dict of LO xsection values and errors
-#set_trace()
-LO_outdict = {}
+
+    # create json for NNLO/LO cross section k-factors
+kfactors_outdict = {}
 for boson in bosons:
     for proc, proc_name in procs.items():
         for scale in scales:
-            for xsec_type in types:
+            sig_dname = "_".join([boson, proc, kfactors_name, scale])
+            vals = dense_lookup(*fdict[(sig_dname, "dense_lookup")])
+            errs = dense_lookup(*fdict[(f"{sig_dname}_error", "dense_lookup")])
+            for mtt in masses:
+                for width in widths:
+                    for channel, chan_name in channels.items():
+                        outname = f"{boson}toTTJets{chan_name}_M{mtt}_W{widthTOname(width)}_{proc_name}"
+                        if scale != "nominal": outname = f"{outname}_{scale}"
+                        kfactors_outdict[outname] = vals(mtt, width)
+
+kfactors_fname = os.path.join(proj_dir, "inputs", "signal_kfactors.json")
+with open(kfactors_fname, "w") as out:
+    out.write(prettyjson.dumps(kfactors_outdict))
+print(f"{kfactors_fname} written")
+
+
+    # create dict of LO xsection values and errors
+LO_outdict_xsec = {}
+for boson in bosons:
+    for proc, proc_name in procs.items():
+        for scale in scales:
+            for xsec_type in ["xsec"]:
                 for channel, chan_name in channels.items():
                     sig_dname = "_".join([boson, proc, mg5_LO_xsecs_name, scale, xsec_type, channel])
                     vals = dense_lookup(*fdict[(sig_dname, "dense_lookup")])
@@ -50,9 +71,31 @@ for boson in bosons:
                         for width in widths:
                             outname = f"{boson}toTTJets{chan_name}_M{mtt}_W{widthTOname(width)}_{proc_name}"
                             if scale != "nominal": outname = f"{outname}_{scale}"
-                            LO_outdict[outname] = vals(mtt, width)
+                            LO_outdict_xsec[outname] = vals(mtt, width)
 
 lo_xsec_fname = os.path.join(proj_dir, "inputs", "signal_xsecs.json")
 with open(lo_xsec_fname, "w") as out:
-    out.write(prettyjson.dumps(LO_outdict))
+    out.write(prettyjson.dumps(LO_outdict_xsec))
 print(f"{lo_xsec_fname} written")
+
+
+    # create json for absolute cross section
+LO_outdict_xabs = {}
+for boson in bosons:
+    for proc, proc_name in procs.items():
+        for scale in scales:
+            for xsec_type in ["xabs"]:
+                for channel, chan_name in channels.items():
+                    sig_dname = "_".join([boson, proc, mg5_LO_xsecs_name, scale, xsec_type, channel])
+                    vals = dense_lookup(*fdict[(sig_dname, "dense_lookup")])
+                    errs = dense_lookup(*fdict[(f"{sig_dname}_error", "dense_lookup")])
+                    for mtt in masses:
+                        for width in widths:
+                            outname = f"{boson}toTTJets{chan_name}_M{mtt}_W{widthTOname(width)}_{proc_name}"
+                            if scale != "nominal": outname = f"{outname}_{scale}"
+                            LO_outdict_xabs[outname] = vals(mtt, width)
+
+lo_xabs_fname = os.path.join(proj_dir, "inputs", "signal_xabs.json")
+with open(lo_xabs_fname, "w") as out:
+    out.write(prettyjson.dumps(LO_outdict_xabs))
+print(f"{lo_xabs_fname} written")
