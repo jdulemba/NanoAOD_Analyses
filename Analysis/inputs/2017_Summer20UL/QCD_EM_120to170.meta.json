@@ -1,4 +1,7 @@
 {
-    "sumGenWeights": 9872823.238630652,
-    "nEvents": 9872709
+    "sumGenWeights": 9892351.56443286,
+    "nEvents": 9892235,
+    "sumPSWeights": [
+        9892352.0
+    ]
 }

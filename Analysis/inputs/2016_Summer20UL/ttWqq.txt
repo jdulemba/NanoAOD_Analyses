@@ -1,2 +1,2 @@
-root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/270000/771E8794-E9DE-D348-B192-DD71B92DAC06.root
-root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/270000/CDE4F466-4727-114E-A2EF-175E71350BB7.root
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/270000/771E8794-E9DE-D348-B192-DD71B92DAC06.root
+root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/270000/CDE4F466-4727-114E-A2EF-175E71350BB7.root
