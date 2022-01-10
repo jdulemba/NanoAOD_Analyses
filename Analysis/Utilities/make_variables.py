@@ -14,6 +14,24 @@ def ctstar(top1, top2):
 
     return top1_ctstar, top2_ctstar
 
+
+def cpTP(top1, top2):
+    """
+    cpTP is obtained by boosting into the zero momentum frame of the top pair system, and then taking the pz/|p| of the top quark in this frame
+    """
+    #set_trace()
+    ttbar = (top1+top2)
+
+    # find top quarks in rest frame
+    tt_boost = ttbar.boostvec
+    rf_top1, rf_top2 = top1.boost(tt_boost*-1), top2.boost(tt_boost*-1)
+
+    # find cpTP
+    top1_cpTP, top2_cpTP = rf_top1.pz/abs(rf_top1.p), rf_top2.pz/abs(rf_top2.p)
+
+    return top1_cpTP, top2_cpTP
+
+
 def MT(leptons, met, debug=False):
     if debug: set_trace()
         # broadcast met into same shape as leptons
