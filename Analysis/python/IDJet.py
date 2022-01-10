@@ -122,7 +122,7 @@ def process_jets(events, year, corrections=None):
     jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
     jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
     jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-    if not events.metadata["dataset"].startswith("data_Single"): jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
+    jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0, axis=1), np.float32) if not events.metadata["dataset"].startswith("data_Single") else None
 
        ## add btag wps
     for bdiscr in btag_values[year].keys():
@@ -142,15 +142,20 @@ def process_jets(events, year, corrections=None):
                 else: raise ValueError("Era not found for 2016 dataset.")
             if len(era) != 1: raise ValueError("Only one era should be used for %s" % events.metadata["dataset"])
             jet_factory = corrections["DATA"][era[0]]["JetsFactory"]
+            jet_factory.name_map.update({"ptGenJet" : "pt_gen"})
             met_factory = corrections["DATA"][era[0]]["METFactory"]
 
         else:
             jet_factory = corrections["MC"]["JetsFactory"]
             met_factory = corrections["MC"]["METFactory"]
 
-        cache = LRUCache(int(1e10), lambda a: a.nbytes)
-        corrected_jets = jet_factory.build(jets, lazy_cache=cache)
-        corrected_met = met_factory.build(events["MET"], corrected_jets, lazy_cache=cache)
+        if ak.sum(ak.num(jets)) > 0:
+            cache = LRUCache(int(1e10), lambda a: a.nbytes)
+            corrected_jets = jet_factory.build(jets, lazy_cache=cache)
+            corrected_met = met_factory.build(events["MET"], corrected_jets, lazy_cache=cache)
+        else:
+            corrected_jets = jets
+            corrected_met = events["MET"]
 
     else:
         corrected_jets = jets
