@@ -32,12 +32,8 @@ outdir = os.path.join(proj_dir, "Corrections", jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-if base_jobid == "NanoAODv6":
-    years_to_run = [args.year] if args.year else ["2016", "2017", "2018"]
-    max_years = 3
-else:
-    years_to_run = [args.year] if args.year else ["2016APV", "2016", "2017", "2018"]
-    max_years = 4
+years_to_run = [args.year] if args.year else ["2016APV", "2016", "2017", "2018"]
+max_years = 4
 
 flav_effs = {year : {"DeepJet" : {"3Jets" : {}, "4PJets" : {}}, "DeepCSV" : {"3Jets" : {},"4PJets" : {},} } for year in years_to_run}
 
@@ -73,8 +69,8 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
     ax.add_collection(pc)
     if clear:
-        fig.colorbar(pc, ax=ax, label="%s Efficiency, %s %s" % (flav_to_name[flav], btagger, wp), pad=0.)
-    ax.autoscale()#axis="x", tight=True)
+        fig.colorbar(pc, ax=ax, label=f"{flav_to_name[flav]} Efficiency, btagger wp", pad=0.)
+    ax.autoscale()
     ax.set_xlim(xedges[0], xedges[-1])
     ax.set_ylim(yedges[0], yedges[-1])
     
@@ -83,12 +79,12 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     plt.ylabel("$\\eta$")
         # add lepton/jet multiplicity label
     ax.text(
-        0.02, 0.95, "%s" % (jet_mults[jmult]),
+        0.02, 0.95, jet_mults[jmult],
         fontsize=rcParams["font.size"],
         #fontsize=18,
         horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, paper=False, year=year, lumi=round(lumi_to_use, 1))
+    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year=year, lumi=round(lumi_to_use, 1))
 
     figname = os.path.join(plotdir, "%s_Efficiency" % "_".join([btagger, wp, jmult, flav]))
     fig.savefig(figname)
@@ -96,7 +92,7 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     plt.close()
 
 
-data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_lumis_data.json" % base_jobid)).read())
+data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())
 combine_2016 = ("2016" in years_to_run) and ("2016APV" in years_to_run) and (base_jobid == "ULnanoAOD")
 computed_combined_2016 = False
 
@@ -112,9 +108,9 @@ for year in years_to_run:
         if computed_combined_2016:
             computed_combined_2016_year_to_copy = year
             continue
-        input_dir_2016 = os.path.join(proj_dir, "results", "2016_%s" % jobid, analyzer)
-        input_dir_2016APV = os.path.join(proj_dir, "results", "2016APV_%s" % jobid, analyzer)
-        pltdir = os.path.join(proj_dir, "plots", "2016Combined_%s" % jobid, analyzer)
+        input_dir_2016 = os.path.join(proj_dir, "results", f"2016_{jobid}", analyzer)
+        input_dir_2016APV = os.path.join(proj_dir, "results", f"2016APV_{jobid}", analyzer)
+        pltdir = os.path.join(proj_dir, "plots", f"2016Combined_{jobid}", analyzer)
 
         fnames_2016 = sorted([os.path.join(input_dir_2016, fname) for fname in os.listdir(input_dir_2016) if fname.endswith(f_ext)])
         fnames_2016APV = sorted([os.path.join(input_dir_2016APV, fname) for fname in os.listdir(input_dir_2016APV) if fname.endswith(f_ext)])
@@ -129,10 +125,10 @@ for year in years_to_run:
         computed_combined_2016 = True
         computed_combined_2016_year_key = year
 
-        hpass_16 = hdict_2016["%s_pass" % hname]
-        hall_16 = hdict_2016["%s_all" % hname]
-        hpass_16APV = hdict_2016APV["%s_pass" % hname]
-        hall_16APV = hdict_2016APV["%s_all" % hname]
+        hpass_16 = hdict_2016[f"{hname}_pass"]
+        hall_16 = hdict_2016[f"{hname}_all"]
+        hpass_16APV = hdict_2016APV[f"{hname}_pass"]
+        hall_16APV = hdict_2016APV[f"{hname}_all"]
 
         #set_trace()
             ## rescale hist by lumi for muons and electrons separately and then combine
@@ -160,8 +156,8 @@ for year in years_to_run:
             raise ValueError("Passing and All hists don't have the same binning!")
 
     else:
-        input_dir = os.path.join(proj_dir, "results", "%s_%s" % (year, jobid), analyzer)
-        fnames = ["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith("TOT.coffea")]
+        input_dir = os.path.join(proj_dir, "results", f"{year}_{jobid}", analyzer)
+        fnames = [f"{input_dir}/{fname}" for fname in os.listdir(input_dir) if fname.endswith("TOT.coffea")]
         if len(fnames) > 1:
             raise ValueError("Only one TOT file should be used")
         hdict = load(fnames[0])
@@ -169,10 +165,10 @@ for year in years_to_run:
             ## get data lumi and scale MC by lumi
         lumi_to_use = (data_lumi_dict[year]["Muons"]+data_lumi_dict[year]["Electrons"])/2000.
     
-        pltdir = os.path.join(proj_dir, "plots", "%s_%s" % (year, jobid), analyzer)
+        pltdir = os.path.join(proj_dir, "plots", f"{year}_{jobid}", analyzer)
 
-        hpass = hdict["%s_pass" % hname]
-        hall = hdict["%s_all" % hname]
+        hpass = hdict[f"{hname}_pass"]
+        hall = hdict[f"{hname}_all"]
 
             ## rescale hist by lumi for muons and electrons separately and then combine
         hpass_mu = hpass[:, :, :, "Muon", :].integrate("leptype")
@@ -191,9 +187,9 @@ for year in years_to_run:
     hpass_tot = hpass_tot.rebin("pt", pt_bins).rebin("eta", eta_bins)
     hall_tot = hall_tot.rebin("pt", pt_bins).rebin("eta", eta_bins)
 
-        # remove ZJets
-    hpass_tot = hpass_tot[:, non_ZJets_samples]
-    hall_tot = hall_tot[:, non_ZJets_samples]
+    #    # remove ZJets
+    #hpass_tot = hpass_tot[:, non_ZJets_samples]
+    #hall_tot = hall_tot[:, non_ZJets_samples]
 
     if not hpass_tot.compatible(hall_tot):
         raise ValueError("Passing and All hists don't have the same binning!")
@@ -214,7 +210,7 @@ for year in years_to_run:
                 pass_lookup = dense_lookup(*(h_pass.values().values()), edges)
                     ## check that number of entries in passing bins > 20.
                 if min([min(val) for val in pass_lookup._values]) < 20.:
-                    print("bin for hist %s, %s, %s has bin entries < 20: %s" % (wp, flav, jmult, [min(val) for val in pass_lookup._values]))
+                    print(f"bin for hist {wp}, {flav}, {jmult} has bin entries < 20: %s" % [min(val) for val in pass_lookup._values])
                     #raise ValueError("bin for hist %s, %s, %s has bin entries < 20: %s" % (wp, flav, jmult, [min(val) for val in pass_lookup._values]))
 
                 all_lookup = dense_lookup(*(h_all.values().values()), edges)
@@ -230,7 +226,7 @@ wp_name = list(set(working_points))[0]
 
     # save files
 if (len(years_to_run) == max_years) or (args.force_save):
-    flav_effs_name = os.path.join(outdir, "htt_3PJets_%s_flavour_efficiencies_%s.coffea" % (wp_name, jobid))
+    flav_effs_name = os.path.join(outdir, f"htt_3PJets_{wp_name}_flavour_efficiencies_{jobid}.coffea")
     
         # 2016 and 2016APV are the same if they"re computed together
     if combine_2016:
@@ -243,13 +239,14 @@ if (len(years_to_run) == max_years) or (args.force_save):
 if args.construct_btag:
     import python.BTagScaleFactors as btagSF
 
-    cfg_file = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", "cfg_pars_%s.json" % jobid)).read())
+    cfg_file = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 
     for year in flav_effs.keys():
         for btagger in flav_effs[year].keys():
             csv_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "btagSFs", btagSF.btag_csvFiles[year][btagger])
             if not os.path.isfile(csv_path):
-                raise IOError("BTagging csv file %s not found." % csv_path)
+                raise IOError(f"BTagging csv file {csv_path} not found.")
+            print(f"csv file: {csv_path}")
 
             for njets_cat in flav_effs[year][btagger].keys():
                 eff_dict = flav_effs[year][btagger][njets_cat]
@@ -259,12 +256,11 @@ if args.construct_btag:
                     effs = eff_dict
                 )
 
-                print("BTag SF constructed for %s, %s %s wp, %s" % (year, btagger, wp_name.lower().capitalize(), njets_cat))
+                print(f"BTag SF constructed for {year}, {btagger} {wp_name.lower().capitalize()} wp, {njets_cat}")
                 btag_contructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
 
-    #set_trace()
         # save files
     if (len(years_to_run) == max_years) or (args.force_save):
-        btagSFs_name = os.path.join(outdir, "htt_3PJets_%s_btag_scalefactors_%s.coffea" % (wp_name, jobid))
+        btagSFs_name = os.path.join(outdir, f"htt_3PJets_{wp_name}_btag_scalefactors_{jobid}.coffea")
         save(btag_contructs_dict, btagSFs_name)
         print("\n", btagSFs_name, "written")
