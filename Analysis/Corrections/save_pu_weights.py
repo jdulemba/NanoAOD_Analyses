@@ -15,26 +15,26 @@ if not os.path.isdir(outdir):
 
 pu_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "Pileup")
 
-years_to_run = ["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"]
+years_to_run = ["2016APV", "2016", "2017", "2018"]
 mc_pu_weights = {year: {} for year in years_to_run}
 data_pu_dists = {year: {} for year in years_to_run}
 
 for year in years_to_run:
-    input_dir = os.path.join(proj_dir, "results", "%s_%s" % (year, base_jobid), analyzer)
+    input_dir = os.path.join(proj_dir, "results", f"{year}_{base_jobid}", analyzer)
     fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith("TOT.coffea")]
 
         # get nominal distribution
-    data_pu_central = convert_histo_root_file(os.path.join(pu_path, "%s_data.meta.pu.root" % year))
+    data_pu_central = convert_histo_root_file(os.path.join(pu_path, f"{year}_data.meta.pu.root"))
     central_hist = dense_lookup(*data_pu_central[("pileup", "dense_lookup")])
     central_hist._values = central_hist._values/sum(central_hist._values) # normalize values
     data_pu_dists[year]["central"] = central_hist
         # get up variation
-    data_pu_up = convert_histo_root_file(os.path.join(pu_path, "%s_data.meta.pu_up.root" % year))
+    data_pu_up = convert_histo_root_file(os.path.join(pu_path, f"{year}_data.meta.pu_up.root"))
     up_hist = dense_lookup(*data_pu_up[("pileup", "dense_lookup")])
     up_hist._values = up_hist._values/sum(up_hist._values) # normalize values
     data_pu_dists[year]["up"] = up_hist
         # get down variation
-    data_pu_dw = convert_histo_root_file(os.path.join(pu_path, "%s_data.meta.pu_down.root" % year))
+    data_pu_dw = convert_histo_root_file(os.path.join(pu_path, f"{year}_data.meta.pu_down.root"))
     dw_hist = dense_lookup(*data_pu_dw[("pileup", "dense_lookup")])
     dw_hist._values = dw_hist._values/sum(dw_hist._values) # normalize values
     data_pu_dists[year]["down"] = dw_hist
