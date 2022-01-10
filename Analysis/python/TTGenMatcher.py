@@ -71,11 +71,11 @@ def best_match(gen_hyp=None, jets=None, leptons=None, met=None):
         # solve for neutrino
     nu_array = np.zeros((len(ak.num(jets)), 4), dtype='float64')
             # convert all inputs into 2d numpy arrays of dtype=float64 (won't work if they're not float64)
-    blep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].px, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].py, 1), -999))).astype('float64'),\
-        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].pz, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].energy, 1), -999))).astype('float64')), axis=-1)
-    lep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].px, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].py, 1), -999))).astype('float64'),\
-        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].pz, 1), -999))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].energy, 1), -999))).astype('float64')), axis=-1)
-    met_inputs = np.stack((ak.to_numpy(ak.fill_none(met.px, -999)).astype('float64'), ak.to_numpy(ak.fill_none(met.py, -999)).astype('float64')), axis=-1)
+    blep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].px, 1), -999, axis=1))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].py, 1), -999, axis=1))).astype('float64'),\
+        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].pz, 1), -999, axis=1))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['BLep'].energy, 1), -999, axis=1))).astype('float64')), axis=-1)
+    lep_inputs = np.stack((ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].px, 1), -999, axis=1))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].py, 1), -999, axis=1))).astype('float64'),\
+        ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].pz, 1), -999, axis=1))).astype('float64'), ak.to_numpy(ak.flatten(ak.fill_none(ak.pad_none(matched_objects['Lepton'].energy, 1), -999, axis=1))).astype('float64')), axis=-1)
+    met_inputs = np.stack((ak.to_numpy(ak.fill_none(met.px, -999, axis=1)).astype('float64'), ak.to_numpy(ak.fill_none(met.py, -999, axis=1)).astype('float64')), axis=-1)
     nu_array = find_nu(bleps=blep_inputs, leptons=lep_inputs, met=met_inputs, nu_array=nu_array)
 
     valid_nu = ~((nu_array[:, 3] > 1e20) | (nu_array[:, 3] == 0)) # events that have a solution and matched blep
