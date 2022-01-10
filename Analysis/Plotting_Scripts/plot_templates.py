@@ -22,19 +22,26 @@ base_jobid = os.environ["base_jobid"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
+parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("lepton", choices=["Electron", "Muon"], help="Choose which lepton to make plots for")
+parser.add_argument("process", choices=["bkg", "sig"], help="Specify which process to use.")
 parser.add_argument("--indiv", action="store_true", help="Plot individual sys variations")
 parser.add_argument("--comp", action="store_true", help="Plot up/down sys variations with nominal mc")
+parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
+parser.add_argument("--kfactors", action="store_true", help="Use signal files scaled by kfactors")
 args = parser.parse_args()
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
-#analyzer = "htt_btag_iso_cut"
 analyzer = "htt_btag_sb_regions"
 
-input_dir = os.path.join(proj_dir, "results", "%s_%s" % (args.year, jobid), "Templates_%s" % analyzer)
-outdir = os.path.join(proj_dir, "plots", "%s_%s" % (args.year, jobid), "Templates_%s" % analyzer, args.lepton)
+input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
+base_outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}")
+if (args.process == "sig") and (args.kfactors):
+    outdir = os.path.join(base_outdir, "SIG_KFACTORS", args.lepton)
+else:
+    outdir = os.path.join(base_outdir, args.lepton)
+
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -54,31 +61,31 @@ baseSys = lambda sys : "_".join(sys.split("_")[:-1])
 templates_names = {
     "3Jets" : {
         "bkg" : {
-            "Orig" : load(os.path.join(input_dir, f"test_raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
-            "Smooth" : load(os.path.join(input_dir, f"test_smoothed_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
-            "Flat" : load(os.path.join(input_dir, f"test_flattened_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
+            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
+            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
+            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"flattened_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
             },
-        #"sig" : {
-        #    "Orig" : load(os.path.join(input_dir, f"test_raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
-        #    },
-        #"bkg" : (load(os.path.join(input_dir, "raw_templates_lj_3Jets_bkg_%s_%s.coffea" % (args.year, jobid))), load(os.path.join(input_dir, "templates_lj_3Jets_bkg_smoothed_%s_%s.coffea" % (args.year, jobid)))),
-        #"sig" : (load("%s/templates_lj_3Jets_sig_%s_QCD_Est_%s.coffea" % (input_dir, jobid, args.year))),
+        "sig" : {
+            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+            },
     },
     "4PJets" : {
         "bkg" : {
-            "Orig" : load(os.path.join(input_dir, f"test_raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
-            "Smooth" : load(os.path.join(input_dir, f"test_smoothed_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
-            "Flat" : load(os.path.join(input_dir, f"test_flattened_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
+            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
+            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
+            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"flattened_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
             },
-        #"sig" : {
-        #    "Orig" : load(os.path.join(input_dir, f"test_raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
-        #    },
-        #"bkg" : (load(os.path.join(input_dir, "raw_templates_lj_4PJets_bkg_%s_%s.coffea" % (args.year, jobid))), load(os.path.join(input_dir, "templates_lj_4PJets_bkg_smoothed_%s_%s.coffea" % (args.year, jobid)))),
-        #"sig" : (load("%s/templates_lj_4PJets_sig_%s_QCD_Est_%s.coffea" % (input_dir, jobid, args.year))),
+        "sig" : {
+            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
+            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
+            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
+            },
     },
 }
 
-data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "%s_lumis_data.json" % base_jobid)).read())[args.year]
+data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
 
 nom_styles = {"color":"k", "linestyle":"-", "label":"Nominal"}
 orig_styles = {"color":"b", "linestyle":"-", "label":"Original"}
@@ -88,9 +95,9 @@ flat_styles = {"color":"g", "linestyle":"-", "label":"Flattened"}
 #set_trace()
     ## make plots for background templates
 for jmult in templates_names.keys():
-    orig_dict = templates_names[jmult]["bkg"]["Orig"][args.lepton]
-    smoothed_dict = templates_names[jmult]["bkg"]["Smooth"][args.lepton]
-    flattened_dict = templates_names[jmult]["bkg"]["Flat"][args.lepton]
+    orig_dict = templates_names[jmult][args.process]["Orig"][args.lepton]
+    smoothed_dict = templates_names[jmult][args.process]["Smooth"][args.lepton]
+    flattened_dict = templates_names[jmult][args.process]["Flat"][args.lepton]
 
         # get all keys from both files to make sure they"re the same    
     orig_keys = sorted(orig_dict.keys())
@@ -100,18 +107,21 @@ for jmult in templates_names.keys():
         raise ValueError(f"Input templates for smoothed and original distributions not the same for {jmult}")
 
     #set_trace()
-    systs = sorted(set(["_".join(key.split("_")[1:]) for key in orig_keys if not ("data_obs" in key or len(key.split("_")) == 1)]))
+    systs = sorted(set([key.split("Res_")[1] for key in orig_keys if "Res" in key])) if args.process == "sig" else sorted(set(["_".join(key.split("_")[1:]) for key in orig_keys if not ("data_obs" in key or len(key.split("_")) == 1)]))
     if "nosys" in systs: systs.remove("nosys")
 
     if args.indiv:
+        #set_trace()
         for sys in systs:
+            if sys != "EWcorrUp": continue
+
             pltdir = os.path.join(outdir, jmult, "Individual", sys)
             if not os.path.isdir(pltdir):
                 os.makedirs(pltdir)
                 # find histograms of associated systematics and their processes
             procs_sys = [key for key in orig_keys if sys in key]
             for proc_sys in procs_sys:
-                proc = proc_sys.split("_")[0]
+                proc = proc_sys.split(f"_{sys}")[0]
 
                 print(jmult, sys, proc)
                 nominal = orig_dict[f"{proc}_nosys"]
@@ -130,8 +140,8 @@ for jmult in templates_names.keys():
                 hep.plot.histplot(orig_sys.values()[()], nominal.dense_axes()[0].edges(), ax=ax, histtype="step", **orig_styles) # original template
                 if not np.array_equal(smooth_sys.values()[()], orig_sys.values()[()]):
                     hep.plot.histplot(smooth_sys.values()[()], nominal.dense_axes()[0].edges(), ax=ax, histtype="step", **smooth_styles) # smoothed template
-                if not np.array_equal(flat_sys.values()[()], orig_sys.values()[()]):
-                    hep.plot.histplot(flat_sys.values()[()], nominal.dense_axes()[0].edges(), ax=ax, histtype="step", **flat_styles) # flattened template
+                #if not np.array_equal(flat_sys.values()[()], orig_sys.values()[()]):
+                #    hep.plot.histplot(flat_sys.values()[()], nominal.dense_axes()[0].edges(), ax=ax, histtype="step", **flat_styles) # flattened template
                 ax.legend(loc="upper right", title=f"{sys}, {proc}")
                 ax.set_ylabel("Events")
                 ax.autoscale()
@@ -143,9 +153,9 @@ for jmult in templates_names.keys():
                 if not np.array_equal(smooth_sys.values()[()], orig_sys.values()[()]):
                     smooth_masked_vals, smooth_masked_bins = Plotter.get_ratio_arrays(num_vals=smooth_sys.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
                     rax.step(smooth_masked_bins, smooth_masked_vals, where='post', **smooth_styles)
-                if not np.array_equal(flat_sys.values()[()], orig_sys.values()[()]):
-                    flat_masked_vals, flat_masked_bins = Plotter.get_ratio_arrays(num_vals=flat_sys.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                    rax.step(flat_masked_bins, flat_masked_vals, where='post', **flat_styles)
+                #if not np.array_equal(flat_sys.values()[()], orig_sys.values()[()]):
+                #    flat_masked_vals, flat_masked_bins = Plotter.get_ratio_arrays(num_vals=flat_sys.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                #    rax.step(flat_masked_bins, flat_masked_vals, where='post', **flat_styles)
                 rax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
                 rax.autoscale()
                 rax.set_xlim(x_lims)
@@ -162,7 +172,7 @@ for jmult in templates_names.keys():
                 for vline in vlines:
                     ax.axvline(vline, color="k", linestyle="--")
                     rax.axvline(vline, color="k", linestyle="--")
-                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+                hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
                 
                 #set_trace()
                 figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "Sys_Comp"]))
@@ -215,15 +225,19 @@ for jmult in templates_names.keys():
     
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
-    
+
                     ## plot relative deviations
                 for up_histo, up_style, use_fill_between in up_histos:
-                    up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                    ax.fill_between(up_masked_bins, up_masked_vals, facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
+                        # there is at least one actual value
+                    if np.any(~np.isnan(up_histo.values()[()])):
+                        up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                        ax.fill_between(up_masked_bins, up_masked_vals, facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
 
                 for dw_histo, dw_style, use_fill_between in dw_histos:
-                    dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                    ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
+                        # there is at least one actual value
+                    if np.any(~np.isnan(dw_histo.values()[()])):
+                        dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                        ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
 
                 ax.legend(loc="upper right", title=f"{sys}, {proc}")
                 ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
@@ -242,10 +256,10 @@ for jmult in templates_names.keys():
                 vlines = [x_lims[1]*ybin/5 for ybin in range(1, 5)]
                 for vline in vlines:
                     ax.axvline(vline, color="k", linestyle="--")
-                hep.cms.label(ax=ax, data=False, paper=False, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+                hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
                 
-                #set_trace()
-                figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "SysTemplates_Comp"]))
+                #if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)): set_trace()
+                figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, "scaled", proc, "SysTemplates_Comp"])) if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)) else os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "SysTemplates_Comp"]))
                 fig.savefig(figname)
                 print(f"{figname} written")
                 plt.close()
