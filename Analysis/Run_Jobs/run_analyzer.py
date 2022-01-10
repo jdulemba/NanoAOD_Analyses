@@ -59,7 +59,7 @@ for sample in samples_to_use:
 
     fileset[sample_name] = valid_files
 
-print(fileset)
+print(f"\n{fileset}")
 
     ## save output to coffea pkl file
 #set_trace()
@@ -95,5 +95,5 @@ run_cmd = """python {PROJDIR}/bin/{ANALYZER}.py "{FSET}" {YEAR} {OUTFNAME} "{OPT
         OUTFNAME=cfname,
         OPTS=opts_dict
 )
-print(f"Running command: {run_cmd}")
+print(f"\nRunning command: {run_cmd}\n")
 os.system(run_cmd)
