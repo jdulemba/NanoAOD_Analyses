@@ -135,52 +135,196 @@ def get_pdf_weights(df):
     
 
 def get_nnlo_weights(correction, events):
-    sl_evts = ak.num(events["SL"]) > 0
-    dl_evts = ak.num(events["DL"]) > 0
-    had_evts = ak.num(events["Had"]) > 0
-
-        # choose seed for random integers in similar fashio to https://github.com/CoffeaTeam/coffea/blob/master/coffea/jetmet_tools/CorrectedJetsFactory.py#L246-L254
-    seeds = np.array(ak.flatten(ak.concatenate([events["SL"][sl_evts]["TTbar"].pt, events["DL"][dl_evts]["TTbar"].pt, events["Had"][had_evts]["TTbar"].pt]), axis=None))[
-        [0, -1]
-    ].view("i4")
-    randomstate = np.random.Generator(np.random.PCG64(seeds))
-    which_top_to_use = randomstate.integers(low=0, high=2, size=len(events)) # top is 0, tbar is 1 
-
+    #set_trace()
     var = correction["Var"]
     dist = correction["Correction"]
+    if var != "mtt_vs_top_ctstar":
+        raise ValueError(f"{var} not supported for NNLO kinematic reweighting")
 
-    wts = np.ones(len(events))
-    if "thad_pt" in var:
-            # set wts for semilep evts
-        wts[sl_evts] = dist(ak.flatten(events["SL"][sl_evts]["THad"].pt, axis=None))
-            # set wts for dilep evts
-        dl_pt = np.where(which_top_to_use[dl_evts], ak.flatten(events["DL"][dl_evts]["Top"].pt, axis=None), ak.flatten(events["DL"][dl_evts]["Tbar"].pt, axis=None))
-        wts[dl_evts] = dist(dl_pt)
-            # set wts for had evts
-        had_pt = np.where(which_top_to_use[had_evts], ak.flatten(events["Had"][had_evts]["Top"].pt, axis=None), ak.flatten(events["Had"][had_evts]["Tbar"].pt, axis=None))
-        wts[had_evts] = dist(had_pt)
+    if "SL" in events.fields:
+        wts = np.ones(len(events))
 
-    elif "mtt_vs_thad_ctstar" in var:
-            # set wts for semilep evts
-        thad_ctstar, tlep_ctstar = make_vars.ctstar(events["SL"][sl_evts]["THad"], events["SL"][sl_evts]["TLep"])
-        thad_ctstar, tlep_ctstar = ak.flatten(thad_ctstar, axis=None), ak.flatten(tlep_ctstar, axis=None)
-        wts[sl_evts] = dist(ak.flatten(events["SL"][sl_evts]["TTbar"].mass, axis=None), thad_ctstar)
-            # set wts for dilep evts
+            # SL events
+        sl_evts = ak.num(events["SL"]) > 0
+        sl_top_ctstar, sl_tbar_ctstar = make_vars.ctstar(events["SL"][sl_evts]["Top"], events["SL"][sl_evts]["Tbar"])
+        sl_top_ctstar = ak.flatten(sl_top_ctstar, axis=None)
+        wts[sl_evts] = dist(ak.flatten(events["SL"][sl_evts]["TTbar"].mass, axis=None), sl_top_ctstar)
+
+            # DL events
+        dl_evts = ak.num(events["DL"]) > 0
         dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar(events["DL"][dl_evts]["Top"], events["DL"][dl_evts]["Tbar"])
-        dl_top_ctstar, dl_tbar_ctstar = ak.flatten(dl_top_ctstar, axis=None), ak.flatten(dl_tbar_ctstar, axis=None)
-        dl_ctstar = np.where(which_top_to_use[dl_evts], dl_top_ctstar, dl_tbar_ctstar)
-        wts[dl_evts] = dist(ak.flatten(events["DL"][dl_evts]["TTbar"].mass, axis=None), dl_ctstar)
-            # set wts for had evts
-        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar(events["Had"][had_evts]["Top"], events["Had"][had_evts]["Tbar"])
-        had_top_ctstar, had_tbar_ctstar = ak.flatten(had_top_ctstar, axis=None), ak.flatten(had_tbar_ctstar, axis=None)
-        had_ctstar = np.where(which_top_to_use[had_evts], had_top_ctstar, had_tbar_ctstar)
-        wts[had_evts] = dist(ak.flatten(events["Had"][had_evts]["TTbar"].mass, axis=None), had_ctstar)
+        dl_top_ctstar = ak.flatten(dl_top_ctstar, axis=None)
+        wts[dl_evts] = dist(ak.flatten(events["DL"][dl_evts]["TTbar"].mass, axis=None), dl_top_ctstar)
 
+            # Had events
+        had_evts = ak.num(events["Had"]) > 0
+        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar(events["Had"][had_evts]["Top"], events["Had"][had_evts]["Tbar"])
+        had_top_ctstar = ak.flatten(had_top_ctstar, axis=None)
+        wts[had_evts] = dist(ak.flatten(events["Had"][had_evts]["TTbar"].mass, axis=None), had_top_ctstar)
     else:
-        raise ValueError("%s not supported for NNLO kinematic reweighting" % var)
+        genparts = events["GenPart"]
+        gen_tops = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == 6)]
+        gen_tbars = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == -6)]
+        top_ctstar, tbar_ctstar = make_vars.ctstar(gen_tops, gen_tbars)
+        mtt = (gen_tops+gen_tbars).mass
+        wts = dist(ak.flatten(mtt, axis=None), ak.flatten(top_ctstar, axis=None))
+
+    ##if "thad_pt" in var:
+    #if "mtt_vs_top_ctstar" in var:
+    #    wts = dist(ak.flatten(mtt, axis=None), ak.flatten(top_ctstar, axis=None))
+    #else:
+    #    raise ValueError(f"{var} not supported for NNLO kinematic reweighting")
 
     return wts
 
+    
+
+def get_ewk_weights(correction, events):
+    event_status = -1*np.ones(len(events)) # initialize array to categorize events as gg (0), qqu (1), or qqd (2)
+    
+    lheparts = events["LHEPart"]
+    incoming_lhe = lheparts[lheparts.status == -1]
+    outgoing_lhe = lheparts[lheparts.status == 1]
+    
+    # find easiest event classifications
+    gg_events = ak.all(incoming_lhe.pdgId == 21, axis=1) # events whose initial state partons are both gluons
+    qqu_events = ak.all(abs(incoming_lhe.pdgId) < 7, axis=1) & ak.all(np.mod(incoming_lhe.pdgId, 2) == 0, axis=1) # events whose intial state partons are both up-type quarks
+    qqd_events = ak.all(abs(incoming_lhe.pdgId) < 7, axis=1) & ak.all(np.mod(incoming_lhe.pdgId, 2) == 1, axis=1) # events whose intial state partons are both down-type quarks
+    
+    event_status[gg_events] = 0
+    event_status[qqu_events] = 1
+    event_status[qqd_events] = 2
+    
+    # find classification for qg initial state events
+    qg_events = (ak.sum(incoming_lhe.pdgId == 21, axis=1) == 1) & (ak.sum(abs(incoming_lhe.pdgId) < 7, axis=1) == 1) # events that have one gluon and one quark as inital state partons
+    qg_event_status = -1*np.ones(ak.sum(qg_events))
+    
+    qg_quarks = incoming_lhe[qg_events][incoming_lhe[qg_events].pdgId != 21] # quarks in qg initial states
+    qg_gluons = incoming_lhe[qg_events][incoming_lhe[qg_events].pdgId == 21] # gluons in qg initial states
+    
+        # set lorentz vectors to correct values to find CM frame
+    qg_quarks_lv = ak.Array({
+        "x" : qg_quarks.px, "y" : qg_quarks.py, "z" : qg_quarks.incomingpz, "t" : abs(qg_quarks.incomingpz)
+    }, with_name="LorentzVector")
+    qg_gluons_lv = ak.Array({
+        "x" : qg_gluons.px, "y" : qg_gluons.py, "z" : qg_gluons.incomingpz, "t" : abs(qg_gluons.incomingpz)
+    }, with_name="LorentzVector")
+    
+        # find a boost incoming lhe partons CM system
+    qg_system = (qg_quarks_lv+qg_gluons_lv)
+    qg_system_boost = qg_system.boostvec
+    
+        # find additional outgoing parton from qg events and boost into CM system
+    extra_out_quark = outgoing_lhe[:, 0][qg_events]
+    rf_extra_out_quark = extra_out_quark.boost(qg_system_boost*-1)
+    
+    extra_out_quark_up = np.mod(abs(outgoing_lhe[qg_events].pdgId[:, 0]), 2) == 0
+    extra_out_quark_dw = np.mod(abs(outgoing_lhe[qg_events].pdgId[:, 0]), 2) == 1
+    rf_extra_out_quark_up = rf_extra_out_quark[extra_out_quark_up]
+    rf_extra_out_quark_dw = rf_extra_out_quark[extra_out_quark_dw]
+        # if sign(pz boosted outgoing up quark) == sign(pz incoming gluon) event is qqu else gg
+    qg_event_status[extra_out_quark_up] = ak.to_numpy(ak.flatten(ak.where(np.sign(rf_extra_out_quark_up.pz) == np.sign(qg_gluons.incomingpz[extra_out_quark_up]), 1, 0)))
+        # if sign(pz boosted outgoing down quark) == sign(pz incoming gluon) event is qqd else gg
+    qg_event_status[extra_out_quark_dw] = ak.to_numpy(ak.flatten(ak.where(np.sign(rf_extra_out_quark_dw.pz) == np.sign(qg_gluons.incomingpz[extra_out_quark_dw]), 2, 0)))
+    
+        # set event status for qg events
+    event_status[qg_events] = qg_event_status
+    
+    if "SL" in events.fields:
+            # calculate cpTP
+                # SL events
+        sl_evts = ak.num(events["SL"]) > 0
+        sl_gentops, sl_gentbars = events["SL"]["Top"], events["SL"]["Tbar"]
+        sl_top_cpTP, sl_tbar_cpTP = make_vars.cpTP(sl_gentops, sl_gentbars)
+        sl_top_cpTP, sl_tbar_cpTP = ak.flatten(sl_top_cpTP, axis=None), ak.flatten(sl_tbar_cpTP, axis=None)
+                # DL events
+        dl_evts = ak.num(events["DL"]) > 0
+        dl_gentops, dl_gentbars = events["DL"]["Top"], events["DL"]["Tbar"]
+        dl_top_cpTP, dl_tbar_cpTP = make_vars.cpTP(dl_gentops, dl_gentbars)
+        dl_top_cpTP, dl_tbar_cpTP = ak.flatten(dl_top_cpTP, axis=None), ak.flatten(dl_tbar_cpTP, axis=None)
+                # Had events
+        had_evts = ak.num(events["Had"]) > 0
+        had_gentops, had_gentbars = events["Had"]["Top"], events["Had"]["Tbar"]
+        had_top_cpTP, had_tbar_cpTP = make_vars.cpTP(had_gentops, had_gentbars)
+        had_top_cpTP, had_tbar_cpTP = ak.flatten(had_top_cpTP, axis=None), ak.flatten(had_tbar_cpTP, axis=None)
+
+            # set values for mtt and top cpTP
+        gen_mtt, gen_top_cpTP = -10*np.ones(len(events)), -10*np.ones(len(events))
+        gen_mtt[sl_evts] = ak.flatten(events["SL"]["TTbar"].mass, axis=None)
+        gen_mtt[dl_evts] = ak.flatten(events["DL"]["TTbar"].mass, axis=None)
+        gen_mtt[had_evts] = ak.flatten(events["Had"]["TTbar"].mass, axis=None)
+        gen_top_cpTP[sl_evts], gen_top_cpTP[dl_evts], gen_top_cpTP[had_evts] = sl_top_cpTP, dl_top_cpTP, had_top_cpTP
+
+    else:
+        genparts = events["GenPart"]
+        gen_tops = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == 6)]
+        gen_tbars = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == -6)]
+        gen_top_cpTP, gen_tbar_cpTP = make_vars.cpTP(gen_tops, gen_tbars)
+        gen_top_cpTP = ak.flatten(gen_top_cpTP, axis=None)
+        gen_mtt = ak.flatten((gen_tops+gen_tbars).mass, axis=None)
+
+    ewk_wts_dict = {val : np.ones(len(events)) for val in ["yt_0", "yt_0.5", "yt_1", "yt_1.5", "yt_2"]}
+    for rewt_type, wts in ewk_wts_dict.items():
+        wts[np.where(event_status == 0)] = correction[f"ratio_gg_{rewt_type}"](gen_mtt[np.where(event_status == 0)], gen_top_cpTP[np.where(event_status == 0)])
+        wts[np.where(event_status == 1)] = correction[f"ratio_qqu_{rewt_type}"](gen_mtt[np.where(event_status == 1)], gen_top_cpTP[np.where(event_status == 1)])
+        wts[np.where(event_status == 2)] = correction[f"ratio_qqd_{rewt_type}"](gen_mtt[np.where(event_status == 2)], gen_top_cpTP[np.where(event_status == 2)])
+
+    return ewk_wts_dict
+
+    
+def get_Otto_ewk_weights(correction, events):
+    if "SL" in events.fields:
+            # calculate ctstar
+                # SL events
+        sl_evts = ak.num(events["SL"]) > 0
+        sl_gentops, sl_gentbars = events["SL"]["Top"], events["SL"]["Tbar"]
+        sl_top_ctstar, sl_tbar_ctstar = make_vars.ctstar(sl_gentops, sl_gentbars)
+        sl_top_ctstar, sl_tbar_ctstar = ak.flatten(sl_top_ctstar, axis=None), ak.flatten(sl_tbar_ctstar, axis=None)
+                # DL events
+        dl_evts = ak.num(events["DL"]) > 0
+        dl_gentops, dl_gentbars = events["DL"]["Top"], events["DL"]["Tbar"]
+        dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar(dl_gentops, dl_gentbars)
+        dl_top_ctstar, dl_tbar_ctstar = ak.flatten(dl_top_ctstar, axis=None), ak.flatten(dl_tbar_ctstar, axis=None)
+                # Had events
+        had_evts = ak.num(events["Had"]) > 0
+        had_gentops, had_gentbars = events["Had"]["Top"], events["Had"]["Tbar"]
+        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar(had_gentops, had_gentbars)
+        had_top_ctstar, had_tbar_ctstar = ak.flatten(had_top_ctstar, axis=None), ak.flatten(had_tbar_ctstar, axis=None)
+
+            # set values for mtt and top ctstar
+        gen_mtt, gen_top_ctstar = -10*np.ones(len(events)), -10*np.ones(len(events))
+        gen_mtt[sl_evts] = ak.flatten(events["SL"]["TTbar"].mass, axis=None)
+        gen_mtt[dl_evts] = ak.flatten(events["DL"]["TTbar"].mass, axis=None)
+        gen_mtt[had_evts] = ak.flatten(events["Had"]["TTbar"].mass, axis=None)
+        gen_top_ctstar[sl_evts], gen_top_ctstar[dl_evts], gen_top_ctstar[had_evts] = sl_top_ctstar, dl_top_ctstar, had_top_ctstar
+
+    else:
+        genparts = events["GenPart"]
+        gen_tops = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == 6)]
+        gen_tbars = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == -6)]
+        gen_top_ctstar, gen_tbar_ctstar = make_vars.ctstar(gen_tops, gen_tbars)
+        gen_top_ctstar = ak.flatten(gen_top_ctstar, axis=None)
+        gen_mtt = ak.flatten((gen_tops+gen_tbars).mass, axis=None)
+
+    #set_trace()
+        # init dict of weights for different yukawa ratio values
+    ewk_wts_dict = {}
+
+        # find weight for delta QCD 
+    deltaQCD_wt = correction["DeltaQCD"](gen_mtt, gen_top_ctstar)
+    ewk_wts_dict["DeltaQCD"] = ak.copy(deltaQCD_wt)
+
+    rewt_vals = ["0.0", "0.5", "0.9", "1.0", "1.1", "1.5", "2.0", "3.0", "4.0"]
+    for rewt_type in rewt_vals:
+            # NLO EW kfactor weights
+        ewk_wts_dict[f"KFactor_{rewt_type}"] = ak.copy(correction[f"EW_KFactor_{rewt_type}"](gen_mtt, gen_top_ctstar))
+        ewk_wts_dict[f"Rebinned_KFactor_{rewt_type}"] = ak.copy(correction[f"Rebinned_EW_KFactor_{rewt_type}"](gen_mtt, gen_top_ctstar)) # coarser binning
+            # delta EW weights
+        ewk_wts_dict[f"DeltaEW_{rewt_type}"] = ak.copy(correction[f"DeltaEW_{rewt_type}"](gen_mtt, gen_top_ctstar))
+        ewk_wts_dict[f"Rebinned_DeltaEW_{rewt_type}"] = ak.copy(correction[f"Rebinned_DeltaEW_{rewt_type}"](gen_mtt, gen_top_ctstar)) # coarser binning
+
+
+    return ewk_wts_dict
     
 
 
