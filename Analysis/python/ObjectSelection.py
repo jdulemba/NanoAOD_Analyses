@@ -168,9 +168,12 @@ def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
 
 def jets_selection(events, year, cutflow=None, shift="", hem_15_16=False):
         # get jet selection for systematic shift (can only support one at a time)
-    #set_trace()
     if "JES" in shift:
-        _, unc, var = shift.split("_")
+        if len(shift.split("_")) == 3:
+            _, unc, var = shift.split("_")
+        if len(shift.split("_")) == 2: # using Total uncertainty
+            _, var = shift.split("_")
+            unc = "jes"
         jets_to_use = events["Jet"][f"JES_{unc}"]["up" if var == "UP" else "down"]
         met_to_use = events["MET"][f"JES_{unc}"]["up" if var == "UP" else "down"]
     elif "JER" in shift:
