@@ -55,6 +55,10 @@ styles = {
         "facecolor" : "#4daf4a", ## green
         "name" : "BKG (Est.)",
     },
+    "EWQCD" : {
+        "facecolor" : "#4daf4a", ## green
+        "name" : "EWQCD (Est.)",
+    },
         ## default name for coffea statistical errors
     "Sum unc." : {
         "facecolor" : "none",
