@@ -166,14 +166,16 @@ def select_normal(genparts, w_decay_momid):
         Gen_Top_Pairs[column] = ak.flatten(ak.concatenate( [gen_tops[column], gen_tbars[column]] , axis=1)) # (top, tbar)
         Gen_B_Pairs[column] = ak.flatten(ak.concatenate( [gen_bs[column], gen_bbars[column]] , axis=1)) # (b, bbar)
         Gen_W_Pairs[column] = ak.flatten(ak.concatenate( [gen_wplus[column], gen_wminus[column]] , axis=1)) # (W+, W-)
-        if column is not "decaytype":
+        if column != "decaytype":
+        #if column is not "decaytype":
             Gen_Wparton_Pairs[column] = ak.flatten(ak.concatenate( [ak.pad_none(gen_wpartons_up[column], 1, axis=1), ak.pad_none(gen_wpartons_dw[column], 1, axis=1)] , axis=1)) # (up-type wpartons, down-type wpartons)
 
     Gen_Top_Pairs = ak.unflatten(Gen_Top_Pairs, ak.num(gen_tops)+ak.num(gen_tbars))
     Gen_B_Pairs = ak.unflatten(Gen_B_Pairs, ak.num(gen_bs)+ak.num(gen_bbars))
     Gen_W_Pairs = ak.unflatten(Gen_W_Pairs, ak.num(gen_wplus)+ak.num(gen_wminus))
     Gen_Wparton_Pairs = ak.unflatten(Gen_Wparton_Pairs, ak.num(ak.pad_none(gen_wpartons_up, 1, axis=1))+ak.num(ak.pad_none(gen_wpartons_dw, 1, axis=1)))
-    Gen_Wparton_Pairs = Gen_Wparton_Pairs[ak.argsort(Gen_Wparton_Pairs["pt"], ascending=False)] # sort by pt
+    if ak.sum(ak.num(gen_wpartons_up)+ak.num(gen_wpartons_dw)) > 0:
+        Gen_Wparton_Pairs = Gen_Wparton_Pairs[ak.argsort(Gen_Wparton_Pairs["pt"], ascending=False)] # sort by pt
 
     Gen_TTbar = ak.Array({
         "pt" : (gen_tops+gen_tbars).pt,
@@ -225,6 +227,8 @@ def select_normal(genparts, w_decay_momid):
         ## SEMILEP
     SEMILEP_evts = ak.zip({
         "TTbar"   : Gen_TTbar[semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_TTbar[semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Top"     : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
+        "Tbar"    : Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[np.sign(Gen_Top_Pairs.charge) == -1][semilep_evts], ak.values_astype(semilep_evts, int)),
         "THad"    : Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 2][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)), 
         "TLep"    : Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 1][semilep_evts] if ak.any(semilep_evts) else ak.unflatten(Gen_Top_Pairs[Gen_Top_Pairs.decaytype == 1][semilep_evts], ak.values_astype(semilep_evts, int)),
         "BHad"    : Gen_B_Pairs[Gen_B_Pairs.decaytype == 2][semilep_evts]if ak.any(semilep_evts) else ak.unflatten(Gen_B_Pairs[Gen_B_Pairs.decaytype == 2][semilep_evts], ak.values_astype(semilep_evts, int)),
