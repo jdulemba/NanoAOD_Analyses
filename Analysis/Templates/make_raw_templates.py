@@ -374,6 +374,7 @@ if __name__ == "__main__":
     #    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
     #)
 
+    #set_trace()
     if not args.only_sig:
         print("Creating background templates")
         get_bkg_templates()
