@@ -209,10 +209,11 @@ signal_reweight_opts["2018"].pop("PREFIRE_DW")
 
 
 
+
 # dict of systematic in analyzer to plotting name
 sys_to_name = {
     year : {
-        "nosys" : "nosys",
+        #"nosys" : "nosys",
         "EWcorrUp" : "deltaQCDdeltaEW",
         #"EWcorrUp" : "EW_CORR_UP",
         "YukawaUp" : "YUKAWA_UP",
@@ -328,7 +329,6 @@ sys_to_name["2018"].pop("PrefireDown")
 
 
 
-
     ## dict for writing template names
 template_sys_to_name = {
         ## format is name_in_analyzer : (extension_to_topology, only_applies_to_TT)
@@ -439,4 +439,68 @@ template_sys_to_name = {
 }
 template_sys_to_name["2018"].pop("PrefireUp")
 template_sys_to_name["2018"].pop("PrefireDown")
+
+
+
+# dict of systematic types with up/down variation names
+sys_groups = {
+    year : {
+        #"nosys" : ["nosys"],
+        "deltaQCDdeltaEW" : ["EWcorrUp", None],
+        "YUKAWA" : ["YukawaUp", "YukawaDown"],
+        "EWQCD_SHAPE" : ["shapeUp", "shapeDown"],
+        "LEP_RECO" : ["Lep_RECOUp", "Lep_RECODown"],
+        "LEP_TRIG" : ["Lep_TRIGUp", "Lep_TRIGDown"],
+        #"BTAG_BC" : ["btag_bc_up", "btag_bc_down"],
+        "BTAG_BC_CORR" : ["btag_bc_up_correlated", "btag_bc_down_correlated"],
+        "BTAG_BC_UNCORR" : ["btag_bc_up_uncorrelated", "btag_bc_down_uncorrelated"],
+        #"BTAG_L" : ["btag_l_up", "btag_l_down"],
+        "BTAG_L_CORR" : ["btag_l_up_correlated", "btag_l_down_correlated"],
+        "BTAG_L_UNCORR" : ["btag_l_up_uncorrelated", "btag_l_down_uncorrelated"],
+        "PILEUP" : ["PileupUp", "PileupDown"],
+        "PREFIRE" : ["PrefireUp", "PrefireDown"],
+        "ISR" : ["ISRUp", "ISRDown"],
+        "FSR" : ["FSRUp", "FSRDown"],
+        "FACTOR" : ["FACTORUp", "FACTORDown"],
+        "RENORM" : ["RENORMUp", "RENORMDown"],
+        #"RENORM_FACTOR" : ["RENORM_FACTOR_SAMEUp", "RENORM_FACTOR_SAMEDown"],
+        #"RENORM_UP_FACTOR_DW" : ["RENORM_FACTOR_DIFFUp", None],
+        #"RENORM_DW_FACTOR_UP" : ["RENORM_FACTOR_DIFFDown", None],        
+        #"MTOP" : ["mtopUP", "mtopDOWN"],
+        "HDAMP" : ["hdampUP", "hdampDOWN"],
+        "UE" : ["ueUP", "ueDOWN"],
+        "JER" : ["JER_UP", "JER_DW"],
+        "JES_AbsoluteMPFBias" : ["JES_AbsoluteMPFBias_UP", "JES_AbsoluteMPFBias_DW"],
+        "JES_AbsoluteScale" : ["JES_AbsoluteScale_UP", "JES_AbsoluteScale_DW"],
+        "JES_AbsoluteStat" : ["JES_AbsoluteStat_UP", "JES_AbsoluteStat_DW"],
+        "JES_FlavorQCD" : ["JES_FlavorQCD_UP", "JES_FlavorQCD_DW"],
+        "JES_Fragmentation" : ["JES_Fragmentation_UP", "JES_Fragmentation_DW"],
+        "JES_PileUpDataMC" : ["JES_PileUpDataMC_UP", "JES_PileUpDataMC_DW"],
+        "JES_PileUpPtBB" : ["JES_PileUpPtBB_UP", "JES_PileUpPtBB_DW"],
+        "JES_PileUpPtEC1" : ["JES_PileUpPtEC1_UP", "JES_PileUpPtEC1_DW"],
+        "JES_PileUpPtRef" : ["JES_PileUpPtRef_UP", "JES_PileUpPtRef_DW"],
+        "JES_RelativeBal" : ["JES_RelativeBal_UP", "JES_RelativeBal_DW"],
+        "JES_RelativeFSR" : ["JES_RelativeFSR_UP", "JES_RelativeFSR_DW"],
+        "JES_RelativeJEREC1" : ["JES_RelativeJEREC1_UP", "JES_RelativeJEREC1_DW"],
+        "JES_RelativePtBB" : ["JES_RelativePtBB_UP", "JES_RelativePtBB_DW"],
+        "JES_RelativePtEC1" : ["JES_RelativePtEC1_UP", "JES_RelativePtEC1_DW"],
+        "JES_RelativeSample" : ["JES_RelativeSample_UP", "JES_RelativeSample_DW"],
+        "JES_RelativeStatEC" : ["JES_RelativeStatEC_UP", "JES_RelativeStatEC_DW"],
+        "JES_RelativeStatFSR" : ["JES_RelativeStatFSR_UP", "JES_RelativeStatFSR_DW"],
+        "JES_SinglePionECAL" : ["JES_SinglePionECAL_UP", "JES_SinglePionECAL_DW"],
+        "JES_SinglePionHCAL" : ["JES_SinglePionHCAL_UP", "JES_SinglePionHCAL_DW"],
+        "JES_TimePtEta" : ["JES_TimePtEta_UP", "JES_TimePtEta_DW"],
+        "JES_Total" : ["JES_Total_UP", "JES_Total_DW"],
+        "MET" : ["MET_UP", "MET_DW"],
+        "MTOP1GEV" : ["mtop1735", "mtop1715"],
+        "MTOP3GEV" : ["mtop1755", "mtop1695"],
+        "MTOP6GEV" : ["mtop1785", "mtop1665"],
+            # A/H signal systematics
+        "AH_RENORM" : ["AH_RENORMUp", "AH_RENORMDown"],
+        "AH_FACTOR" : ["AH_FACTORUp", "AH_FACTORDown"],
+    }
+    for year in ["2016APV", "2016", "2017", "2018"]
+}
+sys_groups["2018"].pop("PREFIRE")
+
 
