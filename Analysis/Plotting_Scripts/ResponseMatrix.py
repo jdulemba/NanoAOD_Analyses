@@ -42,7 +42,8 @@ input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", analyzer)
 #outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "MTOPcut")
 #outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer)
 #outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "GenKinCuts")
-outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "NoCuts")
+#outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "NoCuts")
+outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "NoCuts_HigherST")
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
@@ -90,7 +91,8 @@ lumi_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_Lum
 if args.plots == "All":
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_MTOPcut_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_nosys_{args.year}.root")
-    root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_{args.year}.root")
+    #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_{args.year}.root")
+    root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_HigherST_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_GenKinCuts_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_{args.year}.root")
     fout = uproot3.recreate(root_fname, compression=uproot3.ZLIB(4)) if os.path.isfile(root_fname) else uproot3.create(root_fname)
@@ -99,7 +101,8 @@ if args.plots == "All":
     ## make gen plots
 if (args.plots == "GEN") or (args.plots == "All"):
     #set_trace()
-    gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts*TOT.coffea"
+    gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    #gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts*TOT.coffea"
     #gen_fname_fnmatch = f"*GenLevel*{args.topology}*KinCuts*TOT.coffea"
     #gen_fname_fnmatch = f"*GenLevel*{args.topology}*TOT.coffea"
     gen_fnames = fnmatch.filter(os.listdir(input_dir), gen_fname_fnmatch)
@@ -192,7 +195,8 @@ if (args.plots == "GEN") or (args.plots == "All"):
     ## make reco plots
 if (args.plots == "RECO") or (args.plots == "All"):
     #set_trace()
-    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts*TOT.coffea"
+    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*KinCuts*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*MTOPcut*TOT.coffea"
