@@ -19,6 +19,7 @@ import os
 import Utilities.prettyjson as prettyjson
 import Utilities.plot_tools as plt_tools
 import numpy as np
+import Utilities.final_analysis_binning as final_binning
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
@@ -70,20 +71,19 @@ variables = {
     "pt_tt" : ("$p_{T}$($t\\bar{t}$) [GeV]", 2, (0., 500.)),
     "eta_tt" : ("$\\eta$($t\\bar{t}$)", 2, (-4., 4.)),
     "phi_tt" : ("$\phi$($t\\bar{t}$)", 1, (-3.2, 3.2)),
-    "mtt" : ("m($t\\bar{t}$) [GeV]", 10, (200., 4000.)),
+    "mtt" : ("m($t\\bar{t}$) [GeV]", 10, (200., 2000.)),
+    #"mtt" : ("m($t\\bar{t}$) [GeV]", 10, (200., 4000.)),
     "mtt_vs_top_ctstar" : ("m($t\\bar{t}$) $\otimes$ cos($\\theta^{*}_{t}$)", 1, None),
     "mtt_vs_top_ctstar_abs" : ("m($t\\bar{t}$) $\otimes$ |cos($\\theta^{*}_{t}$)|", 1, None),
 }
 
 mtt_vs_top_ctstar_abs_binning = (
-    np.array([360.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-        700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
-    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+    final_binning.mtt_binning,
+    final_binning.ctstar_abs_binning
 )
 
 mtt_vs_top_ctstar_binning = (
-    np.array([300.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-        700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
+    final_binning.mtt_binning,
     np.array([-1.0, -0.6, -0.2, 0.2, 0.6, 1.0])
 )
 
@@ -148,9 +148,13 @@ for hname in variables.keys():
     if rebinning != 1:
         histo = histo.rebin(*axes_to_sum, rebinning)
 
-        # orig
+        # yield and ratio plots
     fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
+
+        # just ratio plots
+    fig_ratio, ax_ratio = plt.subplots()
+    fig_ratio.subplots_adjust(hspace=.07)
 
     for rewt_key in sorted(histo.values().keys()):
         hep.plot.histplot(histo[rewt_key].integrate("rewt").values()[()], histo.dense_axes()[0].edges(), ax=ax, histtype="step", **rewt_style_dict[rewt_key[0]]) # nosys template
@@ -159,6 +163,9 @@ for hname in variables.keys():
                 # orig
         ratio_masked_vals, ratio_bins = Plotter.get_ratio_arrays(num_vals=histo.values()[rewt_key], denom_vals=histo.values()[("Nominal",)], input_bins=histo.dense_axes()[0].edges())
         rax.step(ratio_bins, ratio_masked_vals, where="post", **rewt_style_dict[rewt_key[0]])
+
+                # ratio
+        ax_ratio.step(ratio_bins, ratio_masked_vals, where="post", **rewt_style_dict[rewt_key[0]])
 
     #set_trace()
     # plot yields
@@ -173,6 +180,13 @@ for hname in variables.keys():
     rax.set_ylabel("W(var)/Nominal")
     rax.set_xlabel(xtitle)
     
+    ax_ratio.autoscale()
+    ax_ratio.set_xlim((0, nbins) if is2d else x_lims)
+    ax_ratio.set_ylim(ax_ratio.get_ylim()[0], ax_ratio.get_ylim()[1]*1.05)
+    ax_ratio.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
+    ax_ratio.set_ylabel("W(var)/Nominal")
+    ax_ratio.set_xlabel(xtitle)
+    
     ## set plotting styles
         ## set legend and corresponding colors
     #set_trace()
@@ -185,12 +199,21 @@ for hname in variables.keys():
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
 
+    handles, labels = ax_ratio.get_legend_handles_labels()
+    ax_ratio.legend(handles,labels, loc="upper right")
+
+    ax_ratio.text(
+        0.02, 0.86,
+        "$t\\bart$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_ratio.transAxes
+    )
     if is2d:
         # plot vertical lines for mtt vs ctstar
         for vline in vlines:
                 # orig
             ax.axvline(vline, color="k", linestyle="--")
             rax.axvline(vline, color="k", linestyle="--")
+            ax_ratio.axvline(vline, color="k", linestyle="--")
 
     hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1))    
 
@@ -198,3 +221,10 @@ for hname in variables.keys():
     fig.savefig(figname)
     #set_trace()
     print(f"{figname} written")
+
+    hep.cms.label(ax=ax_ratio, data=False, year=args.year, lumi=round(lumi_to_use, 1))    
+    ratio_figname = os.path.join(outdir, f"TTbar_RewtComp_{hname}_ratio")
+    fig_ratio.savefig(ratio_figname)
+    #set_trace()
+    print(f"{ratio_figname} written")
+
