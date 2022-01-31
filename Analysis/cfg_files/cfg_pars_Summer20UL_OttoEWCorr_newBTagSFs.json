@@ -187,7 +187,8 @@
         "ewk": {"file": "EWK_Corrections.coffea", "wt": "Otto"},
         "jetmet": {
             "tot": "JetMETCorrections.coffea",
-            "sources": "JetMETCorrections_UncSources.coffea"
+            "sources": "JetMETCorrections_UncSources.coffea",
+            "regrouped": "JetMETCorrections_RegroupedV2.coffea"
         },
         "lepton": "leptonSFs.coffea",
         "pu": "MC_PU_Weights.coffea",
