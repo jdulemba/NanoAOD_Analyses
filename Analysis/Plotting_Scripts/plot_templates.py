@@ -183,43 +183,47 @@ for jmult in templates_names.keys():
     
     if args.comp:
         #set_trace()
-        systypes = sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs])) 
+        systypes = systematics.sys_groups[args.year].keys()
+        #systypes = ["deltaQCDdeltaEW"]
         for sys in systypes:
+                # find histograms of associated systematics and their processes
+            up_sysname = systematics.sys_groups[args.year][sys][0]
+            dw_sysname = systematics.sys_groups[args.year][sys][1]
+            procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in orig_keys if up_sysname in key])) if not dw_sysname \
+                else sorted(set([key.split(f"_{up_sysname}")[0] for key in orig_keys if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in orig_keys if dw_sysname in key]))
+
+            if not procs_sys: continue
+
             pltdir = os.path.join(outdir, jmult, "Comp", sys)
             if not os.path.isdir(pltdir):
                 os.makedirs(pltdir)
 
-                # find histograms of associated systematics and their processes
-            up_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_UP"][0]
-            dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_DW"][0]
-            procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in orig_keys if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in orig_keys if dw_sysname in key]))
             for proc in procs_sys:
                 print(jmult, sys, proc)
 
                 nominal = orig_dict[f"{proc}_nosys"]
                 orig_up = orig_dict[f"{proc}_{up_sysname}"]
-                orig_dw = orig_dict[f"{proc}_{dw_sysname}"]
+                orig_dw = orig_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 smooth_up = smoothed_dict[f"{proc}_{up_sysname}"]
-                smooth_dw = smoothed_dict[f"{proc}_{dw_sysname}"]
+                smooth_dw = smoothed_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 flat_up = flattened_dict[f"{proc}_{up_sysname}"]
-                flat_dw = flattened_dict[f"{proc}_{dw_sysname}"]
-                if (not nominal.values()) or (not orig_up.values()) or (not orig_dw.values()): continue
-                #up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)] if np.array_equal(smooth_up.values()[()], orig_up.values()[()]) else [(orig_up, {"color": "r", "linestyle": "--", "label": "Original Up"}, True), (smooth_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)]
-                #dw_histos = [(orig_dw, {"color": "b", "linestyle": "-", "label": "Down"}, False)] if np.array_equal(smooth_dw.values()[()], orig_dw.values()[()]) else [(orig_dw, {"color": "b", "linestyle": "--", "label": "Original Down"}, True), (smooth_dw, {"color": "b", "linestyle": "-", "label": "Down"}, False)]
+                flat_dw = flattened_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
+                if (not nominal.values()) or (not orig_up.values()): continue
                 up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)] if np.array_equal(smooth_up.values()[()], orig_up.values()[()]) else \
                     [
                         (orig_up, {"color": "r", "linestyle": "--", "label": "Original Up"}, True),
                         (smooth_up, {"color": "r", "linestyle": "-", "label": "Smooth Up"}, False),
                         (flat_up, {"color": "r", "linestyle": "--", "label": "Flat Up"}, False),
                     ]
-                dw_histos = [(orig_dw, {"color": "b", "linestyle": "-", "label": "Down"}, False)] if np.array_equal(smooth_dw.values()[()], orig_dw.values()[()]) else \
-                    [
-                        (orig_dw, {"color": "b", "linestyle": "--", "label": "Original Down"}, True),
-                        (smooth_dw, {"color": "b", "linestyle": "-", "label": "Smooth Down"}, False),
-                        (flat_dw, {"color": "b", "linestyle": "--", "label": "Flat Down"}, False),
-                    ]
-                #up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)]
-                #dw_histos = [(orig_dw, {"color": "b", "linestyle": "-", "label": "Down"}, False)]
+
+                if orig_dw:
+                    dw_histos = [(orig_dw, {"color": "b", "linestyle": "-", "label": "Down"}, False)] if np.array_equal(smooth_dw.values()[()], orig_dw.values()[()]) else \
+                        [
+                            (orig_dw, {"color": "b", "linestyle": "--", "label": "Original Down"}, True),
+                            (smooth_dw, {"color": "b", "linestyle": "-", "label": "Smooth Down"}, False),
+                            (flat_dw, {"color": "b", "linestyle": "--", "label": "Flat Down"}, False),
+                        ]
+                else: dw_histos = None
 
                 x_lims = (0, nominal.dense_axes()[0].centers().size)
     
@@ -233,11 +237,12 @@ for jmult in templates_names.keys():
                         up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
                         ax.fill_between(up_masked_bins, up_masked_vals, facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
 
-                for dw_histo, dw_style, use_fill_between in dw_histos:
-                        # there is at least one actual value
-                    if np.any(~np.isnan(dw_histo.values()[()])):
-                        dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                        ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
+                if dw_histos:
+                    for dw_histo, dw_style, use_fill_between in dw_histos:
+                            # there is at least one actual value
+                        if np.any(~np.isnan(dw_histo.values()[()])):
+                            dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                            ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
 
                 ax.legend(loc="upper right", title=f"{sys}, {proc}")
                 ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
@@ -260,6 +265,8 @@ for jmult in templates_names.keys():
                 
                 #if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)): set_trace()
                 figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, "scaled", proc, "SysTemplates_Comp"])) if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)) else os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "SysTemplates_Comp"]))
+                #figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, "scaled", proc, "SysTemplates_OriginalSys"])) if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)) else os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "SysTemplates_OriginalSys"]))
+                #set_trace()
                 fig.savefig(figname)
                 print(f"{figname} written")
                 plt.close()
