@@ -14,7 +14,8 @@
 #export jobid=Summer20UL
 #export jobid=Summer20UL_mujets_btagSFs
 #export jobid=Summer20UL_OttoEWCorr
-export jobid=Summer20UL_OttoEWCorr_newBTagSFs
+#export jobid=Summer20UL_OttoEWCorr_newBTagSFs
+export jobid=Summer20UL_regroupedJECs
 
 if [[ $jobid == *"NanoAODv6"* ]]; then
     export base_jobid=NanoAODv6
