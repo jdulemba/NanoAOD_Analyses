@@ -169,11 +169,14 @@ def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
 def jets_selection(events, year, cutflow=None, shift="", hem_15_16=False):
         # get jet selection for systematic shift (can only support one at a time)
     if "JES" in shift:
-        if len(shift.split("_")) == 3:
-            _, unc, var = shift.split("_")
-        if len(shift.split("_")) == 2: # using Total uncertainty
-            _, var = shift.split("_")
-            unc = "jes"
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same fucking names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
         jets_to_use = events["Jet"][f"JES_{unc}"]["up" if var == "UP" else "down"]
         met_to_use = events["MET"][f"JES_{unc}"]["up" if var == "UP" else "down"]
     elif "JER" in shift:
