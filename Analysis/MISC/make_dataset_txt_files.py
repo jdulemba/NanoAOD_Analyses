@@ -63,7 +63,7 @@ for sample in samples_to_run:
                     flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
                     already_changed = True
 
-            if not already_changed: print("No site found for {fname}")
+            if not already_changed: print(f"No site found for {fname}")
 
         fnames = "\n".join(sorted(flist))
 
