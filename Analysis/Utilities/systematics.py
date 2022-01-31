@@ -60,6 +60,20 @@ ind_jec_sys = {
 }
 
 
+regroup_jec_sys = {
+    year : {
+        "JES_Absolute",
+        f"JES_Absolute_{year}",
+        "JES_BBEC1",
+        f"JES_BBEC1_{year}",
+        "JES_FlavorQCD",
+        "JES_RelativeBal",
+        f"JES_RelativeSample_{year}",
+    }
+    for year in ["2016APV", "2016", "2017", "2018"]
+}
+
+
 ttJets_sys = {
     "ISR_UP" : "ISRUp",
     "ISR_DW" : "ISRDown",
@@ -159,6 +173,16 @@ event_sys_opts["2017"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for 
 event_sys_opts["2017"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in ind_jec_sys["2017"]}) # add down
 event_sys_opts["2018"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for sys in ind_jec_sys["2018"]}) # add up
 event_sys_opts["2018"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in ind_jec_sys["2018"]}) # add down
+
+#    # add regrouped JES systematics
+#event_sys_opts["2016APV"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for sys in regroup_jec_sys["2016APV"]}) # add up
+#event_sys_opts["2016APV"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in regroup_jec_sys["2016APV"]}) # add down
+#event_sys_opts["2016"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for sys in regroup_jec_sys["2016"]}) # add up
+#event_sys_opts["2016"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in regroup_jec_sys["2016"]}) # add down
+#event_sys_opts["2017"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for sys in regroup_jec_sys["2017"]}) # add up
+#event_sys_opts["2017"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in regroup_jec_sys["2017"]}) # add down
+#event_sys_opts["2018"].update({"_".join([sys, "UP"]): "_".join([sys, "UP"]) for sys in regroup_jec_sys["2018"]}) # add up
+#event_sys_opts["2018"].update({"_".join([sys, "DW"]): "_".join([sys, "DW"]) for sys in regroup_jec_sys["2018"]}) # add down
 
 
 # dict of name_I_want : name_in_code
