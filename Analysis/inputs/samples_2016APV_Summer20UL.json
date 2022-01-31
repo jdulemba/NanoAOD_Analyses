@@ -181,6 +181,11 @@
         "name": "ttWqq"
     },
     {
+        "DBSName": "/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
+        "xsection": 0.2432,
+        "name": "ttZll"
+    },
+    {
         "DBSName": "/TTZToNuNu_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
         "xsection": 0.2432,
         "name": "ttZnunu"
@@ -448,7 +453,6 @@
     },
     {
         "DBSName": "/HpseudoToTTTo1L1Nu2J_m400_w20p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "AtoTTJetsSL_M400_W5p0_Res"
     },
     {

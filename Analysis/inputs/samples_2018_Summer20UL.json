@@ -462,7 +462,6 @@
     },
     {
         "DBSName": "/HpseudoToTTTo1L1Nu2J_m500_w50p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "AtoTTJetsSL_M500_W10p0_Int"
     },
     {
@@ -487,7 +486,6 @@
     },
     {
         "DBSName": "/HpseudoToTTTo1L1Nu2J_m600_w60p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "AtoTTJetsSL_M600_W10p0_Int"
     },
     {
@@ -725,7 +723,6 @@
     },
     {
         "DBSName": "/HscalarToTTTo1L1Nu2J_m1000_w250p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "HtoTTJetsSL_M1000_W25p0_Int"
     },
     {

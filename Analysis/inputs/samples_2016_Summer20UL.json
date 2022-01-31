@@ -180,6 +180,11 @@
         "name": "ttWqq"
     },
     {
+        "DBSName": "/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 0.2432,
+        "name": "ttZll"
+    },
+    {
         "DBSName": "/TTZToNuNu_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 0.2432,
         "name": "ttZnunu"
@@ -423,7 +428,6 @@
     },
     {
         "DBSName": "/HpseudoToTTTo1L1Nu2J_m365_w91p25_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "AtoTTJetsSL_M365_W25p0_Res"
     },
     {
@@ -657,7 +661,6 @@
     },
     {
         "DBSName": "/HscalarToTTTo1L1Nu2J_m500_w12p5_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "HtoTTJetsSL_M500_W2p5_Int"
     },
     {
@@ -678,7 +681,6 @@
     },
     {
         "DBSName": "/HscalarToTTTo1L1Nu2J_m500_w125p0_res_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "HtoTTJetsSL_M500_W25p0_Res"
     },
     {

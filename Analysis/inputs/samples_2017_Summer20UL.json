@@ -608,7 +608,6 @@
     },
     {
         "DBSName": "/HscalarToTTTo1L1Nu2J_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
-        "status": "PRODUCTION",
         "name": "HtoTTJetsSL_M400_W2p5_Int"
     },
     {
