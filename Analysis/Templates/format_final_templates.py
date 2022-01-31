@@ -26,8 +26,8 @@ def write_correct_template_format(in_fname, isSignal=None):
     if isSignal is None:
         raise ValueError("isSignal needs to be set to True to write signal templates, False for background")
 
-    #set_trace()
     rfile = root_open(in_fname) if in_fname.endswith(".root") else root_open("%s.root" % in_fname)
+    #set_trace()
 
     out_rfile = os.path.join(outdir, os.path.basename(in_fname).replace("temp_", "final_"))
 
