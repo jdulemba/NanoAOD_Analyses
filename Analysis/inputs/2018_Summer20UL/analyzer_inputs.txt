@@ -96,13 +96,13 @@ AtoTTJetsSL_M400_W25p0_Int
 AtoTTJetsSL_M400_W25p0_Res
 AtoTTJetsSL_M500_W2p5_Int
 AtoTTJetsSL_M500_W2p5_Res
-#AtoTTJetsSL_M500_W10p0_Int # still in production
+AtoTTJetsSL_M500_W10p0_Int
 AtoTTJetsSL_M500_W10p0_Res
 AtoTTJetsSL_M500_W25p0_Int
 AtoTTJetsSL_M500_W25p0_Res
 AtoTTJetsSL_M600_W2p5_Int
 AtoTTJetsSL_M600_W2p5_Res
-#AtoTTJetsSL_M600_W10p0_Int # still in production
+AtoTTJetsSL_M600_W10p0_Int
 AtoTTJetsSL_M600_W10p0_Res
 AtoTTJetsSL_M600_W25p0_Int
 AtoTTJetsSL_M600_W25p0_Res
@@ -154,9 +154,9 @@ HtoTTJetsSL_M1000_W2p5_Int
 HtoTTJetsSL_M1000_W2p5_Res
 HtoTTJetsSL_M1000_W10p0_Int
 HtoTTJetsSL_M1000_W10p0_Res
-#HtoTTJetsSL_M1000_W25p0_Int # still in production
+HtoTTJetsSL_M1000_W25p0_Int
 HtoTTJetsSL_M1000_W25p0_Res
-##
+###
 ###AtoTTJetsDiLep_M400_W2p5_Int
 ###AtoTTJetsDiLep_M400_W2p5_Res
 ###AtoTTJetsDiLep_M600_W10p0_Res

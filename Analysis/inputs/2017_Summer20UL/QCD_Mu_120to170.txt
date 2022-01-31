@@ -1,3 +1,4 @@
+/store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/5F4A83BE-06F4-2D43-B7D0-8C66D27847EF.root
 root://cmsio7.rc.ufl.edu:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/CFC68871-A036-5C41-9FFC-BA8FCC894624.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/100000/2FD79660-EA83-DD47-8EF6-B92D9A5890D1.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/250000/68B77FBC-4680-434B-9978-DBC04D8F4AF2.root
@@ -50,7 +51,6 @@ root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/D25B1DC1-3EAB-5840-AC07-0AD45DD8EC11.root
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/DB9C83AC-9B53-3545-8E84-FA1BF0D3C8B9.root
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/FA5D759B-8B02-BF45-9DB2-13A4950D17DF.root
-root://xrootd.cmsaf.mit.edu:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/5F4A83BE-06F4-2D43-B7D0-8C66D27847EF.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/100000/49137689-DC70-5E42-AB55-42DBD27D91DD.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/06DD1273-98F3-1742-9882-29370787C73F.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/219B8BA6-3F39-D646-B97E-ED66D6C18681.root

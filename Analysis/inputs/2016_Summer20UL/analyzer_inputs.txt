@@ -26,7 +26,7 @@
 #ZZ
 #ttWlnu
 #ttWqq
-#ttZnunu
+#ttZll
 #ttZqq
 #QCD_Mu_15to20
 #QCD_Mu_20to30
@@ -76,14 +76,15 @@
 #ttJetsSL_mtop1735
 #ttJetsSL_mtop1755
 #ttJetsSL_mtop1785
-#####ZJets
-#####WJets
+####ttZnunu
+####ZJets
+####WJets
 AtoTTJetsSL_M365_W2p5_Int
 AtoTTJetsSL_M365_W2p5_Res
 AtoTTJetsSL_M365_W10p0_Int
 AtoTTJetsSL_M365_W10p0_Res
 AtoTTJetsSL_M365_W25p0_Int
-#AtoTTJetsSL_M365_W25p0_Res # still in production
+AtoTTJetsSL_M365_W25p0_Res
 AtoTTJetsSL_M400_W2p5_Int
 AtoTTJetsSL_M400_W2p5_Res
 AtoTTJetsSL_M400_W5p0_Int
@@ -130,12 +131,12 @@ HtoTTJetsSL_M400_W10p0_Int
 HtoTTJetsSL_M400_W10p0_Res
 HtoTTJetsSL_M400_W25p0_Int
 HtoTTJetsSL_M400_W25p0_Res
-#HtoTTJetsSL_M500_W2p5_Int # still in production
+HtoTTJetsSL_M500_W2p5_Int
 HtoTTJetsSL_M500_W2p5_Res
 HtoTTJetsSL_M500_W10p0_Int
 HtoTTJetsSL_M500_W10p0_Res
 HtoTTJetsSL_M500_W25p0_Int
-#HtoTTJetsSL_M500_W25p0_Res # still in production
+HtoTTJetsSL_M500_W25p0_Res
 HtoTTJetsSL_M600_W2p5_Int
 HtoTTJetsSL_M600_W2p5_Res
 HtoTTJetsSL_M600_W10p0_Int
@@ -154,6 +155,7 @@ HtoTTJetsSL_M1000_W10p0_Int
 HtoTTJetsSL_M1000_W10p0_Res
 HtoTTJetsSL_M1000_W25p0_Int
 HtoTTJetsSL_M1000_W25p0_Res
+###
 ###AtoTTJetsDiLep_M365_W10p0_Int
 ###AtoTTJetsDiLep_M365_W25p0_Int
 ###AtoTTJetsDiLep_M400_W2p5_Int
