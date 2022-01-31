@@ -5,7 +5,7 @@ site_name_to_xrootd = {
     "T2_CH_CERN" : "eoscms.cern.ch",
     "T2_BE_IIHE" : "maite.iihe.ac.be:1095",
     "T2_US_Florida" : "cmsio7.rc.ufl.edu:1094",
-    "T2_US_MIT" : "xrootd.cmsaf.mit.edu:1094",
+    #"T2_US_MIT" : "xrootd.cmsaf.mit.edu:1094",
     #"T2_US_Nebraska" : "xrootd-local.unl.edu:1094",
     "T1_ES_PIC_Disk" : "xrootd-cmst1-door.pic.es:1094",
     "T2_FI_HIP" : "madhatter.csc.fi:1094",
