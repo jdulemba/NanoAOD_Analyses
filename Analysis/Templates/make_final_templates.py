@@ -56,6 +56,16 @@ def final_bkg_templates(bkg_dict):
                     treatment = "raw"
 
                     if proc == "EWQCD":
+                        set_trace()
+                        sysname = "_".join(sys.split("_")[:-1])
+                        if sysname not in bkg_syspar.what_to_do.keys(): raise ValueError(f"Could not find {sysname} in list of systematics to treat")
+                        treatment = bkg_syspar.what_to_do[sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
+                        #sysname = systematics.sys_to_name[args.year][sys] # convert sys to name used in analysis
+                        #sys_list_to_check = [key for key in bkg_syspar.what_to_do.keys() if fnmatch.fnmatch(sysname, f"{key}*")]
+                        #if not sys_list_to_check: continue
+                        #sys_to_check = sys_list_to_check[0] # find sysname which corresponds to name in systs_parameters.py
+                        #treatment = bkg_syspar.what_to_do[sys_to_check][proc][f"{lep.lower()[0]}{jmult[0]}"]
+
                             ## save template histos to coffea dict
                         if jmult == "3Jets":
                             histo_dict_3j[lep][f"{proc}_shapeUp"] = [raw_hdict[lep][f"{proc}_shapeUp"].copy(), treatment]
@@ -67,18 +77,25 @@ def final_bkg_templates(bkg_dict):
                     if proc == "EWQCD": continue
                     #if "EWcorr" in sys: set_trace()
                     # choose which hist to use based on what_to_do dict in systs_parameters.py
-                    sysname = systematics.sys_to_name[args.year][sys] # convert sys to name used in analysis
-                    sys_list_to_check = [key for key in bkg_syspar.what_to_do.keys() if fnmatch.fnmatch(sysname, f"{key}*")]
-                    if not sys_list_to_check: continue
-                    sys_to_check = sys_list_to_check[0] # find sysname which corresponds to name in systs_parameters.py
+                    #set_trace()
+                    sysname = "_".join(sys.split("_")[:-1])
+                    if sysname not in bkg_syspar.what_to_do.keys(): raise ValueError(f"Could not find {sysname} in list of systematics to treat")
+                    treatment = bkg_syspar.what_to_do[sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
 
-                    treatment = bkg_syspar.what_to_do[sys_to_check][proc][f"{lep.lower()[0]}{jmult[0]}"]
+                    #sysname = systematics.sys_to_name[args.year][sys] # convert sys to name used in analysis
+                    #sys_list_to_check = [key for key in bkg_syspar.what_to_do.keys() if fnmatch.fnmatch(sysname, f"{key}*")]
+                    #if not sys_list_to_check: continue
+                    #sys_to_check = sys_list_to_check[0] # find sysname which corresponds to name in systs_parameters.py
+                    #treatment = bkg_syspar.what_to_do[sys_to_check][proc][f"{lep.lower()[0]}{jmult[0]}"]
+
                     if treatment == "raw":
                         hist_to_use = raw_hdict[lep][tname].copy()
                     if treatment == "flat":
                         hist_to_use = flat_hdict[lep][tname].copy()
                     if treatment == "smooth":
                         hist_to_use = smooth_hdict[lep][tname].copy()
+
+                print(f"\t{treatment}")
 
                     ## save template histos to coffea dict
                 if jmult == "3Jets":
