@@ -39,20 +39,31 @@ def final_bkg_templates(bkg_dict):
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
 
             #set_trace()
-            systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
-            systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))+["EWcorrUp"]
+            #systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
+            #systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))+["EWcorrUp"]
+            systypes = ["nosys"] + sorted(systematics.sys_groups[args.year].keys())
             for sys in systypes:
                 #set_trace()
+                if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
                     procs = sorted(set([key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]))
                 else:
-                    if "EWcorr" in  sys:
-                        [key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]
-                    else:
-                        up_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_UP"][0]
-                        dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_DW"][0]
-                        procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in histo.keys() if dw_sysname in key]))
+                    #if "EWcorr" in  sys:
+                    #    [key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]
+                    #else:
+                    #    up_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_UP"][0]
+                    #    dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_DW"][0]
+                    #    procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in histo.keys() if dw_sysname in key]))
+
+                    up_sysname = systematics.sys_groups[args.year][sys][0]
+                    dw_sysname = systematics.sys_groups[args.year][sys][1]
+                    procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(histo.keys()) if up_sysname in key])) if not dw_sysname \
+                        else sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(histo.keys()) if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in sorted(histo.keys()) if dw_sysname in key]))
+
+                if not procs: continue
+                #set_trace()
 
                 for proc in procs:
                     print(lep, jmult, sys, proc)
@@ -132,10 +143,15 @@ def final_sig_templates(sig_dict):
                     signal = "_".join([tname.split("_neg")[0], "neg"]) if "neg" in tname else "_".join([tname.split("_pos")[0], "pos"])
                 sys = sorted(filter(None, tname.split(f"{signal}_")))[0]
                 systs.append(sys)
+
+            #set_trace()
             systs = sorted(set(systs))
+            systs.remove("nosys")
             systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))
             for sys in systypes:
                 #set_trace()
+                if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
                     signals = sorted(set([key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]))
