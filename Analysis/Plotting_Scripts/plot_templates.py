@@ -25,8 +25,7 @@ parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("lepton", choices=["Electron", "Muon"], help="Choose which lepton to make plots for")
 parser.add_argument("process", choices=["bkg", "sig"], help="Specify which process to use.")
-parser.add_argument("--indiv", action="store_true", help="Plot individual sys variations")
-parser.add_argument("--comp", action="store_true", help="Plot up/down sys variations with nominal mc")
+parser.add_argument("plot", choices=["indiv", "comp", "all"], help="Specify which systematic plots to create.")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 parser.add_argument("--kfactors", action="store_true", help="Use signal files scaled by kfactors")
 args = parser.parse_args()
@@ -110,7 +109,7 @@ for jmult in templates_names.keys():
     systs = sorted(set([key.split("Res_")[1] for key in orig_keys if "Res" in key])) if args.process == "sig" else sorted(set(["_".join(key.split("_")[1:]) for key in orig_keys if not ("data_obs" in key or len(key.split("_")) == 1)]))
     if "nosys" in systs: systs.remove("nosys")
 
-    if args.indiv:
+    if (args.plot == "all") or (args.plot == "indiv"):
         #set_trace()
         for sys in systs:
             if sys != "EWcorrUp": continue
@@ -181,7 +180,7 @@ for jmult in templates_names.keys():
                 plt.close()
 
     
-    if args.comp:
+    if (args.plot == "all") or (args.plot == "comp"):
         #set_trace()
         systypes = systematics.sys_groups[args.year].keys()
         #systypes = ["deltaQCDdeltaEW"]
