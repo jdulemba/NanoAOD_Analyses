@@ -188,7 +188,8 @@
         "jetmet": {
             "tot": "JetMETCorrections.coffea",
             "sources": "JetMETCorrections_UncSources.coffea",
-            "regrouped": "JetMETCorrections_RegroupedV2.coffea"
+            "regrouped": "JetMETCorrections_RegroupedV2.coffea",
+            "to_use": "regrouped"
         },
         "lepton": "leptonSFs.coffea",
         "pu": "MC_PU_Weights.coffea",
