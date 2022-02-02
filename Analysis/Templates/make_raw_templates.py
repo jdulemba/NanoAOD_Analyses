@@ -114,7 +114,7 @@ def get_bkg_templates():
         ## make groups based on process
         process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, gdict="templates")
         
-        lumi_correction = lumi_corr_dict[args.year]["%ss" % lep]
+        lumi_correction = lumi_corr_dict[args.year][f"{lep}s"]
                 # scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
         if len(ttJets_cats) > 0:
             for tt_cat in ttJets_cats:
@@ -153,7 +153,11 @@ def get_bkg_templates():
                 if sys not in systematics.template_sys_to_name[args.year].keys(): continue
 
                     # EWQCD background estimation only needed for 'nosys'
-                sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
+                if "data" not in sorted(set([key[0] for key in sig_histo.values().keys()])):
+                    sys_histo = sig_histo[:, sys].integrate("sys")
+                else:
+                    sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
+                #sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
                 #sys_histo = sig_histo[:, sys].integrate("sys")
 
                     ## write nominal and systematic variations for each topology to file
@@ -235,7 +239,6 @@ def get_sig_templates():
     if hname_to_use not in hdict.keys():
         raise ValueError(f"{hname_to_use} not found in file")
     xrebinning, yrebinning = linearize_binning
-    #xrebinning, yrebinning = mtt_ctstar_2d_binning
     histo = hdict[hname_to_use] # process, sys, jmult, leptype, btag, lepcat
 
     #set_trace()    
@@ -273,7 +276,7 @@ def get_sig_templates():
         # write signal dists to temp file        
     for lep in ["Muon", "Electron"]:
             # scale by lumi
-        lumi_correction = lumi_corr_dict[args.year]["%ss" % lep]
+        lumi_correction = lumi_corr_dict[args.year][f"{lep}s"]
         histo = rebin_histo.copy()
         histo.scale(lumi_correction, axis="dataset")
         process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, gdict="templates")
@@ -281,7 +284,7 @@ def get_sig_templates():
     
         for jmult in njets_to_run:
             #set_trace()
-            lin_histo = Plotter.linearize_hist(histo[:, :, jmult, lep].integrate("jmult").integrate("leptype"))
+            #lin_histo = Plotter.linearize_hist(histo[:, :, jmult, lep].integrate("jmult").integrate("leptype"))
             for signal in signals:
                 if "Int" in signal:
                     boson, mass, width, pI, wt = tuple(signal.split("_"))
@@ -292,12 +295,13 @@ def get_sig_templates():
                 #set_trace()
                 for sys in systs:
                     if sys not in systematics.template_sys_to_name[args.year].keys(): continue
-                    if not lin_histo[signal, sys].values().keys():
-                        print(f"Systematic {sys} for {lep} {jmult} {signal} not found, skipping")
-                        continue
+                    #if not lin_histo[signal, sys].values().keys():
+                    #    print(f"Systematic {sys} for {lep} {jmult} {signal} not found, skipping")
+                    #    continue
 
                     print(args.year, lep, jmult, sub_name, sys)
-                    template_histo = lin_histo[signal, sys].integrate("process").integrate("sys")
+                    template_histo = Plotter.linearize_hist(histo[signal, sys, jmult, lep].integrate("jmult").integrate("leptype").integrate("process").integrate("sys"))
+                    #template_histo = lin_histo[signal, sys].integrate("process").integrate("sys")
                     if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
                         #set_trace()
                         lhe_scale = lumi_correction[f"{signal}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal]
@@ -366,13 +370,6 @@ if __name__ == "__main__":
         final_binning.mtt_binning,
         final_binning.ctstar_abs_binning
     ) 
-    #    # binning for signal 2d dists
-    #mtt_ctstar_2d_binning = (
-    #    np.arange(300., 2005., 5.),
-    #    #np.arange(300., 1205., 5.),
-    #    #1,
-    #    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
-    #)
 
     #set_trace()
     if not args.only_sig:
