@@ -439,9 +439,10 @@ def make_dataset_groups(lepton, year, samples=[], gdict="dataset"):
 
 def add_coffea_files(input_files):
     from coffea.util import load
+    from tqdm import tqdm
 
     output_acc = load(input_files[0])
-    for idx in range(1, len(input_files)):
+    for idx in tqdm(range(1, len(input_files))):
         try:
             output_acc.add(load(input_files[idx]))
         except:
