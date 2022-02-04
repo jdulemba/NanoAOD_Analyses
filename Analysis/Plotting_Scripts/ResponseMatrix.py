@@ -88,7 +88,9 @@ widthTOname = lambda width : str(width).replace(".", "p")
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
 lumi_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights_kfactors.coffea"))[args.year]
 
-if args.plots == "All":
+fout_created_ = False
+if args.plots == "RECO":
+#if args.plots == "All":
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_MTOPcut_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_{args.year}.root")
@@ -96,6 +98,7 @@ if args.plots == "All":
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_GenKinCuts_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_{args.year}.root")
     fout = uproot3.recreate(root_fname, compression=uproot3.ZLIB(4)) if os.path.isfile(root_fname) else uproot3.create(root_fname)
+    fout_created_ = True
 
 
     ## make gen plots
@@ -157,7 +160,7 @@ if (args.plots == "GEN") or (args.plots == "All"):
                         sysname = sub_name if sys == "nosys" else f"{sub_name}_{systematics.template_sys_to_name[args.year][sys]}"
 
                     if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
-                    if args.plots == "All":
+                    if fout_created_:
                         fout[f"Gen_{sysname}"] = HistExport.export1d(sys_histo)
 
                     # plots
@@ -195,10 +198,10 @@ if (args.plots == "GEN") or (args.plots == "All"):
     ## make reco plots
 if (args.plots == "RECO") or (args.plots == "All"):
     #set_trace()
-    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*KinCuts*TOT.coffea"
-    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
+    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*MTOPcut*TOT.coffea"
     reco_fnames = fnmatch.filter(os.listdir(input_dir), reco_fname_fnmatch)
     reco_fnames = [os.path.join(input_dir, fname) for fname in reco_fnames]
@@ -256,7 +259,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
                                 sysname = sub_name if sys == "nosys" else f"{sub_name}_{systematics.template_sys_to_name[args.year][sys]}"
 
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
-                            if args.plots == "All":
+                            if fout_created_:
                                 fout[f"Reco_{lep}_{jmult}_{sysname}"] = HistExport.export1d(sys_histo)
 
                             # plots
@@ -316,7 +319,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
                                 raise ValueError(f"{hname} should not exist for signal")
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
 
-                            if args.plots == "All":
+                            if fout_created_:
                                 fout[f"Gen_vs_Reco_{lep}_{jmult}_{sysname}"] = HistExport.export2d(sys_histo)
 
                             # plots
@@ -343,6 +346,6 @@ if (args.plots == "RECO") or (args.plots == "All"):
                             plt.close()
 
 
-if args.plots == "All":
+if fout_created_:
     fout.close()
     print(f"{root_fname} written")
