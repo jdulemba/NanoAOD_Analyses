@@ -1,3 +1,6 @@
+import time
+tic = time.time()
+
 # matplotlib
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,8 +25,7 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 import Utilities.final_analysis_binning as final_binning
-import uproot3
-import Utilities.HistExport as HistExport
+import uproot
 import Utilities.systematics as systematics
 
 from argparse import ArgumentParser
@@ -31,6 +33,7 @@ parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("topology", choices=["TT", "Signal"], help="Choose the topology to make plots for")
 parser.add_argument("plots", choices=["RECO", "GEN", "All"], help="Choose which hists to make plots for")
+parser.add_argument("--force_save", action="store_true", help="Force saving of output root file")
 args = parser.parse_args()
 
 proj_dir = os.environ["PROJECT_DIR"]
@@ -89,15 +92,14 @@ data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_
 lumi_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights_kfactors.coffea"))[args.year]
 
 fout_created_ = False
-if args.plots == "RECO":
-#if args.plots == "All":
+if (args.plots == "All") or (args.force_save):
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_MTOPcut_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_{args.year}.root")
     root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_HigherST_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_GenKinCuts_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_{args.year}.root")
-    fout = uproot3.recreate(root_fname, compression=uproot3.ZLIB(4)) if os.path.isfile(root_fname) else uproot3.create(root_fname)
+    fout = uproot.recreate(root_fname, compression=uproot.ZLIB(4)) if os.path.isfile(root_fname) else uproot.create(root_fname)
     fout_created_ = True
 
 
@@ -135,6 +137,9 @@ if (args.plots == "GEN") or (args.plots == "All"):
 
                 for sys in sorted(set([key[0] for key in hproc.values().keys()])):
                     #if sys != "nosys": continue
+                        # remove regrouped JECs that are already in the individual sources
+                    if jobid == "Summer20UL_regroupedJECs":
+                        if ("nosys" in sys) or ("JES_FlavorQCD" in sys) or ("JES_RelativeBal" in sys) or (f"JES_RelativeSample_{args.year}" in sys): continue
                     if "RENORM_FACTOR" in sys: continue
                     sys_histo = (hproc[sys].integrate("sys")).copy()
 
@@ -161,7 +166,7 @@ if (args.plots == "GEN") or (args.plots == "All"):
 
                     if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
                     if fout_created_:
-                        fout[f"Gen_{sysname}"] = HistExport.export1d(sys_histo)
+                        fout[f"Gen_{sysname}"] = sys_histo.to_hist()
 
                     # plots
                     fig, ax = plt.subplots()
@@ -198,10 +203,10 @@ if (args.plots == "GEN") or (args.plots == "All"):
     ## make reco plots
 if (args.plots == "RECO") or (args.plots == "All"):
     #set_trace()
-    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*KinCuts*TOT.coffea"
-    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
+    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*MTOPcut*TOT.coffea"
     reco_fnames = fnmatch.filter(os.listdir(input_dir), reco_fname_fnmatch)
     reco_fnames = [os.path.join(input_dir, fname) for fname in reco_fnames]
@@ -234,6 +239,9 @@ if (args.plots == "RECO") or (args.plots == "All"):
                         #set_trace()
                         for sys in sorted(set([key[0] for key in hslice.values().keys()])):
                             #if sys != "nosys": continue
+                                # remove regrouped JECs that are already in the individual sources
+                            if jobid == "Summer20UL_regroupedJECs":
+                                if ("nosys" in sys) or ("JES_FlavorQCD" in sys) or ("JES_RelativeBal" in sys) or (f"JES_RelativeSample_{args.year}" in sys): continue
                             if "RENORM_FACTOR" in sys: continue
                             print(lep, jmult, sys)
                             sys_histo = (hslice[sys].integrate("sys")).copy()
@@ -260,7 +268,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
 
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
                             if fout_created_:
-                                fout[f"Reco_{lep}_{jmult}_{sysname}"] = HistExport.export1d(sys_histo)
+                                fout[f"Reco_{lep}_{jmult}_{sysname}"] = sys_histo.to_hist()
 
                             # plots
                             fig, ax = plt.subplots()
@@ -301,6 +309,9 @@ if (args.plots == "RECO") or (args.plots == "All"):
                         bin_edges = hslice.dense_axes()[0].edges()   
 
                         for sys in sorted(set([key[0] for key in hslice.values().keys()])):
+                                # remove regrouped JECs that are already in the individual sources
+                            if jobid == "Summer20UL_regroupedJECs":
+                                if ("nosys" in sys) or ("JES_FlavorQCD" in sys) or ("JES_RelativeBal" in sys) or (f"JES_RelativeSample_{args.year}" in sys): continue
                             if "RENORM_FACTOR" in sys: continue
                             print(lep, jmult, sys)
                             sys_histo = (hslice[sys].integrate("sys")).copy()
@@ -320,7 +331,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
 
                             if fout_created_:
-                                fout[f"Gen_vs_Reco_{lep}_{jmult}_{sysname}"] = HistExport.export2d(sys_histo)
+                                fout[f"Gen_vs_Reco_{lep}_{jmult}_{sysname}"] = sys_histo.to_hist()
 
                             # plots
                             fig, ax = plt.subplots()
@@ -349,3 +360,6 @@ if (args.plots == "RECO") or (args.plots == "All"):
 if fout_created_:
     fout.close()
     print(f"{root_fname} written")
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
