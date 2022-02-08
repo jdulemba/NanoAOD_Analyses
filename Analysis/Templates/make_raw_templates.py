@@ -153,12 +153,10 @@ def get_bkg_templates():
                 if sys not in systematics.template_sys_to_name[args.year].keys(): continue
 
                     # EWQCD background estimation only needed for 'nosys'
-                if "data" not in sorted(set([key[0] for key in sig_histo.values().keys()])):
+                if "data_obs" not in sorted(set([key[0] for key in sig_histo.values().keys()])):
                     sys_histo = sig_histo[:, sys].integrate("sys")
                 else:
-                    sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
-                #sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
-                #sys_histo = sig_histo[:, sys].integrate("sys")
+                    sys_histo = Plotter.BKG_Est(sig_reg=sig_histo[:, sys].integrate("sys"), sb_reg=cen_sb_histo, norm_type="SigMC", sys=sys, ignore_uncs=True, isForTemplates=True) if sys == "nosys" else sig_histo[:, sys].integrate("sys")
 
                     ## write nominal and systematic variations for each topology to file
                 for proc in sorted(set([key[0] for key in sys_histo.values().keys()])):
@@ -177,11 +175,11 @@ def get_bkg_templates():
 
                         # get shape variations from btag sb regions
                             # Up region
-                        bkg_shapeUp = Plotter.data_minus_top(up_sb_histo) # find data - (tt+st) distributions
+                        bkg_shapeUp = Plotter.data_minus_top(up_sb_histo, isForTemplates=True) # find data - (tt+st) distributions
                         bkg_shapeUp.scale(np.sum(template_histo.values()[()])/np.sum(bkg_shapeUp.values()[()])) # normalize to mc yield in signal region
                         print(args.year, lep, jmult, "shapeUp", proc)
                             # Down region
-                        bkg_shapeDown = Plotter.data_minus_top(dw_sb_histo) # find data - (tt+st) distributions
+                        bkg_shapeDown = Plotter.data_minus_top(dw_sb_histo, isForTemplates=True) # find data - (tt+st) distributions
                         bkg_shapeDown.scale(np.sum(template_histo.values()[()])/np.sum(bkg_shapeDown.values()[()])) # normalize to mc yield in signal region
                         print(args.year, lep, jmult, "shapeDown", proc)
 
@@ -284,7 +282,6 @@ def get_sig_templates():
     
         for jmult in njets_to_run:
             #set_trace()
-            #lin_histo = Plotter.linearize_hist(histo[:, :, jmult, lep].integrate("jmult").integrate("leptype"))
             for signal in signals:
                 if "Int" in signal:
                     boson, mass, width, pI, wt = tuple(signal.split("_"))
@@ -295,13 +292,9 @@ def get_sig_templates():
                 #set_trace()
                 for sys in systs:
                     if sys not in systematics.template_sys_to_name[args.year].keys(): continue
-                    #if not lin_histo[signal, sys].values().keys():
-                    #    print(f"Systematic {sys} for {lep} {jmult} {signal} not found, skipping")
-                    #    continue
 
                     print(args.year, lep, jmult, sub_name, sys)
                     template_histo = Plotter.linearize_hist(histo[signal, sys, jmult, lep].integrate("jmult").integrate("leptype").integrate("process").integrate("sys"))
-                    #template_histo = lin_histo[signal, sys].integrate("process").integrate("sys")
                     if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
                         #set_trace()
                         lhe_scale = lumi_correction[f"{signal}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal]
