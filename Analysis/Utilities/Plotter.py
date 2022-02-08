@@ -22,6 +22,7 @@ top_samples = re.compile(r"((?:%s))" % "|".join(["ttJets*", "singlet*"]))
 bkg_samples = re.compile(r"((?:%s))" % "|".join(["QCD*", "EWK*"]))
 #bkg_mask = re.compile("(BKG*)")
 bkg_mask = re.compile("(EWQCD*)")
+template_top_samples = re.compile(r"((?:%s))" % "|".join(["TT$", "TQ$", "TW$", "TB$"]))
 
 hstyles = styles.styles
 stack_fill_opts = {"alpha": 0.8, "edgecolor":(0,0,0,.5)}
@@ -365,7 +366,7 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
 
 
 
-def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False):
+def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False, isForTemplates=False):
     #if not norm_type:
     #    raise ValueError("Normalization type has to be specified for bkg estimation")
     #set_trace()
@@ -394,8 +395,8 @@ def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False):
 
         # data - (st + ttbar)
     dmt_dict = {
-        "SB" : data_minus_top(sb_reg),
-        "SIG" : data_minus_top(sig_reg),
+        "SB" : data_minus_top(sb_reg, isForTemplates),
+        "SIG" : data_minus_top(sig_reg, isForTemplates),
     }
         # (EWK + QCD) contributions
     bkg_dict = {
@@ -438,9 +439,10 @@ def data_minus_prompt(histo):
 
     return data_minus_prompt
 
-def data_minus_top(histo):
+def data_minus_top(histo, isForTemplates):
+    #set_trace()
     data_hist = histo[data_samples].integrate("process")
-    top_mc_hist  = histo[top_samples].integrate("process")
+    top_mc_hist  = histo[template_top_samples].integrate("process") if isForTemplates else histo[top_samples].integrate("process")
 
     neg_top_hist = top_mc_hist.copy()
     data_minus_top = data_hist.copy()
