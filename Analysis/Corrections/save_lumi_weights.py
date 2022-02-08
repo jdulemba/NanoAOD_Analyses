@@ -18,9 +18,9 @@ if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
 data_lumi = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read()) # file with integrated luminosity for all three years
-signal_xsecs = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_xsecs.json")).read()) # file with signal cross sections
-signal_xabs = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_xabs.json")).read()) # file with signal cross sections
-signal_kfactors = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_kfactors.json")).read()) # file with signal NNLO/LO k-factors
+signal_xsecs = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_xsecs_ulkfactor_final_220129.json")).read()) # file with signal cross sections
+signal_xabs = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_xabs_ulkfactor_final_220129.json")).read()) # file with signal cross sections
+signal_kfactors = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_kfactors_ulkfactor_final_220129.json")).read()) # file with signal NNLO/LO k-factors
 
 LHEScale_wts_dict = {
     "uF_up" : 5,
@@ -89,26 +89,26 @@ for year in years_to_run:
             meta_json_neg = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{year}_{base_jobid}", f"{sample}_neg.meta.json")).read())
             sumGenWeights_neg = meta_json_neg["sumGenWeights"]
 
-            xabs = signal_xabs[sample]
-            int_scale = xabs/(abs(sumGenWeights_pos) + abs(sumGenWeights_neg))
-            if args.kfactors:
-                int_scale = int_scale*signal_kfactors[sample]
+            #set_trace()
+            LO_nominal_xabs = signal_xabs[sample]
+            LO_nominal_int_scale = LO_nominal_xabs/(abs(sumGenWeights_pos) + abs(sumGenWeights_neg))
             for lep in ["Electrons", "Muons"]:
                 for wt_type in ["pos", "neg"]:
-                    lumi_weights[year][lep][f"{sample}_{wt_type}"] = data_lumi[year][lep]*int_scale
+                    lumi_weights[year][lep][f"{sample}_{wt_type}"] = data_lumi[year][lep] * LO_nominal_int_scale * signal_kfactors[sample] if args.kfactors else data_lumi[year][lep] * LO_nominal_int_scale
 
                 # add LHE scale weights
             #set_trace()
             for lhe_wt_name, idx in LHEScale_wts_dict.items():
-                lhe_wts_pos = meta_json_pos["sumLHEscaleWeights"][idx]
-                lhe_wts_neg = meta_json_neg["sumLHEscaleWeights"][idx]
-                lhe_wts_xabs = signal_xabs[f"{sample}_{lhe_wt_name}"]
-                lhe_int_scale = lhe_wts_xabs/(abs(lhe_wts_pos) + abs(lhe_wts_neg))
+                print(f"\t{sample}_{lhe_wt_name}")
                 if args.kfactors:
-                    lhe_int_scale = lhe_int_scale*signal_kfactors[f"{sample}_{lhe_wt_name}"]
+                    LO_lheWt_xabs = signal_xabs[f"{sample}_{lhe_wt_name}"]
+                    lhe_int_scale = LO_nominal_int_scale * (LO_nominal_xabs/LO_lheWt_xabs) * signal_kfactors[f"{sample}_{lhe_wt_name}"]
+                else:
+                    lhe_int_scale = LO_nominal_int_scale
+
                 for lep in ["Electrons", "Muons"]:
                     for wt_type in ["pos", "neg"]:
-                        lumi_weights[year][lep][f"{sample}_{wt_type}_{lhe_wt_name}"] = data_lumi[year][lep]*lhe_int_scale
+                        lumi_weights[year][lep][f"{sample}_{wt_type}_{lhe_wt_name}"] = data_lumi[year][lep] * lhe_int_scale
                 
         else:
             if not os.path.isfile(os.path.join(proj_dir, "inputs", f"{year}_{base_jobid}", f"{sample}.meta.json")):
@@ -119,19 +119,24 @@ for year in years_to_run:
             sumGenWeights = meta_json["sumGenWeights"]
             if (sample.startswith("AtoTT") or sample.startswith("HtoTT")):
                 #set_trace()
-                xsec = signal_xabs[sample]
-                if args.kfactors:
-                    xsec = xsec*signal_kfactors[sample]
+                LO_nominal_xabs = signal_xabs[sample]
+                LO_nominal_res_scale = LO_nominal_xabs/sumGenWeights
+                for lep in ["Electrons", "Muons"]:
+                    lumi_weights[year][lep][sample] = data_lumi[year][lep] * LO_nominal_res_scale * signal_kfactors[sample] if args.kfactors else data_lumi[year][lep] * LO_nominal_res_scale
 
+                #set_trace()
                     # add LHE scale weights for signal
                 for lhe_wt_name, idx in LHEScale_wts_dict.items():
-                    lhe_wts = meta_json["sumLHEscaleWeights"][idx]
-                    lhe_wts_xabs = signal_xabs[f"{sample}_{lhe_wt_name}"]
-                    lhe_res_scale = lhe_wts_xabs/abs(lhe_wts)
+                    print(f"\t{sample}_{lhe_wt_name}")
                     if args.kfactors:
-                        lhe_res_scale = lhe_res_scale*signal_kfactors[f"{sample}_{lhe_wt_name}"]
+                        LO_lheWt_xabs = signal_xabs[f"{sample}_{lhe_wt_name}"]
+                        lhe_res_scale = LO_nominal_res_scale * (LO_nominal_xabs/LO_lheWt_xabs) * signal_kfactors[f"{sample}_{lhe_wt_name}"]
+                    else:
+                        lhe_res_scale = LO_nominal_res_scale
+
                     for lep in ["Electrons", "Muons"]:
-                        lumi_weights[year][lep][f"{sample}_{lhe_wt_name}"] = data_lumi[year][lep]*lhe_res_scale
+                        lumi_weights[year][lep][f"{sample}_{lhe_wt_name}"] = data_lumi[year][lep] * lhe_res_scale
+
             else:
                 xsec = dataset["xsection"]
                 if sample in nominal_ttJets:
@@ -151,8 +156,8 @@ for year in years_to_run:
                     #    for lep in ["Electrons", "Muons"]:
                     #        lumi_weights[year][lep][f"{sample}_{ps_wt_name}"] = data_lumi[year][lep]*ps_wts_scale
 
-            for lep in ["Electrons", "Muons"]:
-                lumi_weights[year][lep][sample] = data_lumi[year][lep]*(xsec/sumGenWeights)
+                for lep in ["Electrons", "Muons"]:
+                    lumi_weights[year][lep][sample] = data_lumi[year][lep]*(xsec/sumGenWeights)
 
     print(f"{year} calculated")
 
