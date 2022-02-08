@@ -84,7 +84,7 @@ if __name__ == "__main__":
     jobid = os.environ["jobid"]
 
     analyzer = "htt_pdfUncs"
-    base_bkg_template_name = f"test_raw_pdf_templates_lj_NJETS_bkg_{args.year}_{jobid}"
+    base_bkg_template_name = f"raw_pdf_templates_lj_NJETS_bkg_{args.year}_{jobid}"
 
         # get matching pattern based on args.njets
     njets_regex = "*" if len(njets_to_run) > 1 else njets_to_run[0]
