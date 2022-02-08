@@ -281,6 +281,12 @@ what_to_do = {
         "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
     },
+    "PREFIRE" : {
+        "TT" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
     "RENORM" : {
         "TT" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
     },
