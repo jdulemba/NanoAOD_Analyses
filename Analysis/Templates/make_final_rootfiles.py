@@ -9,8 +9,8 @@ import os
 import numpy as np
 import fnmatch
 import Utilities.systematics as systematics
-import uproot3
 from coffea import hist
+import uproot
     
 base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
@@ -29,8 +29,8 @@ def final_bkg_templates(bkg_dict):
     Function that writes linearized mtt vs costheta distributions to root file.
     """
 
-    tmp_rname = os.path.join(outdir, f"temp_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.root" if args.scale_mtop3gev else f"temp_templates_lj_bkg_{args.year}_{jobid}.root")
-    upfout = uproot3.recreate(tmp_rname, compression=uproot3.ZLIB(4)) if os.path.isfile(tmp_rname) else uproot3.create(tmp_rname)
+    rname = os.path.join(outdir, f"final_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.root" if args.scale_mtop3gev else f"final_templates_lj_bkg_{args.year}_{jobid}.root")
+    upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
     #set_trace()
     for jmult, hdict in bkg_dict.items():
@@ -38,25 +38,20 @@ def final_bkg_templates(bkg_dict):
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
 
+            upfout.mkdir(lepdir)
             #set_trace()
             #systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
             #systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))+["EWcorrUp"]
             systypes = ["nosys"] + sorted(systematics.sys_groups[args.year].keys())
             for sys in systypes:
                 #set_trace()
-                if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+                if jobid == "Summer20UL_regroupedJECs":
+                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
 
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
                     procs = sorted(set([key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]))
                 else:
-                    #if "EWcorr" in  sys:
-                    #    [key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]
-                    #else:
-                    #    up_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_UP"][0]
-                    #    dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_DW"][0]
-                    #    procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in histo.keys() if dw_sysname in key]))
-
                     up_sysname = systematics.sys_groups[args.year][sys][0]
                     dw_sysname = systematics.sys_groups[args.year][sys][1]
                     procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(histo.keys()) if up_sysname in key])) if not dw_sysname \
@@ -68,34 +63,32 @@ def final_bkg_templates(bkg_dict):
                 for proc in procs:
                     print(lep, jmult, sys, proc)
                     if sys == "nosys":
-                        template, treatment = histo[f"{proc}_{sys}"]
-
-                        if proc == "EWQCD":
-                            #set_trace()
-                            upfout[f"{proc}_shapeUp_{lepdir}"]   = hist.export1d((histo[f"{proc}_shapeUp"][0]).copy())
-                            upfout[f"{proc}_shapeDown_{lepdir}"] = hist.export1d((histo[f"{proc}_shapeDown"][0]).copy())
-                        upfout[f"{proc}_{lepdir}"] = hist.export1d(template.copy())
-
-                    elif "EWcorr" in sys:
                         #set_trace()
-                        outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][sys], lepdir])))
                         template, treatment = histo[f"{proc}_{sys}"]
-                        upfout[outhname] = hist.export1d(template.copy())
+                        if proc == "data_obs": template.clear()
+                        upfout[lepdir][proc] = template.to_hist()
+
+                    elif sys == "deltaQCDdeltaEW":
+                        #set_trace()
+                        outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]])))
+                        template, treatment = histo[f"{proc}_{up_sysname}"]
+                        upfout[lepdir][outhname] = template.to_hist()
                         if treatment != "raw":
                             set_trace()
 
                     else:
                         #set_trace()
+                        #if sys == "EWQCD_SHAPE": set_trace()
                         up_template, treatment = histo[f"{proc}_{up_sysname}"]
                         dw_template, treatment = histo[f"{proc}_{dw_sysname}"]
 
-                        up_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname], lepdir])))
+                        up_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]])))
                         if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", "muon") if lep == "Muon" else up_outhname.replace("LEP", "electron")
-                        dw_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname], lepdir])))
+                        dw_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname]])))
                         if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", "muon") if lep == "Muon" else dw_outhname.replace("LEP", "electron")
 
-                        upfout[up_outhname] = hist.export1d(up_template.copy())
-                        upfout[dw_outhname] = hist.export1d(dw_template.copy())
+                        upfout[lepdir][up_outhname] = up_template.to_hist()
+                        upfout[lepdir][dw_outhname] = dw_template.to_hist()
                 
                         # add extra 'chi2' histogram for variations that were smoothed/flattened
                         if treatment != "raw":
@@ -104,7 +97,7 @@ def final_bkg_templates(bkg_dict):
                             treated_up_val = up_template.values(overflow="over")[()][-1]
                             treated_dw_val = dw_template.values(overflow="over")[()][-1]
             
-                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2", lepdir])))
+                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
                             if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", "muon") if lep == "Muon" else chi2_outhname.replace("LEP", "electron")
 
                             sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
@@ -114,10 +107,10 @@ def final_bkg_templates(bkg_dict):
                                 tmp_chi2_histo.values()[()][xbin] = sumw[xbin]
                             
                             #set_trace()
-                            upfout[chi2_outhname] = hist.export1d(tmp_chi2_histo.copy())
+                            upfout[lepdir][chi2_outhname] = tmp_chi2_histo.to_hist()
 
     upfout.close()
-    print(f"{tmp_rname} written")
+    print(f"{rname} written")
 
 
 def final_sig_templates(sig_dict):
@@ -125,8 +118,8 @@ def final_sig_templates(sig_dict):
     Function that writes linearized mtt vs costheta distributions to root file.
     """
 
-    tmp_rname = os.path.join(outdir, f"temp_templates_lj_sig_kfactors_{args.year}_{jobid}.root" if args.kfactors else f"temp_templates_lj_sig_{args.year}_{jobid}.root")
-    upfout = uproot3.recreate(tmp_rname, compression=uproot3.ZLIB(4)) if os.path.isfile(tmp_rname) else uproot3.create(tmp_rname)
+    rname = os.path.join(outdir, f"final_templates_lj_sig_kfactors_{args.year}_{jobid}.root" if args.kfactors else f"final_templates_lj_sig_{args.year}_{jobid}.root")
+    upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
     #set_trace()
     for jmult, hdict in sig_dict.items():
@@ -134,6 +127,7 @@ def final_sig_templates(sig_dict):
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
 
+            upfout.mkdir(lepdir)
             systs = []
             tnames = sorted(histo.keys())
             for tname in tnames:
@@ -150,7 +144,8 @@ def final_sig_templates(sig_dict):
             systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))
             for sys in systypes:
                 #set_trace()
-                if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+                if jobid == "Summer20UL_regroupedJECs":
+                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
 
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
@@ -171,22 +166,20 @@ def final_sig_templates(sig_dict):
                     if sys == "nosys":
                         template, treatment = histo[f"{signal}_{sys}"]
 
-                        upfout[f"{sub_name}_{lepdir}"] = hist.export1d(template.copy())
+                        upfout[lepdir][sub_name] = template.to_hist()
 
                     else:
                         #set_trace()
                         up_template, treatment = histo[f"{signal}_{up_sysname}"]
                         dw_template, treatment = histo[f"{signal}_{dw_sysname}"]
 
-                        #up_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname], lepdir])))
-                        up_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][up_sysname], lepdir])))
+                        up_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][up_sysname]])))
                         if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", "muon") if lep == "Muon" else up_outhname.replace("LEP", "electron")
-                        #dw_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname], lepdir])))
-                        dw_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname], lepdir])))
+                        dw_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname]])))
                         if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", "muon") if lep == "Muon" else dw_outhname.replace("LEP", "electron")
 
-                        upfout[up_outhname] = hist.export1d(up_template.copy())
-                        upfout[dw_outhname] = hist.export1d(dw_template.copy())
+                        upfout[lepdir][up_outhname] = up_template.to_hist()
+                        upfout[lepdir][dw_outhname] = dw_template.to_hist()
                 
                         # add extra 'chi2' histogram for variations that were smoothed/flattened
                         if treatment != "raw":
@@ -195,8 +188,7 @@ def final_sig_templates(sig_dict):
                             treated_up_val = up_template.values(overflow="over")[()][-1]
                             treated_dw_val = dw_template.values(overflow="over")[()][-1]
             
-                            #chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2", lepdir])))
-                            chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2", lepdir])))
+                            chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
                             if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", "muon") if lep == "Muon" else chi2_outhname.replace("LEP", "electron")
 
                             sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
@@ -206,10 +198,10 @@ def final_sig_templates(sig_dict):
                                 tmp_chi2_histo.values()[()][xbin] = sumw[xbin]
                             
                             #set_trace()
-                            upfout[chi2_outhname] = hist.export1d(tmp_chi2_histo.copy())
+                            upfout[lepdir][chi2_outhname] = tmp_chi2_histo.to_hist()
 
     upfout.close()
-    print(f"{tmp_rname} written")
+    print(f"{rname} written")
 
 
 if __name__ == "__main__":
