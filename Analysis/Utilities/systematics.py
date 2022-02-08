@@ -463,6 +463,8 @@ template_sys_to_name = {
             # TT systematics
         "EWcorrUp" : "deltaQCDdeltaEW",
         #"EWcorrUp" : "EWcorr",
+        "shapeUp" : "shapeUp",
+        "shapeDown" : "shapeDown",
         "YukawaUp" : "ytUp",
         "YukawaDown" : "ytDown",
         "FSRUp"   : "psfsrUp",
