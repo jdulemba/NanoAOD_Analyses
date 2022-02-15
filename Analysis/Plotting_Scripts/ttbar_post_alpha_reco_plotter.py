@@ -72,22 +72,26 @@ alpha_corrections_mask = {
 
 systematics = {
     "nosys" : ("Nominal", "k", 2),
-    "JES_UP" : ("JES Up", "#e42a2c", 2), ## red
-    "JES_DW" : ("JES Down", "#377eb8", 2), ## blue
+    "JES_Total_UP" : ("JES Total Up", "#e42a2c", 2), ## red
+    "JES_Total_DW" : ("JES Total Down", "#377eb8", 2), ## blue
     "JER_UP" : ("JER Up", "#4daf4a", 2), ## green
     "JER_DW" : ("JER Down", "#984ea3", 2), ## purple
 }
 
 variables = {
-    #"Reco_mtt": ("$m_{t\\bar{t}}$ [GeV]", 2, (200., 2000.)),
+    ###"Reco_mtt": ("$m_{t\\bar{t}}$ [GeV]", 2, (200., 2000.)),
     "Reco_mtt": ("$m_{t\\bar{t}}$ [GeV]", 2, (200., 1000.)),
-    "Reco_mthad": ("$m_{t_{h}}$ [GeV]", 2, (0., 300.)),
+    "Reco_mthad": ("$m_{t_{h}}$ [GeV]", 2, (0., 250.)),
     "Reco_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$)", 2, (-1., 1.)),
     "Reco_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)|", 2, (0., 1.)),
-    "Reso_mtt": ("$m_{t\\bar{t}}$ Resolution [GeV]", 1, (-300., 300.)),
-    "Reso_mthad": ("$m_{t_{h}}$ Resolution [GeV]", 2, (-200., 200.)),
-    "Reso_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$) Resolution", 2, (-1., 1.)),
-    "Reso_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)| Resolution", 2, (-1., 1.)),
+    "Reso_mtt": ("$m_{t\\bar{t}}$ Resolution [GeV]", 5, (-300., 300.)),
+    "Reso_mthad": ("$m_{t_{h}}$ Resolution [GeV]", 2, (-50., 150.)),
+    "Reso_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$) Resolution", 5, (-1., 1.)),
+    "Reso_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)| Resolution", 5, (-1., 1.)),
+    ##"Reso_mtt": ("$m_{t\\bar{t}}$ Resolution [GeV]", 1, (-300., 300.)),
+    ##"Reso_mthad": ("$m_{t_{h}}$ Resolution [GeV]", 2, (-200., 200.)),
+    ##"Reso_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$) Resolution", 2, (-1., 1.)),
+    ##"Reso_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)| Resolution", 2, (-1., 1.)),
 }
 
 
@@ -341,7 +345,9 @@ for hname in variables.keys():
                 rax.set_xlabel(xtitle)
                 rax.set_ylabel("Sys/Nominal")
                 rax.set_xlim(x_lims)
-                rax.set_ylim(0.5, 1.5)
+                rax.set_ylim(0.9, 1.1)
+                #rax.set_ylim(0.8, 1.2)
+                #rax.set_ylim(0.5, 1.5)
                 rax.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
             
                     ## set legend and corresponding colors
