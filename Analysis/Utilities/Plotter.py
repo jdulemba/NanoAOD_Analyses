@@ -788,5 +788,8 @@ def flatten(nosys, systematic):
     for idx in range(nom_vals.size):
         flattened_histo.values()[()][idx] = flat_val*nom_vals[idx]
 
+        # save flat_val in overflow (in terms of relative deviation from nominal)
+    flattened_histo.values(overflow="over")[()][-1] = flat_val - 1.0
+
     return flattened_histo
 
