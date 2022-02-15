@@ -57,32 +57,33 @@ lepdir = "mujets" if args.lepton == "Muon" else "ejets"
 
 baseSys = lambda sys : "_".join(sys.split("_")[:-1])
 
-templates_names = {
-    "3Jets" : {
-        "bkg" : {
+if args.process == "bkg":
+    templates_names = {
+        "3Jets" : {
             "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
             "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
             "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"flattened_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")),
-            },
-        "sig" : {
-            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
-            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
-            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
-            },
-    },
-    "4PJets" : {
-        "bkg" : {
+        },
+        "4PJets" : {
             "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
             "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
             "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"flattened_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")),
-            },
-        "sig" : {
+        },
+    }
+
+if args.process == "sig":
+    templates_names = {
+        "3Jets" : {
+            "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+            "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+            "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")),
+        },
+        "4PJets" : {
             "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
             "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
             "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")),
-            },
-    },
-}
+        },
+    }
 
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
 
@@ -94,9 +95,9 @@ flat_styles = {"color":"g", "linestyle":"-", "label":"Flattened"}
 #set_trace()
     ## make plots for background templates
 for jmult in templates_names.keys():
-    orig_dict = templates_names[jmult][args.process]["Orig"][args.lepton]
-    smoothed_dict = templates_names[jmult][args.process]["Smooth"][args.lepton]
-    flattened_dict = templates_names[jmult][args.process]["Flat"][args.lepton]
+    orig_dict = templates_names[jmult]["Orig"][args.lepton]
+    smoothed_dict = templates_names[jmult]["Smooth"][args.lepton]
+    flattened_dict = templates_names[jmult]["Flat"][args.lepton]
 
         # get all keys from both files to make sure they"re the same    
     orig_keys = sorted(orig_dict.keys())
