@@ -63,11 +63,10 @@ cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_
 ## load corrections for event weights
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["tot"]))[args.year]
-alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
-#nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))[args.year]
-ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]))
+ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
+alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]
 corrections = {
     "Pileup" : pu_correction,
     "Prefire" : True,
@@ -76,7 +75,7 @@ corrections = {
     "JetCor" : jet_corrections,
     "Alpha" : alpha_corrections,
     "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
-    "EWK_Rewt" : ewk_reweighting,
+    "EWK_Rewt" : {"Correction" : ewk_reweighting, "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
 }
 
     ## parameters for b-tagging
@@ -113,7 +112,7 @@ perm_cats = {
 }
 
     ## determine which systematics to run
-sys_opts = ["nosys", "JER_UP", "JER_DW", "JES_UP", "JES_DW"]
+sys_opts = ["nosys", "JER_UP", "JER_DW", "JES_Total_UP", "JES_Total_DW"]
 evt_sys_to_run = opts_dict.get("evt_sys", "NONE")
 event_systematics_to_run = ["nosys"] if (evt_sys_to_run == "NONE") else [name for name in sys_opts if fnmatch.fnmatch(name, evt_sys_to_run)]
 print("Running with event systematics:", *sorted(event_systematics_to_run), sep=", ")
@@ -207,15 +206,33 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
             # find gen level particles for ttbar system
         genpsel.select(events, mode="NORMAL")
         {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()} # add semilep requirement to all systematics
+
         if "NNLO_Rewt" in self.corrections.keys():
+                # find gen level particles for ttbar system
             nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-            mu_evt_weights.add("%s_reweighting" % corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
-            el_evt_weights.add("%s_reweighting" % corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
+            mu_evt_weights.add("NNLOqcd",
+                np.copy(nnlo_wts),
+            )
+            el_evt_weights.add("NNLOqcd",
+                np.copy(nnlo_wts),
+            )
 
         if "EWK_Rewt" in self.corrections.keys():
-            ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"], events)
-            mu_evt_weights.add("ewk_reweighting", np.copy(ewk_wts_dict["yt_1"]))
-            el_evt_weights.add("ewk_reweighting", np.copy(ewk_wts_dict["yt_1"]))
+            #set_trace()
+                ## NLO EW weights
+            if self.corrections["EWK_Rewt"]["wt"] == "Otto":
+                ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    # add Yukawa coupling variation
+                mu_evt_weights.add("Yukawa",  # really just varying value of Yt
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                )
+                el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                )
 
             # get all passing leptons
         lep_and_filter_pass = objsel.select_leptons(events, year=args.year)
@@ -275,14 +292,18 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
             events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btagger == "DeepCSV" else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
 
             if self.corrections["BTagSF"] == True:
-                deepcsv_cen = np.ones(len(events))
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
+    
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
     
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["central"], axis=1)
+
+                    # fll dict of btag weights
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = np.copy(ak.prod(deepcsv_3j_wts[wt_name], axis=1))
+                    btag_weights[wt_name][fourplusJets_cut] = np.copy(ak.prod(deepcsv_4pj_wts[wt_name], axis=1))
 
 
             ## fill hists for each region
@@ -328,7 +349,8 @@ class ttbar_post_alpha_reco(processor.ProcessorABC):
                         MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
                         output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, jmult])] += ak.sum(MTHigh)
 
-                        wts = (evt_weights.weight()*deepcsv_cen)[cut][valid_perms][MTHigh]   
+                        wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]   
+                        #wts = (evt_weights.weight()*deepcsv_cen)[cut][valid_perms][MTHigh]   
 
                         if to_debug: print(*[lepton, jmult, evt_sys], sep=", ")
                         output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=events["SL"][cut][valid_perms][MTHigh], bp=best_perms[valid_perms][MTHigh], evt_wts=wts)
