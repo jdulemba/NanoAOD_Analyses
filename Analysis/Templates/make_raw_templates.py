@@ -71,6 +71,7 @@ def get_bkg_templates():
     Function that writes linearized mtt vs costheta distributions to root file.
     """
     ## variables that only need to be defined/evaluated once
+    templates_to_check = systematics.template_sys_to_name if args.scale_mtop3gev else systematics.combine_template_sys_to_name
     hdict = plt_tools.add_coffea_files(bkg_fnames) if len(bkg_fnames) > 1 else load(bkg_fnames[0])
 
         # get correct hist and rebin
@@ -150,7 +151,7 @@ def get_bkg_templates():
                 # loop over each systematic
             for sys in systs:
                 #set_trace()
-                if sys not in systematics.template_sys_to_name[args.year].keys(): continue
+                if sys not in templates_to_check[args.year].keys(): continue
 
                     # EWQCD background estimation only needed for 'nosys'
                 if "data_obs" not in sorted(set([key[0] for key in sig_histo.values().keys()])):
@@ -161,7 +162,6 @@ def get_bkg_templates():
                     ## write nominal and systematic variations for each topology to file
                 for proc in sorted(set([key[0] for key in sys_histo.values().keys()])):
                     if ("TT" not in proc) and (sys in systematics.ttJets_sys.values()): continue
-                    #if (proc != "tt") and (sys in systematics.ttJets_sys.values()): continue
                     if (proc == "data_obs") and not (sys == "nosys"): continue
                     if not sys_histo[proc].values().keys():
                         print(f"Systematic {sys} for {lep} {jmult} {proc} not found, skipping")
@@ -198,7 +198,7 @@ def get_bkg_templates():
                         template_histo = sys_histo[proc].integrate("process")
 
                             # scale relative deviation for mtop3GeV by 1/6
-                        if ("MTOP3GEV" in systematics.template_sys_to_name[args.year][sys].upper()) and (args.scale_mtop3gev):
+                        if ("MTOP3GEV" in templates_to_check[args.year][sys].upper()) and (args.scale_mtop3gev):
                             #set_trace()
                             nominal_histo = histo_dict_3j[lep][f"{proc}_nosys"].copy() if jmult == "3Jets" else histo_dict_4pj[lep][f"{proc}_nosys"].copy()
                             MTOP3GEV_scaled_var_yields = nominal_histo.values()[()] + (template_histo.values()[()] - nominal_histo.values()[()]) * 1./6.
@@ -226,10 +226,11 @@ def get_sig_templates():
     """
     Function that writes linearized mtt vs costheta distributions to root file.
     """
+    ## variables that only need to be defined/evaluated once
+    templates_to_check = systematics.template_sys_to_name if args.kfactors else systematics.combine_template_sys_to_name
     widthTOname = lambda width : str(width).replace(".", "p")
     nameTOwidth = lambda width : str(width).replace("p", ".")
 
-    ## variables that only need to be defined/evaluated once
     hdict = plt_tools.add_coffea_files(sig_fnames) if len(sig_fnames) > 1 else load(sig_fnames[0])
 
         # get correct hist and rebin
@@ -283,17 +284,11 @@ def get_sig_templates():
         for jmult in njets_to_run:
             #set_trace()
             for signal in signals:
-                if "Int" in signal:
-                    boson, mass, width, pI, wt = tuple(signal.split("_"))
-                else:
-                    boson, mass, width, pI = tuple(signal.split("_"))
-                sub_name = "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower(), wt]) if pI == "Int" else "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower()])
-    
                 #set_trace()
                 for sys in systs:
-                    if sys not in systematics.template_sys_to_name[args.year].keys(): continue
+                    if sys not in templates_to_check[args.year].keys(): continue
 
-                    print(args.year, lep, jmult, sub_name, sys)
+                    print(args.year, lep, jmult, signal, sys)
                     template_histo = Plotter.linearize_hist(histo[signal, sys, jmult, lep].integrate("jmult").integrate("leptype").integrate("process").integrate("sys"))
                     if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
                         #set_trace()
