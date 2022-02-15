@@ -40,13 +40,12 @@ def final_bkg_templates(bkg_dict):
 
             upfout.mkdir(lepdir)
             #set_trace()
-            #systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
-            #systypes = ["nosys"]+sorted(filter(None, sorted(set([baseSys(systematics.sys_to_name[args.year][sys]) for sys in systs]))))+["EWcorrUp"]
             systypes = ["nosys"] + sorted(systematics.sys_groups[args.year].keys())
             for sys in systypes:
                 #set_trace()
                 if jobid == "Summer20UL_regroupedJECs":
-                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
+                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+                    #if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
 
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
@@ -68,7 +67,7 @@ def final_bkg_templates(bkg_dict):
                         if proc == "data_obs": template.clear()
                         upfout[lepdir][proc] = template.to_hist()
 
-                    elif sys == "deltaQCDdeltaEW":
+                    elif (sys == "deltaQCDdeltaEW") and (args.scale_mtop3gev):
                         #set_trace()
                         outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]])))
                         template, treatment = histo[f"{proc}_{up_sysname}"]
@@ -78,14 +77,26 @@ def final_bkg_templates(bkg_dict):
 
                     else:
                         #set_trace()
-                        #if sys == "EWQCD_SHAPE": set_trace()
                         up_template, treatment = histo[f"{proc}_{up_sysname}"]
                         dw_template, treatment = histo[f"{proc}_{dw_sysname}"]
 
-                        up_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]])))
-                        if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", "muon") if lep == "Muon" else up_outhname.replace("LEP", "electron")
-                        dw_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname]])))
-                        if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", "muon") if lep == "Muon" else dw_outhname.replace("LEP", "electron")
+                        up_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]]))) if args.scale_mtop3gev \
+                            else "_".join(list(filter(None, [proc, systematics.combine_template_sys_to_name[args.year][up_sysname]])))
+                        if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", lep.lower()) if args.scale_mtop3gev else up_outhname.replace("LEP", lep[0].lower())
+                        dw_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname]]))) if args.scale_mtop3gev \
+                            else "_".join(list(filter(None, [proc, systematics.combine_template_sys_to_name[args.year][dw_sysname]])))
+                        if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", lep.lower()) if args.scale_mtop3gev else dw_outhname.replace("LEP", lep[0].lower())
+
+
+                        #set_trace()
+                            # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
+                        if (args.year == "2016APV") and ("2016APV" in up_outhname) and (not args.scale_mtop3gev):
+                            #set_trace()
+                            up_outhname = up_outhname.replace("2016APV", "2016pre")
+                            dw_outhname = dw_outhname.replace("2016APV", "2016pre")
+                        if (args.year == "2016") and ("2016" in up_outhname) and (not args.scale_mtop3gev):
+                            up_outhname = up_outhname.replace("2016", "2016post")
+                            dw_outhname = dw_outhname.replace("2016", "2016post")
 
                         upfout[lepdir][up_outhname] = up_template.to_hist()
                         upfout[lepdir][dw_outhname] = dw_template.to_hist()
@@ -97,8 +108,16 @@ def final_bkg_templates(bkg_dict):
                             treated_up_val = up_template.values(overflow="over")[()][-1]
                             treated_dw_val = dw_template.values(overflow="over")[()][-1]
             
-                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
-                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", "muon") if lep == "Muon" else chi2_outhname.replace("LEP", "electron")
+                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"]))) if args.scale_mtop3gev \
+                                else "_".join(list(filter(None, [proc, systematics.combine_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
+                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", lep.lower()) if args.scale_mtop3gev else chi2_outhname.replace("LEP", lep[0].lower())
+
+                                # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
+                            if (args.year == "2016APV") and ("2016APV" in chi2_outhname) and (not args.scale_mtop3gev):
+                                #set_trace()
+                                chi2_outhname = up_outhname.replace("2016APV", "2016pre")
+                            if (args.year == "2016") and ("2016" in chi2_outhname) and (not args.scale_mtop3gev):
+                                chi2_outhname = up_outhname.replace("2016", "2016post")
 
                             sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
                             tmp_chi2_histo = orig_chi2_histo.copy()
@@ -145,7 +164,8 @@ def final_sig_templates(sig_dict):
             for sys in systypes:
                 #set_trace()
                 if jobid == "Summer20UL_regroupedJECs":
-                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
+                    if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
+                    #if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
 
                     # find histograms of associated systematics and their processes
                 if sys == "nosys":
@@ -155,13 +175,18 @@ def final_sig_templates(sig_dict):
                     dw_sysname = [key for key, val in systematics.sys_to_name[args.year].items() if val == f"{sys}_DW"][0]
                     signals = sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in histo.keys() if dw_sysname in key]))
 
+                #set_trace()
                 for signal in signals:
                     print(lep, jmult, sys, signal)
                     if "Int" in signal:
                         boson, mass, width, pI, wt = tuple(signal.split("_"))
                     else:
                         boson, mass, width, pI = tuple(signal.split("_"))
-                    sub_name = "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower(), wt]) if pI == "Int" else "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower()])
+
+                    if args.kfactors:
+                        sub_name = "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower(), wt]) if pI == "Int" else "_".join(["%s%s" % (boson[0], mass[1:]), "relw%s" % widthTOname(width).split("W")[-1], pI.lower()])
+                    else:
+                        sub_name = "_".join([boson[0], mass.lower(), width.lower(), wt]) if pI == "Int" else "_".join([boson[0], mass.lower(), width.lower(), pI.lower()])
 
                     if sys == "nosys":
                         template, treatment = histo[f"{signal}_{sys}"]
@@ -173,10 +198,23 @@ def final_sig_templates(sig_dict):
                         up_template, treatment = histo[f"{signal}_{up_sysname}"]
                         dw_template, treatment = histo[f"{signal}_{dw_sysname}"]
 
-                        up_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][up_sysname]])))
-                        if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", "muon") if lep == "Muon" else up_outhname.replace("LEP", "electron")
-                        dw_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname]])))
-                        if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", "muon") if lep == "Muon" else dw_outhname.replace("LEP", "electron")
+                        #up_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][up_sysname]])))
+                        up_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][up_sysname]]))) if args.kfactors \
+                            else "_".join(list(filter(None, [sub_name, systematics.combine_template_sys_to_name[args.year][up_sysname]])))
+                        if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", lep.lower()) if args.kfactors else up_outhname.replace("LEP", lep[0].lower())
+                        #dw_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname]])))
+                        dw_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname]]))) if args.kfactors \
+                            else "_".join(list(filter(None, [sub_name, systematics.combine_template_sys_to_name[args.year][dw_sysname]])))
+                        if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", lep.lower()) if args.kfactors else dw_outhname.replace("LEP", lep[0].lower())
+
+                            # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
+                        if (args.year == "2016APV") and ("2016APV" in up_outhname) and (not args.kfactors):
+                            #set_trace()
+                            up_outhname = up_outhname.replace("2016APV", "2016pre")
+                            dw_outhname = dw_outhname.replace("2016APV", "2016pre")
+                        if (args.year == "2016") and ("2016" in up_outhname) and (not args.kfactors):
+                            up_outhname = up_outhname.replace("2016", "2016post")
+                            dw_outhname = dw_outhname.replace("2016", "2016post")
 
                         upfout[lepdir][up_outhname] = up_template.to_hist()
                         upfout[lepdir][dw_outhname] = dw_template.to_hist()
@@ -188,8 +226,20 @@ def final_sig_templates(sig_dict):
                             treated_up_val = up_template.values(overflow="over")[()][-1]
                             treated_dw_val = dw_template.values(overflow="over")[()][-1]
             
-                            chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
-                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", "muon") if lep == "Muon" else chi2_outhname.replace("LEP", "electron")
+                            #chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
+                            #chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.combine_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
+                            #if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", "muon") if lep == "Muon" else chi2_outhname.replace("LEP", "electron")
+                            chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"]))) if args.kfactors \
+                                else "_".join(list(filter(None, [sub_name, systematics.combine_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
+                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", lep.lower()) if args.kfactors else chi2_outhname.replace("LEP", lep[0].lower())
+
+                                # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
+                            if (args.year == "2016APV") and ("2016APV" in chi2_outhname) and (not args.kfactors):
+                                #set_trace()
+                                chi2_outhname = up_outhname.replace("2016APV", "2016pre")
+                            if (args.year == "2016") and ("2016" in chi2_outhname) and (not args.kfactors):
+                                chi2_outhname = up_outhname.replace("2016", "2016post")
+
 
                             sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
                             tmp_chi2_histo = orig_chi2_histo.copy()
