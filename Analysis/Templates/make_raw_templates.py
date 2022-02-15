@@ -21,19 +21,12 @@ base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
-parser.add_argument("--njets", default="all", nargs="?", choices=["3", "4+", "all"], help="Specify which jet multiplicity to use.")
 parser.add_argument("--only_bkg", action="store_true", help="Make background templates only.")
 parser.add_argument("--only_sig", action="store_true", help="Make signal templates only.")
 parser.add_argument("--maskData", action="store_false", help="Mask templates for data, default is True.")
 parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
-
-njets_to_run = []
-if (args.njets == "3") or (args.njets == "all"):
-    njets_to_run += ["3Jets"]
-if (args.njets == "4+") or (args.njets == "all"):
-    njets_to_run += ["4PJets"]
 
 if args.year == "2016APV":
     btag_reg_names_dict = {
@@ -105,10 +98,7 @@ def get_bkg_templates():
     process = hist.Cat("process", "Process", sorting="placement")
     process_cat = "dataset"
 
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
 
     for lep in ["Muon", "Electron"]:
         #set_trace()    
@@ -184,14 +174,9 @@ def get_bkg_templates():
                         print(args.year, lep, jmult, "shapeDown", proc)
 
                             ## save template histos to coffea dict
-                        if jmult == "3Jets":
-                            histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
-                            histo_dict_3j[lep][f"{proc}_shapeUp"] = bkg_shapeUp.copy()
-                            histo_dict_3j[lep][f"{proc}_shapeDown"] = bkg_shapeDown.copy()
-                        if jmult == "4PJets":
-                            histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
-                            histo_dict_4pj[lep][f"{proc}_shapeUp"] = bkg_shapeUp.copy()
-                            histo_dict_4pj[lep][f"{proc}_shapeDown"] = bkg_shapeDown.copy()
+                        histo_dict[jmult][lep][f"{proc}_{sys}"] = template_histo.copy()
+                        histo_dict[jmult][lep][f"{proc}_shapeUp"] = bkg_shapeUp.copy()
+                        histo_dict[jmult][lep][f"{proc}_shapeDown"] = bkg_shapeDown.copy()
                     else:
                         print(args.year, lep, jmult, sys, proc)
                         #if "EWcorr" in sys: set_trace()
@@ -200,26 +185,18 @@ def get_bkg_templates():
                             # scale relative deviation for mtop3GeV by 1/6
                         if ("MTOP3GEV" in templates_to_check[args.year][sys].upper()) and (args.scale_mtop3gev):
                             #set_trace()
-                            nominal_histo = histo_dict_3j[lep][f"{proc}_nosys"].copy() if jmult == "3Jets" else histo_dict_4pj[lep][f"{proc}_nosys"].copy()
+                            nominal_histo = histo_dict[jmult][lep][f"{proc}_nosys"].copy()
                             MTOP3GEV_scaled_var_yields = nominal_histo.values()[()] + (template_histo.values()[()] - nominal_histo.values()[()]) * 1./6.
                             template_histo = Plotter.np_array_TO_hist(sumw=MTOP3GEV_scaled_var_yields, sumw2=np.zeros(MTOP3GEV_scaled_var_yields.size), hist_template=nominal_histo)
 
                         #set_trace()
                             ## save template histos to coffea dict
-                        if jmult == "3Jets":
-                            histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
-                        if jmult == "4PJets":
-                            histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
+                        histo_dict[jmult][lep][f"{proc}_{sys}"] = template_histo.copy()
 
     #set_trace()
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(outdir, f"raw_templates_lj_3Jets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(outdir, f"raw_templates_lj_4PJets_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
+    coffea_out = os.path.join(outdir, f"raw_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_bkg_{args.year}_{jobid}.coffea")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
 
 
 def get_sig_templates():
@@ -228,8 +205,6 @@ def get_sig_templates():
     """
     ## variables that only need to be defined/evaluated once
     templates_to_check = systematics.template_sys_to_name if args.kfactors else systematics.combine_template_sys_to_name
-    widthTOname = lambda width : str(width).replace(".", "p")
-    nameTOwidth = lambda width : str(width).replace("p", ".")
 
     hdict = plt_tools.add_coffea_files(sig_fnames) if len(sig_fnames) > 1 else load(sig_fnames[0])
 
@@ -266,10 +241,7 @@ def get_sig_templates():
     systs = sorted(set([key[1] for key in rebin_histo.values().keys()]))
     systs.insert(0, systs.pop(systs.index("nosys"))) # move "nosys" to the front
 
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
 
     #set_trace()
         # write signal dists to temp file        
@@ -296,26 +268,18 @@ def get_sig_templates():
                         template_histo.scale(lhe_scale)
 
                         ## save template histos to coffea dict
-                    if jmult == "3Jets":
-                        histo_dict_3j[lep][f"{signal}_{sys}"] = template_histo.copy()
-                    if jmult == "4PJets":
-                        histo_dict_4pj[lep][f"{signal}_{sys}"] = template_histo.copy()
+                    histo_dict[jmult][lep][f"{signal}_{sys}"] = template_histo.copy()
 
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(outdir, f"raw_templates_lj_3Jets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(outdir, f"raw_templates_lj_4PJets_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
-
-
+    coffea_out = os.path.join(outdir, f"raw_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_sig_{args.year}_{jobid}.coffea")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
 
 
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
+
+    njets_to_run = ["3Jets", "4PJets"]
 
         ## initialize lumi scaling files 
     lumi_corr_dict = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights_kfactors.coffea" if args.kfactors else "MC_LumiWeights.coffea"))
