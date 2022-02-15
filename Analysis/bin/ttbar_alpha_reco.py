@@ -4,7 +4,6 @@ import time
 tic = time.time()
 
 from coffea import hist, processor
-#from coffea.nanoevents import NanoAODSchema
 from coffea.analysis_tools import PackedSelection
 import awkward as ak
 from coffea.nanoevents.methods import vector
@@ -62,7 +61,7 @@ cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_
 ## load corrections for event weights
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["tot"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
 ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
@@ -169,14 +168,6 @@ class ttbar_alpha_reco(processor.ProcessorABC):
 
             ## initialize selections and regions
         selection = PackedSelection()
-        #regions = {
-        #    "Muon" : {
-        #        "lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", "btag_pass", "semilep"
-        #    },
-        #    "Electron" : {
-        #        "lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", "btag_pass", "semilep"
-        #    },
-        #}
 
             # get all passing leptons
         lep_and_filter_pass = objsel.select_leptons(events, year=args.year)
@@ -233,57 +224,45 @@ class ttbar_alpha_reco(processor.ProcessorABC):
 
         if self.corrections["BTagSF"] == True:
             #set_trace()
-            deepcsv_cen = np.ones(len(events))
+            btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
+
             threeJets_cut = selection.require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
             deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-            deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
 
-                # make dict of btag weights
-            btag_weights = {
-                "DeepCSV_CEN" : np.copy(deepcsv_cen),
-            }
+                # fll dict of btag weights
+            for wt_name in deepcsv_3j_wts.keys():
+                btag_weights[wt_name][threeJets_cut] = np.copy(ak.prod(deepcsv_3j_wts[wt_name], axis=1))
 
 
             # find gen level particles for ttbar system
         genpsel.select(events, mode="NORMAL")
         selection.add("semilep", ak.num(events["SL"]) > 0)
 
-        EWcorr_cen = np.ones(len(events))
-        EWcorr_unc = np.ones(len(events))
         if "NNLO_Rewt" in self.corrections.keys():
                 # find gen level particles for ttbar system
             nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-            EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+            mu_evt_weights.add("NNLOqcd",
+                np.copy(nnlo_wts),
+            )
+            el_evt_weights.add("NNLOqcd",
+                np.copy(nnlo_wts),
+            )
 
         if "EWK_Rewt" in self.corrections.keys():
+            #set_trace()
                 ## NLO EW weights
             if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                 ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-
-                mu_evt_weights.add("EWcorr",
-                    np.copy(EWcorr_cen),
-                    np.copy(EWcorr_cen*EWcorr_unc+1)
-                )
-                el_evt_weights.add("EWcorr",
-                    np.copy(EWcorr_cen),
-                    np.copy(EWcorr_cen*EWcorr_unc+1)
-                )
-
-            if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
-                ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
-
+                    # add Yukawa coupling variation
                 mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                    np.copy(EWcorr_cen),
-                    np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                    np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                 )
-                el_evt_weights.add("Yukawa",
-                    np.copy(EWcorr_cen),
-                    np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                    np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                 )
 
         ## fill hists for each region
@@ -325,7 +304,7 @@ class ttbar_alpha_reco(processor.ProcessorABC):
                 MT = make_vars.MT(leptons, met)
                 MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
 
-                wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                 output = self.make_3j_categories(acc=output, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh], genttbar=events["SL"][cut][valid_perms][MTHigh], bp=best_perms[valid_perms][MTHigh], evt_wts=wts)
 
         return output
