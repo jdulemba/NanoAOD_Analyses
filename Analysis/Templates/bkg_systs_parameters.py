@@ -296,4 +296,7 @@ what_to_do = {
     "deltaQCDdeltaEW" : {
         "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
     },
+    "YUKAWA" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+    },
 }
