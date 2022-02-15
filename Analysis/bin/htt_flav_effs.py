@@ -56,7 +56,7 @@ isTTbar_ = samplename.startswith("ttJets")
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["tot"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
 ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
@@ -203,42 +203,31 @@ class Htt_Flav_Effs(processor.ProcessorABC):
             ## add 4+ jets categories for ttbar events
             selection.add("jets_4+", ak.num(events["SelectedJets"]) > 3)
 
-            EWcorr_cen = np.ones(len(events))
-            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+                mu_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+                el_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
 
             if "EWK_Rewt" in self.corrections.keys():
+                #set_trace()
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-
-                    mu_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
-                    )
-                    el_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
-                    )
-
-                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
-                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
-                    
+                        # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
-                    el_evt_weights.add("Yukawa",
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
 
 
