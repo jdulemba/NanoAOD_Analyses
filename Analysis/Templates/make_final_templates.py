@@ -59,7 +59,6 @@ def final_bkg_templates(bkg_dict):
                     treatment = "raw"
                 else:
                     # choose which hist to use based on what_to_do dict in systs_parameters.py
-                    #set_trace()
                     sysname = systematics.sys_to_name[args.year][sys] if sys == "EWcorrUp" else "_".join(systematics.sys_to_name[args.year][sys].split("_")[:-1]) # convert sys to name used in analysis
                     treatment = bkg_syspar.what_to_do[sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
 
@@ -114,23 +113,17 @@ def final_sig_templates(sig_dict):
                 sys = sorted(filter(None, tname.split(f"{proc}_")))[0]
                 print(lep, jmult, sys, proc)
 
-                treatment = "raw"
-                #if sys == "nosys":
-                #    #hist_to_use = raw_hdict[lep][tname].copy()
-                #    treatment = "raw"
-
-                #else:
-                #    # choose which hist to use based on what_to_do dict in systs_parameters.py
-                #    sysname = systematics.sys_to_name[args.year][sys] # convert sys to name used in analysis
-                #    sys_to_check = [key for key in sig_syspar.what_to_do.keys() if fnmatch.fnmatch(sysname, f"{key}*")][0] # find sysname which corresponds to name in systs_parameters.py
-
-                #    treatment = sig_syspar.what_to_do[sys_to_check][proc][f"{lep.lower()[0]}{jmult[0]}"]
-                #    #if treatment == "raw":
-                #    #    hist_to_use = raw_hdict[lep][tname].copy()
-                #    #if treatment == "flat":
-                #    #    hist_to_use = flat_hdict[lep][tname].copy()
-                #    #if treatment == "smooth":
-                #    #    hist_to_use = smooth_hdict[lep][tname].copy()
+                if args.kfactors:
+                    treatment = "raw"
+                else:
+                    if sys == "nosys":
+                        treatment = "raw"
+                    else:
+                        # choose which hist to use based on what_to_do dict in systs_parameters.py
+                        sysname = systematics.sys_to_name[args.year][sys] # convert sys to name used in analysis
+                        sys_to_check = [key for key in sig_syspar.what_to_do.keys() if fnmatch.fnmatch(sysname, f"{key}*")][0] # find sysname which corresponds to name in systs_parameters.py
+                        treatment = sig_syspar.what_to_do[sys_to_check]#[f"{lep.lower()[0]}{jmult[0]}"]
+                        #treatment = sig_syspar.what_to_do[sys_to_check][proc][f"{lep.lower()[0]}{jmult[0]}"]
 
                 print(f"\t{treatment}")
                 if treatment == "raw":
