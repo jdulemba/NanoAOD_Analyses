@@ -74,7 +74,7 @@ cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_
 ## load corrections for event weights
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["sources"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
 alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]["E"]["All_2D"]
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
 ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
@@ -259,42 +259,31 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             else:
                 {selection[sys].add("semilep", np.zeros(len(events), dtype=bool)) for sys in selection.keys()}
 
-            EWcorr_cen = np.ones(len(events))
-            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+                mu_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+                el_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
 
             if "EWK_Rewt" in self.corrections.keys():
+                #set_trace()
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-
-                    mu_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
-                    )
-                    el_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
-                    )
-
-                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
-                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
-
+                        # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
-                    el_evt_weights.add("Yukawa",
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
 
 
@@ -317,35 +306,21 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                 ## apply btagging SFs to MC
             if corrections["BTagSF"] == True:
-                deepcsv_cen   = np.ones(len(events))
-                deepcsv_bc_up = np.ones(len(events))
-                deepcsv_bc_dw = np.ones(len(events))
-                deepcsv_l_up = np.ones(len(events))
-                deepcsv_l_dw = np.ones(len(events))
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
-                deepcsv_bc_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_down"], axis=1)
-                deepcsv_l_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_down"], axis=1)
-    
+
+                    # fll dict of btag weights
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
+
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["central"], axis=1)
-                deepcsv_bc_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_down"], axis=1)
-                deepcsv_l_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_down"], axis=1)
-                    # make dict of btag weights
-                btag_weights = {
-                    "DeepCSV_CEN" : np.copy(deepcsv_cen),
-                    "DeepCSV_bc_UP" : np.copy(deepcsv_bc_up),
-                    "DeepCSV_bc_DW" : np.copy(deepcsv_bc_dw),
-                    "DeepCSV_l_UP" : np.copy(deepcsv_l_up),
-                    "DeepCSV_l_DW" : np.copy(deepcsv_l_dw),
-                }
+
+                    # fll dict of btag weights
+                for wt_name in deepcsv_4pj_wts.keys():
+                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
 
             #set_trace()
             ## fill hists for each region
@@ -400,7 +375,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         #set_trace()
                         if to_debug: print("  evt sys:", evt_sys)
                         if evt_sys == "nosys":
-                            nom_wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                            nom_wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
+                            #nom_wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
                                 # fill hists for nominal
                             output = self.fill_hists(acc=output, sys="nosys", jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh],
                                 perm=best_perms[valid_perms][MTHigh], evt_wts=nom_wts)
