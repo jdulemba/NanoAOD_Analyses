@@ -134,7 +134,7 @@ perm_cats = {
 
 # get systematics to run
 evt_sys_to_run = opts_dict.get("evt_sys", "NONE").upper()
-rewt_sys_to_run = opts_dict.get("rewt_sys", "NONE").upper()
+rewt_systs_to_run = opts_dict.get("rewt_sys", "NONE")
 only_sys = ast.literal_eval(opts_dict.get("only_sys", "False"))
 #set_trace()
 if (isData_ or isTTShift_ or (not isTopSample_)) and (not isSignal_): # data or separate systematics dataset
@@ -145,10 +145,10 @@ if (isData_ or isTTShift_ or (not isTopSample_)) and (not isSignal_): # data or 
 else: # MC samples
     import fnmatch
     if only_sys: # don't run 'nosys'
-        if (evt_sys_to_run == "NONE") and (rewt_sys_to_run == "NONE"):
+        if (evt_sys_to_run == "NONE") and (rewt_systs_to_run == "NONE"):
             raise ValueError("At least one systematic must be specified in order to run only on systematics!")
     
-        event_systematics_to_run = ["nosys"] if (rewt_sys_to_run != "NONE") else []
+        event_systematics_to_run = ["nosys"] if (rewt_systs_to_run != "NONE") else []
         reweight_systematics_to_run = []
     
     else:
@@ -157,9 +157,11 @@ else: # MC samples
 
     event_systematics_to_run += [systematics.event_sys_opts[args.year][name] for name in systematics.event_sys_opts[args.year].keys() if fnmatch.fnmatch(name, evt_sys_to_run)]
     if isSignal_:
-        reweight_systematics_to_run += [systematics.signal_reweight_opts[args.year][name] for name in systematics.signal_reweight_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
+        for rewt_sys_to_run in rewt_systs_to_run.split(","):
+            reweight_systematics_to_run += [systematics.signal_reweight_opts[args.year][name] for name in systematics.signal_reweight_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
     else:
-        reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
+        for rewt_sys_to_run in rewt_systs_to_run.split(","):
+            reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
 
         ## check that systematics only related to ttbar events aren't used for non-ttbar events
     if not isTTbar_:
@@ -453,42 +455,42 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
-            EWcorr_cen = np.ones(len(events))
-            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+                mu_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+                el_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
 
             if "EWK_Rewt" in self.corrections.keys():
+                #set_trace()
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-
-                    mu_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    mu_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
                     )
-                    el_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    el_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
                     )
 
-                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
-                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
-
+                        # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
-                    el_evt_weights.add("Yukawa",
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
 
             if isTTSL_:
@@ -534,17 +536,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     # fll dict of btag weights
                 for wt_name in deepcsv_4pj_wts.keys():
                     btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
-            else:
-                raise ValueError("BTag SFs not applied")
-                set_trace()
-                #btag_weights = {
-                #    "DeepCSV_CEN"   : np.ones(len(events)),
-                #    "DeepCSV_bc_UP" : np.ones(len(events)),
-                #    "DeepCSV_bc_DW" : np.ones(len(events)),
-                #    "DeepCSV_l_UP"  : np.ones(len(events)),
-                #    "DeepCSV_l_DW"  : np.ones(len(events)),
-                #}
-                #btag_weights = np.ones(len(events))
+            elif (not isData_) and (corrections["BTagSF"] == False):
+                raise ValueError("BTag SFs not applied to MC")
 
             #set_trace()
             ## fill hists for each region
@@ -608,12 +601,14 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                     if to_debug: print("    sysname:", rewt_sys)
 
                                     #set_trace()
+                                    #if "Yukawa" in rewt_sys: set_trace()
                                     if rewt_sys == "nosys":
                                         wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("btag"):
                                         wts = (evt_weights.weight()*btag_weights[rewt_sys.split("btag_")[-1]])[cut][valid_perms][MTHigh]
                                     else:
-                                        if rewt_sys not in evt_weights._modifiers.keys():
+                                        if rewt_sys not in evt_weights.variations:
+                                        #if rewt_sys not in evt_weights._modifiers.keys():
                                             print(f"{rewt_sys} not option in event weights. Skipping")
                                             continue
                                         wts = (evt_weights.weight(rewt_sys)*btag_weights["central"])[cut][valid_perms][MTHigh]
