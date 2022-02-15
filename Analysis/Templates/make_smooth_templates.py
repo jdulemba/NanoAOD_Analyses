@@ -54,7 +54,8 @@ def smooth_bkg_templates(fnames_to_run):
                 print(lep, jmult, sys, proc)
 
                     # perform smoothing
-                smoothed_histo = hdict[lep][f"{proc}_nosys"].copy() if sys == "nosys" else Plotter.smoothing_mttbins(nosys=hdict[lep][f"{proc}_nosys"], systematic=orig_template, mtt_centers=mtt_centers, nbinsx=len(linearize_binning[0])-1, nbinsy=len(linearize_binning[1])-1)
+                smoothed_histo = hdict[lep][f"{proc}_nosys"].copy() if sys == "nosys" \
+                    else Plotter.smoothing_mttbins(nosys=hdict[lep][f"{proc}_nosys"], systematic=orig_template, mtt_centers=mtt_centers, nbinsx=len(linearize_binning[0])-1, nbinsy=len(linearize_binning[1])-1)
                 
                     ## save template histos to coffea dict
                 if jmult == "3Jets":
@@ -98,7 +99,8 @@ def smooth_sig_templates(fnames_to_run):
                 print(lep, jmult, sys, signal)
 
                     # perform smoothing
-                smoothed_histo = hdict[lep][f"{signal}_nosys"].copy() if sys == "nosys" else Plotter.smoothing_mttbins(nosys=hdict[lep][f"{signal}_nosys"], systematic=orig_template, mtt_centers=mtt_centers, nbinsx=len(linearize_binning[0])-1, nbinsy=len(linearize_binning[1])-1)
+                smoothed_histo = hdict[lep][f"{signal}_nosys"].copy() if sys == "nosys" \
+                    else Plotter.smoothing_mttbins(nosys=hdict[lep][f"{signal}_nosys"], systematic=orig_template, mtt_centers=mtt_centers, nbinsx=len(linearize_binning[0])-1, nbinsy=len(linearize_binning[1])-1)
                 #set_trace()
                     ## save template histos to coffea dict
                 if jmult == "3Jets":
