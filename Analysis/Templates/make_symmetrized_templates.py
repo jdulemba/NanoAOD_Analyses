@@ -1,5 +1,3 @@
-#! /bin/env python
-
 import time
 tic = time.time()
 
@@ -9,195 +7,114 @@ import os
 import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
-import coffea.processor as processor    
+import coffea.processor as processor
 import Utilities.systematics as systematics
+import Utilities.prettyjson as prettyjson
 
-base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
-parser.add_argument("treatment", choices=["flat", "smooth"], help="Specify which process to use.")
-parser.add_argument("--njets", default="all", nargs="?", choices=["3", "4+", "all"], help="Specify which jet multiplicity to use.")
 parser.add_argument("--only_bkg", action="store_true", help="Make background templates only.")
 parser.add_argument("--only_sig", action="store_true", help="Make signal templates only.")
+parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
+parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
 
-njets_to_run = []
-if (args.njets == "3") or (args.njets == "all"):
-    njets_to_run += ["3Jets"]
-if (args.njets == "4+") or (args.njets == "all"):
-    njets_to_run += ["4PJets"]
 
-
-
-def symmetrize_bkg_templates(fnames_to_run):
+def check_templates(fname, isSignal=False):
     """
     Function that writes linearized mtt vs costheta distributions to root file.
     """
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
+    hdict = load(fname)
+    out_dict = {njets : {"Muon" : {}, "Electron" :{}} for njets in hdict.keys()}
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in hdict.keys()})
+    for jmult in hdict.keys():
+        for lep, histo in hdict[jmult].items():
+            for sys in systypes:
+                up_sysname = systematics.sys_groups[args.year][sys][0]
+                dw_sysname = systematics.sys_groups[args.year][sys][1]
+                procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key])) if not dw_sysname \
+                    else sorted(set([key.split(f"_{up_sysname}")[0] for key in histo.keys() if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in histo.keys() if dw_sysname in key]))
+
+                if not procs_sys: continue
+
+                #set_trace()
+                for proc in procs_sys:
+                    print(jmult, lep, sys, proc)
+                        # get yield vals
+                    nosys_vals = histo[f"{proc}_nosys"].values()[()]
+                    up_yield_vals = histo[f"{proc}_{up_sysname}"].values()[()]
+                    dw_yield_vals = histo[f"{proc}_{dw_sysname}"].values()[()]
+
+                    # create hist with symmetrized yields
+                    relative_symm_yields = np.sqrt(up_yield_vals/dw_yield_vals) - 1. # find relative deviation from nominal values for symmetrized dist
+                    symmetrized_yields_up = (relative_symm_yields + 1.) * nosys_vals
+                    symmetrized_yields_dw = (-1.*relative_symm_yields + 1.) * nosys_vals
+                    symmetrized_histo_up = histo[f"{proc}_nosys"].copy()
+                    symmetrized_histo_dw = histo[f"{proc}_nosys"].copy()
+                        ## fill bins
+                    for xbin in range(symmetrized_yields_up.size):
+                        symmetrized_histo_up.values()[()][xbin] = symmetrized_yields_up[xbin]
+                        symmetrized_histo_dw.values()[()][xbin] = symmetrized_yields_dw[xbin]
+
+                    ## save templates that need to be symmetrized to dict
+                    histo_dict[jmult][lep][f"{proc}_{up_sysname}"] = symmetrized_histo_up.copy()
+                    histo_dict[jmult][lep][f"{proc}_{dw_sysname}"] = symmetrized_histo_dw.copy()
+
+                        # find relative deviation from nominal vals
+                    up_rel_vals = up_yield_vals/nosys_vals - 1.
+                    dw_rel_vals = dw_yield_vals/nosys_vals - 1.
+                    to_symmetrize = np.sum(up_rel_vals * dw_rel_vals >= 0, axis=0) > 2
+                    if to_symmetrize:
+                        print("\tsymmetrize")
+                        out_dict[jmult][lep][f"{proc}_{sys}"] = "symmetrize"
 
     #set_trace()
-    for bkg_file in fnames_to_run:
-        hdict = load(bkg_file)
-        jmult = "3Jets" if "3Jets" in os.path.basename(bkg_file) else "4PJets"
-        systs = sorted(set(["_".join(key.split("_")[1:]) for key in sorted(hdict["Muon"].keys()) if not ("data_obs" in key or len(key.split("_")) == 1)]))
-        if "nosys" in systs: systs.remove("nosys")
-        systypes = sorted(set([baseSys(systematics.sys_to_name["2016APV"][sys]) for sys in systs]))
-        for sys in systypes:
-            up_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_UP"][0]
-            dw_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_DW"][0]
-            procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(hdict["Muon"].keys()) if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in sorted(hdict["Muon"].keys()) if dw_sysname in key]))
-            for proc in procs_sys:
-                for lep in hdict.keys():
-                    print(lep, jmult, sys, proc)
-                    up_histo = hdict[lep][f"{proc}_{up_sysname}"]
-                    dw_histo = hdict[lep][f"{proc}_{dw_sysname}"]
-                    nosys_histo = hdict[lep][f"{proc}_nosys"]
+    if isSignal:
+        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"symmetrized_templates_lj_sig_{args.year}_{jobid}.coffea")
+        out_3pj = os.path.join(input_dir, f"templates_to_symmetrize_lj_sig_kfactors_{args.year}_{jobid}.json" if args.kfactors else f"templates_to_symmetrize_lj_sig_{args.year}_{jobid}.json")
+    else:
+        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"symmetrized_templates_lj_bkg_{args.year}_{jobid}.coffea")
+        out_3pj = os.path.join(input_dir, f"templates_to_symmetrize_lj_bkg_mtopscaled_{args.year}_{jobid}.json" if args.scale_mtop3gev else f"templates_to_symmetrize_lj_bkg_{args.year}_{jobid}.json")
+    with open(out_3pj, "w") as out:
+        out.write(prettyjson.dumps(out_dict))
+    print(f"{out_3pj} written")
 
-                    nosys_vals = nosys_histo.values()[()]
-                    up_rel_vals = (up_histo.values()[()]-nosys_vals)/nosys_vals
-                    dw_rel_vals = (dw_histo.values()[()]-nosys_vals)/nosys_vals
-                    avg_rel_vals = np.sqrt((np.square(up_rel_vals)+np.square(dw_rel_vals))/2)
-
-                    #if sys == "MTOP3GEV": set_trace()
-                    symmetrized_up_vals = nosys_vals*(1 + avg_rel_vals*np.sign(up_rel_vals))
-                    symmetrized_dw_vals = nosys_vals*(1 - avg_rel_vals*np.sign(up_rel_vals))
-                    #symmetrized_dw_vals = nosys_vals*(1 + avg_rel_vals*np.sign(dw_rel_vals))
-
-                    symm_up_histo = Plotter.np_array_TO_hist(sumw=symmetrized_up_vals, sumw2=np.zeros(symmetrized_up_vals.size), hist_template=nosys_histo)
-                    symm_dw_histo = Plotter.np_array_TO_hist(sumw=symmetrized_dw_vals, sumw2=np.zeros(symmetrized_dw_vals.size), hist_template=nosys_histo)
-                
-                        ## save template histos to coffea dict
-                    if jmult == "3Jets":
-                        histo_dict_3j[lep][f"{proc}_{up_sysname}"] = symm_up_histo
-                        histo_dict_3j[lep][f"{proc}_{dw_sysname}"] = symm_dw_histo
-                        if f"{proc}_nosys" not in histo_dict_3j[lep].keys():
-                            histo_dict_3j[lep][f"{proc}_nosys"] = nosys_histo
-                        if "data_obs_nosys" not in histo_dict_3j[lep].keys():
-                            histo_dict_3j[lep]["data_obs_nosys"] = hdict[lep]["data_obs_nosys"]
-                    if jmult == "4PJets":
-                        histo_dict_4pj[lep][f"{proc}_{up_sysname}"] = symm_up_histo
-                        histo_dict_4pj[lep][f"{proc}_{dw_sysname}"] = symm_dw_histo
-                        if f"{proc}_nosys" not in histo_dict_4pj[lep].keys():
-                            histo_dict_4pj[lep][f"{proc}_nosys"] = nosys_histo
-                        if "data_obs_nosys" not in histo_dict_4pj[lep].keys():
-                            histo_dict_4pj[lep]["data_obs_nosys"] = hdict[lep]["data_obs_nosys"]
-
-    #set_trace()
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(input_dir, f"test_SymmetrizedSmoothed_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea" if args.treatment == "smooth" else f"test_SymmetrizedFlattened_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(input_dir, f"test_SymmetrizedSmoothed_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea" if args.treatment == "smooth" else f"test_SymmetrizedFlattened_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
-
-
-def symmetrize_sig_templates(fnames_to_run):
-    """
-    Function that writes linearized mtt vs costheta distributions to root file.
-    """
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-
-    #set_trace()
-    for sig_file in fnames_to_run:
-        hdict = load(sig_file)
-        jmult = "3Jets" if "3Jets" in os.path.basename(sig_file) else "4PJets"
-        systs = sorted(set([key.split("Res_")[1] for key in sorted(hdict["Muon"].keys()) if "Res" in key]))
-        if "nosys" in systs: systs.remove("nosys")
-        systypes = sorted(set([baseSys(systematics.sys_to_name["2016APV"][sys]) for sys in systs]))
-        for sys in systypes:
-            up_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_UP"][0]
-            dw_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_DW"][0]
-            procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(hdict["Muon"].keys()) if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in sorted(hdict["Muon"].keys()) if dw_sysname in key]))
-            for proc in procs_sys:
-                for lep in hdict.keys():
-                    print(lep, jmult, sys, proc)
-                    up_histo = hdict[lep][f"{proc}_{up_sysname}"]
-                    dw_histo = hdict[lep][f"{proc}_{dw_sysname}"]
-                    nosys_histo = hdict[lep][f"{proc}_nosys"]
-
-                    nosys_vals = nosys_histo.values()[()]
-                    up_rel_vals = (up_histo.values()[()]-nosys_vals)/nosys_vals
-                    dw_rel_vals = (dw_histo.values()[()]-nosys_vals)/nosys_vals
-                    avg_rel_vals = np.sqrt((np.square(up_rel_vals)+np.square(dw_rel_vals))/2)
-
-                    symmetrized_up_vals = nosys_vals*(1 + avg_rel_vals)
-                    symmetrized_dw_vals = nosys_vals*(1 - avg_rel_vals)
-
-                    symm_up_histo = Plotter.np_array_TO_hist(sumw=symmetrized_up_vals, sumw2=np.zeros(symmetrized_up_vals.size), hist_template=nosys_histo)
-                    symm_dw_histo = Plotter.np_array_TO_hist(sumw=symmetrized_dw_vals, sumw2=np.zeros(symmetrized_dw_vals.size), hist_template=nosys_histo)
-                
-                        ## save template histos to coffea dict
-                    if jmult == "3Jets":
-                        histo_dict_3j[lep][f"{proc}_{up_sysname}"] = symm_up_histo
-                        histo_dict_3j[lep][f"{proc}_{dw_sysname}"] = symm_dw_histo
-                        if f"{proc}_nosys" not in histo_dict_3j[lep].keys():
-                            histo_dict_3j[lep][f"{proc}_nosys"] = nosys_histo
-                    if jmult == "4PJets":
-                        histo_dict_4pj[lep][f"{proc}_{up_sysname}"] = symm_up_histo
-                        histo_dict_4pj[lep][f"{proc}_{dw_sysname}"] = symm_dw_histo
-                        if f"{proc}_nosys" not in histo_dict_4pj[lep].keys():
-                            histo_dict_4pj[lep][f"{proc}_nosys"] = nosys_histo
-
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(input_dir, f"test_SymmetrizedSmoothed_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea" if args.treatment == "smooth" else f"test_SymmetrizedFlattened_templates_lj_3Jets_sig_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(input_dir, f"test_SymmetrizedSmoothed_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea" if args.treatment == "smooth" else f"test_SymmetrizedFlattened_templates_lj_4PJets_sig_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
 
 
 if __name__ == "__main__":
-
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
 
     analyzer = "htt_btag_sb_regions"
-    base_bkg_template_name = f"test_smoothed_templates_lj_NJETS_bkg_{args.year}_{jobid}" if args.treatment == "smooth" else f"test_flattened_templates_lj_NJETS_bkg_{args.year}_{jobid}"
-    base_sig_template_name = f"test_smoothed_templates_lj_NJETS_sig_{args.year}_{jobid}" if args.treatment == "smooth" else f"test_flattened_templates_lj_NJETS_sig_{args.year}_{jobid}"
-    #base_bkg_template_name = f"test_CombinedSmoothed_templates_lj_NJETS_bkg_{jobid}" if args.treatment == "smooth" else f"test_CombinedFlattened_templates_lj_NJETS_bkg_{jobid}"
-    #base_sig_template_name = f"test_CombinedSmoothed_templates_lj_NJETS_sig_{jobid}" if args.treatment == "smooth" else f"test_CombinedFlattened_templates_lj_NJETS_sig_{jobid}"
+    base_bkg_template_name = f"smoothed_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_bkg_{args.year}_{jobid}.coffea"
+    base_sig_template_name = f"smoothed_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_sig_{args.year}_{jobid}.coffea"
+
+    njets_to_run = ["3Jets", "4PJets"]
+
+    systypes = systematics.sys_groups[args.year].keys()
 
         # get matching pattern based on args.njets
     njets_regex = "*" if len(njets_to_run) > 1 else njets_to_run[0]
 
     input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
-    if os.path.isdir(input_dir):
-            # define variables to get histogram for background    
-        bkg_fnmatch = "%s.coffea" % base_bkg_template_name.replace("NJETS", njets_regex)
-        bkg_fnames = fnmatch.filter(os.listdir(input_dir), bkg_fnmatch)
-        bkg_fnames = [os.path.join(input_dir, fname) for fname in bkg_fnames]
-            # define variables to get histogram for background    
-        sig_fnmatch = "%s.coffea" % base_sig_template_name.replace("NJETS", njets_regex)
-        sig_fnames = fnmatch.filter(os.listdir(input_dir), sig_fnmatch)
-        sig_fnames = [os.path.join(input_dir, fname) for fname in sig_fnames]
-    else: print("No files found.")
-
-    baseSys = lambda sys : "_".join(sys.split("_")[:-1])
-
     if not args.only_sig:
         try:
-            print("Creating symmetrized background templates")
-            symmetrize_bkg_templates(bkg_fnames)
-            
+            bkg_fname = os.path.join(input_dir, base_bkg_template_name)
+            if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
+            print("Checking smoothed background templates")
+            check_templates(bkg_fname)
         except:
             print("Could not write background templates to file")
 
     if not args.only_bkg:
         try:
-            print("Creating symmetrized signal templates")
-            symmetrize_sig_templates(sig_fnames)
-            
+            sig_fname = os.path.join(input_dir, base_sig_template_name)
+            if not os.path.isfile(sig_fname): raise ValueError("No background file found.")
+            print("Checking smoothed signal templates")
+            check_templates(sig_fname, isSignal=True)
         except:
             print("Could not write signal templates to file")
 
