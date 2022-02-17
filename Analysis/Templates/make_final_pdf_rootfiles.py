@@ -7,12 +7,10 @@ from coffea.util import load
 from pdb import set_trace
 import os
 import numpy as np
-import fnmatch
 import Utilities.systematics as systematics
 from coffea import hist
 import uproot
     
-base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
@@ -25,7 +23,7 @@ def final_bkg_templates(bkg_dict):
     Function that writes linearized mtt vs costheta distributions to root file.
     """
 
-    rname = os.path.join(outdir, f"final_combine_pdf_templates_lj_bkg_{args.year}_{jobid}.root") if args.combine else os.path.join(outdir, f"final_pdf_templates_lj_bkg_{args.year}_{jobid}.root")
+    rname = os.path.join(input_dir, f"final_combine_pdf_templates_lj_bkg_{args.year}_{jobid}.root") if args.combine else os.path.join(input_dir, f"final_pdf_templates_lj_bkg_{args.year}_{jobid}.root")
     upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
     #set_trace()
@@ -33,7 +31,6 @@ def final_bkg_templates(bkg_dict):
         for lep, histo in hdict.items():
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
-
             upfout.mkdir(lepdir)
 
             #set_trace()
@@ -43,7 +40,6 @@ def final_bkg_templates(bkg_dict):
                 #set_trace()
                     # find histograms of associated systematics and their processes
                 procs = sorted(set([key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]))
-
                 for proc in procs:
                     print(lep, jmult, sys, proc)
                     if sys == "nosys":
@@ -79,42 +75,23 @@ def final_bkg_templates(bkg_dict):
     print(f"{rname} written")
 
 
-
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
 
     analyzer = "htt_pdfUncs"
-    base_bkg_template_name = f"final_pdf_templates_lj_NJETS_bkg_{args.year}_{jobid}"
+    base_bkg_template_name = f"final_pdf_templates_lj_bkg_{args.year}_{jobid}.coffea"
 
-    #set_trace()
     input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}", "FINAL")
-    outdir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}", "FINAL")
-    if not os.path.isdir(outdir):
-        os.makedirs(outdir)
-    
-    if os.path.isdir(input_dir):
-            # find files for 3 jets
-        bkg_3j_fnmatch = "%s.coffea" % base_bkg_template_name.replace("NJETS", "3Jets")
-        bkg_3j_fnames = fnmatch.filter(os.listdir(input_dir), bkg_3j_fnmatch)
-        bkg_3j_fnames = [os.path.join(input_dir, fname) for fname in bkg_3j_fnames]
-        if len(bkg_3j_fnames) > 1: raise ValueError("More than one input file found for 3 jets templates.")
-            # find files for 4+ jets
-        bkg_4pj_fnmatch = "%s.coffea" % base_bkg_template_name.replace("NJETS", "4PJets")
-        bkg_4pj_fnames = fnmatch.filter(os.listdir(input_dir), bkg_4pj_fnmatch)
-        bkg_4pj_fnames = [os.path.join(input_dir, fname) for fname in bkg_4pj_fnames]
-        if len(bkg_4pj_fnames) > 1: raise ValueError("More than one input file found for 4+ jets templates.")
-    
-        bkg_dict = {"3Jets" : load(bkg_3j_fnames[0]), "4PJets" : load(bkg_4pj_fnames[0])}
-    else: print("No background file found.")
-    
+    bkg_fname = os.path.join(input_dir, base_bkg_template_name)
+    if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
+    bkg_hdict = load(bkg_fname)
+
     orig_chi2_histo = hist.Hist("Events", hist.Bin("x_y", "x_y", np.arange(7)))
     orig_chi2_histo.fill(x_y=np.zeros(0))
-    
-    baseSys = lambda sys : "_".join(sys.split("_")[:-1])
-    
-    print("Creating final background templates")
-    final_bkg_templates(bkg_dict)
 
+    print("Creating final background templates")
+    final_bkg_templates(bkg_hdict)
+    
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))

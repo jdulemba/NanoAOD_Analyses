@@ -11,25 +11,13 @@ from coffea import hist
 import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
-import uproot3
 import coffea.processor as processor    
-import Utilities.systematics as systematics
 import Utilities.final_analysis_binning as final_binning
-
-base_jobid = os.environ["base_jobid"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
-parser.add_argument("--njets", default="all", nargs="?", choices=["3", "4+", "all"], help="Specify which jet multiplicity to use.")
 args = parser.parse_args()
-
-njets_to_run = []
-if (args.njets == "3") or (args.njets == "all"):
-    njets_to_run += ["3Jets"]
-if (args.njets == "4+") or (args.njets == "all"):
-    njets_to_run += ["4PJets"]
-
 
 
 def get_bkg_templates():
@@ -38,6 +26,7 @@ def get_bkg_templates():
     """
     ## variables that only need to be defined/evaluated once
     hdict = plt_tools.add_coffea_files(bkg_fnames) if len(bkg_fnames) > 1 else load(bkg_fnames[0])
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
 
         # get correct hist and rebin
     hname_to_use = "mtt_vs_tlep_ctstar_abs"
@@ -70,11 +59,6 @@ def get_bkg_templates():
     process = hist.Cat("process", "Process", sorting="placement")
     process_cat = "dataset"
 
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-
     for lep in ["Muon", "Electron"]:
         #set_trace()    
         ## make groups based on process
@@ -92,9 +76,7 @@ def get_bkg_templates():
         histo.scale(lumi_correction, axis="dataset")
         histo = histo.group(process_cat, process, process_groups)[:, :, :, lep, :, :].integrate("leptype")
 
-        #set_trace()
             # remove 0th and last 2 pdf replicas 0th is base set compatible with 1, last two sets are variations in alpha_S
-        #histo = histo.remove(["pdf_0", "pdf_101", "pdf_102"], "sys")
         histo = histo.remove(["pdf_0"], "sys")
         systs = sorted(set([key[1] for key in histo.values().keys()]))
         systs.insert(0, systs.pop(systs.index("nosys"))) # move "nosys" to the front
@@ -109,7 +91,6 @@ def get_bkg_templates():
 
                     ## write nominal and systematic variations for each topology to file
                 for proc in sorted(set([key[0] for key in sys_histo.values().keys()])):
-                    #if ("TT" not in proc) and (sys in systematics.ttJets_sys.values()): continue
                     if not sys_histo[proc].values().keys():
                         print(f"Systematic {sys} for {lep} {jmult} {proc} not found, skipping")
                         continue
@@ -119,30 +100,21 @@ def get_bkg_templates():
                     print(args.year, lep, jmult, sys, proc)
                     template_histo = sys_histo[proc].integrate("process")
 
-                    #set_trace()
                         ## save template histos to coffea dict
-                    if jmult == "3Jets":
-                        histo_dict_3j[lep][f"{proc}_{sys}"] = template_histo.copy()
-                    if jmult == "4PJets":
-                        histo_dict_4pj[lep][f"{proc}_{sys}"] = template_histo.copy()
+                    histo_dict[jmult][lep][f"{proc}_{sys}"] = template_histo.copy()
 
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(outdir, f"raw_pdf_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(outdir, f"raw_pdf_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
-
-
+    coffea_out = os.path.join(outdir, f"raw_pdf_templates_lj_bkg_{args.year}_{jobid}.coffea")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
 
 
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
+    base_jobid = os.environ["base_jobid"]
+
+    njets_to_run = ["3Jets", "4PJets"]
     
-    f_ext = "TOT.coffea"
         ## initialize lumi scaling files 
     lumi_corr_dict = load(os.path.join(proj_dir, "Corrections", base_jobid, "MC_LumiWeights.coffea"))
 
@@ -150,9 +122,10 @@ if __name__ == "__main__":
     bkg_analyzer = "htt_pdfUncs"
     bkg_input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", bkg_analyzer)
     if os.path.isdir(bkg_input_dir):
-        bkg_fnames = sorted(["%s/%s" % (bkg_input_dir, fname) for fname in os.listdir(bkg_input_dir) if fname.endswith(f_ext)])
+        bkg_fnames = fnmatch.filter(os.listdir(bkg_input_dir), "*TOT.coffea")
+        bkg_fnames = [os.path.join(bkg_input_dir, fname) for fname in bkg_fnames]
     else: print("No background file found.")
-    
+
     outdir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{bkg_analyzer}")
     if not os.path.isdir(outdir):
         os.makedirs(outdir)

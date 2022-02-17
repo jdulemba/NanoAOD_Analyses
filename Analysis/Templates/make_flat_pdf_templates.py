@@ -11,83 +11,48 @@ import fnmatch
 import Utilities.Plotter as Plotter
 import coffea.processor as processor    
     
-base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
-parser.add_argument("--njets", default="all", nargs="?", choices=["3", "4+", "all"], help="Specify which jet multiplicity to use.")
 args = parser.parse_args()
 
-njets_to_run = []
-if (args.njets == "3") or (args.njets == "all"):
-    njets_to_run += ["3Jets"]
-if (args.njets == "4+") or (args.njets == "all"):
-    njets_to_run += ["4PJets"]
 
-
-def flatten_bkg_templates(fnames_to_run):
+def flatten_bkg_templates(fname):
     """
     Function that writes linearized mtt vs costheta distributions to root file.
     """
-    if "3Jets" in njets_to_run:
-        histo_dict_3j = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-    if "4PJets" in njets_to_run:
-        histo_dict_4pj = processor.dict_accumulator({"Muon" : {}, "Electron" :{}})
-
-    #set_trace()
-    for bkg_file in fnames_to_run:
-        hdict = load(bkg_file)
-        jmult = "3Jets" if "3Jets" in os.path.basename(bkg_file) else "4PJets"
-        for lep in hdict.keys():
-            for tname, orig_template in hdict[lep].items():
-                #set_trace()
-                
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
+    hdict = load(fname)
+    for jmult in hdict.keys():
+        for lep in hdict[jmult].keys():
+            for tname, orig_template in hdict[jmult][lep].items():
                 proc = tname.split("_")[0] if not "data_obs" in tname else "data_obs"
                 sys = sorted(filter(None, tname.split(f"{proc}_")))[0]
-                #if sys == "nosys": continue
                 print(lep, jmult, sys, proc)
 
                     # perform flattening
-                flattened_histo = hdict[lep][f"{proc}_nosys"].copy() if sys == "nosys" else Plotter.flatten(nosys=hdict[lep][f"{proc}_nosys"].copy(), systematic=orig_template.copy())
+                flattened_histo = hdict[jmult][lep][f"{proc}_nosys"].copy() if sys == "nosys" else Plotter.flatten(nosys=hdict[jmult][lep][f"{proc}_nosys"].copy(), systematic=orig_template.copy())
                 
                     ## save template histos to coffea dict
-                if jmult == "3Jets":
-                    histo_dict_3j[lep][tname] = flattened_histo.copy()
-                if jmult == "4PJets":
-                    histo_dict_4pj[lep][tname] = flattened_histo.copy()
+                histo_dict[jmult][lep][tname] = flattened_histo.copy()
 
-    #set_trace()
-    if "3Jets" in njets_to_run:
-        coffea_out_3j = os.path.join(input_dir, f"flattened_pdf_templates_lj_3Jets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_3j, coffea_out_3j)
-        print(f"{coffea_out_3j} written")
-    if "4PJets" in njets_to_run:
-        coffea_out_4pj = os.path.join(input_dir, f"flattened_pdf_templates_lj_4PJets_bkg_{args.year}_{jobid}.coffea")
-        save(histo_dict_4pj, coffea_out_4pj)
-        print(f"{coffea_out_4pj} written")
-
+    coffea_out = os.path.join(input_dir, f"flattened_pdf_templates_lj_bkg_{args.year}_{jobid}.coffea")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
 
 
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
 
+    njets_to_run = ["3Jets", "4PJets"]
+
     analyzer = "htt_pdfUncs"
-    base_bkg_template_name = f"raw_pdf_templates_lj_NJETS_bkg_{args.year}_{jobid}"
-
-        # get matching pattern based on args.njets
-    njets_regex = "*" if len(njets_to_run) > 1 else njets_to_run[0]
-
     input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
-    if os.path.isdir(input_dir):
-            # define variables to get histogram for background    
-        bkg_fnmatch = "%s.coffea" % base_bkg_template_name.replace("NJETS", njets_regex)
-        bkg_fnames = fnmatch.filter(os.listdir(input_dir), bkg_fnmatch)
-        bkg_fnames = [os.path.join(input_dir, fname) for fname in bkg_fnames]
-    else: print("No background file found.")
-
+    bkg_fname = os.path.join(input_dir, f"raw_pdf_templates_lj_bkg_{args.year}_{jobid}.coffea")
+    if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
     print("Creating flattened background templates")
-    flatten_bkg_templates(bkg_fnames)
+    flatten_bkg_templates(bkg_fname)
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
