@@ -30,7 +30,7 @@ def final_bkg_templates(hdict):
     rname = os.path.join(outdir, f"final_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.root" if args.scale_mtop3gev else f"final_templates_lj_bkg_{args.year}_{jobid}.root")
     upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
-    #set_trace()
+    set_trace()
     for jmult in hdict.keys():
         for lep, histo in hdict[jmult].items():
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
@@ -245,8 +245,6 @@ if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
 
-    njets_to_run = ["3Jets", "4PJets"]
-
     analyzer = "htt_btag_sb_regions"
     base_bkg_template_name = f"final_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"final_templates_lj_bkg_{args.year}_{jobid}.coffea"
     base_sig_template_name = f"final_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"final_templates_lj_sig_{args.year}_{jobid}.coffea"
@@ -255,7 +253,6 @@ if __name__ == "__main__":
     outdir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}", "FINAL")
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
-    
 
     if not args.only_sig:
         bkg_fname = os.path.join(input_dir, base_bkg_template_name)

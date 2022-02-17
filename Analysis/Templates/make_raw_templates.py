@@ -11,12 +11,9 @@ from coffea import hist
 import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
-import uproot3
 import coffea.processor as processor    
 import Utilities.systematics as systematics
 import Utilities.final_analysis_binning as final_binning
-
-base_jobid = os.environ["base_jobid"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -278,6 +275,7 @@ def get_sig_templates():
 if __name__ == "__main__":
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
+    base_jobid = os.environ["base_jobid"]
 
     njets_to_run = ["3Jets", "4PJets"]
 

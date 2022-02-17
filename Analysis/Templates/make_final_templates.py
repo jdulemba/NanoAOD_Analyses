@@ -12,6 +12,7 @@ import coffea.processor as processor
 import Utilities.systematics as systematics
 import bkg_systs_parameters as bkg_syspar   
 import signal_systs_parameters as sig_syspar
+import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,6 +33,8 @@ def final_bkg_templates(fnames):
     raw_hdict = load([fname for fname in fnames if sys_treatment_dict["raw"] in os.path.basename(fname)][0])
     smooth_hdict = load([fname for fname in fnames if sys_treatment_dict["smooth"] in os.path.basename(fname)][0])
     flat_hdict = load([fname for fname in fnames if sys_treatment_dict["flat"] in os.path.basename(fname)][0])
+    symm_hdict = load([fname for fname in fnames if sys_treatment_dict["symm"] in os.path.basename(fname)][0])
+    to_symm = prettyjson.loads(open(os.path.join(input_dir, f"templates_to_symmetrize_lj_bkg_mtopscaled_{args.year}_{jobid}.json" if args.scale_mtop3gev else f"templates_to_symmetrize_lj_bkg_{args.year}_{jobid}.json")).read())
     for jmult in raw_hdict.keys():
         for lep in raw_hdict[jmult].keys():
             for tname in raw_hdict[jmult][lep].keys():
@@ -46,13 +49,20 @@ def final_bkg_templates(fnames):
                     sysname = systematics.sys_to_name[args.year][sys] if sys == "EWcorrUp" else "_".join(systematics.sys_to_name[args.year][sys].split("_")[:-1]) # convert sys to name used in analysis
                     treatment = bkg_syspar.what_to_do[sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
 
+                    # check if symmetrization should be applied
+                    if f"{proc}_{sysname}" in to_symm[jmult][lep].keys(): treatment = "symmetrized"
+
                 print(f"\t{treatment}")
                 if treatment == "raw":
                     hist_to_use = raw_hdict[jmult][lep][tname].copy()
-                if treatment == "flat":
+                elif treatment == "flat":
                     hist_to_use = flat_hdict[jmult][lep][tname].copy()
-                if treatment == "smooth":
+                elif treatment == "smooth":
                     hist_to_use = smooth_hdict[jmult][lep][tname].copy()
+                elif treatment == "symmetrized":
+                    hist_to_use = symm_hdict[jmult][lep][tname].copy()
+                else:
+                    raise ValueError(f"Treatment {treatment} not supported.")
 
                     ## save template histos to coffea dict
                 histo_dict[jmult][lep][tname] = [hist_to_use.copy(), treatment]
@@ -124,6 +134,7 @@ if __name__ == "__main__":
         "raw" : "raw", 
         "flat" : "flattened",
         "smooth" : "smoothed",
+        "symm" : "symmetrized",
     }
 
     input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
