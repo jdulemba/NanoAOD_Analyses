@@ -30,7 +30,7 @@ def final_bkg_templates(hdict):
     rname = os.path.join(outdir, f"final_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.root" if args.scale_mtop3gev else f"final_templates_lj_bkg_{args.year}_{jobid}.root")
     upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
-    set_trace()
+    #set_trace()
     for jmult in hdict.keys():
         for lep, histo in hdict[jmult].items():
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
