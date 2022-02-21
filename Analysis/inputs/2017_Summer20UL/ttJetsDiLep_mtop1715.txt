@@ -37,7 +37,7 @@ root://gaexrdoor.ciemat.es:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_m
 root://gaexrdoor.ciemat.es:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/B8F7EFC1-E736-1A4A-959B-7829B22CCBB2.root
 root://gaexrdoor.ciemat.es:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/D4784F55-2F1E-7F47-8B19-878305B44EDF.root
 root://gaexrdoor.ciemat.es:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/F96774A4-3384-F146-ACCD-DA94F7D036EE.root
-root://grse001.inr.troitsk.ru//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/280000/DE33D624-AE14-C743-9C4E-9DC8DBC5E39E.root
+root://xrootd-cms.infn.it//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/280000/DE33D624-AE14-C743-9C4E-9DC8DBC5E39E.root
 root://ingrid-se08.cism.ucl.ac.be:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/280000/8623F477-DF3D-984A-9E85-95BE0E3F2474.root
 root://ingrid-se08.cism.ucl.ac.be:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/70000/07C9B4A2-3CAE-1245-A6A5-0EC20D00476E.root
 root://ingrid-se08.cism.ucl.ac.be:1094//store/mc/RunIISummer20UL17NanoAODv2/TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/70000/283450D7-5D8C-974D-85C7-03AA3BE7D91C.root
