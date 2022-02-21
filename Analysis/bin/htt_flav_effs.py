@@ -171,33 +171,22 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         if "LeptonSF" in self.corrections.keys():
             tight_mu_cut = selection.require(tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = events["Muon"][tight_mu_cut][(events["Muon"][tight_mu_cut]["TIGHTMU"] == True)]
-            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton="Muons", corrections=self.corrections["LeptonSF"],
+            muSFs_dict =  MCWeights.get_lepton_sf(lepton="Muons", corrections=self.corrections["LeptonSF"],
                 pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]))
-            mu_reco_cen = np.ones(len(events))
-            mu_reco_err = np.zeros(len(events))
-            mu_trig_cen = np.ones(len(events))
-            mu_trig_err = np.zeros(len(events))
-            mu_reco_cen[tight_mu_cut] = muSFs_dict["RECO_CEN"]
-            mu_reco_err[tight_mu_cut] = muSFs_dict["RECO_ERR"]
-            mu_trig_cen[tight_mu_cut] = muSFs_dict["TRIG_CEN"]
-            mu_trig_err[tight_mu_cut] = muSFs_dict["TRIG_ERR"]
-            mu_evt_weights.add("RECO", np.copy(mu_reco_cen), np.copy(mu_reco_cen+mu_reco_err), np.copy(mu_reco_cen-mu_reco_err))
-            mu_evt_weights.add("TRIG", np.copy(mu_trig_cen), np.copy(mu_trig_cen+mu_trig_err), np.copy(mu_trig_cen-mu_trig_err))
+            for source in muSFs_dict.keys():
+                tmp_wts = np.ones(len(events))
+                tmp_wts[tight_mu_cut] = muSFs_dict[source]["Central"]
+                mu_evt_weights.add(source, np.copy(tmp_wts))
 
             tight_el_cut = selection.require(tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = events["Electron"][tight_el_cut][(events["Electron"][tight_el_cut]["TIGHTEL"] == True)]
-            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton="Electrons", corrections=self.corrections["LeptonSF"],
+            elSFs_dict = MCWeights.get_lepton_sf(lepton="Electrons", corrections=self.corrections["LeptonSF"],
                 pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]))
-            el_reco_cen = np.ones(len(events))
-            el_reco_err = np.zeros(len(events))
-            el_trig_cen = np.ones(len(events))
-            el_trig_err = np.zeros(len(events))
-            el_reco_cen[tight_el_cut] = elSFs_dict["RECO_CEN"]
-            el_reco_err[tight_el_cut] = elSFs_dict["RECO_ERR"]
-            el_trig_cen[tight_el_cut] = elSFs_dict["TRIG_CEN"]
-            el_trig_err[tight_el_cut] = elSFs_dict["TRIG_ERR"]
-            el_evt_weights.add("RECO", np.copy(el_reco_cen), np.copy(el_reco_cen+el_reco_err), np.copy(el_reco_cen-el_reco_err))
-            el_evt_weights.add("TRIG", np.copy(el_trig_cen), np.copy(el_trig_cen+el_trig_err), np.copy(el_trig_cen-el_trig_err))
+            #set_trace()
+            for source in elSFs_dict.keys():
+                tmp_wts = np.ones(len(events))
+                tmp_wts[tight_el_cut] = elSFs_dict[source]["Central"]
+                el_evt_weights.add(source, np.copy(tmp_wts))
 
         if isTTbar_:
             ## add 4+ jets categories for ttbar events
