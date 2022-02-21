@@ -7,11 +7,11 @@
 ttJetsDiLep
 ttJetsHad
 ttJetsSL
-singlet_schannel
-singletbar_tchannel
-singlet_tchannel
-singlet_tW
-singletbar_tW
+#singlet_schannel
+#singletbar_tchannel
+#singlet_tchannel
+#singlet_tW
+#singletbar_tW
 #WJets_HT_70to100
 #WJets_HT_100to200
 #WJets_HT_200to400
