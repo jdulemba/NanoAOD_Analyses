@@ -347,31 +347,26 @@ def get_comb_lepSF(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.
     return lepSFs
 
 
-def get_lepton_sf(year: str, lepton: str, corrections, pt, eta):
+def get_lepton_sf(lepton: str, corrections, pt, eta):
     sf_dict = corrections[lepton]
-    eta_ranges = sf_dict["eta_ranges"]
-    reco_cen = np.ones(len(pt))
-    reco_err = np.ones(len(pt))
-    trig_cen = np.ones(len(pt))
-    trig_err = np.ones(len(pt))
-
-    for idx, eta_range in enumerate(eta_ranges):
-        mask = (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
-        if not ak.any(mask): continue # no values fall within eta range
-        recoSF_cen = sf_dict["Reco_ID"]["Central"]["eta_bin%i" % idx]
-        recoSF_err = sf_dict["Reco_ID"]["Error"]["eta_bin%i" % idx]
-        trigSF_cen = sf_dict["Trig"]["Central"]["eta_bin%i" % idx]
-        trigSF_err = sf_dict["Trig"]["Error"]["eta_bin%i" % idx]
-        reco_cen[mask] = recoSF_cen(pt[mask])
-        reco_err[mask] = recoSF_err(pt[mask])
-        trig_cen[mask] = trigSF_cen(pt[mask])
-        trig_err[mask] = trigSF_err(pt[mask])
-
-    output_SFs = {
-        "RECO_CEN" : reco_cen,
-        "RECO_ERR" : reco_err,
-        "TRIG_CEN" : trig_cen,
-        "TRIG_ERR" : trig_err,
-    }
+    output_SFs = {}
+    for sf_type in sf_dict.keys():
+        isAbsEta = sf_dict[sf_type]["isAbsEta"]
+        output_SFs[sf_type] = {}
+        if "eta_ranges" in sf_dict[sf_type].keys():
+            #print(lepton, sf_type)
+            eta_ranges = sf_dict[sf_type]["eta_ranges"]
+            tmp_wts_dict = {key : np.ones(len(pt)) for key in sf_dict[sf_type].keys() if ((key != "eta_ranges") and (key != "isAbsEta"))}
+            for idx, eta_range in enumerate(eta_ranges):
+                mask = (np.abs(eta) >= eta_range[0]) & (np.abs(eta) < eta_range[1]) if isAbsEta else (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
+                if not ak.any(mask): continue # no values fall within eta range
+                for key in tmp_wts_dict.keys():
+                    tmp_wts_dict[key][mask] = sf_dict[sf_type][key][f"eta_bin{idx}"](pt[mask])
+            output_SFs[sf_type] = tmp_wts_dict
+        else:
+            for sf_var in sf_dict[sf_type].keys():
+                if sf_var == "isAbsEta": continue
+                #print(lepton, sf_type, sf_var)
+                output_SFs[sf_type][sf_var] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
 
     return output_SFs
