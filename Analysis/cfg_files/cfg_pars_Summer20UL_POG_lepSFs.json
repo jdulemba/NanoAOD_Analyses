@@ -191,7 +191,7 @@
             "regrouped": "JetMETCorrections_RegroupedV2.coffea",
             "to_use": "regrouped"
         },
-        "lepton": "lepton_POG_SFs.coffea",
+        "lepton": "lepton_Summer20UL_POG_lepSFs.coffea",
         "pu": "MC_PU_Weights.coffea",
         "alpha": "alpha_correction_Summer20UL_new_lepSFs.coffea"
     }
