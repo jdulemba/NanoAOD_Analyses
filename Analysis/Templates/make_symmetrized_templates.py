@@ -40,6 +40,7 @@ def check_templates(fname, isSignal=False):
 
                 #set_trace()
                 for proc in procs_sys:
+                    if not (f"{proc}_{up_sysname}" in histo.keys() and f"{proc}_{dw_sysname}" in histo.keys()): continue
                     print(jmult, lep, sys, proc)
                         # get yield vals
                     nosys_vals = histo[f"{proc}_nosys"].values()[()]
