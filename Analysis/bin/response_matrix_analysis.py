@@ -53,7 +53,6 @@ if not (isTTSL_ or isSignal_):
 
 # get dataset classification, used for corrections/systematics
 isTTbar_ = samplename.startswith("ttJets")
-isTTSL_ = samplename.startswith("ttJetsSL")
 
 # convert input string of options dictionary to actual dictionary
 odict = (args.opts).replace("\'", "\"")
@@ -141,21 +140,6 @@ else:
     ## check that systematics only related to ttbar events aren't used for non-ttbar events
 if not isTTbar_:
     reweight_systematics_to_run = [sys for sys in reweight_systematics_to_run if sys not in systematics.ttJets_sys.values()]
-
-#import fnmatch
-#if only_sys: # don't run 'nosys'
-#    if (evt_sys_to_run == "NONE") and (rewt_sys_to_run == "NONE"):
-#        raise ValueError("At least one systematic must be specified in order to run only on systematics!")
-#
-#    event_systematics_to_run = ["nosys"] if (rewt_sys_to_run != "NONE") else []
-#    reweight_systematics_to_run = []
-#
-#else:
-#    event_systematics_to_run = ["nosys"]
-#    reweight_systematics_to_run = ["nosys"]
-#
-#event_systematics_to_run += [systematics.event_sys_opts[args.year][name] for name in systematics.event_sys_opts[args.year].keys() if fnmatch.fnmatch(name, evt_sys_to_run)]
-#reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
 
 print("\n\nRunning with event systematics:", *sorted(set(event_systematics_to_run).difference(set(["nosys"]))), sep=", ") if "nosys" in event_systematics_to_run else print("Running with event systematics:", *sorted(event_systematics_to_run), sep=", ")
 print("\tand reweight systematics:", *sorted(reweight_systematics_to_run))
@@ -290,42 +274,42 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTSL_:
-            EWcorr_cen = np.ones(len(events))
-            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
+                mu_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+                el_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
 
             if "EWK_Rewt" in self.corrections.keys():
+                #set_trace()
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                    EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-
-                    mu_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    mu_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
                     )
-                    el_evt_weights.add("EWcorr",
-                        np.copy(EWcorr_cen),
-                        np.copy(EWcorr_cen*EWcorr_unc+1)
+                    el_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
                     )
 
-                if self.corrections["EWK_Rewt"]["wt"] == "Afiq":
-                    ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    EWcorr_cen *= np.copy(ewk_wts_dict["yt_1"])
-
+                        # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
-                    el_evt_weights.add("Yukawa",
-                        np.copy(EWcorr_cen),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_1.5"])),
-                        np.copy(nnlo_wts*np.copy(ewk_wts_dict["yt_0.5"])),
+                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
 
             genpsel.select(events, mode="NORMAL")
@@ -352,53 +336,15 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-
-                    # fll dict of btag weights
-                for wt_name in deepcsv_3j_wts.keys():
-                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
-
-                #deepcsv_cen   = np.ones(len(events))
-                #deepcsv_bc_up = np.ones(len(events))
-                #deepcsv_bc_dw = np.ones(len(events))
-                #deepcsv_l_up = np.ones(len(events))
-                #deepcsv_l_dw = np.ones(len(events))
-
-                #threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
-                #deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                #deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
-                #deepcsv_bc_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_up"], axis=1)
-                #deepcsv_bc_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_down"], axis=1)
-                #deepcsv_l_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_up"], axis=1)
-                #deepcsv_l_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_down"], axis=1)
-    
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
 
                     # fll dict of btag weights
-                for wt_name in deepcsv_4pj_wts.keys():
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
                     btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
-
-                #deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["central"], axis=1)
-                #deepcsv_bc_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_up"], axis=1)
-                #deepcsv_bc_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_down"], axis=1)
-                #deepcsv_l_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_up"], axis=1)
-                #deepcsv_l_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_down"], axis=1)
-                #    # make dict of btag weights
-                #btag_weights = {
-                #    "DeepCSV_CEN" : np.copy(deepcsv_cen),
-                #    "DeepCSV_bc_UP" : np.copy(deepcsv_bc_up),
-                #    "DeepCSV_bc_DW" : np.copy(deepcsv_bc_dw),
-                #    "DeepCSV_l_UP" : np.copy(deepcsv_l_up),
-                #    "DeepCSV_l_DW" : np.copy(deepcsv_l_dw),
-                #}
             else:
-                btag_weights = {
-                    "DeepCSV_CEN"   : np.ones(len(events)),
-                    "DeepCSV_bc_UP" : np.ones(len(events)),
-                    "DeepCSV_bc_DW" : np.ones(len(events)),
-                    "DeepCSV_l_UP"  : np.ones(len(events)),
-                    "DeepCSV_l_DW"  : np.ones(len(events)),
-                }
+                raise ValueError("BTag SFs not applied to MC")
 
 
             ## fill hists for each region
@@ -444,16 +390,14 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                                 if rewt_sys == "nosys":
                                     wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
-                                    #wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
                                 elif rewt_sys.startswith("btag"):
                                     wts = (evt_weights.weight()*btag_weights[rewt_sys.split("btag_")[-1]])[cut][valid_perms][MTHigh]
-                                    #wts = (evt_weights.weight()*btag_weights[rewt_sys.replace("btag", btaggers[0])])[cut][valid_perms][MTHigh]
                                 else:
-                                    if rewt_sys not in evt_weights._modifiers.keys():
+                                    if rewt_sys not in evt_weights.variations:
+                                    #if rewt_sys not in evt_weights._modifiers.keys():
                                         print(f"{rewt_sys} not option in event weights. Skipping")
                                         continue
                                     wts = (evt_weights.weight(rewt_sys)*btag_weights["central"])[cut][valid_perms][MTHigh]
-                                    #wts = (evt_weights.weight(rewt_sys)*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
 
                                 #set_trace()
                                 if isInt_:
@@ -474,7 +418,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         else:
                             if to_debug: print("\tsysname:", evt_sys)
                             wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
-                            #wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
                             if isInt_:
                                     # fill hists for positive weights
                                 pos_evts = wts > 0
