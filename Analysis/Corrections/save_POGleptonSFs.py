@@ -86,7 +86,6 @@ sf_output = {
     } for year in leptons.keys()
 }
 
-#set_trace()
     # load UR lepton SFs to add electron triggers
 UR_SFs = load(os.path.join(proj_dir, "Corrections", jobid, "leptonSF_noTAGvariation.coffea"))
 
@@ -101,11 +100,13 @@ for year in leptons.keys():
                 sf_output[year][lep][sf_type]["Central"] = UR_SFs[year][lep]["Trig"]["Central"]
                 sf_output[year][lep][sf_type]["Error_tot"] = UR_SFs[year][lep]["Trig"]["Error"]
                 sf_output[year][lep][sf_type]["eta_ranges"] = UR_SFs[year][lep]["eta_ranges"]
+                sf_output[year][lep][sf_type]["isAbsEta"] = UR_SFs[year][lep]["eta_ranges"][0][0] >= 0
                 del sf_output[year][lep][sf_type]["Error_stat"]
                 del sf_output[year][lep][sf_type]["Error_syst"]
             else:
                 sf_file = convert_histo_root_file(os.path.join(indir, year, lep, sf_fname))
 
+                sf_output[year][lep][sf_type]["isAbsEta"] = np.all(sf_file[(sf_dist, "dense_lookup")][1][0] >= 0)
                 sf_output[year][lep][sf_type]["Central"] = dense_lookup(*sf_file[(sf_dist, "dense_lookup")])
                 sf_output[year][lep][sf_type]["Error_tot"] = dense_lookup(*sf_file[(f"{sf_dist}_error", "dense_lookup")])
                 if (sf_type != "RECO") and (lep == "Muons"):
