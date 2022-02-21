@@ -525,17 +525,14 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-
-                    # fll dict of btag weights
-                for wt_name in deepcsv_3j_wts.keys():
-                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
-    
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
 
                     # fll dict of btag weights
-                for wt_name in deepcsv_4pj_wts.keys():
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
                     btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
+    
             elif (not isData_) and (corrections["BTagSF"] == False):
                 raise ValueError("BTag SFs not applied to MC")
 
