@@ -96,9 +96,9 @@ if (args.plots == "All") or (args.force_save):
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_MTOPcut_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_nosys_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_{args.year}.root")
-    root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_HigherST_{args.year}.root")
+    #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_NoCuts_HigherST_{args.year}.root")
     #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_GenKinCuts_{args.year}.root")
-    #root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_{args.year}.root")
+    root_fname = os.path.join(outdir, f"ResponseMatrix_{args.topology}_{args.year}.root")
     fout = uproot.recreate(root_fname, compression=uproot.ZLIB(4)) if os.path.isfile(root_fname) else uproot.create(root_fname)
     fout_created_ = True
 
@@ -106,10 +106,10 @@ if (args.plots == "All") or (args.force_save):
     ## make gen plots
 if (args.plots == "GEN") or (args.plots == "All"):
     #set_trace()
-    gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    #gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
     #gen_fname_fnmatch = f"*GenLevel*{args.topology}*NoCuts*TOT.coffea"
     #gen_fname_fnmatch = f"*GenLevel*{args.topology}*KinCuts*TOT.coffea"
-    #gen_fname_fnmatch = f"*GenLevel*{args.topology}*TOT.coffea"
+    gen_fname_fnmatch = f"*GenLevel*{args.topology}*TOT.coffea"
     gen_fnames = fnmatch.filter(os.listdir(input_dir), gen_fname_fnmatch)
     gen_fnames = [os.path.join(input_dir, fname) for fname in gen_fnames]
     if len(gen_fnames) > 1: raise ValueError("More than 1 file found for GenLevel")
@@ -203,10 +203,10 @@ if (args.plots == "GEN") or (args.plots == "All"):
     ## make reco plots
 if (args.plots == "RECO") or (args.plots == "All"):
     #set_trace()
-    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
+    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts_HigherST*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*NoCuts*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*KinCuts*TOT.coffea"
-    #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
+    reco_fname_fnmatch = f"*RecoLevel*{args.topology}*TOT.coffea"
     #reco_fname_fnmatch = f"*RecoLevel*{args.topology}*MTOPcut*TOT.coffea"
     reco_fnames = fnmatch.filter(os.listdir(input_dir), reco_fname_fnmatch)
     reco_fnames = [os.path.join(input_dir, fname) for fname in reco_fnames]
@@ -243,6 +243,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
                             if jobid == "Summer20UL_regroupedJECs":
                                 if ("nosys" in sys) or ("JES_FlavorQCD" in sys) or ("JES_RelativeBal" in sys) or (f"JES_RelativeSample_{args.year}" in sys): continue
                             if "RENORM_FACTOR" in sys: continue
+                            if sys not in systematics.template_sys_to_name[args.year].keys(): continue
                             print(lep, jmult, sys)
                             sys_histo = (hslice[sys].integrate("sys")).copy()
 
@@ -313,6 +314,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
                             if jobid == "Summer20UL_regroupedJECs":
                                 if ("nosys" in sys) or ("JES_FlavorQCD" in sys) or ("JES_RelativeBal" in sys) or (f"JES_RelativeSample_{args.year}" in sys): continue
                             if "RENORM_FACTOR" in sys: continue
+                            if sys not in systematics.template_sys_to_name[args.year].keys(): continue
                             print(lep, jmult, sys)
                             sys_histo = (hslice[sys].integrate("sys")).copy()
 
