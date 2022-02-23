@@ -14,6 +14,7 @@ import Utilities.Plotter as Plotter
 import coffea.processor as processor    
 import Utilities.systematics as systematics
 import Utilities.final_analysis_binning as final_binning
+import Utilities.btag_sideband_regions as btag_sidebands
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -24,36 +25,6 @@ parser.add_argument("--maskData", action="store_false", help="Mask templates for
 parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
-
-if args.year == "2016APV":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p20", "label" : "Down (0.0-0.2)", "color" : "b"},
-        "Central": {"reg" : "p20p40", "label" : "Cen (0.2-0.4)", "color" : "k"},
-        "Up"     : {"reg" : "p40p60", "label" : "Up (0.4-0.6)", "color" : "r"},
-    }
-if args.year == "2016":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1949", "label" : "Down (0.0-0.1949)", "color" : "b"},
-        "Central": {"reg" : "p1949p3898", "label" : "Cen (0.1949-0.3898)", "color" : "k"},
-        "Up"     : {"reg" : "p3898p5847", "label" : "Up (0.3898-0.5847)", "color" : "r"},
-    }
-if args.year == "2017":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1502", "label" : "Down (0.0-0.1502)", "color" : "b"},
-        "Central": {"reg" : "p1502p3004", "label" : "Cen (0.1502-0.3004)", "color" : "k"},
-        "Up"     : {"reg" : "p3004p4506", "label" : "Up (0.3004-0.4506)", "color" : "r"},
-    }
-if args.year == "2018":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1389", "label" : "Down (0.0-0.1389)", "color" : "b"},
-        "Central": {"reg" : "p1389p2779", "label" : "Cen (0.1389-0.2779)", "color" : "k"},
-        "Up"     : {"reg" : "p2779p4168", "label" : "Up (0.2779-0.4168)", "color" : "r"},
-    }
-
 
 
 def get_bkg_templates():
@@ -315,6 +286,8 @@ if __name__ == "__main__":
         "RENORMDown" : "uR_down",
         "RENORMUp"   : "uR_up",
     }
+
+    btag_reg_names_dict = btag_sidebands.btag_reg_names_dict[args.year]
 
     linearize_binning = (
         final_binning.mtt_binning,
