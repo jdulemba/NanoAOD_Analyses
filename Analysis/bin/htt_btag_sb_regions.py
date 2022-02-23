@@ -27,6 +27,7 @@ from python.Permutations import compare_matched_best_perms
 import Utilities.systematics as systematics
 import python.IDJet as IDJet
 from copy import deepcopy
+import Utilities.btag_sideband_regions as btag_sidebands
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
@@ -168,42 +169,11 @@ else: # MC samples
         reweight_systematics_to_run = [sys for sys in reweight_systematics_to_run if sys not in systematics.ttJets_sys.values()]
     
 print("Running with event systematics:", *sorted(set(event_systematics_to_run).difference(set(["nosys"]))), sep=", ") if "nosys" in event_systematics_to_run else print("Running with event systematics:", *sorted(event_systematics_to_run), sep=", ")
-print("  and reweight systematics:", *sorted(reweight_systematics_to_run), sep=", ")
+print("\t\tand reweight systematics:", *sorted(reweight_systematics_to_run), sep=", ")
 #set_trace()
 
-if isSignal_:
-    btag_regions = {}
-else:
-        # sideband regions are determined by dividing deepcsv medium wp values by 3 for each year
-    if args.year == "2016APV":
-        btag_regions = {
-            "p00p20" : (0.00, 0.20),
-            "p20p40" : (0.20, 0.40),
-            "p40p60" : (0.40, 0.60),
-        }
-    if args.year == "2016":
-        btag_regions = {
-            "p00p1949" : (0.00, 0.1949),
-            "p1949p3898" : (0.1949, 0.3898),
-            "p3898p5847" : (0.3898, 0.5847),
-        }
-    if args.year == "2017":
-        btag_regions = {
-            "p00p1502" : (0.00, 0.1502),
-            "p1502p3004" : (0.1502, 0.3004),
-            "p3004p4506" : (0.3004, 0.4506),
-        }
-    if args.year == "2018":
-        btag_regions = {
-            "p00p1389" : (0.00, 0.1389),
-            "p1389p2779" : (0.1389, 0.2779),
-            "p2779p4168" : (0.2779, 0.4168),
-        }
-    #btag_regions = {
-    #    "p00p15" : (0.00, 0.15),
-    #    "p15p30" : (0.15, 0.30),
-    #    "p30p45" : (0.30, 0.45),
-    #}
+    # sideband regions are determined by dividing deepcsv medium wp values by 3 for each year
+btag_regions = {} if isSignal_ else btag_sidebands.btag_sb_region_boundaries[args.year]
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class htt_btag_sb_regions(processor.ProcessorABC):
@@ -425,33 +395,12 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             if "LeptonSF" in corrections.keys():
                 #set_trace()
                 tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
-                muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton="Muons", corrections=self.corrections["LeptonSF"],
-                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]))
-                mu_reco_cen = np.ones(len(events))
-                mu_reco_err = np.zeros(len(events))
-                mu_trig_cen = np.ones(len(events))
-                mu_trig_err = np.zeros(len(events))
-                mu_reco_cen[tight_mu_sel] = muSFs_dict["RECO_CEN"]
-                mu_reco_err[tight_mu_sel] = muSFs_dict["RECO_ERR"]
-                mu_trig_cen[tight_mu_sel] = muSFs_dict["TRIG_CEN"]
-                mu_trig_err[tight_mu_sel] = muSFs_dict["TRIG_ERR"]
-                mu_evt_weights.add("Lep_RECO", np.copy(mu_reco_cen), np.copy(mu_reco_cen+mu_reco_err), np.copy(mu_reco_cen-mu_reco_err))
-                mu_evt_weights.add("Lep_TRIG", np.copy(mu_trig_cen), np.copy(mu_trig_cen+mu_trig_err), np.copy(mu_trig_cen-mu_trig_err))
+                muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
+                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons")
     
                 tight_electrons = events["Electron"][tight_el_sel][(events["Electron"][tight_el_sel]["TIGHTEL"] == True)]
-                elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton="Electrons", corrections=self.corrections["LeptonSF"],
-                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]))
-                el_reco_cen = np.ones(len(events))
-                el_reco_err = np.zeros(len(events))
-                el_trig_cen = np.ones(len(events))
-                el_trig_err = np.zeros(len(events))
-                el_reco_cen[tight_el_sel] = elSFs_dict["RECO_CEN"]
-                el_reco_err[tight_el_sel] = elSFs_dict["RECO_ERR"]
-                el_trig_cen[tight_el_sel] = elSFs_dict["TRIG_CEN"]
-                el_trig_err[tight_el_sel] = elSFs_dict["TRIG_ERR"]
-                el_evt_weights.add("Lep_RECO", np.copy(el_reco_cen), np.copy(el_reco_cen+el_reco_err), np.copy(el_reco_cen-el_reco_err))
-                el_evt_weights.add("Lep_TRIG", np.copy(el_trig_cen), np.copy(el_trig_cen+el_trig_err), np.copy(el_trig_cen-el_trig_err))
-                #set_trace()
+                elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
+                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
@@ -540,6 +489,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ## fill hists for each region
             for lepton in self.regions[evt_sys].keys():
                 evt_weights = mu_evt_weights if lepton == "Muon" else el_evt_weights
+                if not isData_:
+                    lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
                 for btagregion in self.regions[evt_sys][lepton].keys():
                     for jmult in self.regions[evt_sys][lepton][btagregion].keys():
                         #set_trace()
@@ -588,27 +539,33 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                             output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
 
                                 # fill hists for each systematic
-                            if to_debug: print("  evt sys:", evt_sys)
+                            if to_debug: print(f"\t\tevt sys: {evt_sys}")
                             if evt_sys == "nosys":
                                 for rewt_sys in self.reweight_systematics_to_run:
                                     #if to_debug: set_trace()
                                         ## only fill plots in signal region if systematic variation being used
                                     if (rewt_sys != "nosys") and (btagregion != "btagPass"): continue
 
-                                    if to_debug: print("    sysname:", rewt_sys)
+                                    if to_debug: print(f"\t\tsysname: {rewt_sys}")
 
                                     #set_trace()
                                     #if "Yukawa" in rewt_sys: set_trace()
                                     if rewt_sys == "nosys":
-                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
+                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight() * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("btag"):
-                                        wts = (evt_weights.weight()*btag_weights[rewt_sys.split("btag_")[-1]])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight() * btag_weights[rewt_sys.split("btag_")[-1]] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                    elif rewt_sys.startswith("Lep"):
+                                        #set_trace()
+                                        if rewt_sys.split("_")[-1] in lep_SFs.keys():
+                                            wts = (evt_weights.weight() * btag_weights["central"] * lep_SFs[rewt_sys.split("_")[-1]])[cut][valid_perms][MTHigh]
+                                        else:
+                                            print(f"{rewt_sys.split('_')[-1]} not found in {lepton} SF dict. Skipping")
+                                            continue
                                     else:
                                         if rewt_sys not in evt_weights.variations:
-                                        #if rewt_sys not in evt_weights._modifiers.keys():
                                             print(f"{rewt_sys} not option in event weights. Skipping")
                                             continue
-                                        wts = (evt_weights.weight(rewt_sys)*btag_weights["central"])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight(rewt_sys) * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
 
                                     sysname = events.metadata["dataset"].split("_")[-1] if isTTShift_ else rewt_sys
 
@@ -630,9 +587,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                             perm=best_perms[valid_perms][MTHigh], jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
 
                             else:
-                                if to_debug: print("    sysname:", evt_sys)
+                                if to_debug: print(f"\t\tsysname: {evt_sys}")
                                 #if to_debug: set_trace()
-                                wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
+                                wts = (evt_weights.weight() * btag_weights["central"] *lep_SFs["central"])[cut][valid_perms][MTHigh]
                                         # fill hists for interference samples
                                 if isInt_:
                                     #set_trace()
