@@ -347,26 +347,98 @@ def get_comb_lepSF(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.
     return lepSFs
 
 
-def get_lepton_sf(lepton: str, corrections, pt, eta):
-    sf_dict = corrections[lepton]
-    output_SFs = {}
+def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
+    mu_schema = {
+        "central" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Central"],
+            # variations of ID
+        "IDtotUp" : ["ID_Error_totUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
+        "IDtotDown" : ["ID_Error_totDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
+        "IDstatUp" : ["ID_Error_statUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
+        "IDstatDown" : ["ID_Error_statDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
+        "IDsystUp" : ["ID_Error_systUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
+        "IDsystDown" : ["ID_Error_systDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
+            # variations of ISO
+        "ISOtotUp" : ["ID_Central", "ISO_Error_totUp", "TRIG_Central", "RECO_Central"],
+        "ISOtotDown" : ["ID_Central", "ISO_Error_totDown", "TRIG_Central", "RECO_Central"],
+        "ISOstatUp" : ["ID_Central", "ISO_Error_statUp", "TRIG_Central", "RECO_Central"],
+        "ISOstatDown" : ["ID_Central", "ISO_Error_statDown", "TRIG_Central", "RECO_Central"],
+        "ISOsystUp" : ["ID_Central", "ISO_Error_systUp", "TRIG_Central", "RECO_Central"],
+        "ISOsystDown" : ["ID_Central", "ISO_Error_systDown", "TRIG_Central", "RECO_Central"],
+            # variations of TRIG
+        "TRIGtotUp" : ["ID_Central", "ISO_Central", "TRIG_Error_totUp", "RECO_Central"],
+        "TRIGtotDown" : ["ID_Central", "ISO_Central", "TRIG_Error_totDown", "RECO_Central"],
+        "TRIGstatUp" : ["ID_Central", "ISO_Central", "TRIG_Error_statUp", "RECO_Central"],
+        "TRIGstatDown" : ["ID_Central", "ISO_Central", "TRIG_Error_statDown", "RECO_Central"],
+        "TRIGsystUp" : ["ID_Central", "ISO_Central", "TRIG_Error_systUp", "RECO_Central"],
+        "TRIGsystDown" : ["ID_Central", "ISO_Central", "TRIG_Error_systDown", "RECO_Central"],
+            # variations of RECO
+        "RECOtotUp" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Error_totUp"],
+        "RECOtotDown" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Error_totDown"],
+    }
+    el_schema = {
+        "central" : ["ID_Central", "TRIG_Central", "RECO_Central"],
+            # variations of ID
+        "IDtotUp" : ["ID_Error_totUp", "TRIG_Central", "RECO_Central"],
+        "IDtotDown" : ["ID_Error_totDown", "TRIG_Central", "RECO_Central"],
+            # variations of TRIG
+        "TRIGtotUp" : ["ID_Central", "TRIG_Error_totUp", "RECO_Central"],
+        "TRIGtotDown" : ["ID_Central", "TRIG_Error_totDown", "RECO_Central"],
+            # variations of RECO
+        "RECOtotUp" : ["ID_Central", "TRIG_Central", "RECO_Error_totUp"],
+        "RECOtotDown" : ["ID_Central", "TRIG_Central", "RECO_Error_totDown"],
+    }
+    schema_to_use = mu_schema if leptype == "Muons" else el_schema
+
+    indiv_SF_sources = {}
     for sf_type in sf_dict.keys():
         isAbsEta = sf_dict[sf_type]["isAbsEta"]
-        output_SFs[sf_type] = {}
         if "eta_ranges" in sf_dict[sf_type].keys():
-            #print(lepton, sf_type)
+            #if leptype == "Electrons" : set_trace()
             eta_ranges = sf_dict[sf_type]["eta_ranges"]
-            tmp_wts_dict = {key : np.ones(len(pt)) for key in sf_dict[sf_type].keys() if ((key != "eta_ranges") and (key != "isAbsEta"))}
-            for idx, eta_range in enumerate(eta_ranges):
-                mask = (np.abs(eta) >= eta_range[0]) & (np.abs(eta) < eta_range[1]) if isAbsEta else (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
-                if not ak.any(mask): continue # no values fall within eta range
-                for key in tmp_wts_dict.keys():
-                    tmp_wts_dict[key][mask] = sf_dict[sf_type][key][f"eta_bin{idx}"](pt[mask])
-            output_SFs[sf_type] = tmp_wts_dict
+            for sf_var in sf_dict[sf_type].keys():
+                if ((sf_var == "eta_ranges") or (sf_var == "isAbsEta")): continue
+                #print(leptype, sf_type, sf_var)
+                if sf_var == "Central":
+                    cen_wts = np.ones(len(pt))
+                elif "Error" in sf_var:
+                    errup_wts, errdw_wts = np.ones(len(pt)), np.ones(len(pt))
+                else:
+                    set_trace()
+
+                for idx, eta_range in enumerate(eta_ranges):
+                    mask = (np.abs(eta) >= eta_range[0]) & (np.abs(eta) < eta_range[1]) if isAbsEta else (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
+                    if not ak.any(mask): continue # no values fall within eta range
+                    if sf_var == "Central":
+                        cen_wts[mask] = sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
+                    else:
+                        errup_wts[mask] = sf_dict[sf_type]["Central"][f"eta_bin{idx}"](pt[mask]) + sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
+                        errdw_wts[mask] = sf_dict[sf_type]["Central"][f"eta_bin{idx}"](pt[mask]) - sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
+                if sf_var == "Central":
+                    indiv_SF_sources[f"{sf_type}_{sf_var}"] = cen_wts
+                else:
+                    indiv_SF_sources[f"{sf_type}_{sf_var}Up"] = errup_wts
+                    indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = errdw_wts
         else:
             for sf_var in sf_dict[sf_type].keys():
                 if sf_var == "isAbsEta": continue
-                #print(lepton, sf_type, sf_var)
-                output_SFs[sf_type][sf_var] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
+                #print(leptype, sf_type, sf_var)
+                if sf_var == "Central":
+                    indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
+                else:
+                    indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta), pt) + sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) + sf_dict[sf_type][sf_var](eta, pt)
+                    indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta), pt) - sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) - sf_dict[sf_type][sf_var](eta, pt)
+
+    #set_trace()
+    output_SFs = {}
+    for key, sf_list in schema_to_use.items():
+            # initialize event weights to 1
+        evt_wts = np.ones(len(tight_lep_mask))
+            # make list of event weights from inidividual sources in sf_list
+        arrays_list = [ak.to_numpy(indiv_SF_sources[sf_source]) for sf_source in sf_list]
+            # set events that pass tight lepton mask equal to product of all event weights from inidividual sources in sf_list
+        evt_wts[tight_lep_mask] = np.prod(np.vstack(arrays_list), axis=0)
+        output_SFs[key] = np.copy(evt_wts)
+
+    #set_trace()
 
     return output_SFs
