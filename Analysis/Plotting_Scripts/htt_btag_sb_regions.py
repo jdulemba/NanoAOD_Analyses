@@ -25,6 +25,7 @@ import Utilities.systematics as systematics
 from copy import deepcopy
 from Utilities.styles import styles as styles
 import Utilities.final_analysis_binning as final_binning
+import Utilities.btag_sideband_regions as btag_sidebands
 
 base_jobid = os.environ["base_jobid"]
 
@@ -73,54 +74,8 @@ objtypes = {
     }
 }
 
-
-btag_cats = {
-    "btagPass" : "$n_{btags} \geq$ 2",
-    #"p00p15" : "0.00 < max(btag discr) $\leq$ 0.15",
-    #"p15p30" : "0.15 < max(btag discr) $\leq$ 0.30",
-    #"p30p45" : "0.30 < max(btag discr) $\leq$ 0.45",
-    "p00p20" : "0.0 < max(btag discr) $\leq$ 0.2",
-    "p20p40" : "0.2 < max(btag discr) $\leq$ 0.4",
-    "p40p60" : "0.4 < max(btag discr) $\leq$ 0.6",
-    "p00p1949" : "0.0 < max(btag discr) $\leq$ 0.1949",
-    "p1949p3898" : "0.1949 < max(btag discr) $\leq$ 0.3898",
-    "p3898p5847" : "0.3898 < max(btag discr) $\leq$ 0.5847",
-    "p00p1502" : "0.0 < max(btag discr) $\leq$ 0.1502",
-    "p1502p3004" : "0.1502 < max(btag discr) $\leq$ 0.3004",
-    "p3004p4506" : "0.3004 < max(btag discr) $\leq$ 0.4506",
-    "p00p1389" : "0.0 < max(btag discr) $\leq$ 0.1389",
-    "p1389p2779" : "0.1389 < max(btag discr) $\leq$ 0.2779",
-    "p2779p4168" : "0.2779 < max(btag discr) $\leq$ 0.4168",
-}
-
-if args.year == "2016APV":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p20", "label" : "Down (0.0-0.2)", "color" : "b"},
-        "Central": {"reg" : "p20p40", "label" : "Cen (0.2-0.4)", "color" : "k"},
-        "Up"     : {"reg" : "p40p60", "label" : "Up (0.4-0.6)", "color" : "r"},
-    }
-if args.year == "2016":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1949", "label" : "Down (0.0-0.1949)", "color" : "b"},
-        "Central": {"reg" : "p1949p3898", "label" : "Cen (0.1949-0.3898)", "color" : "k"},
-        "Up"     : {"reg" : "p3898p5847", "label" : "Up (0.3898-0.5847)", "color" : "r"},
-    }
-if args.year == "2017":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1502", "label" : "Down (0.0-0.1502)", "color" : "b"},
-        "Central": {"reg" : "p1502p3004", "label" : "Cen (0.1502-0.3004)", "color" : "k"},
-        "Up"     : {"reg" : "p3004p4506", "label" : "Up (0.3004-0.4506)", "color" : "r"},
-    }
-if args.year == "2018":
-    btag_reg_names_dict = {
-        "Signal" : {"reg" : "btagPass"},
-        "Down"   : {"reg" : "p00p1389", "label" : "Down (0.0-0.1389)", "color" : "b"},
-        "Central": {"reg" : "p1389p2779", "label" : "Cen (0.1389-0.2779)", "color" : "k"},
-        "Up"     : {"reg" : "p2779p4168", "label" : "Up (0.2779-0.4168)", "color" : "r"},
-    }
+btag_cats = btag_sidebands.btag_cats
+btag_reg_names_dict = btag_sidebands.btag_reg_names_dict[args.year]
 
 lep_cats = {
     "Tight" : "tight %s" % objtypes["Lep"][args.lepton],
@@ -218,40 +173,7 @@ process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=n
 ## make btagging sideband groups
 btag_bin = hist.Cat("btag", "btag", sorting="placement")
 btag_cat = "btag"
-if args.year == "2016APV":
-    btag_groups = {
-        "btagPass" : ["btagPass"],
-        "p00p20" : ["p00p20"],
-        "p20p40" : ["p20p40"],
-        "p40p60" : ["p40p60"],
-    }
-if args.year == "2016":
-    btag_groups = {
-        "btagPass" : ["btagPass"],
-        "p00p1949" : ["p00p1949"],
-        "p1949p3898" : ["p1949p3898"],
-        "p3898p5847" : ["p3898p5847"],
-    }
-if args.year == "2017":
-    btag_groups = {
-        "btagPass" : ["btagPass"],
-        "p00p1502" : ["p00p1502"],
-        "p1502p3004" : ["p1502p3004"],
-        "p3004p4506" : ["p3004p4506"],
-    }
-if args.year == "2018":
-    btag_groups = {
-        "btagPass" : ["btagPass"],
-        "p00p1389" : ["p00p1389"],
-        "p1389p2779" : ["p1389p2779"],
-        "p2779p4168" : ["p2779p4168"],
-    }
-#btag_groups = {
-#    "btagPass" : ["btagPass"],
-#    "p00p15" : ["p00p15"],
-#    "p15p30" : ["p15p30"],
-#    "p30p45" : ["p30p45"],
-#}
+btag_groups = btag_sidebands.btag_groups[args.year]
 
     # scale and group hists by process
 for hname in hdict.keys():
@@ -506,7 +428,7 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
         cen_dmp_hist = cen_sb["histo"].integrate("process").copy()
 
             # get normalized arrays of data-promptMC    
-        cen_dmp_sumw, cen_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(cen_sb["histo"]))
+        cen_dmp_sumw, cen_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(cen_sb["histo"], isForTemplates=False))
 
         for idx in range(len(cen_dmp_sumw)):
             cen_dmp_hist.values(overflow="all", sumw2=True)[()][0][idx] = cen_dmp_sumw[idx]
@@ -528,7 +450,7 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
         up_dmp_hist = up_sb["histo"].integrate("process").copy()
 
             # get normalized arrays of data-promptMC    
-        up_dmp_sumw, up_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(up_sb["histo"]))
+        up_dmp_sumw, up_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(up_sb["histo"], isForTemplates=False))
 
         for idx in range(len(up_dmp_sumw)):
             up_dmp_hist.values(overflow="all", sumw2=True)[()][0][idx] = up_dmp_sumw[idx]
@@ -558,7 +480,7 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
         dw_dmp_hist = dw_sb["histo"].integrate("process").copy()
 
             # get normalized arrays of data-promptMC    
-        dw_dmp_sumw, dw_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(dw_sb["histo"]))
+        dw_dmp_sumw, dw_dmp_sumw2 = Plotter.get_qcd_shape(Plotter.data_minus_top(dw_sb["histo"], isForTemplates=False))
 
         for idx in range(len(dw_dmp_sumw)):
             dw_dmp_hist.values(overflow="all", sumw2=True)[()][0][idx] = dw_dmp_sumw[idx]
@@ -652,7 +574,7 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         )
 
     if cen_sb:
-        cen_data_minus_top = Plotter.data_minus_top(cen_sb["histo"])
+        cen_data_minus_top = Plotter.data_minus_top(cen_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/cen_data_minus_top.sum(*[ax.name for ax in cen_data_minus_top.axes()]).values()[()]
         cen_data_minus_top.scale(sb_to_sig_scale)
@@ -663,7 +585,7 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         cols_to_label.update({cen_sb["color"]: cen_sb["label"]})
 
     if up_sb:
-        up_data_minus_top = Plotter.data_minus_top(up_sb["histo"])
+        up_data_minus_top = Plotter.data_minus_top(up_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/up_data_minus_top.sum(*[ax.name for ax in up_data_minus_top.axes()]).values()[()]
         up_data_minus_top.scale(sb_to_sig_scale)
@@ -674,7 +596,7 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         cols_to_label.update({up_sb["color"]: up_sb["label"]})
 
     if dw_sb:
-        dw_data_minus_top = Plotter.data_minus_top(dw_sb["histo"])
+        dw_data_minus_top = Plotter.data_minus_top(dw_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/dw_data_minus_top.sum(*[ax.name for ax in dw_data_minus_top.axes()]).values()[()]
         dw_data_minus_top.scale(sb_to_sig_scale)
@@ -757,7 +679,7 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         )
 
     if cen_sb:
-        cen_data_minus_top = Plotter.data_minus_top(cen_sb["histo"])
+        cen_data_minus_top = Plotter.data_minus_top(cen_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/cen_data_minus_top.sum(*[ax.name for ax in cen_data_minus_top.axes()]).values()[()]
         cen_data_minus_top.scale(sb_to_sig_scale)
@@ -770,7 +692,7 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         cols_to_label.update({cen_sb["color"]: cen_sb["label"]})
 
     if up_sb:
-        up_data_minus_top = Plotter.data_minus_top(up_sb["histo"])
+        up_data_minus_top = Plotter.data_minus_top(up_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/up_data_minus_top.sum(*[ax.name for ax in up_data_minus_top.axes()]).values()[()]
         up_data_minus_top.scale(sb_to_sig_scale)
@@ -791,7 +713,7 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
         )
 
     if dw_sb:
-        dw_data_minus_top = Plotter.data_minus_top(dw_sb["histo"])
+        dw_data_minus_top = Plotter.data_minus_top(dw_sb["histo"], isForTemplates=False)
             # find scale to get shape of data-top and then scale to sig norm
         sb_to_sig_scale = sig_norm/dw_data_minus_top.sum(*[ax.name for ax in dw_data_minus_top.axes()]).values()[()]
         dw_data_minus_top.scale(sb_to_sig_scale)
@@ -2136,7 +2058,8 @@ if args.bkg_est:
 
                     if sys == "nosys":                 
                         bkg_name = f"{shape_reg}{norm}_Norm" if norm == "Sideband" else f"{norm}_Norm"
-                        bkg_dir = os.path.join(outdir, args.lepton, jmult, "BKG_Est_orthog", bkg_name, sys_to_name[sys])
+                        bkg_dir = os.path.join(outdir, args.lepton, jmult, "BKG_Est_orthog", bkg_name, sys)
+                        #bkg_dir = os.path.join(outdir, args.lepton, jmult, "BKG_Est_orthog", bkg_name, sys_to_name[sys])
                         if not os.path.isdir(bkg_dir):
                             os.makedirs(bkg_dir)
     
