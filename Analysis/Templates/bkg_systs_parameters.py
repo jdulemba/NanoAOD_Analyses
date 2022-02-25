@@ -254,18 +254,78 @@ what_to_do = {
         "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TW" : {"m3" : "flat", "m4" : "flat", "e3" : "flat", "e4" : "flat"},
     },
-    "LEP_RECO" : {
+    "LEP_IDtot" : {
         "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
         "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
     },
-    "LEP_TRIG" : {
+    "LEP_IDstat" : {
         "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
         "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
         "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
     },
+    "LEP_IDsyst" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_ISOtot" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_ISOstat" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_ISOsyst" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_TRIGtot" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_TRIGstat" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_TRIGsyst" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    "LEP_RECOtot" : {
+        "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+        "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+        "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    },
+    #"LEP_RECO" : {
+    #    "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+    #    "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #    "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #    "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #},
+    #"LEP_TRIG" : {
+    #    "TT" : {"m3" : "raw", "m4" : "raw", "e3" : "raw", "e4" : "raw"},
+    #    "TB" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #    "TQ" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #    "TW" : {"m3" : "smooth", "m4" : "smooth", "e3" : "smooth", "e4" : "smooth"},
+    #},
     "MET" : {
         "TT" : {"m3" : "flat", "m4" : "flat", "e3" : "flat", "e4" : "flat"},
         "TB" : {"m3" : "flat", "m4" : "flat", "e3" : "flat", "e4" : "flat"},
