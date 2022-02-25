@@ -223,33 +223,13 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         if "LeptonSF" in corrections.keys():
             #set_trace()
             tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
-            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton="Muons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]))
-            mu_reco_cen = np.ones(len(events))
-            mu_reco_err = np.zeros(len(events))
-            mu_trig_cen = np.ones(len(events))
-            mu_trig_err = np.zeros(len(events))
-            mu_reco_cen[tight_mu_sel] = muSFs_dict["RECO_CEN"]
-            mu_reco_err[tight_mu_sel] = muSFs_dict["RECO_ERR"]
-            mu_trig_cen[tight_mu_sel] = muSFs_dict["TRIG_CEN"]
-            mu_trig_err[tight_mu_sel] = muSFs_dict["TRIG_ERR"]
-            mu_evt_weights.add("Lep_RECO", np.copy(mu_reco_cen), np.copy(mu_reco_cen+mu_reco_err), np.copy(mu_reco_cen-mu_reco_err))
-            mu_evt_weights.add("Lep_TRIG", np.copy(mu_trig_cen), np.copy(mu_trig_cen+mu_trig_err), np.copy(mu_trig_cen-mu_trig_err))
-    
+            muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
+                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons")
+
             tight_electrons = events["Electron"][tight_el_sel][(events["Electron"][tight_el_sel]["TIGHTEL"] == True)]
-            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton="Electrons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]))
-            el_reco_cen = np.ones(len(events))
-            el_reco_err = np.zeros(len(events))
-            el_trig_cen = np.ones(len(events))
-            el_trig_err = np.zeros(len(events))
-            el_reco_cen[tight_el_sel] = elSFs_dict["RECO_CEN"]
-            el_reco_err[tight_el_sel] = elSFs_dict["RECO_ERR"]
-            el_trig_cen[tight_el_sel] = elSFs_dict["TRIG_CEN"]
-            el_trig_err[tight_el_sel] = elSFs_dict["TRIG_ERR"]
-            el_evt_weights.add("Lep_RECO", np.copy(el_reco_cen), np.copy(el_reco_cen+el_reco_err), np.copy(el_reco_cen-el_reco_err))
-            el_evt_weights.add("Lep_TRIG", np.copy(el_trig_cen), np.copy(el_trig_cen+el_trig_err), np.copy(el_trig_cen-el_trig_err))
-            #set_trace()
+            elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
+                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
+
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
@@ -311,21 +291,19 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
 
-                    # fll dict of btag weights
-                for wt_name in deepcsv_3j_wts.keys():
-                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
-
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
 
                     # fll dict of btag weights
-                for wt_name in deepcsv_4pj_wts.keys():
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
                     btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
 
             #set_trace()
             ## fill hists for each region
             for lepton in self.regions[evt_sys].keys():
                 evt_weights = mu_evt_weights if lepton == "Muon" else el_evt_weights
+                lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
                 for jmult in self.regions[evt_sys][lepton].keys():
                     cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][jmult])
 
@@ -375,8 +353,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         #set_trace()
                         if to_debug: print("  evt sys:", evt_sys)
                         if evt_sys == "nosys":
-                            nom_wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
-                            #nom_wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                            nom_wts = (evt_weights.weight() * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                            #nom_wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                                 # fill hists for nominal
                             output = self.fill_hists(acc=output, sys="nosys", jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh],
                                 perm=best_perms[valid_perms][MTHigh], evt_wts=nom_wts)
