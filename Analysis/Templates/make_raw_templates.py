@@ -222,14 +222,13 @@ def get_sig_templates():
         histo = histo.group("dataset", hist.Cat("process", "Process", sorting="placement"), process_groups)
     
         for jmult in njets_to_run:
-            #set_trace()
             for signal in signals:
-                #set_trace()
                 for sys in systs:
                     if sys not in templates_to_check[args.year].keys(): continue
 
-                    print(args.year, lep, jmult, signal, sys)
                     template_histo = Plotter.linearize_hist(histo[signal, sys, jmult, lep].integrate("jmult").integrate("leptype").integrate("process").integrate("sys"))
+                    if not template_histo.values().keys(): continue
+                    print(args.year, lep, jmult, signal, sys)
                     if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
                         #set_trace()
                         lhe_scale = lumi_correction[f"{signal}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal]
