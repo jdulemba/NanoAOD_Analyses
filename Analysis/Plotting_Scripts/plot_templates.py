@@ -62,6 +62,7 @@ if args.process == "bkg":
         "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"raw_templates_lj_bkg_{args.year}_{jobid}.coffea")),
         "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_bkg_{args.year}_{jobid}.coffea")),
         "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"flattened_templates_lj_bkg_{args.year}_{jobid}.coffea")),
+        "Symm" : load(os.path.join(input_dir, f"symmetrized_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"symmetrized_templates_lj_bkg_{args.year}_{jobid}.coffea")),
     }
 
 if args.process == "sig":
@@ -69,6 +70,7 @@ if args.process == "sig":
         "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_sig_{args.year}_{jobid}.coffea")),
         "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_sig_{args.year}_{jobid}.coffea")),
         "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_sig_{args.year}_{jobid}.coffea")),
+        "Symm" : load(os.path.join(input_dir, f"symmetrized_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"symmetrized_templates_lj_sig_{args.year}_{jobid}.coffea")),
     }
 
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
@@ -77,16 +79,19 @@ nom_styles = {"color":"k", "linestyle":"-", "label":"Nominal"}
 orig_styles = {"color":"b", "linestyle":"-", "label":"Original"}
 smooth_styles = {"color":"r", "linestyle":"-", "label":"Smoothed"}
 flat_styles = {"color":"g", "linestyle":"-", "label":"Flattened"}
+#symm_styles = {"color":"g", "linestyle":"-", "label":"Flattened"}
 
 #set_trace()
     ## make plots for background templates
 orig_hdict = templates_names["Orig"]
 smoothed_hdict = templates_names["Smooth"]
 flattened_hdict = templates_names["Flat"]
+symmetrized_hdict = templates_names["Symm"]
 for jmult in orig_hdict.keys():
     orig_dict = orig_hdict[jmult][args.lepton]
     smoothed_dict = smoothed_hdict[jmult][args.lepton]
     flattened_dict = flattened_hdict[jmult][args.lepton]
+    symmetrized_dict = symmetrized_hdict[jmult][args.lepton]
 
         # get all keys from both files to make sure they"re the same    
     orig_keys = sorted(orig_dict.keys())
@@ -197,12 +202,15 @@ for jmult in orig_hdict.keys():
                 smooth_dw = smoothed_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 flat_up = flattened_dict[f"{proc}_{up_sysname}"]
                 flat_dw = flattened_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
+                sym_up = symmetrized_dict[f"{proc}_{up_sysname}"]
+                sym_dw = symmetrized_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 if (not nominal.values()) or (not orig_up.values()): continue
                 up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)] if np.array_equal(smooth_up.values()[()], orig_up.values()[()]) else \
                     [
                         (orig_up, {"color": "r", "linestyle": "--", "label": "Original Up"}, True),
                         (smooth_up, {"color": "r", "linestyle": "-", "label": "Smooth Up"}, False),
                         (flat_up, {"color": "r", "linestyle": "--", "label": "Flat Up"}, False),
+                        (sym_up, {"color": "r", "linestyle": ":", "label": "Symmetrized Up"}, False),
                     ]
 
                 if orig_dw:
@@ -211,6 +219,7 @@ for jmult in orig_hdict.keys():
                             (orig_dw, {"color": "b", "linestyle": "--", "label": "Original Down"}, True),
                             (smooth_dw, {"color": "b", "linestyle": "-", "label": "Smooth Down"}, False),
                             (flat_dw, {"color": "b", "linestyle": "--", "label": "Flat Down"}, False),
+                            (sym_dw, {"color": "b", "linestyle": ":", "label": "Symmetrized Down"}, False),
                         ]
                 else: dw_histos = None
 
