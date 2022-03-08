@@ -31,7 +31,15 @@ def final_bkg_templates(bkg_dict):
         for lep, histo in hdict.items():
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
-            upfout.mkdir(lepdir)
+
+            if args.combine:
+                if args.year == "2016APV": year_to_use = "2016pre"
+                elif args.year == "2016": year_to_use = "2016post"
+                else: year_to_use = args.year
+                dirname = f"{lepdir}_{year_to_use}"
+            else:
+                dirname = lepdir
+            upfout.mkdir(dirname)
 
             #set_trace()
             systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
@@ -44,32 +52,12 @@ def final_bkg_templates(bkg_dict):
                     print(lep, jmult, sys, proc)
                     if sys == "nosys":
                         template, treatment = histo[f"{proc}_{sys}"]
-                        upfout[lepdir][proc] = template.to_hist()
+                        upfout[dirname][proc] = template.to_hist()
 
                     else:
                         template, treatment = histo[f"{proc}_{sys}"]
                         outhname = "_".join([proc, "CMS", "PDF", sys.split("_")[-1]]) if args.combine else f"{proc}_{sys}"
-                        upfout[lepdir][outhname] = template.to_hist()
-                
-                        # add extra 'chi2' histogram for variations that were smoothed/flattened
-                        if treatment != "raw":
-                            set_trace()
-                            #print("\t", sys, treatment)
-                            #if treatment == "flat": set_trace()
-                            treated_up_val = up_template.values(overflow="over")[()][-1]
-                            treated_dw_val = dw_template.values(overflow="over")[()][-1]
-            
-                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.new_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2", lepdir])))
-                            if "LEP" in up_outhname: up_outhname = up_outhname.replace("LEP", lep[0].lower())
-
-                            sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
-                            tmp_chi2_histo = orig_chi2_histo.copy()
-                                ## fill bins
-                            for xbin in range(sumw.size):
-                                tmp_chi2_histo.values()[()][xbin] = sumw[xbin]
-                            
-                            #set_trace()
-                            upfout[lepdir][chi2_outhname] = tmp_chi2_histo.to_hist()
+                        upfout[dirname][outhname] = template.to_hist()
 
     upfout.close()
     print(f"{rname} written")
@@ -86,9 +74,6 @@ if __name__ == "__main__":
     bkg_fname = os.path.join(input_dir, base_bkg_template_name)
     if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
     bkg_hdict = load(bkg_fname)
-
-    orig_chi2_histo = hist.Hist("Events", hist.Bin("x_y", "x_y", np.arange(7)))
-    orig_chi2_histo.fill(x_y=np.zeros(0))
 
     print("Creating final background templates")
     final_bkg_templates(bkg_hdict)
