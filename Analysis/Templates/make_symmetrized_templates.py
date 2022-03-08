@@ -26,7 +26,6 @@ def check_templates(fname, isSignal=False):
     Function that writes linearized mtt vs costheta distributions to root file.
     """
     hdict = load(fname)
-    out_dict = {njets : {"Muon" : {}, "Electron" :{}} for njets in hdict.keys()}
     histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in hdict.keys()})
     for jmult in hdict.keys():
         for lep, histo in hdict[jmult].items():
@@ -40,46 +39,43 @@ def check_templates(fname, isSignal=False):
 
                 #set_trace()
                 for proc in procs_sys:
-                    if not (f"{proc}_{up_sysname}" in histo.keys() and f"{proc}_{dw_sysname}" in histo.keys()): continue
+                        # skip this process/systematic if any of the variations or nominal name aren't found
+                    if not ( (f"{proc}_{up_sysname}" in histo.keys() and f"{proc}_{dw_sysname}" in histo.keys()) and f"{proc}_nosys" in histo.keys() ): continue
                     print(jmult, lep, sys, proc)
                         # get yield vals
                     nosys_vals = histo[f"{proc}_nosys"].values()[()]
-                    up_yield_vals = histo[f"{proc}_{up_sysname}"].values()[()]
-                    dw_yield_vals = histo[f"{proc}_{dw_sysname}"].values()[()]
+                    symmetrized_histo_up = histo[f"{proc}_{up_sysname}"].copy()
+                    symmetrized_histo_dw = histo[f"{proc}_{dw_sysname}"].copy()
+                    up_yield_vals = symmetrized_histo_up.values()[()]
+                    dw_yield_vals = symmetrized_histo_dw.values()[()]
+
+                        # find relative deviation from nominal vals
+                    up_rel_vals = up_yield_vals/nosys_vals - 1.
+                    dw_rel_vals = dw_yield_vals/nosys_vals - 1.
 
                     # create hist with symmetrized yields
                     relative_symm_yields = np.sqrt(up_yield_vals/dw_yield_vals) - 1. # find relative deviation from nominal values for symmetrized dist
-                    symmetrized_yields_up = (relative_symm_yields + 1.) * nosys_vals
-                    symmetrized_yields_dw = (-1.*relative_symm_yields + 1.) * nosys_vals
-                    symmetrized_histo_up = histo[f"{proc}_nosys"].copy()
-                    symmetrized_histo_dw = histo[f"{proc}_nosys"].copy()
-                        ## fill bins
-                    for xbin in range(symmetrized_yields_up.size):
-                        symmetrized_histo_up.values()[()][xbin] = symmetrized_yields_up[xbin]
-                        symmetrized_histo_dw.values()[()][xbin] = symmetrized_yields_dw[xbin]
+                    symmetrized_yields_up = np.nan_to_num((relative_symm_yields + 1.) * nosys_vals)
+                    symmetrized_yields_dw = np.nan_to_num((-1.*relative_symm_yields + 1.) * nosys_vals)
+
+                        # check where product of relative bins is positive, i.e. the deviations are one-sided
+                    rel_prods = up_rel_vals * dw_rel_vals >= 0
+                        # symmetrize all bins
+                    one_sided_bins = np.arange(symmetrized_yields_up.size) if (np.sum(rel_prods, axis=0) > 10) else np.where(rel_prods)
+                    #if (one_sided_bins)[0].size > 0: set_trace()
+                    symmetrized_histo_up.values()[()][one_sided_bins] = symmetrized_yields_up[one_sided_bins]
+                    symmetrized_histo_dw.values()[()][one_sided_bins] = symmetrized_yields_dw[one_sided_bins]
+                    if (one_sided_bins)[0].size > 0: print("\tsymmetrize")
 
                     ## save templates that need to be symmetrized to dict
                     histo_dict[jmult][lep][f"{proc}_{up_sysname}"] = symmetrized_histo_up.copy()
                     histo_dict[jmult][lep][f"{proc}_{dw_sysname}"] = symmetrized_histo_dw.copy()
 
-                        # find relative deviation from nominal vals
-                    up_rel_vals = up_yield_vals/nosys_vals - 1.
-                    dw_rel_vals = dw_yield_vals/nosys_vals - 1.
-                    to_symmetrize = np.sum(up_rel_vals * dw_rel_vals >= 0, axis=0) > 2
-                    if to_symmetrize:
-                        print("\tsymmetrize")
-                        out_dict[jmult][lep][f"{proc}_{sys}"] = "symmetrize"
-
     #set_trace()
     if isSignal:
         coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"symmetrized_templates_lj_sig_{args.year}_{jobid}.coffea")
-        out_3pj = os.path.join(input_dir, f"templates_to_symmetrize_lj_sig_kfactors_{args.year}_{jobid}.json" if args.kfactors else f"templates_to_symmetrize_lj_sig_{args.year}_{jobid}.json")
     else:
         coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"symmetrized_templates_lj_bkg_{args.year}_{jobid}.coffea")
-        out_3pj = os.path.join(input_dir, f"templates_to_symmetrize_lj_bkg_mtopscaled_{args.year}_{jobid}.json" if args.scale_mtop3gev else f"templates_to_symmetrize_lj_bkg_{args.year}_{jobid}.json")
-    with open(out_3pj, "w") as out:
-        out.write(prettyjson.dumps(out_dict))
-    print(f"{out_3pj} written")
 
     save(histo_dict, coffea_out)
     print(f"{coffea_out} written")
