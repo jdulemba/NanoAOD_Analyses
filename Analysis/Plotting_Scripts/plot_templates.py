@@ -24,7 +24,8 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("lepton", choices=["Electron", "Muon"], help="Choose which lepton to make plots for")
-parser.add_argument("process", choices=["bkg", "sig"], help="Specify which process to use.")
+parser.add_argument("process", choices=["bkg"], help="Specify which process to use.")
+#parser.add_argument("process", choices=["bkg", "sig"], help="Specify which process to use.")
 parser.add_argument("plot", choices=["indiv", "comp", "all"], help="Specify which systematic plots to create.")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 parser.add_argument("--kfactors", action="store_true", help="Use signal files scaled by kfactors")
@@ -35,7 +36,7 @@ jobid = os.environ["jobid"]
 analyzer = "htt_btag_sb_regions"
 
 input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
-base_outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}")
+base_outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", (args.process).upper())
 if (args.process == "sig") and (args.kfactors):
     outdir = os.path.join(base_outdir, "SIG_KFACTORS", args.lepton)
 else:
@@ -101,11 +102,11 @@ for jmult in orig_hdict.keys():
         raise ValueError(f"Input templates for smoothed and original distributions not the same for {jmult}")
 
     #set_trace()
-    systs = sorted(set([key.split("Res_")[1] for key in orig_keys if "Res" in key])) if args.process == "sig" else sorted(set(["_".join(key.split("_")[1:]) for key in orig_keys if not ("data_obs" in key or len(key.split("_")) == 1)]))
-    if "nosys" in systs: systs.remove("nosys")
-
     if (args.plot == "all") or (args.plot == "indiv"):
         #set_trace()
+        systs = sorted(set([key.split("Res_")[1] for key in orig_keys if "Res" in key])) if args.process == "sig" else sorted(set(["_".join(key.split("_")[1:]) for key in orig_keys if not ("data_obs" in key or len(key.split("_")) == 1)]))
+        if "nosys" in systs: systs.remove("nosys")
+
         for sys in systs:
             if sys != "EWcorrUp": continue
 
@@ -193,9 +194,11 @@ for jmult in orig_hdict.keys():
                 os.makedirs(pltdir)
 
             for proc in procs_sys:
+                if (args.process == "sig") and ("M500_W10p0" not in proc): continue
+                
                 print(jmult, sys, proc)
 
-                nominal = orig_dict[f"{proc}_nosys"]
+                if not ( (f"{proc}_{up_sysname}" in orig_dict.keys() and f"{proc}_{dw_sysname}" in orig_dict.keys()) and f"{proc}_nosys" in orig_dict.keys() ): continue
                 orig_up = orig_dict[f"{proc}_{up_sysname}"]
                 orig_dw = orig_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 smooth_up = smoothed_dict[f"{proc}_{up_sysname}"]
@@ -204,6 +207,7 @@ for jmult in orig_hdict.keys():
                 flat_dw = flattened_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 sym_up = symmetrized_dict[f"{proc}_{up_sysname}"]
                 sym_dw = symmetrized_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
+                nominal = orig_dict[f"{proc}_nosys"]
                 if (not nominal.values()) or (not orig_up.values()): continue
                 up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)] if np.array_equal(smooth_up.values()[()], orig_up.values()[()]) else \
                     [
@@ -245,6 +249,8 @@ for jmult in orig_hdict.keys():
                 ax.legend(loc="upper right", title=f"{sys}, {proc}")
                 ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
                 ax.autoscale()
+                #set_trace()
+                ax.set_ylim(max(ax.get_ylim()[0], -0.2), min(ax.get_ylim()[1], 0.2))
                 ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.15)
                 ax.set_xlim(x_lims)
                 ax.set_xlabel("$m_{t\\bar{t}}$ $\otimes$ |cos($\\theta^{*}_{t_{l}}$)|")
