@@ -36,7 +36,16 @@ def final_bkg_templates(hdict):
             orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
             lepdir = orig_lepdir.replace("NJETS", jmult.lower())
 
-            upfout.mkdir(lepdir)
+            #set_trace()
+            if args.scale_mtop3gev:
+                dirname = lepdir
+            else:
+                if args.year == "2016APV": year_to_use = "2016pre"
+                elif args.year == "2016": year_to_use = "2016post"
+                else: year_to_use = args.year
+                dirname = f"{lepdir}_{year_to_use}"
+            upfout.mkdir(dirname)
+
             systypes = ["nosys"] + sorted(systematics.sys_groups[args.year].keys())
             for sys in systypes:
                 if jobid == "Summer20UL_regroupedJECs":
@@ -56,15 +65,22 @@ def final_bkg_templates(hdict):
 
                 for proc in procs:
                     print(lep, jmult, sys, proc)
+                    #if (proc == "TB") and (lep == "Muon") and (jmult == "4PJets"): set_trace()
                     if sys == "nosys":
                         template, treatment = histo[f"{proc}_{sys}"]
+                        if np.any(np.isnan(template.values()[()])):
+                            print(f"\tSome bins contain nan values!")
+                            set_trace()
                         if proc == "data_obs": template.clear()
-                        upfout[lepdir][proc] = template.to_hist()
+                        upfout[dirname][proc] = template.to_hist()
 
                     elif (sys == "deltaQCDdeltaEW") and (args.scale_mtop3gev):
                         outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][up_sysname]])))
                         template, treatment = histo[f"{proc}_{up_sysname}"]
-                        upfout[lepdir][outhname] = template.to_hist()
+                        if np.any(np.isnan(template.values()[()])):
+                            print(f"\tSome bins contain nan values!")
+                            set_trace()
+                        upfout[dirname][outhname] = template.to_hist()
                         if treatment != "raw":
                             set_trace()
 
@@ -90,36 +106,16 @@ def final_bkg_templates(hdict):
                             up_outhname = up_outhname.replace("2016", "2016post")
                             dw_outhname = dw_outhname.replace("2016", "2016post")
 
-                        upfout[lepdir][up_outhname] = up_template.to_hist()
-                        upfout[lepdir][dw_outhname] = dw_template.to_hist()
+                        if np.any(np.isnan(up_template.values()[()])):
+                            print(f"\tSome bins in up_template contain nan values!")
+                            set_trace()
+                        if np.any(np.isnan(dw_template.values()[()])):
+                            print(f"\tSome bins in dw_template contain nan values!")
+                            set_trace()
+
+                        upfout[dirname][up_outhname] = up_template.to_hist()
+                        upfout[dirname][dw_outhname] = dw_template.to_hist()
                 
-                        # add extra 'chi2' histogram for variations that were smoothed/flattened
-                        if treatment != "raw":
-                            #print("\t", sys, treatment)
-                            #if treatment == "flat": set_trace()
-                            treated_up_val = up_template.values(overflow="over")[()][-1]
-                            treated_dw_val = dw_template.values(overflow="over")[()][-1]
-            
-                            chi2_outhname = "_".join(list(filter(None, [proc, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"]))) if args.scale_mtop3gev \
-                                else "_".join(list(filter(None, [proc, systematics.combine_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
-                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", lep.lower()) if args.scale_mtop3gev else chi2_outhname.replace("LEP", lep[0].lower())
-
-                                # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
-                            if (args.year == "2016APV") and ("2016APV" in chi2_outhname) and (not args.scale_mtop3gev):
-                                #set_trace()
-                                chi2_outhname = up_outhname.replace("2016APV", "2016pre")
-                            if (args.year == "2016") and ("2016" in chi2_outhname) and (not args.scale_mtop3gev):
-                                chi2_outhname = up_outhname.replace("2016", "2016post")
-
-                            sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
-                            tmp_chi2_histo = orig_chi2_histo.copy()
-                                ## fill bins
-                            for xbin in range(sumw.size):
-                                tmp_chi2_histo.values()[()][xbin] = sumw[xbin]
-                            
-                            #set_trace()
-                            upfout[lepdir][chi2_outhname] = tmp_chi2_histo.to_hist()
-
     upfout.close()
     print(f"{rname} written")
 
@@ -183,6 +179,9 @@ def final_sig_templates(hdict):
                     if sys == "nosys":
                         template, treatment = histo[f"{signal}_{sys}"]
 
+                        if np.any(np.isnan(template.values()[()])):
+                            print(f"\tSome bins contain nan values!")
+                            set_trace()
                         upfout[lepdir][sub_name] = template.to_hist()
 
                     else:
@@ -206,36 +205,15 @@ def final_sig_templates(hdict):
                             up_outhname = up_outhname.replace("2016", "2016post")
                             dw_outhname = dw_outhname.replace("2016", "2016post")
 
+                        if np.any(np.isnan(up_template.values()[()])):
+                            print(f"\tSome bins in up_template contain nan values!")
+                            set_trace()
+                        if np.any(np.isnan(dw_template.values()[()])):
+                            print(f"\tSome bins in dw_template contain nan values!")
+                            set_trace()
+
                         upfout[lepdir][up_outhname] = up_template.to_hist()
                         upfout[lepdir][dw_outhname] = dw_template.to_hist()
-                
-                        # add extra 'chi2' histogram for variations that were smoothed/flattened
-                        if treatment != "raw":
-                            #print("\t", sys, treatment)
-                            #if treatment == "flat": set_trace()
-                            treated_up_val = up_template.values(overflow="over")[()][-1]
-                            treated_dw_val = dw_template.values(overflow="over")[()][-1]
-            
-                            chi2_outhname = "_".join(list(filter(None, [sub_name, systematics.template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"]))) if args.kfactors \
-                                else "_".join(list(filter(None, [sub_name, systematics.combine_template_sys_to_name[args.year][dw_sysname].split("Down")[0], "chi2"])))
-                            if "LEP" in chi2_outhname: chi2_outhname = chi2_outhname.replace("LEP", lep.lower()) if args.kfactors else chi2_outhname.replace("LEP", lep[0].lower())
-
-                                # replace '2016APV' with '2016pre' and '2016' with '2016post' for files sent to Afiq
-                            if (args.year == "2016APV") and ("2016APV" in chi2_outhname) and (not args.kfactors):
-                                #set_trace()
-                                chi2_outhname = up_outhname.replace("2016APV", "2016pre")
-                            if (args.year == "2016") and ("2016" in chi2_outhname) and (not args.kfactors):
-                                chi2_outhname = up_outhname.replace("2016", "2016post")
-
-
-                            sumw = np.array([0., 0., 0., 0., treated_up_val, treated_dw_val])
-                            tmp_chi2_histo = orig_chi2_histo.copy()
-                                ## fill bins
-                            for xbin in range(sumw.size):
-                                tmp_chi2_histo.values()[()][xbin] = sumw[xbin]
-                            
-                            #set_trace()
-                            upfout[lepdir][chi2_outhname] = tmp_chi2_histo.to_hist()
 
     upfout.close()
     print(f"{rname} written")
@@ -259,9 +237,6 @@ if __name__ == "__main__":
         if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
         bkg_hdict = load(bkg_fname)
 
-        orig_chi2_histo = hist.Hist("Events", hist.Bin("x_y", "x_y", np.arange(7)))
-        orig_chi2_histo.fill(x_y=np.zeros(0))
-        
         print("Creating final background templates")
         final_bkg_templates(bkg_hdict)
 
@@ -272,9 +247,6 @@ if __name__ == "__main__":
         if not os.path.isfile(sig_fname): raise ValueError("No signal file found.")
         sig_hdict = load(sig_fname)
     
-        orig_chi2_histo = hist.Hist("Events", hist.Bin("x_y", "x_y", np.arange(7)))
-        orig_chi2_histo.fill(x_y=np.zeros(0))
-        
         baseSys = lambda sys : "_".join(sys.split("_")[:-1])
     
         print("Creating final signal templates")
