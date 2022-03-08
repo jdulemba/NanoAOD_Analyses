@@ -56,7 +56,8 @@ def get_bkg_templates():
     elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
         new_ybins = yrebinning
     rebin_histo = histo.rebin(yaxis_name, new_ybins)
-    
+
+    #set_trace()    
         ## scale ttJets events, split by reconstruction type, by normal ttJets lumi correction
     ttJets_permcats = ["*right", "*matchable", "*unmatchable", "*sl_tau", "*other"]
     names = [dataset for dataset in sorted(set([key[0] for key in histo.values().keys()]))] # get dataset names in hists
@@ -148,7 +149,27 @@ def get_bkg_templates():
                     else:
                         print(args.year, lep, jmult, sys, proc)
                         #if "EWcorr" in sys: set_trace()
+                        #set_trace()
                         template_histo = sys_histo[proc].integrate("process")
+                        sumw, sumw2 = template_histo.values(sumw2=True)[()]
+                        rel_err = np.sqrt(sumw2)/np.abs(sumw)
+                        rel_err_mask = rel_err > 10
+                        if np.any(rel_err_mask):
+                            #set_trace()
+                            if (sys == "nosys"):
+                                print(f"\tRelative error > 10 for this process! Setting bin {np.where(rel_err_mask)[0]} to 0")
+                                sumw[rel_err_mask], sumw2[rel_err_mask] = 0., 0.
+                            else:
+                            # check if nosys hist has same behavior (if sys isn't nosys)
+                                #set_trace()
+                                nosys_template = histo_dict[jmult][lep][f"{proc}_nosys"].copy()
+                                nosys_sumw, nosys_sumw2 = nosys_template.values(sumw2=True)[()]
+                                nosys_rel_err_mask = (nosys_sumw == 0.) & (nosys_sumw2 == 0.)
+                                if np.any(rel_err_mask & nosys_rel_err_mask):
+                                    print(f"\tRelative error > 10 for this process! Setting bin {np.where(rel_err_mask & nosys_rel_err_mask)[0]} to 0")
+                                    sumw[rel_err_mask & nosys_rel_err_mask], sumw2[rel_err_mask & nosys_rel_err_mask] = 0., 0.
+
+                            if proc != "TB": set_trace()
 
                             # scale relative deviation for mtop3GeV by 1/6
                         if ("MTOP3GEV" in templates_to_check[args.year][sys].upper()) and (args.scale_mtop3gev):
