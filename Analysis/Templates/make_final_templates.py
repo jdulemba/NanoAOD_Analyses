@@ -10,9 +10,9 @@ import numpy as np
 import fnmatch
 import coffea.processor as processor
 import Utilities.systematics as systematics
+import Utilities.prettyjson as prettyjson
 import bkg_systs_parameters as bkg_syspar   
 import signal_systs_parameters as sig_syspar
-import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -22,7 +22,6 @@ parser.add_argument("--only_sig", action="store_true", help="Make signal templat
 parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
-
 
 def final_bkg_templates(fnames):
     """
@@ -34,7 +33,6 @@ def final_bkg_templates(fnames):
     smooth_hdict = load([fname for fname in fnames if sys_treatment_dict["smooth"] in os.path.basename(fname)][0])
     flat_hdict = load([fname for fname in fnames if sys_treatment_dict["flat"] in os.path.basename(fname)][0])
     symm_hdict = load([fname for fname in fnames if sys_treatment_dict["symm"] in os.path.basename(fname)][0])
-    to_symm = prettyjson.loads(open(os.path.join(input_dir, f"templates_to_symmetrize_lj_bkg_mtopscaled_{args.year}_{jobid}.json" if args.scale_mtop3gev else f"templates_to_symmetrize_lj_bkg_{args.year}_{jobid}.json")).read())
     for jmult in raw_hdict.keys():
         for lep in raw_hdict[jmult].keys():
             for tname in raw_hdict[jmult][lep].keys():
@@ -47,10 +45,7 @@ def final_bkg_templates(fnames):
                 else:
                     # choose which hist to use based on what_to_do dict in systs_parameters.py
                     sysname = systematics.sys_to_name[args.year][sys] if sys == "EWcorrUp" else "_".join(systematics.sys_to_name[args.year][sys].split("_")[:-1]) # convert sys to name used in analysis
-                    treatment = bkg_syspar.what_to_do[sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
-
-                    # check if symmetrization should be applied
-                    if f"{proc}_{sysname}" in to_symm[jmult][lep].keys(): treatment = "symmetrized"
+                    treatment = bkg_syspar.treatment[args.year][sysname][proc][f"{lep.lower()[0]}{jmult[0]}"]
 
                 print(f"\t{treatment}")
                 if treatment == "raw":
@@ -59,7 +54,7 @@ def final_bkg_templates(fnames):
                     hist_to_use = flat_hdict[jmult][lep][tname].copy()
                 elif treatment == "smooth":
                     hist_to_use = smooth_hdict[jmult][lep][tname].copy()
-                elif treatment == "symmetrized":
+                elif treatment == "symm":
                     hist_to_use = symm_hdict[jmult][lep][tname].copy()
                 else:
                     raise ValueError(f"Treatment {treatment} not supported.")
