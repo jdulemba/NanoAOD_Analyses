@@ -77,12 +77,10 @@ cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_
 ## load corrections for event weights
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
 lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"]["sources"]))[args.year]
+jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
 alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]["E"]["All_2D"]
 nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
-#nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))[args.year]
-#ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]))
-ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk_uncs"]))
+ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
     "Pileup" : pu_correction,
     "Prefire" : True,
@@ -90,11 +88,10 @@ corrections = {
     "BTagSF" : True,
     "JetCor" : jet_corrections,
     "Alpha" : alpha_corrections,
-    #"NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
-    #"EWK_Rewt" : ewk_reweighting,
+    "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
+    "EWK_Rewt" : {"Correction" : ewk_reweighting, "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
 }
 
-    ## parameters for b-tagging
 jet_pars = cfg_pars["Jets"]
 btaggers = ["DeepCSV"]
 
@@ -267,64 +264,41 @@ class binning_check(processor.ProcessorABC):
 
         ### apply lepton SFs to MC (only applicable to tight leptons)
         if "LeptonSF" in corrections.keys():
-            #set_trace()
             tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
-            muSFs_dict =  MCWeights.get_lepton_sf(year=args.year, lepton="Muons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]))
-            mu_reco_cen = np.ones(len(events))
-            mu_reco_err = np.zeros(len(events))
-            mu_trig_cen = np.ones(len(events))
-            mu_trig_err = np.zeros(len(events))
-            mu_reco_cen[tight_mu_sel] = muSFs_dict["RECO_CEN"]
-            mu_reco_err[tight_mu_sel] = muSFs_dict["RECO_ERR"]
-            mu_trig_cen[tight_mu_sel] = muSFs_dict["TRIG_CEN"]
-            mu_trig_err[tight_mu_sel] = muSFs_dict["TRIG_ERR"]
-            mu_evt_weights.add("Lep_RECO", np.copy(mu_reco_cen), np.copy(mu_reco_cen+mu_reco_err), np.copy(mu_reco_cen-mu_reco_err))
-            mu_evt_weights.add("Lep_TRIG", np.copy(mu_trig_cen), np.copy(mu_trig_cen+mu_trig_err), np.copy(mu_trig_cen-mu_trig_err))
-    
+            muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
+                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons")
+
             tight_electrons = events["Electron"][tight_el_sel][(events["Electron"][tight_el_sel]["TIGHTEL"] == True)]
-            elSFs_dict = MCWeights.get_lepton_sf(year=args.year, lepton="Electrons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]))
-            el_reco_cen = np.ones(len(events))
-            el_reco_err = np.zeros(len(events))
-            el_trig_cen = np.ones(len(events))
-            el_trig_err = np.zeros(len(events))
-            el_reco_cen[tight_el_sel] = elSFs_dict["RECO_CEN"]
-            el_reco_err[tight_el_sel] = elSFs_dict["RECO_ERR"]
-            el_trig_cen[tight_el_sel] = elSFs_dict["TRIG_CEN"]
-            el_trig_err[tight_el_sel] = elSFs_dict["TRIG_ERR"]
-            el_evt_weights.add("Lep_RECO", np.copy(el_reco_cen), np.copy(el_reco_cen+el_reco_err), np.copy(el_reco_cen-el_reco_err))
-            el_evt_weights.add("Lep_TRIG", np.copy(el_trig_cen), np.copy(el_trig_cen+el_trig_err), np.copy(el_trig_cen-el_trig_err))
-            #set_trace()
+            elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
+                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
-            #if to_debug: set_trace()
-            EWcorr_cen = np.ones(len(events))
-            EWcorr_unc = np.ones(len(events))
             if "NNLO_Rewt" in self.corrections.keys():
-                    ## NNLO QCD weights
+                    # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(nnlo_wts))
-                #mu_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
-                #el_evt_weights.add("%s_reweighting" % self.corrections["NNLO_Rewt"]["Var"], np.copy(nnlo_wts))
+                mu_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+                el_evt_weights.add("NNLOqcd",
+                    np.copy(nnlo_wts),
+                )
+
             if "EWK_Rewt" in self.corrections.keys():
                     ## NLO EW weights
-                ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"], events)
-                EWcorr_cen *= np.copy(ak.to_numpy(ewk_wts_dict["Rebinned_KFactor_1.0"]))
-                EWcorr_unc = ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]
-                #ewk_wts_dict = MCWeights.get_ewk_weights(self.corrections["EWK_Rewt"], events)
-                #mu_evt_weights.add("ewk_reweighting", np.copy(ewk_wts_dict["yt_1"]))
-                #el_evt_weights.add("ewk_reweighting", np.copy(ewk_wts_dict["yt_1"]))
-
-            mu_evt_weights.add("EWcorr",
-                np.copy(EWcorr_cen),
-                np.copy(EWcorr_cen*EWcorr_unc+1)
-            )            
-            el_evt_weights.add("EWcorr",
-                np.copy(EWcorr_cen),
-                np.copy(EWcorr_cen*EWcorr_unc+1)
-            )            
+                if self.corrections["EWK_Rewt"]["wt"] == "Otto":
+                    ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                        # add Yukawa coupling variation
+                    mu_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                    )
+                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                    )
 
             if isTTSL_:
                 genpsel.select(events, mode="NORMAL")
@@ -353,49 +327,26 @@ class binning_check(processor.ProcessorABC):
 
                 ## apply btagging SFs to MC
             if (corrections["BTagSF"] == True):
-                deepcsv_cen   = np.ones(len(events))
-                deepcsv_bc_up = np.ones(len(events))
-                deepcsv_bc_dw = np.ones(len(events))
-                deepcsv_l_up = np.ones(len(events))
-                deepcsv_l_dw = np.ones(len(events))
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[threeJets_cut] = ak.prod(deepcsv_3j_wts["central"], axis=1)
-                deepcsv_bc_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["bc_down"], axis=1)
-                deepcsv_l_up[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[threeJets_cut] = ak.prod(deepcsv_3j_wts["udsg_down"], axis=1)
-    
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
                 deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-                deepcsv_cen[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["central"], axis=1)
-                deepcsv_bc_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_up"], axis=1)
-                deepcsv_bc_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["bc_down"], axis=1)
-                deepcsv_l_up[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_up"], axis=1)
-                deepcsv_l_dw[fourplusJets_cut] = ak.prod(deepcsv_4pj_wts["udsg_down"], axis=1)
-                    # make dict of btag weights
-                btag_weights = {
-                    "DeepCSV_CEN" : np.copy(deepcsv_cen),
-                    "DeepCSV_bc_UP" : np.copy(deepcsv_bc_up),
-                    "DeepCSV_bc_DW" : np.copy(deepcsv_bc_dw),
-                    "DeepCSV_l_UP" : np.copy(deepcsv_l_up),
-                    "DeepCSV_l_DW" : np.copy(deepcsv_l_dw),
-                }
-            else:
-                btag_weights = {
-                    "DeepCSV_CEN"   : np.ones(len(events)),
-                    "DeepCSV_bc_UP" : np.ones(len(events)),
-                    "DeepCSV_bc_DW" : np.ones(len(events)),
-                    "DeepCSV_l_UP"  : np.ones(len(events)),
-                    "DeepCSV_l_DW"  : np.ones(len(events)),
-                }
 
+                    # fll dict of btag weights
+                for wt_name in deepcsv_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
+                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
+
+            elif (corrections["BTagSF"] == False):
+                raise ValueError("BTag SFs not applied to MC")
 
             #set_trace()
             ## fill hists for each region
             for lepton in self.regions[evt_sys].keys():
                 evt_weights = mu_evt_weights if lepton == "Muon" else el_evt_weights
+                lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
                 for btagregion in self.regions[evt_sys][lepton].keys():
                     for jmult in self.regions[evt_sys][lepton][btagregion].keys():
                         #set_trace()
@@ -450,7 +401,8 @@ class binning_check(processor.ProcessorABC):
                                     #if to_debug: set_trace()
                                     if to_debug: print("    sysname:", rewt_sys)
 
-                                    wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
+                                    wts = (evt_weights.weight() * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                    #wts = (evt_weights.weight()*btag_weights["%s_CEN" % btaggers[0]])[cut][valid_perms][MTHigh]
 
                                         # fill hists for interference samples
                                     if isInt_:

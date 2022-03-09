@@ -183,7 +183,6 @@ class ttbar_alpha_reco(processor.ProcessorABC):
 
         ### apply lepton SFs to MC (only applicable to tight leptons)
         if "LeptonSF" in self.corrections.keys():
-            #set_trace()
             tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
             muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
                 pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons")
@@ -204,7 +203,6 @@ class ttbar_alpha_reco(processor.ProcessorABC):
         events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btaggers[0] == "DeepCSV" else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
 
         if self.corrections["BTagSF"] == True:
-            #set_trace()
             btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
 
             threeJets_cut = selection.require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
