@@ -168,12 +168,12 @@
             "looseb": "Medium"
         },
         "btagging": {
-            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_Summer20UL_new_lepSFs.coffea",
-            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_Summer20UL_new_lepSFs.coffea"
+            "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_Summer20UL_POG_lepSFs.coffea",
+            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_Summer20UL_POG_lepSFs.coffea"
         }
     },
     "ttsolver": {
-        "filename": "prob_Summer20UL_new_lepSFs.coffea",
+        "filename": "prob_Summer20UL_POG_lepSFs.coffea",
         "USENS": 1,
         "USEMASS": 1,
         "USE3JMERGED": 1,
@@ -193,6 +193,6 @@
         },
         "lepton": "lepton_Summer20UL_POG_lepSFs.coffea",
         "pu": "MC_PU_Weights.coffea",
-        "alpha": "alpha_correction_Summer20UL_new_lepSFs.coffea"
+        "alpha": "alpha_correction_Summer20UL_POG_lepSFs.coffea"
     }
 }
