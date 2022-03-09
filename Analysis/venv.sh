@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source /opt/rh/rh-python38/enable
+source my_env/bin/activate
+
 # Project-related environment variables
 export PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P)
 
