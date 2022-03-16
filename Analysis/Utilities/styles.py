@@ -325,73 +325,73 @@ for bundle in product([365, 400, 500, 600, 750, 800, 1000], ["2p5", "10p0", "25p
         # individual positive, negative weights for interference
     styles["AtoTT*DiLep*_M%d_W%s_*Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTT*DiLep*_M%d_W%s_*Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["AtoTT*DiLep*_M%d_W%s_*Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTT*DiLep*_M%d_W%s_*Res*" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # individual positive, negative weights for interference
     styles["AtoTT*SL*_M%d_W%s_*Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTT*SL*_M%d_W%s_*Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["AtoTT*SL*_M%d_W%s_*Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTT*SL*_M%d_W%s_*Res*" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
 
         # individual positive, negative weights for interference
     styles["HtoTT*DiLep*_M%d_W%s_*Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTT*DiLep*_M%d_W%s_*Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["HtoTT*DiLep*_M%d_W%s_*Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTT*DiLep*_M%d_W%s_*Res*" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # individual positive, negative weights for interference
     styles["HtoTT*SL*_M%d_W%s_*Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTT*SL*_M%d_W%s_*Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["HtoTT*SL*_M%d_W%s_*Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTT*SL*_M%d_W%s_*Res*" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
