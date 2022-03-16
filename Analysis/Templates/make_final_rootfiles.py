@@ -48,6 +48,14 @@ def final_bkg_templates(hdict):
 
             systypes = ["nosys"] + sorted(systematics.sys_groups[args.year].keys())
             for sys in systypes:
+                if (jobid == "Summer20UL_POG_lepSFs"):
+                    if ("RECO" in sys) and (lep == "Muon"):
+                        #set_trace()
+                        continue
+                    if ("syst" in sys) or ("stat" in sys):
+                        #set_trace()
+                        continue
+
                 if jobid == "Summer20UL_regroupedJECs":
                     if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal"): continue
                     #if (sys == "nosys") or (sys == "JES_FlavorQCD") or (sys == "JES_RelativeBal") or (sys == f"JES_RelativeSample_{args.year}"): continue
