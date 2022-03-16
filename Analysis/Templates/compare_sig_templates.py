@@ -23,7 +23,7 @@ parser = ArgumentParser()
 #parser.add_argument("year", choices=["2018"], help="What year is the ntuple from.")
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("lepton", choices=["Electron", "Muon"], help="Choose which lepton to make plots for")
-parser.add_argument("type", choices=["MC", "Folded"], help="Choose between signal produced via MC or Folding.")
+parser.add_argument("type", choices=["MC", "Folded", "Folded_LO"], help="Choose between signal produced via MC or Folding.")
 args = parser.parse_args()
 
 proj_dir = os.environ["PROJECT_DIR"]
@@ -33,12 +33,21 @@ analyzer = "htt_btag_sb_regions"
 
 #template_version = "v11"
 template_version = "v12"
-output_dir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", "MC_SIG" if args.type == "MC" else "FOLDED_SIG", template_version, args.lepton)
+template_dname = "root://cmseos.fnal.gov//store/user/lpcbtagging/UR_ntuples/heavyhiggsinputs"
+if args.type == "MC":
+    output_dir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", "MC_SIG", template_version, args.lepton)
+    template_fname = os.path.join(template_dname, f"{template_version}_smoothed/templates_lj_sig_{args.year}.root")
+elif args.type == "Folded":
+    output_dir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", "FOLDED_SIG", template_version, args.lepton)
+    template_fname = os.path.join(template_dname, f"{template_version}_folded/templates_lj_sig_{args.year}.root")
+elif args.type == "Folded_LO":
+    output_dir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", "FOLDED_LO_SIG", template_version, args.lepton)
+    template_fname = os.path.join(template_dname, f"{template_version}_folded_LO/templates_lj_sig_{args.year}.root")
+
+#set_trace()
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
-template_dname = "root://cmseos.fnal.gov//store/user/lpcbtagging/UR_ntuples/heavyhiggsinputs"
-template_fname = os.path.join(template_dname, f"{template_version}_smoothed/templates_lj_sig_{args.year}.root" if args.type == "MC" else f"{template_version}_folded/templates_lj_sig_{args.year}.root")
 rfile = uproot.open(template_fname)
 
 jet_mults = {
@@ -110,9 +119,6 @@ for jmult in ["3Jets", "4PJets"]:
             smooth_dw = rfile[f"{dirname}/{proc}_{dw_sysname}SMOOTH"].values()
             final_up = rfile[f"{dirname}/{proc}_{up_sysname}FINAL"].values()
             final_dw = rfile[f"{dirname}/{proc}_{dw_sysname}FINAL"].values()
-            #symm_up = rfile[f"{dirname}/{proc}_{up_sysname}"].values()# if f"{proc}_{baseSysname}" in sig_dists else None
-            #symm_dw = rfile[f"{dirname}/{proc}_{dw_sysname}"].values()# if f"{proc}_{baseSysname}" in sig_dists else None
-            #symmetrized = rfile[f"{dirname}/{proc}_{baseSysname}"].values() if f"{proc}_{baseSysname}" in sig_dists else None
 
             up_histos = [
                     (orig_up-1, {"color": "r", "linestyle": "--", "label": "Original Up"}, True),
@@ -124,9 +130,6 @@ for jmult in ["3Jets", "4PJets"]:
                     (smooth_dw-1, {"color": "b", "linestyle": "-", "label": "Smooth Down"}, False),
                     (final_dw-1, {"color": "b", "linestyle": "--", "label": "Final Down"}, False),
             ]
-            #if symmetrized is not None:
-            #    up_histos.append( (symmetrized-1, {"color": "r", "linestyle": "--", "label": "Symmetrized Up"}, False) )
-            #    dw_histos.append( (1./symmetrized-1, {"color": "b", "linestyle": "--", "label": "Symmetrized Down"}, False) )
 
             x_lims = (0, bins[-1])
     
@@ -156,7 +159,7 @@ for jmult in ["3Jets", "4PJets"]:
             
                 # add lepton/jet multiplicity label
             ax.text(
-                0.02, 0.88, f"{leptypes[args.lepton]}, {jet_mults[jmult]}\n{args.type}",
+                0.02, 0.88, f"{leptypes[args.lepton]}, {jet_mults[jmult]}\n{(args.type).replace('_', ' ')}",
                 fontsize=rcParams["font.size"]*0.9, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
             )
                 ## draw vertical lines for distinguishing different ctstar bins
