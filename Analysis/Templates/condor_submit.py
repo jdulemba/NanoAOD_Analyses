@@ -20,6 +20,7 @@ parser.add_argument("--opts", nargs="*", action=ParseKwargs, help="Options to pa
 parser.add_argument("--submit", action="store_true", help="Submit jobs")
 args = parser.parse_args()
 
+proxy_path = "/afs/cern.ch/work/j/jdulemba/private/x509up_u81826"
 
 def create_batch_job():
     batch_job="""#!/bin/bash
@@ -52,12 +53,12 @@ Queue
 def rfile_create_batch_job():
     batch_job="""#!/bin/bash
 
-source /afs/cern.ch/work/j/jdulemba/Test_Coffea/Analysis/environment.sh
+export X509_USER_PROXY=$1
+EXE="${{@:2}}"
+echo "Executing python $PROJECT_DIR/Templates/" $EXE from within singularity
 
-EXE="$@"
-echo "Executing python $PROJECT_DIR/Templates/$EXE"
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
 
-python $PROJECT_DIR/Templates/$EXE
 """.format(PROJECTDIR=proj_dir)
 
     return batch_job
@@ -68,29 +69,36 @@ Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
 +MaxRuntime = 21600
+Proxy_path = {PROXYPATH}
+Requirements = HasSingularity
 
 Output = con_0.stdout
 Error = con_0.stderr
 Log = con_0.log
-Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {OPTS}
+Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {SIG_TYPE} {OPTS}
 Queue
-""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, OPTS=opts)
+""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, SIG_TYPE=args.opts["sig_type"], OPTS=opts, PROXYPATH=proxy_path)
     return condorfile
 
 
 if __name__ == "__main__":
-    # define dictionary of options to pass
-    opts_dict = {} if args.opts is None else args.opts
-    opts_dict["only_bkg"] = opts_dict.get("only_bkg")
-    opts_dict["only_sig"] = opts_dict.get("only_sig")
-    opts_dict["maskData"] = opts_dict.get("maskData")
-    opts_dict["kfactors"] = opts_dict.get("kfactors")
-    opts_dict["scale_mtop3gev"] = opts_dict.get("scale_mtop3gev")
-    
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
     base_jobid = os.environ["base_jobid"]
     analyzer = args.analyzer
+    
+    # define dictionary of options to pass
+    opts_dict = {} if args.opts is None else args.opts
+
+    #set_trace()
+    if analyzer == "convert_Otto_signal_to_combine":
+        opts_dict["dir"] = opts_dict.get("dir")
+    else:
+        opts_dict["only_bkg"] = opts_dict.get("only_bkg")
+        opts_dict["only_sig"] = opts_dict.get("only_sig")
+        opts_dict["maskData"] = opts_dict.get("maskData")
+        opts_dict["kfactors"] = opts_dict.get("kfactors")
+        opts_dict["scale_mtop3gev"] = opts_dict.get("scale_mtop3gev")
     
         # get jobdir
     year, month, day = time.localtime().tm_year, time.localtime().tm_mon, time.localtime().tm_mday
@@ -103,20 +111,30 @@ if __name__ == "__main__":
     batch_dir = os.path.join(proj_dir, jobdir)
     if not os.path.isdir(batch_dir): os.makedirs(batch_dir)
     print(f"{batch_dir} written")
-    batch_cmd = rfile_create_batch_job() if analyzer == "format_final_templates" else create_batch_job()
+    #set_trace()
+    batch_cmd = rfile_create_batch_job() if ((analyzer == "format_final_templates") or (analyzer == "convert_Otto_signal_to_combine")) else create_batch_job()
     batch_conf = open(os.path.join(batch_dir, "batch_job.sh"), "w")
     batch_conf.write(batch_cmd)
     batch_conf.close()
-    
+
+    #set_trace()    
         # make list of options to pass to analyzers
     tmp_opts_dict = deepcopy(opts_dict)
-    tmp_opts_dict["outfname"] = f"{jobdir}_{analyzer}_out_0.coffea"
-    opts_list = []
-    for key, val in tmp_opts_dict.items():
-        if val == "True": opts_list.append(f"--{key}")
+    if analyzer == "convert_Otto_signal_to_combine":
+        opts_list = []
+        for key, val in tmp_opts_dict.items():
+            if key == "sig_type": continue
+            if key == "dir": opts_list.append(f"--{key}={val}")
+            else: opts_list.append(f"--{key}")
+    else:
+        tmp_opts_dict["outfname"] = f"{jobdir}_{analyzer}_out_0.coffea"
+        opts_list = []
+        for key, val in tmp_opts_dict.items():
+            if val == "True": opts_list.append(f"--{key}")
+            
 
         ## make condor.jdl file
-    condor_cmd = rfile_condor_jdl(" ".join(opts_list)) if analyzer == "format_final_templates" else condor_jdl(" ".join(opts_list))
+    condor_cmd = rfile_condor_jdl(" ".join(opts_list)) if ((analyzer == "format_final_templates") or (analyzer == "convert_Otto_signal_to_combine")) else condor_jdl(" ".join(opts_list))
     
     condor_conf = open(os.path.join(batch_dir, "condor.jdl"), "w")
     condor_conf.write(condor_cmd)
