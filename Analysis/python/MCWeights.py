@@ -87,18 +87,18 @@ def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=Fa
         ## PS and LHE weights for signal events
         if isSignal:
             ## PS Weight variations
-            # PSWeight definitions can be found here: https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_X/PhysicsTools/NanoAOD/plugins/GenWeightsTableProducer.cc#L543-L546
-            #psweights = events["PSWeight"]
-            #weights.add("ISR",
-            #    np.ones(len(events)),
-            #    ak.copy(psweights[:, 0]), # (ISR=2, FSR=1)
-            #    ak.copy(psweights[:, 2]), # (ISR=0.5, FSR=1)
-            #)
-            #weights.add("FSR",
-            #    np.ones(len(events)),
-            #    ak.copy(psweights[:, 1]), # (ISR=1, FSR=2)
-            #    ak.copy(psweights[:, 3]), # (ISR=1, FSR=0.5)
-            #)
+            ## PSWeight definitions can be found here: https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_X/PhysicsTools/NanoAOD/plugins/GenWeightsTableProducer.cc#L543-L546
+            psweights = events["PSWeight"]
+            weights.add("AH_ISR",
+                np.ones(len(events)),
+                ak.copy(psweights[:, 0]), # (ISR=2, FSR=1)
+                ak.copy(psweights[:, 2]), # (ISR=0.5, FSR=1)
+            )
+            weights.add("AH_FSR",
+                np.ones(len(events)),
+                ak.copy(psweights[:, 1]), # (ISR=1, FSR=2)
+                ak.copy(psweights[:, 3]), # (ISR=1, FSR=0.5)
+            )
 
             ## LHEScale Weight Variations
             # LHEScaleWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#LHE
@@ -389,6 +389,7 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
     }
     schema_to_use = mu_schema if leptype == "Muons" else el_schema
 
+    #set_trace()
     indiv_SF_sources = {}
     for sf_type in sf_dict.keys():
         isAbsEta = sf_dict[sf_type]["isAbsEta"]
@@ -423,12 +424,22 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
                 if sf_var == "isAbsEta": continue
                 #print(leptype, sf_type, sf_var)
                 if sf_var == "Central":
-                    indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
+                    if sf_dict[sf_type][sf_var]._dimension == 1:
+                        indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type][sf_var](eta)
+                    elif sf_dict[sf_type][sf_var]._dimension == 2:
+                        indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
+                    else:
+                        raise ValueError("Only 1D or 2D scale factors are supported!")
                 else:
-                    indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta), pt) + sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) + sf_dict[sf_type][sf_var](eta, pt)
-                    indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta), pt) - sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) - sf_dict[sf_type][sf_var](eta, pt)
+                    if sf_dict[sf_type][sf_var]._dimension == 1:
+                        indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta)) + sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) + sf_dict[sf_type][sf_var](eta)
+                        indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta)) - sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) - sf_dict[sf_type][sf_var](eta)
+                    elif sf_dict[sf_type][sf_var]._dimension == 2:
+                        indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta), pt) + sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) + sf_dict[sf_type][sf_var](eta, pt)
+                        indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta), pt) - sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) - sf_dict[sf_type][sf_var](eta, pt)
+                    else:
+                        raise ValueError("Only 1D or 2D scale factors are supported!")
 
-    #set_trace()
     output_SFs = {}
     for key, sf_list in schema_to_use.items():
             # initialize event weights to 1
@@ -438,7 +449,5 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
             # set events that pass tight lepton mask equal to product of all event weights from inidividual sources in sf_list
         evt_wts[tight_lep_mask] = np.prod(np.vstack(arrays_list), axis=0)
         output_SFs[key] = np.copy(evt_wts)
-
-    #set_trace()
 
     return output_SFs
