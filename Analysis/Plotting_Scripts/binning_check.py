@@ -71,22 +71,26 @@ rewt_style_dict = {
 
 
 reco_variables = {
-    "RECO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (200., 2000.),  (-1., 1.)),
-    "RECO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (0., 1.))
+    #"RECO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (200., 2000.),  (-1., 1.)),
+    #"RECO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (0., 1.)),
+    "RECO_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-5., 5.)),
+    "RECO_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-10., 10.)),
 }
 gen_variables = {
-    "GEN_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (-1., 1.)),
-    "GEN_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (0., 1.)),
+    #"GEN_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (-1., 1.)),
+    #"GEN_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (0., 1.)),
+    "GEN_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-5., 5.)),
+    "GEN_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-10., 10.)),
 }
 reso_variables = {
-    "RESO_mtt_vs_mtt" : ("$m_{t\\bar{t}}$", "Gen-Reco $m_{t\\bar{t}}$", 1, 1, (200., 2000.),  (-500., 500.)),
-    "RESO_ctstar_vs_mtt" : ("$m_{t\\bar{t}}$", "Gen-Reco cos($\\theta^{*}_{t_{l}}$)", 1, 1, (200., 2000.),  (-2., 2.)),
-    "RESO_ctstar_abs_vs_mtt" : ("$m_{t\\bar{t}}$", "Gen-Reco |cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (-1., 1.)),
-    #"RESO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (-500., 500.),  (-2., 2.)),
-    #"RESO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (-500., 500.),  (-1., 1.)),
+    "RESO_mtt_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco $m_{t\\bar{t}}$ [GeV]", 1, 1, (200., 2000.),  (-500., 500.)),
+    "RESO_ctstar_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco cos($\\theta^{*}_{t_{l}}$)", 1, 1, (200., 2000.),  (-2., 2.)),
+    "RESO_ctstar_abs_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco |cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (200., 2000.),  (-1., 1.)),
+    #"RESO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (-500., 500.),  (-2., 2.)),
+    #"RESO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (-500., 500.),  (-1., 1.)),
 }
 rel_reso_variables = {
-    "REL_RESO_mtt_vs_mtt" : ("$m^{reco}_{t\\bar{t}}$", "($m^{reco}_{t\\bar{t}}$-$m^{parton}_{t\\bar{t}}$)/$m^{parton}_{t\\bar{t}}$", 1, 1, (200., 2000.),  (-2., 2.)),
+    "REL_RESO_mtt_vs_mtt" : ("$m^{reco}_{t\\bar{t}}$ [GeV]", "($m^{reco}_{t\\bar{t}}$-$m^{parton}_{t\\bar{t}}$)/$m^{parton}_{t\\bar{t}}$", 1, 1, (200., 2000.),  (-2., 2.)),
 }
 
 
@@ -200,7 +204,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
                     hep.cms.label(ax=ax, data=False, year=args.year)
@@ -227,7 +231,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax_ratio.text(
-                        0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_ratio.transAxes
                     )
                     hep.cms.label(ax=ax_ratio, data=False, year=args.year)
