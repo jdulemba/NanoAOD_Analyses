@@ -243,10 +243,10 @@ signal_reweight_opts = {
         "PILEUP_DW" : "PileupDown",
         "PREFIRE_UP" : "PrefireUp",
         "PREFIRE_DW" : "PrefireDown",
-        #"ISR_UP" : "ISRUp",
-        #"ISR_DW" : "ISRDown",
-        #"FSR_UP" : "FSRUp",
-        #"FSR_DW" : "FSRDown",
+        "AH_ISR_UP" : "AH_ISRUp",
+        "AH_ISR_DW" : "AH_ISRDown",
+        "AH_FSR_UP" : "AH_FSRUp",
+        "AH_FSR_DW" : "AH_FSRDown",
         "AH_FACTOR_UP" : "AH_FACTORUp",
         "AH_FACTOR_DW" : "AH_FACTORDown",
         "AH_RENORM_UP" : "AH_RENORMUp",
@@ -274,8 +274,8 @@ sys_to_name = {
         #"EWcorrUp" : "EW_CORR_UP",
         "YukawaUp" : "YUKAWA_UP",
         "YukawaDown" : "YUKAWA_DW",
-        "shapeDown" : "EWQCD_SHAPE_DW",
-        "shapeUp"   : "EWQCD_SHAPE_UP",
+        "EWQCDshapeDown" : "EWQCD_SHAPE_DW",
+        "EWQCDshapeUp"   : "EWQCD_SHAPE_UP",
         "Lep_IDtotUp"   : "LEP_IDtot_UP",
         "Lep_IDtotDown" : "LEP_IDtot_DW",
         "Lep_IDstatUp"   : "LEP_IDstat_UP",
@@ -403,6 +403,10 @@ sys_to_name = {
         "mtop1755": "MTOP3GEV_UP",
         "mtop1785": "MTOP6GEV_UP",
             # A/H signal systematics
+        "AH_ISRUp" : "AH_ISR_UP",
+        "AH_ISRDown" : "AH_ISR_DW",
+        "AH_FSRup" : "AH_FSR_UP",
+        "AH_FSRDown" : "AH_FSR_DW",
         "AH_RENORMUp"   : "AH_RENORM_UP",
         "AH_RENORMDown" : "AH_RENORM_DW",
         "AH_FACTORUp"   : "AH_FACTOR_UP",
@@ -521,8 +525,8 @@ combine_template_sys_to_name = {
         "EWuncUp"   : "EWK_schemeUp",
         "EWuncDown" : "EWK_schemeDown",
         #"EWcorrUp" : "EWK_scheme",
-        "shapeUp"   : "shapeUp",
-        "shapeDown" : "shapeDown",
+        "EWQCDshapeUp"   : "EWQCDshapeUp",
+        "EWQCDshapeDown" : "EWQCDshapeDown",
         "YukawaUp"   : "EWK_yukawaUp",
         "YukawaDown" : "EWK_yukawaDown",
         "FSRUp"   : "QCDscale_FSR_TTUp",
@@ -544,6 +548,10 @@ combine_template_sys_to_name = {
         "mtop1695" : "tmass_TTDown",
         "mtop1755" : "tmass_TTUp",
             # A/H signal systematics
+        "AH_FSRUp"   : "QCDscale_FSR_AHUp",
+        "AH_FSRDown" : "QCDscale_FSR_AHDown",
+        "AH_ISRUp"   : "QCDscale_ISR_AHUp",
+        "AH_ISRDown" : "QCDscale_ISR_AHDown",
         "AH_RENORMUp"   : "QCDscale_MERen_AHUp",
         "AH_RENORMDown" : "QCDscale_MERen_AHDown",
         "AH_FACTORUp"   : "QCDscale_MEFac_AHUp",
@@ -675,8 +683,8 @@ template_sys_to_name = {
         "PrefireDown" : "prefireDown",
             # TT systematics
         "EWuncUp" : "deltaQCDdeltaEW",
-        "shapeUp" : "shapeUp",
-        "shapeDown" : "shapeDown",
+        "EWQCDshapeUp" : "EWQCDshapeUp",
+        "EWQCDshapeDown" : "EWQCDshapeDown",
         "YukawaUp" : "ytUp",
         "YukawaDown" : "ytDown",
         "FSRUp"   : "psfsrUp",
@@ -717,7 +725,7 @@ sys_groups = {
         #"deltaQCDdeltaEW" : ["EWcorrUp", None],
         "deltaQCDdeltaEW" : ["EWuncUp", "EWuncDown"],
         "YUKAWA" : ["YukawaUp", "YukawaDown"],
-        "EWQCD_SHAPE" : ["shapeUp", "shapeDown"],
+        "EWQCD_SHAPE" : ["EWQCDshapeUp", "EWQCDshapeDown"],
         "LEP_IDtot" : ["Lep_IDtotUp", "Lep_IDtotDown"],
         "LEP_IDstat" : ["Lep_IDstatUp", "Lep_IDstatDown"],
         "LEP_IDsyst" : ["Lep_IDsystUp", "Lep_IDsystDown"],
@@ -780,11 +788,11 @@ sys_groups = {
         "MTOP3GEV" : ["mtop1755", "mtop1695"],
         "MTOP6GEV" : ["mtop1785", "mtop1665"],
             # A/H signal systematics
+        "AH_ISR" : ["AH_ISRUp", "AH_ISRDown"],
+        "AH_FSR" : ["AH_FSRUp", "AH_FSRDown"],
         "AH_RENORM" : ["AH_RENORMUp", "AH_RENORMDown"],
         "AH_FACTOR" : ["AH_FACTORUp", "AH_FACTORDown"],
     }
     for year in ["2016APV", "2016", "2017", "2018"]
 }
 sys_groups["2018"].pop("PREFIRE")
-
-
