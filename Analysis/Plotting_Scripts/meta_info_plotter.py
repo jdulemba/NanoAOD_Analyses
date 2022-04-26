@@ -96,7 +96,7 @@ for sample in samples:
                 meta_dict[key] = val
             else:
                 meta_dict[key] = val.tolist()
-        meta_fname = os.path.join(proj_dir, "inputs", "%s_%s" % (args.year, base_jobid), "%s.meta.json" % sample)
+        meta_fname = os.path.join(proj_dir, "inputs", f"{args.year}_{base_jobid}", f"{sample}.meta.json")
         with open(meta_fname, "w") as out:
             out.write(prettyjson.dumps(meta_dict))
         print(f"{meta_fname} written")
