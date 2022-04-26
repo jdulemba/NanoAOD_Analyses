@@ -145,12 +145,15 @@ class binning_check(processor.ProcessorABC):
         self.leptype_axis = hist.Cat("leptype", "Lepton Type")
 
         self.mtt_axis        = hist.Bin("mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(200., 2000., 361), decimals=0))
-        self.ctstar_axis     = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 41), decimals=2))
-        self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 21), decimals=2))
-        self.reso_mtt_axis        = hist.Bin("reso_mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(-500., 500., 1001), decimals=0))
-        self.reso_ctstar_axis     = hist.Bin("reso_ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-2., 2., 401), decimals=2))
-        self.reso_ctstar_abs_axis = hist.Bin("reso_ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(-1., 1., 201), decimals=2))
-        self.rel_reso_mtt_axis    = hist.Bin("rel_reso_mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(-5., 5., 201), decimals=2))
+        #self.ctstar_axis     = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 41), decimals=2))
+        #self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 21), decimals=2))
+        #self.top_rap_axis    = hist.Bin("top_rap", "yt", np.around(np.linspace(-5., 5., 201), decimals=2))
+        #self.deltaYtt_axis   = hist.Bin("deltaYtt", "$\\delta Y_{t \overline{t}}$", np.around(np.linspace(-10., 10., 401), decimals=2))
+        self.deltaYtt_abs_axis    = hist.Bin("deltaYtt_abs", "|$\\delta Y_{t \overline{t}}$|", np.around(np.linspace(0., 5., 101), decimals=2))
+        #self.reso_mtt_axis        = hist.Bin("reso_mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(-500., 500., 1001), decimals=0))
+        #self.reso_ctstar_axis     = hist.Bin("reso_ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-2., 2., 401), decimals=2))
+        #self.reso_ctstar_abs_axis = hist.Bin("reso_ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(-1., 1., 201), decimals=2))
+        #self.rel_reso_mtt_axis    = hist.Bin("rel_reso_mtt", "m($t\overline{t}$) [GeV]", np.around(np.linspace(-5., 5., 201), decimals=2))
 
             ## make dictionary of hists
         histo_dict = {}
@@ -161,9 +164,9 @@ class binning_check(processor.ProcessorABC):
                 ## make gen plots
             gen_hists = self.gen_hists()
             histo_dict.update(gen_hists)
-                ## make reso plots
-            reso_hists = self.reso_hists()
-            histo_dict.update(reso_hists)
+            #    ## make reso plots
+            #reso_hists = self.reso_hists()
+            #histo_dict.update(reso_hists)
 
         self.sample_name = ""
         self.corrections = corrections
@@ -208,15 +211,21 @@ class binning_check(processor.ProcessorABC):
 
     def reco_hists(self):
         histo_dict = {}
-        histo_dict["RECO_mtt_vs_tlep_ctstar"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_axis)
-        histo_dict["RECO_mtt_vs_tlep_ctstar_abs"] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_abs_axis)
+        #histo_dict["RECO_mtt_vs_tlep_ctstar"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_axis)
+        #histo_dict["RECO_mtt_vs_tlep_ctstar_abs"] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_abs_axis)
+        #histo_dict["RECO_mtt_vs_topRapidity"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.top_rap_axis)
+        #histo_dict["RECO_mtt_vs_deltaYtt"]        = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.deltaYtt_axis)
+        histo_dict["RECO_mtt_vs_deltaYtt_abs"]    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.deltaYtt_abs_axis)
 
         return histo_dict
 
     def gen_hists(self):
         histo_dict = {}
-        histo_dict["GEN_mtt_vs_tlep_ctstar"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_axis)
-        histo_dict["GEN_mtt_vs_tlep_ctstar_abs"] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_abs_axis)
+        #histo_dict["GEN_mtt_vs_tlep_ctstar"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_axis)
+        #histo_dict["GEN_mtt_vs_tlep_ctstar_abs"] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.ctstar_abs_axis)
+        #histo_dict["GEN_mtt_vs_topRapidity"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.top_rap_axis)
+        #histo_dict["GEN_mtt_vs_deltaYtt"]        = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.deltaYtt_axis)
+        histo_dict["GEN_mtt_vs_deltaYtt_abs"]    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.deltaYtt_abs_axis)
 
         return histo_dict
 
@@ -224,10 +233,10 @@ class binning_check(processor.ProcessorABC):
         histo_dict = {}
         #histo_dict["RESO_mtt_vs_tlep_ctstar"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.reso_mtt_axis, self.reso_ctstar_axis)
         #histo_dict["RESO_mtt_vs_tlep_ctstar_abs"] = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.reso_mtt_axis, self.reso_ctstar_abs_axis)
-        histo_dict["RESO_mtt_vs_mtt"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_mtt_axis)
-        histo_dict["RESO_ctstar_vs_mtt"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_ctstar_axis)
-        histo_dict["RESO_ctstar_abs_vs_mtt"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_ctstar_abs_axis)
-        histo_dict["REL_RESO_mtt_vs_mtt"]     = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.rel_reso_mtt_axis)
+        histo_dict["RESO_mtt_vs_mtt"]       = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_mtt_axis)
+        histo_dict["RESO_ctstar_vs_mtt"]    = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_ctstar_axis)
+        histo_dict["RESO_ctstar_abs_vs_mtt"]= hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.reso_ctstar_abs_axis)
+        histo_dict["REL_RESO_mtt_vs_mtt"]   = hist.Hist("Events", self.dataset_axis, self.jetmult_axis, self.leptype_axis, self.mtt_axis, self.rel_reso_mtt_axis)
 
         return histo_dict
 
@@ -434,52 +443,65 @@ class binning_check(processor.ProcessorABC):
             perm["THad"] = perm["THad"].multiply(alpha_corr) # correct thad
             perm["TTbar"] = ak.flatten(perm["THad"]+perm["TLep"]) # correct ttbar
 
-        reco_thad_ctstar, reco_tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"])
-        reco_thad_ctstar, reco_tlep_ctstar = ak.flatten(reco_thad_ctstar, axis=None), ak.flatten(reco_tlep_ctstar, axis=None)
+        reco_thad_ctstar, reco_tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"], flatten=True)
+        gen_thad_ctstar, gen_tlep_ctstar = make_vars.ctstar(gentt["THad"], gentt["TLep"], flatten=True)
 
-        gen_thad_ctstar, gen_tlep_ctstar = make_vars.ctstar(gentt["THad"], gentt["TLep"])
-        gen_thad_ctstar, gen_tlep_ctstar = ak.flatten(gen_thad_ctstar, axis=None), ak.flatten(gen_tlep_ctstar, axis=None)
+        reco_top_rap, reco_tbar_rap, reco_deltaYtt = make_vars.deltaYtt(perm["Top"], perm["Tbar"], return_indiv=True, flatten=True)
+        gen_top_rap, gen_tbar_rap, gen_deltaYtt = make_vars.deltaYtt(gentt["Top"], gentt["Tbar"], return_indiv=True, flatten=True)
 
         #set_trace()
         for permval in np.unique(permarray).tolist():
             perm_inds = np.where(permarray == permval)
             dataset_name = "%s_%s" % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
 
+            #set_trace()
                 # reco plots
-            acc["RECO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar=reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            acc["RECO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(reco_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], ctstar=reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], ctstar_abs=np.abs(reco_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_topRapidity"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], top_rap=reco_top_rap[perm_inds], weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_deltaYtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], deltaYtt=reco_deltaYtt[perm_inds], weight=evt_wts[perm_inds])
+            acc["RECO_mtt_vs_deltaYtt_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+                mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], deltaYtt_abs=np.abs(reco_deltaYtt[perm_inds]), weight=evt_wts[perm_inds])
 
-                # gen plots
-            acc["GEN_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], ctstar=gen_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            acc["GEN_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], ctstar_abs=np.abs(gen_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #    # gen plots
+            #acc["GEN_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], ctstar=gen_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            #acc["GEN_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], ctstar_abs=np.abs(gen_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #acc["GEN_mtt_vs_topRapidity"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], top_rap=gen_top_rap[perm_inds], weight=evt_wts[perm_inds])
+            #acc["GEN_mtt_vs_deltaYtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], deltaYtt=gen_deltaYtt[perm_inds], weight=evt_wts[perm_inds])
+            acc["GEN_mtt_vs_deltaYtt_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+                mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds], deltaYtt_abs=np.abs(gen_deltaYtt[perm_inds]), weight=evt_wts[perm_inds])
 
-                # gen-reco reso plots as a function of reco mtt
-            acc["RESO_mtt_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds],
-                reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass)[perm_inds],
-                weight=evt_wts[perm_inds])
-            acc["RESO_ctstar_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds],
-                reso_ctstar=gen_tlep_ctstar[perm_inds] - reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            acc["RESO_ctstar_abs_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds],
-                reso_ctstar_abs=np.abs(gen_tlep_ctstar[perm_inds]) - np.abs(reco_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
-            #acc["RESO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-            #    reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass)[perm_inds],
+            #    # gen-reco reso plots as a function of reco mtt
+            #acc["RESO_mtt_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds],
+            #    reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds],
+            #    weight=evt_wts[perm_inds])
+            #acc["RESO_ctstar_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds],
             #    reso_ctstar=gen_tlep_ctstar[perm_inds] - reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            #acc["RESO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-            #    reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass)[perm_inds],
-            #    reso_ctstar_abs=gen_tlep_ctstar[perm_inds] - reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            #acc["RESO_ctstar_abs_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds],
+            #    reso_ctstar_abs=np.abs(gen_tlep_ctstar[perm_inds]) - np.abs(reco_tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            ##acc["RESO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            ##    reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass)[perm_inds],
+            ##    reso_ctstar=gen_tlep_ctstar[perm_inds] - reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            ##acc["RESO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            ##    reso_mtt=ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(perm["TTbar"].mass)[perm_inds],
+            ##    reso_ctstar_abs=gen_tlep_ctstar[perm_inds] - reco_tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
 
-                # (reco-gen)/gen reso plots
-            acc["REL_RESO_mtt_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds],
-                rel_reso_mtt=(ak.flatten(perm["TTbar"].mass)[perm_inds] - ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds])/ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds],
-                weight=evt_wts[perm_inds])
+            #    # (reco-gen)/gen reso plots
+            #acc["REL_RESO_mtt_vs_mtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds],
+            #    rel_reso_mtt=(ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds] - ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds])/ak.flatten(gentt["TTbar"].mass, axis=None)[perm_inds],
+            #    weight=evt_wts[perm_inds])
 
         return acc        
 
@@ -491,18 +513,25 @@ class binning_check(processor.ProcessorABC):
             perm["THad"] = perm["THad"].multiply(alpha_corr) # correct thad
             perm["TTbar"] = ak.flatten(perm["THad"]+perm["TLep"]) # correct ttbar
 
-        thad_ctstar, tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"])
-        thad_ctstar, tlep_ctstar = ak.flatten(thad_ctstar, axis=None), ak.flatten(tlep_ctstar, axis=None)
+        thad_ctstar, tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"], flatten=True)
+
+        reco_top_rap, reco_tbar_rap, reco_deltaYtt = make_vars.deltaYtt(perm["Top"], perm["Tbar"], return_indiv=True, flatten=True)
 
         #set_trace()
         for permval in np.unique(permarray).tolist():
             perm_inds = np.where(permarray == permval)
             dataset_name = "%s_%s" % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
 
-            acc["RECO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar=tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            acc["RECO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_tlep_ctstar"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], ctstar=tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_topRapidity"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], top_rap=reco_top_rap[perm_inds], weight=evt_wts[perm_inds])
+            #acc["RECO_mtt_vs_deltaYtt"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+            #    mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], deltaYtt=reco_deltaYtt[perm_inds], weight=evt_wts[perm_inds])
+            acc["RECO_mtt_vs_deltaYtt_abs"].fill(dataset=dataset_name, jmult=jetmult, leptype=leptype,
+                mtt=ak.flatten(perm["TTbar"].mass, axis=None)[perm_inds], deltaYtt_abs=np.abs(reco_deltaYtt[perm_inds]), weight=evt_wts[perm_inds])
 
         return acc        
 
