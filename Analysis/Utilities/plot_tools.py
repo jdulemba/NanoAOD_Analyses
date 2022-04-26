@@ -5,369 +5,153 @@ import matplotlib.pyplot as plt
 
 base_jobid = os.environ["base_jobid"]
 
-dataset_groups = {
-    year : {
-        "EWK" : ["[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
-        "ttJets_right" : ["ttJets*_right"],
-        "ttJets_matchable" : ["ttJets*_matchable"],
-        "ttJets_unmatchable" : ["ttJets*_unmatchable"],
-        "ttJets_sl_tau" : ["ttJets*_sl_tau"],
-        "ttJets_other" : ["ttJets*_other"],
-        "ttJets" : ["ttJets", "ttJets_PS"] if (base_jobid == "NanoAODv6" and year == "2016") else ["ttJetsSL", "ttJetsDiLep", "ttJetsHad"],
-        "ttJets_Sys" : ["ttJets_*DOWN", "ttJets_*UP"] if (base_jobid == "NanoAODv6" and year == "2016") else ["ttJetsSL_*DOWN", "ttJetsDiLep_*DOWN", "ttJetsHad_*DOWN", "ttJetsSL_*UP", "ttJetsDiLep_*UP", "ttJetsHad_*UP"],
-        "singlet" : ["single*"],
-        "QCD" : ["QCD*"],
-        "data" : ["data_Single*"],
-    }
-    for year in ["2016APV", "2016", "2017", "2018"]
-}
 
-signal_groups = {
-    year : {
-        # AtoTT
-            # M = 365
-        "AtoTTJetsSL_M365_W2p5_Int_neg" : ["AtoTTJetsSL_M365_W2p5_Int_neg"],
-        "AtoTTJetsSL_M365_W2p5_Int_pos" : ["AtoTTJetsSL_M365_W2p5_Int_pos"],
-        "AtoTTJetsSL_M365_W2p5_Res"     : ["AtoTTJetsSL_M365_W2p5_Res"],
-        "AtoTTJetsSL_M365_W5p0_Int_neg" : ["AtoTTJetsSL_M365_W5p0_Int_neg"],
-        "AtoTTJetsSL_M365_W5p0_Int_pos" : ["AtoTTJetsSL_M365_W5p0_Int_pos"],
-        "AtoTTJetsSL_M365_W5p0_Res"     : ["AtoTTJetsSL_M365_W5p0_Res"],
-        "AtoTTJetsSL_M365_W10p0_Int_neg": ["AtoTTJetsSL_M365_W10p0_Int_neg"],
-        "AtoTTJetsSL_M365_W10p0_Int_pos": ["AtoTTJetsSL_M365_W10p0_Int_pos"],
-        "AtoTTJetsSL_M365_W10p0_Res"    : ["AtoTTJetsSL_M365_W10p0_Res"],
-        "AtoTTJetsSL_M365_W25p0_Int_neg": ["AtoTTJetsSL_M365_W25p0_Int_neg"],
-        "AtoTTJetsSL_M365_W25p0_Int_pos": ["AtoTTJetsSL_M365_W25p0_Int_pos"],
-        "AtoTTJetsSL_M365_W25p0_Res"    : ["AtoTTJetsSL_M365_W25p0_Res"],
-            # M = 400
-        "AtoTTJetsSL_M400_W2p5_Int_neg" : ["AtoTTJetsSL_M400_W2p5_Int_neg"],
-        "AtoTTJetsSL_M400_W2p5_Int_pos" : ["AtoTTJetsSL_M400_W2p5_Int_pos"],
-        "AtoTTJetsSL_M400_W2p5_Res"     : ["AtoTTJetsSL_M400_W2p5_Res"],
-        "AtoTTJetsSL_M400_W5p0_Int_neg" : ["AtoTTJetsSL_M400_W5p0_Int_neg"],
-        "AtoTTJetsSL_M400_W5p0_Int_pos" : ["AtoTTJetsSL_M400_W5p0_Int_pos"],
-        "AtoTTJetsSL_M400_W5p0_Res"     : ["AtoTTJetsSL_M400_W5p0_Res"],
-        "AtoTTJetsSL_M400_W10p0_Int_neg": ["AtoTTJetsSL_M400_W10p0_Int_neg"],
-        "AtoTTJetsSL_M400_W10p0_Int_pos": ["AtoTTJetsSL_M400_W10p0_Int_pos"],
-        "AtoTTJetsSL_M400_W10p0_Res"    : ["AtoTTJetsSL_M400_W10p0_Res"],
-        "AtoTTJetsSL_M400_W25p0_Int_neg": ["AtoTTJetsSL_M400_W25p0_Int_neg"],
-        "AtoTTJetsSL_M400_W25p0_Int_pos": ["AtoTTJetsSL_M400_W25p0_Int_pos"],
-        "AtoTTJetsSL_M400_W25p0_Res"    : ["AtoTTJetsSL_M400_W25p0_Res"],
-            # M = 500
-        "AtoTTJetsSL_M500_W2p5_Int_neg" : ["AtoTTJetsSL_M500_W2p5_Int_neg"],
-        "AtoTTJetsSL_M500_W2p5_Int_pos" : ["AtoTTJetsSL_M500_W2p5_Int_pos"],
-        "AtoTTJetsSL_M500_W2p5_Res"     : ["AtoTTJetsSL_M500_W2p5_Res"],
-        "AtoTTJetsSL_M500_W5p0_Int_neg" : ["AtoTTJetsSL_M500_W5p0_Int_neg"],
-        "AtoTTJetsSL_M500_W5p0_Int_pos" : ["AtoTTJetsSL_M500_W5p0_Int_pos"],
-        "AtoTTJetsSL_M500_W5p0_Res"     : ["AtoTTJetsSL_M500_W5p0_Res"],
-        "AtoTTJetsSL_M500_W10p0_Int_neg": ["AtoTTJetsSL_M500_W10p0_Int_neg"],
-        "AtoTTJetsSL_M500_W10p0_Int_pos": ["AtoTTJetsSL_M500_W10p0_Int_pos"],
-        "AtoTTJetsSL_M500_W10p0_Res"    : ["AtoTTJetsSL_M500_W10p0_Res"],
-        "AtoTTJetsSL_M500_W25p0_Int_neg": ["AtoTTJetsSL_M500_W25p0_Int_neg"],
-        "AtoTTJetsSL_M500_W25p0_Int_pos": ["AtoTTJetsSL_M500_W25p0_Int_pos"],
-        "AtoTTJetsSL_M500_W25p0_Res"    : ["AtoTTJetsSL_M500_W25p0_Res"],
-            # M = 600
-        "AtoTTJetsSL_M600_W2p5_Int_neg" : ["AtoTTJetsSL_M600_W2p5_Int_neg"],
-        "AtoTTJetsSL_M600_W2p5_Int_pos" : ["AtoTTJetsSL_M600_W2p5_Int_pos"],
-        "AtoTTJetsSL_M600_W2p5_Res"     : ["AtoTTJetsSL_M600_W2p5_Res"],
-        "AtoTTJetsSL_M600_W5p0_Int_neg" : ["AtoTTJetsSL_M600_W5p0_Int_neg"],
-        "AtoTTJetsSL_M600_W5p0_Int_pos" : ["AtoTTJetsSL_M600_W5p0_Int_pos"],
-        "AtoTTJetsSL_M600_W5p0_Res"     : ["AtoTTJetsSL_M600_W5p0_Res"],
-        "AtoTTJetsSL_M600_W10p0_Int_neg": ["AtoTTJetsSL_M600_W10p0_Int_neg"],
-        "AtoTTJetsSL_M600_W10p0_Int_pos": ["AtoTTJetsSL_M600_W10p0_Int_pos"],
-        "AtoTTJetsSL_M600_W10p0_Res"    : ["AtoTTJetsSL_M600_W10p0_Res"],
-        "AtoTTJetsSL_M600_W25p0_Int_neg": ["AtoTTJetsSL_M600_W25p0_Int_neg"],
-        "AtoTTJetsSL_M600_W25p0_Int_pos": ["AtoTTJetsSL_M600_W25p0_Int_pos"],
-        "AtoTTJetsSL_M600_W25p0_Res"    : ["AtoTTJetsSL_M600_W25p0_Res"],
-            # M = 800
-        "AtoTTJetsSL_M800_W2p5_Int_neg" : ["AtoTTJetsSL_M800_W2p5_Int_neg"],
-        "AtoTTJetsSL_M800_W2p5_Int_pos" : ["AtoTTJetsSL_M800_W2p5_Int_pos"],
-        "AtoTTJetsSL_M800_W2p5_Res"     : ["AtoTTJetsSL_M800_W2p5_Res"],
-        "AtoTTJetsSL_M800_W5p0_Int_neg" : ["AtoTTJetsSL_M800_W5p0_Int_neg"],
-        "AtoTTJetsSL_M800_W5p0_Int_pos" : ["AtoTTJetsSL_M800_W5p0_Int_pos"],
-        "AtoTTJetsSL_M800_W5p0_Res"     : ["AtoTTJetsSL_M800_W5p0_Res"],
-        "AtoTTJetsSL_M800_W10p0_Int_neg": ["AtoTTJetsSL_M800_W10p0_Int_neg"],
-        "AtoTTJetsSL_M800_W10p0_Int_pos": ["AtoTTJetsSL_M800_W10p0_Int_pos"],
-        "AtoTTJetsSL_M800_W10p0_Res"    : ["AtoTTJetsSL_M800_W10p0_Res"],
-        "AtoTTJetsSL_M800_W25p0_Int_neg": ["AtoTTJetsSL_M800_W25p0_Int_neg"],
-        "AtoTTJetsSL_M800_W25p0_Int_pos": ["AtoTTJetsSL_M800_W25p0_Int_pos"],
-        "AtoTTJetsSL_M800_W25p0_Res"    : ["AtoTTJetsSL_M800_W25p0_Res"],
-            # M = 1000
-        "AtoTTJetsSL_M1000_W2p5_Int_neg" : ["AtoTTJetsSL_M1000_W2p5_Int_neg"],
-        "AtoTTJetsSL_M1000_W2p5_Int_pos" : ["AtoTTJetsSL_M1000_W2p5_Int_pos"],
-        "AtoTTJetsSL_M1000_W2p5_Res"     : ["AtoTTJetsSL_M1000_W2p5_Res"],
-        "AtoTTJetsSL_M1000_W5p0_Int_neg" : ["AtoTTJetsSL_M1000_W5p0_Int_neg"],
-        "AtoTTJetsSL_M1000_W5p0_Int_pos" : ["AtoTTJetsSL_M1000_W5p0_Int_pos"],
-        "AtoTTJetsSL_M1000_W5p0_Res"     : ["AtoTTJetsSL_M1000_W5p0_Res"],
-        "AtoTTJetsSL_M1000_W10p0_Int_neg": ["AtoTTJetsSL_M1000_W10p0_Int_neg"],
-        "AtoTTJetsSL_M1000_W10p0_Int_pos": ["AtoTTJetsSL_M1000_W10p0_Int_pos"],
-        "AtoTTJetsSL_M1000_W10p0_Res"    : ["AtoTTJetsSL_M1000_W10p0_Res"],
-        "AtoTTJetsSL_M1000_W25p0_Int_neg": ["AtoTTJetsSL_M1000_W25p0_Int_neg"],
-        "AtoTTJetsSL_M1000_W25p0_Int_pos": ["AtoTTJetsSL_M1000_W25p0_Int_pos"],
-        "AtoTTJetsSL_M1000_W25p0_Res"    : ["AtoTTJetsSL_M1000_W25p0_Res"],
+def create_bkg_groups(mode):
+    if mode == "dataset":
+        #dataset_groups = {
+        groupings = {
+            year : {
+                "EWK" : ["[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
+                "ttJets_right" : ["ttJets*_right"],
+                "ttJets_matchable" : ["ttJets*_matchable"],
+                "ttJets_unmatchable" : ["ttJets*_unmatchable"],
+                "ttJets_sl_tau" : ["ttJets*_sl_tau"],
+                "ttJets_other" : ["ttJets*_other"],
+                "ttJets" : ["ttJets", "ttJets_PS"] if (base_jobid == "NanoAODv6" and year == "2016") else ["ttJetsSL", "ttJetsDiLep", "ttJetsHad"],
+                "ttJets_Sys" : ["ttJets_*DOWN", "ttJets_*UP"] if (base_jobid == "NanoAODv6" and year == "2016") else ["ttJetsSL_*DOWN", "ttJetsDiLep_*DOWN", "ttJetsHad_*DOWN", "ttJetsSL_*UP", "ttJetsDiLep_*UP", "ttJetsHad_*UP"],
+                "singlet" : ["single*"],
+                "QCD" : ["QCD*"],
+                "data" : ["data_Single*"],
+            }
+            for year in ["2016APV", "2016", "2017", "2018"]
+        }
 
-        # DiLep samples
-            # M = 365
-        "AtoTTJetsDiLep_M365_W2p5_Int_neg" : ["AtoTTJetsDiLep_M365_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M365_W2p5_Int_pos" : ["AtoTTJetsDiLep_M365_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M365_W2p5_Res"     : ["AtoTTJetsDiLep_M365_W2p5_Res"],
-        "AtoTTJetsDiLep_M365_W5p0_Int_neg" : ["AtoTTJetsDiLep_M365_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M365_W5p0_Int_pos" : ["AtoTTJetsDiLep_M365_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M365_W5p0_Res"     : ["AtoTTJetsDiLep_M365_W5p0_Res"],
-        "AtoTTJetsDiLep_M365_W10p0_Int_neg": ["AtoTTJetsDiLep_M365_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M365_W10p0_Int_pos": ["AtoTTJetsDiLep_M365_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M365_W10p0_Res"    : ["AtoTTJetsDiLep_M365_W10p0_Res"],
-        "AtoTTJetsDiLep_M365_W25p0_Int_neg": ["AtoTTJetsDiLep_M365_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M365_W25p0_Int_pos": ["AtoTTJetsDiLep_M365_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M365_W25p0_Res"    : ["AtoTTJetsDiLep_M365_W25p0_Res"],
-            # M = 400
-        "AtoTTJetsDiLep_M400_W2p5_Int_neg" : ["AtoTTJetsDiLep_M400_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M400_W2p5_Int_pos" : ["AtoTTJetsDiLep_M400_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M400_W2p5_Res"     : ["AtoTTJetsDiLep_M400_W2p5_Res"],
-        "AtoTTJetsDiLep_M400_W5p0_Int_neg" : ["AtoTTJetsDiLep_M400_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M400_W5p0_Int_pos" : ["AtoTTJetsDiLep_M400_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M400_W5p0_Res"     : ["AtoTTJetsDiLep_M400_W5p0_Res"],
-        "AtoTTJetsDiLep_M400_W10p0_Int_neg": ["AtoTTJetsDiLep_M400_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M400_W10p0_Int_pos": ["AtoTTJetsDiLep_M400_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M400_W10p0_Res"    : ["AtoTTJetsDiLep_M400_W10p0_Res"],
-        "AtoTTJetsDiLep_M400_W25p0_Int_neg": ["AtoTTJetsDiLep_M400_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M400_W25p0_Int_pos": ["AtoTTJetsDiLep_M400_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M400_W25p0_Res"    : ["AtoTTJetsDiLep_M400_W25p0_Res"],
-            # M = 500
-        "AtoTTJetsDiLep_M500_W2p5_Int_neg" : ["AtoTTJetsDiLep_M500_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M500_W2p5_Int_pos" : ["AtoTTJetsDiLep_M500_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M500_W2p5_Res"     : ["AtoTTJetsDiLep_M500_W2p5_Res"],
-        "AtoTTJetsDiLep_M500_W5p0_Int_neg" : ["AtoTTJetsDiLep_M500_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M500_W5p0_Int_pos" : ["AtoTTJetsDiLep_M500_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M500_W5p0_Res"     : ["AtoTTJetsDiLep_M500_W5p0_Res"],
-        "AtoTTJetsDiLep_M500_W10p0_Int_neg": ["AtoTTJetsDiLep_M500_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M500_W10p0_Int_pos": ["AtoTTJetsDiLep_M500_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M500_W10p0_Res"    : ["AtoTTJetsDiLep_M500_W10p0_Res"],
-        "AtoTTJetsDiLep_M500_W25p0_Int_neg": ["AtoTTJetsDiLep_M500_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M500_W25p0_Int_pos": ["AtoTTJetsDiLep_M500_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M500_W25p0_Res"    : ["AtoTTJetsDiLep_M500_W25p0_Res"],
-            # M = 600
-        "AtoTTJetsDiLep_M600_W2p5_Int_neg" : ["AtoTTJetsDiLep_M600_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M600_W2p5_Int_pos" : ["AtoTTJetsDiLep_M600_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M600_W2p5_Res"     : ["AtoTTJetsDiLep_M600_W2p5_Res"],
-        "AtoTTJetsDiLep_M600_W5p0_Int_neg" : ["AtoTTJetsDiLep_M600_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M600_W5p0_Int_pos" : ["AtoTTJetsDiLep_M600_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M600_W5p0_Res"     : ["AtoTTJetsDiLep_M600_W5p0_Res"],
-        "AtoTTJetsDiLep_M600_W10p0_Int_neg": ["AtoTTJetsDiLep_M600_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M600_W10p0_Int_pos": ["AtoTTJetsDiLep_M600_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M600_W10p0_Res"    : ["AtoTTJetsDiLep_M600_W10p0_Res"],
-        "AtoTTJetsDiLep_M600_W25p0_Int_neg": ["AtoTTJetsDiLep_M600_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M600_W25p0_Int_pos": ["AtoTTJetsDiLep_M600_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M600_W25p0_Res"    : ["AtoTTJetsDiLep_M600_W25p0_Res"],
-            # M = 800
-        "AtoTTJetsDiLep_M800_W2p5_Int_neg" : ["AtoTTJetsDiLep_M800_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M800_W2p5_Int_pos" : ["AtoTTJetsDiLep_M800_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M800_W2p5_Res"     : ["AtoTTJetsDiLep_M800_W2p5_Res"],
-        "AtoTTJetsDiLep_M800_W5p0_Int_neg" : ["AtoTTJetsDiLep_M800_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M800_W5p0_Int_pos" : ["AtoTTJetsDiLep_M800_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M800_W5p0_Res"     : ["AtoTTJetsDiLep_M800_W5p0_Res"],
-        "AtoTTJetsDiLep_M800_W10p0_Int_neg": ["AtoTTJetsDiLep_M800_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M800_W10p0_Int_pos": ["AtoTTJetsDiLep_M800_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M800_W10p0_Res"    : ["AtoTTJetsDiLep_M800_W10p0_Res"],
-        "AtoTTJetsDiLep_M800_W25p0_Int_neg": ["AtoTTJetsDiLep_M800_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M800_W25p0_Int_pos": ["AtoTTJetsDiLep_M800_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M800_W25p0_Res"    : ["AtoTTJetsDiLep_M800_W25p0_Res"],
-            # M = 1000
-        "AtoTTJetsDiLep_M1000_W2p5_Int_neg" : ["AtoTTJetsDiLep_M1000_W2p5_Int_neg"],
-        "AtoTTJetsDiLep_M1000_W2p5_Int_pos" : ["AtoTTJetsDiLep_M1000_W2p5_Int_pos"],
-        "AtoTTJetsDiLep_M1000_W2p5_Res"     : ["AtoTTJetsDiLep_M1000_W2p5_Res"],
-        "AtoTTJetsDiLep_M1000_W5p0_Int_neg" : ["AtoTTJetsDiLep_M1000_W5p0_Int_neg"],
-        "AtoTTJetsDiLep_M1000_W5p0_Int_pos" : ["AtoTTJetsDiLep_M1000_W5p0_Int_pos"],
-        "AtoTTJetsDiLep_M1000_W5p0_Res"     : ["AtoTTJetsDiLep_M1000_W5p0_Res"],
-        "AtoTTJetsDiLep_M1000_W10p0_Int_neg": ["AtoTTJetsDiLep_M1000_W10p0_Int_neg"],
-        "AtoTTJetsDiLep_M1000_W10p0_Int_pos": ["AtoTTJetsDiLep_M1000_W10p0_Int_pos"],
-        "AtoTTJetsDiLep_M1000_W10p0_Res"    : ["AtoTTJetsDiLep_M1000_W10p0_Res"],
-        "AtoTTJetsDiLep_M1000_W25p0_Int_neg": ["AtoTTJetsDiLep_M1000_W25p0_Int_neg"],
-        "AtoTTJetsDiLep_M1000_W25p0_Int_pos": ["AtoTTJetsDiLep_M1000_W25p0_Int_pos"],
-        "AtoTTJetsDiLep_M1000_W25p0_Res"    : ["AtoTTJetsDiLep_M1000_W25p0_Res"],
+    elif mode == "templates":
+            ## dataset groupings for making templates to be used in fit
+        groupings = {
+        #template_groups = {
+            year: {
+                "EWQCD" : ["QCD*", "[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["QCD*", "[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
+                "TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
+                #"QCD" : ["QCD*"],
+                #"VV" : ["[WZ][WZ]"],
+                #"TTV" : ["tt[WZ]*"],
+                #"W" : ["WJets_HT*"],
+                #"DY" : ["ZJets*"],
+                "TQ" : ["single*_tchannel*"],
+                "TW" : ["single*_tW*"],
+                "TB" : ["single*_schannel*"],
+                "data_obs" : ["data_Single*"],
+            }
+            for year in ["2016APV", "2016", "2017", "2018"]
+        }
+    else:
+        raise ValueError("Can only choose between 'dataset' and 'templates' for background groupings options")
 
-        # HtoTT
-            # M = 365
-        "HtoTTJetsSL_M365_W2p5_Int_neg" : ["HtoTTJetsSL_M365_W2p5_Int_neg"],
-        "HtoTTJetsSL_M365_W2p5_Int_pos" : ["HtoTTJetsSL_M365_W2p5_Int_pos"],
-        "HtoTTJetsSL_M365_W2p5_Res"     : ["HtoTTJetsSL_M365_W2p5_Res"],
-        "HtoTTJetsSL_M365_W5p0_Int_neg" : ["HtoTTJetsSL_M365_W5p0_Int_neg"],
-        "HtoTTJetsSL_M365_W5p0_Int_pos" : ["HtoTTJetsSL_M365_W5p0_Int_pos"],
-        "HtoTTJetsSL_M365_W5p0_Res"     : ["HtoTTJetsSL_M365_W5p0_Res"],
-        "HtoTTJetsSL_M365_W10p0_Int_neg": ["HtoTTJetsSL_M365_W10p0_Int_neg"],
-        "HtoTTJetsSL_M365_W10p0_Int_pos": ["HtoTTJetsSL_M365_W10p0_Int_pos"],
-        "HtoTTJetsSL_M365_W10p0_Res"    : ["HtoTTJetsSL_M365_W10p0_Res"],
-        "HtoTTJetsSL_M365_W25p0_Int_neg": ["HtoTTJetsSL_M365_W25p0_Int_neg"],
-        "HtoTTJetsSL_M365_W25p0_Int_pos": ["HtoTTJetsSL_M365_W25p0_Int_pos"],
-        "HtoTTJetsSL_M365_W25p0_Res"    : ["HtoTTJetsSL_M365_W25p0_Res"],
-            # M = 400
-        "HtoTTJetsSL_M400_W2p5_Int_neg" : ["HtoTTJetsSL_M400_W2p5_Int_neg"],
-        "HtoTTJetsSL_M400_W2p5_Int_pos" : ["HtoTTJetsSL_M400_W2p5_Int_pos"],
-        "HtoTTJetsSL_M400_W2p5_Res"     : ["HtoTTJetsSL_M400_W2p5_Res"],
-        "HtoTTJetsSL_M400_W5p0_Int_neg" : ["HtoTTJetsSL_M400_W5p0_Int_neg"],
-        "HtoTTJetsSL_M400_W5p0_Int_pos" : ["HtoTTJetsSL_M400_W5p0_Int_pos"],
-        "HtoTTJetsSL_M400_W5p0_Res"     : ["HtoTTJetsSL_M400_W5p0_Res"],
-        "HtoTTJetsSL_M400_W10p0_Int_neg": ["HtoTTJetsSL_M400_W10p0_Int_neg"],
-        "HtoTTJetsSL_M400_W10p0_Int_pos": ["HtoTTJetsSL_M400_W10p0_Int_pos"],
-        "HtoTTJetsSL_M400_W10p0_Res"    : ["HtoTTJetsSL_M400_W10p0_Res"],
-        "HtoTTJetsSL_M400_W25p0_Int_neg": ["HtoTTJetsSL_M400_W25p0_Int_neg"],
-        "HtoTTJetsSL_M400_W25p0_Int_pos": ["HtoTTJetsSL_M400_W25p0_Int_pos"],
-        "HtoTTJetsSL_M400_W25p0_Res"    : ["HtoTTJetsSL_M400_W25p0_Res"],
-            # M = 500
-        "HtoTTJetsSL_M500_W2p5_Int_neg" : ["HtoTTJetsSL_M500_W2p5_Int_neg"],
-        "HtoTTJetsSL_M500_W2p5_Int_pos" : ["HtoTTJetsSL_M500_W2p5_Int_pos"],
-        "HtoTTJetsSL_M500_W2p5_Res"     : ["HtoTTJetsSL_M500_W2p5_Res"],
-        "HtoTTJetsSL_M500_W5p0_Int_neg" : ["HtoTTJetsSL_M500_W5p0_Int_neg"],
-        "HtoTTJetsSL_M500_W5p0_Int_pos" : ["HtoTTJetsSL_M500_W5p0_Int_pos"],
-        "HtoTTJetsSL_M500_W5p0_Res"     : ["HtoTTJetsSL_M500_W5p0_Res"],
-        "HtoTTJetsSL_M500_W10p0_Int_neg": ["HtoTTJetsSL_M500_W10p0_Int_neg"],
-        "HtoTTJetsSL_M500_W10p0_Int_pos": ["HtoTTJetsSL_M500_W10p0_Int_pos"],
-        "HtoTTJetsSL_M500_W10p0_Res"    : ["HtoTTJetsSL_M500_W10p0_Res"],
-        "HtoTTJetsSL_M500_W25p0_Int_neg": ["HtoTTJetsSL_M500_W25p0_Int_neg"],
-        "HtoTTJetsSL_M500_W25p0_Int_pos": ["HtoTTJetsSL_M500_W25p0_Int_pos"],
-        "HtoTTJetsSL_M500_W25p0_Res"    : ["HtoTTJetsSL_M500_W25p0_Res"],
-            # M = 600
-        "HtoTTJetsSL_M600_W2p5_Int_neg" : ["HtoTTJetsSL_M600_W2p5_Int_neg"],
-        "HtoTTJetsSL_M600_W2p5_Int_pos" : ["HtoTTJetsSL_M600_W2p5_Int_pos"],
-        "HtoTTJetsSL_M600_W2p5_Res"     : ["HtoTTJetsSL_M600_W2p5_Res"],
-        "HtoTTJetsSL_M600_W5p0_Int_neg" : ["HtoTTJetsSL_M600_W5p0_Int_neg"],
-        "HtoTTJetsSL_M600_W5p0_Int_pos" : ["HtoTTJetsSL_M600_W5p0_Int_pos"],
-        "HtoTTJetsSL_M600_W5p0_Res"     : ["HtoTTJetsSL_M600_W5p0_Res"],
-        "HtoTTJetsSL_M600_W10p0_Int_neg": ["HtoTTJetsSL_M600_W10p0_Int_neg"],
-        "HtoTTJetsSL_M600_W10p0_Int_pos": ["HtoTTJetsSL_M600_W10p0_Int_pos"],
-        "HtoTTJetsSL_M600_W10p0_Res"    : ["HtoTTJetsSL_M600_W10p0_Res"],
-        "HtoTTJetsSL_M600_W25p0_Int_neg": ["HtoTTJetsSL_M600_W25p0_Int_neg"],
-        "HtoTTJetsSL_M600_W25p0_Int_pos": ["HtoTTJetsSL_M600_W25p0_Int_pos"],
-        "HtoTTJetsSL_M600_W25p0_Res"    : ["HtoTTJetsSL_M600_W25p0_Res"],
-            # M = 800
-        "HtoTTJetsSL_M800_W2p5_Int_neg" : ["HtoTTJetsSL_M800_W2p5_Int_neg"],
-        "HtoTTJetsSL_M800_W2p5_Int_pos" : ["HtoTTJetsSL_M800_W2p5_Int_pos"],
-        "HtoTTJetsSL_M800_W2p5_Res"     : ["HtoTTJetsSL_M800_W2p5_Res"],
-        "HtoTTJetsSL_M800_W5p0_Int_neg" : ["HtoTTJetsSL_M800_W5p0_Int_neg"],
-        "HtoTTJetsSL_M800_W5p0_Int_pos" : ["HtoTTJetsSL_M800_W5p0_Int_pos"],
-        "HtoTTJetsSL_M800_W5p0_Res"     : ["HtoTTJetsSL_M800_W5p0_Res"],
-        "HtoTTJetsSL_M800_W10p0_Int_neg": ["HtoTTJetsSL_M800_W10p0_Int_neg"],
-        "HtoTTJetsSL_M800_W10p0_Int_pos": ["HtoTTJetsSL_M800_W10p0_Int_pos"],
-        "HtoTTJetsSL_M800_W10p0_Res"    : ["HtoTTJetsSL_M800_W10p0_Res"],
-        "HtoTTJetsSL_M800_W25p0_Int_neg": ["HtoTTJetsSL_M800_W25p0_Int_neg"],
-        "HtoTTJetsSL_M800_W25p0_Int_pos": ["HtoTTJetsSL_M800_W25p0_Int_pos"],
-        "HtoTTJetsSL_M800_W25p0_Res"    : ["HtoTTJetsSL_M800_W25p0_Res"],
-            # M = 1000
-        "HtoTTJetsSL_M1000_W2p5_Int_neg" : ["HtoTTJetsSL_M1000_W2p5_Int_neg"],
-        "HtoTTJetsSL_M1000_W2p5_Int_pos" : ["HtoTTJetsSL_M1000_W2p5_Int_pos"],
-        "HtoTTJetsSL_M1000_W2p5_Res"     : ["HtoTTJetsSL_M1000_W2p5_Res"],
-        "HtoTTJetsSL_M1000_W5p0_Int_neg" : ["HtoTTJetsSL_M1000_W5p0_Int_neg"],
-        "HtoTTJetsSL_M1000_W5p0_Int_pos" : ["HtoTTJetsSL_M1000_W5p0_Int_pos"],
-        "HtoTTJetsSL_M1000_W5p0_Res"     : ["HtoTTJetsSL_M1000_W5p0_Res"],
-        "HtoTTJetsSL_M1000_W10p0_Int_neg": ["HtoTTJetsSL_M1000_W10p0_Int_neg"],
-        "HtoTTJetsSL_M1000_W10p0_Int_pos": ["HtoTTJetsSL_M1000_W10p0_Int_pos"],
-        "HtoTTJetsSL_M1000_W10p0_Res"    : ["HtoTTJetsSL_M1000_W10p0_Res"],
-        "HtoTTJetsSL_M1000_W25p0_Int_neg": ["HtoTTJetsSL_M1000_W25p0_Int_neg"],
-        "HtoTTJetsSL_M1000_W25p0_Int_pos": ["HtoTTJetsSL_M1000_W25p0_Int_pos"],
-        "HtoTTJetsSL_M1000_W25p0_Res"    : ["HtoTTJetsSL_M1000_W25p0_Res"],
+    return groupings
 
-        # DiLep samples
-            # M = 365
-        "HtoTTJetsDiLep_M365_W2p5_Int_neg" : ["HtoTTJetsDiLep_M365_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M365_W2p5_Int_pos" : ["HtoTTJetsDiLep_M365_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M365_W2p5_Res"     : ["HtoTTJetsDiLep_M365_W2p5_Res"],
-        "HtoTTJetsDiLep_M365_W5p0_Int_neg" : ["HtoTTJetsDiLep_M365_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M365_W5p0_Int_pos" : ["HtoTTJetsDiLep_M365_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M365_W5p0_Res"     : ["HtoTTJetsDiLep_M365_W5p0_Res"],
-        "HtoTTJetsDiLep_M365_W10p0_Int_neg": ["HtoTTJetsDiLep_M365_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M365_W10p0_Int_pos": ["HtoTTJetsDiLep_M365_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M365_W10p0_Res"    : ["HtoTTJetsDiLep_M365_W10p0_Res"],
-        "HtoTTJetsDiLep_M365_W25p0_Int_neg": ["HtoTTJetsDiLep_M365_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M365_W25p0_Int_pos": ["HtoTTJetsDiLep_M365_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M365_W25p0_Res"    : ["HtoTTJetsDiLep_M365_W25p0_Res"],
-            # M = 400
-        "HtoTTJetsDiLep_M400_W2p5_Int_neg" : ["HtoTTJetsDiLep_M400_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M400_W2p5_Int_pos" : ["HtoTTJetsDiLep_M400_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M400_W2p5_Res"     : ["HtoTTJetsDiLep_M400_W2p5_Res"],
-        "HtoTTJetsDiLep_M400_W5p0_Int_neg" : ["HtoTTJetsDiLep_M400_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M400_W5p0_Int_pos" : ["HtoTTJetsDiLep_M400_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M400_W5p0_Res"     : ["HtoTTJetsDiLep_M400_W5p0_Res"],
-        "HtoTTJetsDiLep_M400_W10p0_Int_neg": ["HtoTTJetsDiLep_M400_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M400_W10p0_Int_pos": ["HtoTTJetsDiLep_M400_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M400_W10p0_Res"    : ["HtoTTJetsDiLep_M400_W10p0_Res"],
-        "HtoTTJetsDiLep_M400_W25p0_Int_neg": ["HtoTTJetsDiLep_M400_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M400_W25p0_Int_pos": ["HtoTTJetsDiLep_M400_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M400_W25p0_Res"    : ["HtoTTJetsDiLep_M400_W25p0_Res"],
-            # M = 500
-        "HtoTTJetsDiLep_M500_W2p5_Int_neg" : ["HtoTTJetsDiLep_M500_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M500_W2p5_Int_pos" : ["HtoTTJetsDiLep_M500_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M500_W2p5_Res"     : ["HtoTTJetsDiLep_M500_W2p5_Res"],
-        "HtoTTJetsDiLep_M500_W5p0_Int_neg" : ["HtoTTJetsDiLep_M500_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M500_W5p0_Int_pos" : ["HtoTTJetsDiLep_M500_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M500_W5p0_Res"     : ["HtoTTJetsDiLep_M500_W5p0_Res"],
-        "HtoTTJetsDiLep_M500_W10p0_Int_neg": ["HtoTTJetsDiLep_M500_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M500_W10p0_Int_pos": ["HtoTTJetsDiLep_M500_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M500_W10p0_Res"    : ["HtoTTJetsDiLep_M500_W10p0_Res"],
-        "HtoTTJetsDiLep_M500_W25p0_Int_neg": ["HtoTTJetsDiLep_M500_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M500_W25p0_Int_pos": ["HtoTTJetsDiLep_M500_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M500_W25p0_Res"    : ["HtoTTJetsDiLep_M500_W25p0_Res"],
-            # M = 600
-        "HtoTTJetsDiLep_M600_W2p5_Int_neg" : ["HtoTTJetsDiLep_M600_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M600_W2p5_Int_pos" : ["HtoTTJetsDiLep_M600_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M600_W2p5_Res"     : ["HtoTTJetsDiLep_M600_W2p5_Res"],
-        "HtoTTJetsDiLep_M600_W5p0_Int_neg" : ["HtoTTJetsDiLep_M600_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M600_W5p0_Int_pos" : ["HtoTTJetsDiLep_M600_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M600_W5p0_Res"     : ["HtoTTJetsDiLep_M600_W5p0_Res"],
-        "HtoTTJetsDiLep_M600_W10p0_Int_neg": ["HtoTTJetsDiLep_M600_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M600_W10p0_Int_pos": ["HtoTTJetsDiLep_M600_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M600_W10p0_Res"    : ["HtoTTJetsDiLep_M600_W10p0_Res"],
-        "HtoTTJetsDiLep_M600_W25p0_Int_neg": ["HtoTTJetsDiLep_M600_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M600_W25p0_Int_pos": ["HtoTTJetsDiLep_M600_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M600_W25p0_Res"    : ["HtoTTJetsDiLep_M600_W25p0_Res"],
-            # M = 800
-        "HtoTTJetsDiLep_M800_W2p5_Int_neg" : ["HtoTTJetsDiLep_M800_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M800_W2p5_Int_pos" : ["HtoTTJetsDiLep_M800_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M800_W2p5_Res"     : ["HtoTTJetsDiLep_M800_W2p5_Res"],
-        "HtoTTJetsDiLep_M800_W5p0_Int_neg" : ["HtoTTJetsDiLep_M800_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M800_W5p0_Int_pos" : ["HtoTTJetsDiLep_M800_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M800_W5p0_Res"     : ["HtoTTJetsDiLep_M800_W5p0_Res"],
-        "HtoTTJetsDiLep_M800_W10p0_Int_neg": ["HtoTTJetsDiLep_M800_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M800_W10p0_Int_pos": ["HtoTTJetsDiLep_M800_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M800_W10p0_Res"    : ["HtoTTJetsDiLep_M800_W10p0_Res"],
-        "HtoTTJetsDiLep_M800_W25p0_Int_neg": ["HtoTTJetsDiLep_M800_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M800_W25p0_Int_pos": ["HtoTTJetsDiLep_M800_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M800_W25p0_Res"    : ["HtoTTJetsDiLep_M800_W25p0_Res"],
-            # M = 1000
-        "HtoTTJetsDiLep_M1000_W2p5_Int_neg" : ["HtoTTJetsDiLep_M1000_W2p5_Int_neg"],
-        "HtoTTJetsDiLep_M1000_W2p5_Int_pos" : ["HtoTTJetsDiLep_M1000_W2p5_Int_pos"],
-        "HtoTTJetsDiLep_M1000_W2p5_Res"     : ["HtoTTJetsDiLep_M1000_W2p5_Res"],
-        "HtoTTJetsDiLep_M1000_W5p0_Int_neg" : ["HtoTTJetsDiLep_M1000_W5p0_Int_neg"],
-        "HtoTTJetsDiLep_M1000_W5p0_Int_pos" : ["HtoTTJetsDiLep_M1000_W5p0_Int_pos"],
-        "HtoTTJetsDiLep_M1000_W5p0_Res"     : ["HtoTTJetsDiLep_M1000_W5p0_Res"],
-        "HtoTTJetsDiLep_M1000_W10p0_Int_neg": ["HtoTTJetsDiLep_M1000_W10p0_Int_neg"],
-        "HtoTTJetsDiLep_M1000_W10p0_Int_pos": ["HtoTTJetsDiLep_M1000_W10p0_Int_pos"],
-        "HtoTTJetsDiLep_M1000_W10p0_Res"    : ["HtoTTJetsDiLep_M1000_W10p0_Res"],
-        "HtoTTJetsDiLep_M1000_W25p0_Int_neg": ["HtoTTJetsDiLep_M1000_W25p0_Int_neg"],
-        "HtoTTJetsDiLep_M1000_W25p0_Int_pos": ["HtoTTJetsDiLep_M1000_W25p0_Int_pos"],
-        "HtoTTJetsDiLep_M1000_W25p0_Res"    : ["HtoTTJetsDiLep_M1000_W25p0_Res"],
-    }
-    for year in ["2016APV", "2016", "2017", "2018"]
-}
+def create_sig_groups(mode):
+    from itertools import product
+    import numpy as np
 
-    ## dataset groupings for making templates to be used in fit
-template_groups = {
-    year: {
-        "EWQCD" : ["QCD*", "[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["QCD*", "[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
-        "TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
-        #"QCD" : ["QCD*"],
-        #"VV" : ["[WZ][WZ]"],
-        #"TTV" : ["tt[WZ]*"],
-        #"W" : ["WJets_HT*"],
-        #"DY" : ["ZJets*"],
-        "TQ" : ["single*_tchannel*"],
-        "TW" : ["single*_tW*"],
-        "TB" : ["single*_schannel*"],
-        "data_obs" : ["data_Single*"],
-    }
-    for year in ["2016APV", "2016", "2017", "2018"]
-}
+    groupings = {year: {} for year in ["2016APV", "2016", "2017", "2018"]}
+    if mode == "MC_indiv":
+        #MC_masses = np.array([800.])
+        MC_masses = np.array([365., 400., 500., 600., 800., 1000.])
+        MC_widths = np.array([2.5, 10.0, 25.0])
+        #MC_widths = np.array([10.0])
+        for year in ["2016APV", "2016", "2017", "2018"]:
+            for bundle in product(MC_masses, [str(width).replace(".", "p") for width in sorted(MC_widths)]):
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["AtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["HtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+            for bundle in product(np.array([400.]), ["5p0"]):
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["AtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["HtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+        
+    elif mode == "MC_combined":
+        MC_masses = np.array([365., 400., 500., 600., 800., 1000.])
+        #MC_widths = np.array([2.5, 5.0, 10.0, 25.0])
+        MC_widths = np.array([2.5, 10.0, 25.0])
+        for year in ["2016APV", "2016", "2017", "2018"]:
+            for bundle in product(MC_masses, [str(width).replace(".", "p") for width in sorted(MC_widths)]):
+                groupings[year]["AtoTT_M%d_W%s_Int_neg" % bundle] = ["AtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Int_pos" % bundle] = ["AtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Res" % bundle]     = ["AtoTT*_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_neg" % bundle] = ["HtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_pos" % bundle] = ["HtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Res" % bundle]     = ["HtoTT*_M%d_W%s_Res" % bundle]
+            for bundle in product(np.array([400.]), ["5p0"]):
+                groupings[year]["AtoTT_M%d_W%s_Int_neg" % bundle] = ["AtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Int_pos" % bundle] = ["AtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Res" % bundle]     = ["AtoTT*_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_neg" % bundle] = ["HtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_pos" % bundle] = ["HtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Res" % bundle]     = ["HtoTT*_M%d_W%s_Res" % bundle]
 
-## create groups for signal samples and add them to dataset/template_groups
-{year: dataset_groups[year].update(signal_groups[year]) for year in dataset_groups.keys()}
-{year: template_groups[year].update(signal_groups[year]) for year in template_groups.keys()}
+    elif mode == "MEreweight_indiv":
+        MEreweight_masses = np.array([365, 380, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000])
+        MEreweight_widths = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0, 10.0, 13.0, 15.0, 18.0, 21.0, 25.0])
+        #MEreweight_masses = np.arange(365., 1005., 5.)
+        #MEreweight_widths = np.arange(0.5, 25.5, 0.5)
+        for year in ["2016APV", "2016", "2017", "2018"]:
+            for bundle in product(MEreweight_masses, [str(width).replace(".", "p") for width in sorted(MEreweight_widths)]):
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["AtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsSL_M%d_W%s_Res" % bundle]     = ["HtoTTJetsSL_M%d_W%s_Res" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["AtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = ["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]     = ["HtoTTJetsDiLep_M%d_W%s_Res" % bundle]
+    
+    elif mode == "MEreweight_combined":
+        MEreweight_masses = np.array([365, 380, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000])
+        MEreweight_widths = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0, 10.0, 13.0, 15.0, 18.0, 21.0, 25.0])
+        #MEreweight_widths = np.arange(0.5, 25.5, 0.5)
+        #MEreweight_masses = np.arange(365., 605., 5.)
+        #MEreweight_widths = np.arange(0.5, 8.5, 0.5)
+        #MEreweight_masses = np.array([425., 575.])
+        #MEreweight_widths = np.array([0.5, 8.0])
+        #MEreweight_masses = np.arange(600., 1005., 25.)
+        #MEreweight_masses = np.array([600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000])
+        #MEreweight_widths = np.array([2.5])
+        for year in ["2016APV", "2016", "2017", "2018"]:
+            for bundle in product(MEreweight_masses, [str(width).replace(".", "p") for width in sorted(MEreweight_widths)]):
+                groupings[year]["AtoTT_M%d_W%s_Int_neg" % bundle] = ["AtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Int_pos" % bundle] = ["AtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["AtoTT_M%d_W%s_Res" % bundle]     = ["AtoTT*_M%d_W%s_Res" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_neg" % bundle] = ["HtoTT*_M%d_W%s_Int_neg" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Int_pos" % bundle] = ["HtoTT*_M%d_W%s_Int_pos" % bundle]
+                groupings[year]["HtoTT_M%d_W%s_Res" % bundle]     = ["HtoTT*_M%d_W%s_Res" % bundle]
+
+    else:
+        raise ValueError("Can only choose between 'MC_indiv', 'MC_combined', 'MEreweight_indiv', and 'MEreweight_combined' for signal groupings options")
+
+    return groupings
 
 
 def get_styles(sample, styles):
@@ -392,7 +176,8 @@ def get_label(sample, styles):
     else:
         return sample
 
-def get_group(sample, styles=dataset_groups):
+#def get_group(sample, styles=dataset_groups):
+def get_group(sample, styles=create_bkg_groups("dataset")):
     best_pattern = ""
     for group_name, patterns in styles.items():
         if any([fnmatch.fnmatch(sample, pattern) for pattern in patterns]):
@@ -404,7 +189,7 @@ def get_group(sample, styles=dataset_groups):
         print(f"Pattern not found for {sample}")
         return sample
 
-def make_dataset_groups(lepton, year, samples=[], gdict="dataset"):
+def make_dataset_groups(lepton, year, samples=[], bkgdict="dataset", sigdict="MC_indiv"):
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
 
@@ -418,14 +203,13 @@ def make_dataset_groups(lepton, year, samples=[], gdict="dataset"):
         samples = [sample.strip("\n") for sample in txt_file if not sample.startswith("#")]
         samples = [sample for sample in samples if not (sample.startswith("data") and lepton not in sample)] # get rid of data samples that don"t correspond to lepton chosen
 
-    groupings = {}
-    if gdict == "dataset":
-        groups_dict = dataset_groups 
-    elif gdict == "templates":
-        groups_dict = template_groups
-    else:
-        raise ValueError("Can only choose between 'dataset' and 'templates' as inputs for gdict")
+    groups_dict = {}
+    bkg_groupings = create_bkg_groups(mode=bkgdict)
+    sig_groupings = create_sig_groups(mode=sigdict)
+    groups_dict.update(bkg_groupings)
+    [groups_dict[year].update(sig_groupings[year]) for year in groups_dict.keys()]
 
+    groupings = {}
     for group_name, patterns in groups_dict[year].items():
         flist = []
         for sample in samples:
