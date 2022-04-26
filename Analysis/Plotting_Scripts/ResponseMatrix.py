@@ -154,7 +154,9 @@ if (args.plots == "GEN") or (args.plots == "All"):
                             sys_histo.scale(lhe_scale)
 
                     if proc == "ttJetsSL":
-                        sysname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
+                        ttname = "$\mathrm{t\\bart}_{\ell j}$"
+                        sysname = ttname if sys == "nosys" else f"{ttname}, {systematics.template_sys_to_name[args.year][sys]}"
+                        pltname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
                     else:
                         if "Int" in proc:
                             boson, mass, width, pI, wt = tuple(proc.split("_"))
@@ -186,15 +188,19 @@ if (args.plots == "GEN") or (args.plots == "All"):
                     ## draw vertical lines for distinguishing different ctstar bins
                     ctstar_lines = [idx*(final_binning.mtt_binning.size-1) for idx in range(1, (final_binning.st_binning.size-1)*(final_binning.ctstar_abs_binning.size-1))]
                     for ct_line in ctstar_lines:
-                        ax.axvline(ct_line, color="k", linestyle="--")
+                        ax.axvline(ct_line, ymin=0., ymax=0.90, color="k", linestyle="--")
+                        #ax.axvline(ct_line, color="k", linestyle="--")
+
                     ## draw vertical lines for distinguishing different S_T bins
                     st_lines = [idx*(final_binning.mtt_binning.size-1)*(final_binning.ctstar_abs_binning.size-1) for idx in range(1, final_binning.st_binning.size-1)]
                     for st_line in st_lines:
-                        ax.axvline(st_line, color="k", linestyle="-", linewidth=2)
+                        ax.axvline(st_line, ymin=0., ymax=0.90, color="k", linestyle="-", linewidth=2)
+                        #ax.axvline(st_line, color="k", linestyle="-", linewidth=2)
+
                     hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1))
     
                     #set_trace()
-                    figname = os.path.join(pltdir, f"{hname}_{sysname}")
+                    figname = os.path.join(pltdir, f"{hname}_{pltname}")
                     fig.savefig(figname)
                     print(f"{figname} written")
                     plt.close()
@@ -258,7 +264,9 @@ if (args.plots == "RECO") or (args.plots == "All"):
                                     sys_histo.scale(lhe_scale)
 
                             if proc == "ttJetsSL":
-                                sysname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
+                                ttname = "$\mathrm{t\\bart}_{\ell j}$"
+                                sysname = ttname if sys == "nosys" else f"{ttname}, {systematics.template_sys_to_name[args.year][sys]}"
+                                pltname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
                             else:
                                 if "Int" in proc:
                                     boson, mass, width, pI, wt = tuple(proc.split("_"))
@@ -268,8 +276,9 @@ if (args.plots == "RECO") or (args.plots == "All"):
                                 sysname = sub_name if sys == "nosys" else f"{sub_name}_{systematics.template_sys_to_name[args.year][sys]}"
 
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
+                            if "LEP" in pltname: pltname = pltname.replace("LEP", lep.lower())
                             if fout_created_:
-                                fout[f"Reco_{lep}_{jmult}_{sysname}"] = sys_histo.to_hist()
+                                fout[f"Reco_{lep}_{jmult}_{pltname}"] = sys_histo.to_hist()
 
                             # plots
                             fig, ax = plt.subplots()
@@ -283,21 +292,25 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                                 # add lepton/jet multiplicity label
                             ax.text(
-                                0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][lep], jet_mults[jmult]),
+                                0.02, 0.90, "%s, %s\ndetector level" % (objtypes["Lep"][lep], jet_mults[jmult]),
                                 fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                             )
 
                             ## draw vertical lines for distinguishing different ctstar bins
                             ctstar_lines = [idx*(final_binning.mtt_binning.size-1) for idx in range(1, (final_binning.st_binning.size-1)*(final_binning.ctstar_abs_binning.size-1))]
                             for ct_line in ctstar_lines:
-                                ax.axvline(ct_line, color="k", linestyle="--")
+                                ax.axvline(ct_line, ymin=0., ymax=0.90, color="k", linestyle="--")
+                                #ax.axvline(ct_line, color="k", linestyle="--")
+
                             ## draw vertical lines for distinguishing different S_T bins
                             st_lines = [idx*(final_binning.mtt_binning.size-1)*(final_binning.ctstar_abs_binning.size-1) for idx in range(1, final_binning.st_binning.size-1)]
                             for st_line in st_lines:
-                                ax.axvline(st_line, color="k", linestyle="-", linewidth=2)
+                                ax.axvline(st_line, ymin=0., ymax=0.90, color="k", linestyle="-", linewidth=2)
+                                #ax.axvline(st_line, color="k", linestyle="-", linewidth=2)
+
                             hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{lep}s"]/1000., 1))
     
-                            figname = os.path.join(pltdir, f"{hname}_{lep}_{jmult}_{sysname}")
+                            figname = os.path.join(pltdir, f"{hname}_{lep}_{jmult}_{pltname}")
                             fig.savefig(figname)
                             print(f"{figname} written")
                             plt.close()
@@ -327,20 +340,24 @@ if (args.plots == "RECO") or (args.plots == "All"):
                                 raise ValueError(f"{hname} should not exist for signal")
 
                             if proc == "ttJetsSL":
-                                sysname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
+                                ttname = "$\mathrm{t\\bart}_{\ell j}$"
+                                sysname = ttname if sys == "nosys" else f"{ttname}, {systematics.template_sys_to_name[args.year][sys]}"
+                                pltname = "TT" if sys == "nosys" else f"TT_{systematics.template_sys_to_name[args.year][sys]}"
                             else:
                                 raise ValueError(f"{hname} should not exist for signal")
                             if "LEP" in sysname: sysname = sysname.replace("LEP", lep.lower())
+                            if "LEP" in pltname: pltname = pltname.replace("LEP", lep.lower())
 
                             if fout_created_:
-                                fout[f"Gen_vs_Reco_{lep}_{jmult}_{sysname}"] = sys_histo.to_hist()
+                                fout[f"Gen_vs_Reco_{lep}_{jmult}_{pltname}"] = sys_histo.to_hist()
 
                             # plots
                             fig, ax = plt.subplots()
                             fig.subplots_adjust(hspace=.07)
-   
+  
+                            #set_trace() 
                             Plotter.plot_2d_norm(xaxis_name=sys_histo.axes()[0].name, yaxis_name=sys_histo.axes()[1].name,
-                                values=np.ma.masked_where(sys_histo.values()[()] <= 0.0, sys_histo.values()[()]), # mask nonzero probabilities for plotting
+                                values=np.ma.masked_where(sys_histo.values()[()]/np.sum(sys_histo.values()[()]) <= 0.0, sys_histo.values()[()]/np.sum(sys_histo.values()[()])), # mask nonzero probabilities for plotting
                                 xlimits=(sys_histo.axes()[0].edges()[0], sys_histo.axes()[0].edges()[-1]),
                                 ylimits=(sys_histo.axes()[1].edges()[0], sys_histo.axes()[1].edges()[-1]), xlabel=xtitle, ylabel=ytitle,
                                 hdict=sys_histo, ax=ax)
@@ -348,7 +365,8 @@ if (args.plots == "RECO") or (args.plots == "All"):
                             ax.legend(loc="upper right", title=sysname)
                                 # add lepton/jet multiplicity label
                             ax.text(
-                                0.02, 0.88, "%s, %s, $\mathrm{t\\bart}_{\ell j}$" % (objtypes["Lep"][lep], jet_mults[jmult]),
+                                0.02, 0.92, f"{objtypes['Lep'][lep]}, {jet_mults[jmult]}",
+                                #0.02, 0.90, "%s, %s\n$\mathrm{t\\bart}_{\ell j}$" % (objtypes["Lep"][lep], jet_mults[jmult]),
                                 fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                             )
                             hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{lep}s"]/1000., 1))
