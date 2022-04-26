@@ -25,7 +25,6 @@ parser.add_argument("--options", help="command-line arguments"
 
 args = parser.parse_args()
 
-jobid = os.environ["jobid"]
 proj_dir = os.environ["PROJECT_DIR"]
 
 if not os.path.isfile(args.json):
@@ -42,6 +41,7 @@ samples_to_run = list(filter(
 if not len(samples_to_run):
     raise RuntimeError("Could not find any sample matching the pattern")
 
+#set_trace()
 analyzer_inputs = []
 for sample in samples_to_run:
     #set_trace()
@@ -50,9 +50,9 @@ for sample in samples_to_run:
         if sample["DBSName"] == "NOT PRESENT": continue
         if "Ext" in sample["name"]: print("Must combine %s with non-extenstion dataset!" % sample["name"])
 
-        txtname = os.path.join(outdir, "%s_tmp.txt" % sample["name"]) if args.test else os.path.join(outdir, "%s.txt" % sample["name"])
+        txtname = os.path.join(outdir, f"{sample['name']}_tmp.txt") if args.test else os.path.join(outdir, f"{sample['name']}.txt")
 
-        flist = das.query("file dataset=%s instance=%s" % (sample["DBSName"], sample["tier"])) if "tier" in sample else das.query("file dataset=%s" % sample["DBSName"])#, True)
+        flist = das.query(f"file dataset={sample['DBSName']} instance={sample['tier']}") if "tier" in sample else das.query(f"file dataset={sample['DBSName']}")#, True)
         #set_trace()
         for idx, fname in enumerate(flist):
             site_list = das.query(f"site file={fname}")
@@ -60,10 +60,14 @@ for sample in samples_to_run:
             for site in site_list:
                 if already_changed: continue
                 if site in site_name_to_xrootd.keys():
-                    flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
+                    flist[idx] = fname.replace("/store", f"root://{site_name_to_xrootd[site]}//store")
+                    #flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
                     already_changed = True
 
-            if not already_changed: print(f"No site found for {fname}")
+            if not already_changed:
+                set_trace()
+                print(f"No site found for {fname}")
+                flist[idx] = fname.replace("/store", f"root://{site_name_to_xrootd['NEED']}//store")
 
         fnames = "\n".join(sorted(flist))
 
@@ -73,7 +77,7 @@ for sample in samples_to_run:
         print(f"{txtname} written")
         analyzer_inputs.append("\n%s" % sample["name"])
     else:
-        raise ValueError("No DBSName found for sample: %s" % sample["name"])
+        raise ValueError(f"No DBSName found for sample: {sample['name']}")
 
 if args.test: set_trace()
 #if args.sample: set_trace()
