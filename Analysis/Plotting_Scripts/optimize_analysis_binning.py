@@ -67,12 +67,18 @@ rewt_style_dict = {
 
 
 reco_variables = {
-    "RECO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
-    "RECO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.))
+    #"RECO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
+    #"RECO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
+    #"RECO_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-3., 3.)),
+    #"RECO_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
+    "RECO_mtt_vs_deltaYtt_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
 }
 gen_variables = {
-    "GEN_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
-    "GEN_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
+    #"GEN_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
+    #"GEN_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
+    #"GEN_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-3., 3.)),
+    #"GEN_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
+    "GEN_mtt_vs_deltaYtt_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
 }
 reso_variables = {
     "RESO_mtt_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco $m_{t\\bar{t}}$ [GeV]", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-500., 500.)),
@@ -144,7 +150,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
             elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
                 new_ybins = yrebinning
             histo = histo.rebin(yaxis_name, new_ybins)
-    
+
             ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
             for jmult in sorted(set([key[1] for key in histo.values().keys()])):
                 print(*[jmult, hname], sep=", ")
@@ -204,7 +210,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
                     hep.cms.label(ax=ax, data=False, year=args.year)
@@ -231,7 +237,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax_ratio.text(
-                        0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_ratio.transAxes
                     )
                     hep.cms.label(ax=ax_ratio, data=False, year=args.year)
@@ -266,7 +272,7 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                             # add lepton/jet multiplicity label
                         ax.text(
-                            0.02, 0.88, "%s, %s\nparticle level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                            0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
                         hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
