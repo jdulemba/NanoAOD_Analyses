@@ -18,7 +18,7 @@ base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("fset", type=str, help="Fileset dictionary (in string form) to be used for the processor")
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2016preVFP", "2016postVFP", "2017", "2018"] if base_jobid == "ULnanoAODv9" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("outfname", type=str, help="Specify output filename, including directory and file extension")
 parser.add_argument("opts", type=str, help="Fileset dictionary (in string form) to be used for the processor")
 args = parser.parse_args()
@@ -61,13 +61,13 @@ class Meta_Analyzer(processor.ProcessorABC):
             ## construct dictionary of dictionaries to hold meta info for each sample
         for sample in fileset.keys():
             if "Int" in sample:
-                histo_dict["%s_pos" % sample] = processor.defaultdict_accumulator(int)
-                histo_dict["%s_pos_runs_to_lumis" % sample] = processor.value_accumulator(list)
-                histo_dict["%s_neg" % sample] = processor.defaultdict_accumulator(int)
-                histo_dict["%s_neg_runs_to_lumis" % sample] = processor.value_accumulator(list)
+                histo_dict[f"{sample}_pos"] = processor.defaultdict_accumulator(int)
+                histo_dict[f"{sample}_pos_runs_to_lumis"] = processor.value_accumulator(list)
+                histo_dict[f"{sample}_neg"] = processor.defaultdict_accumulator(int)
+                histo_dict[f"{sample}_neg_runs_to_lumis"] = processor.value_accumulator(list)
             else:
                 histo_dict[sample] = processor.defaultdict_accumulator(int)
-                histo_dict["%s_runs_to_lumis" % sample] = processor.value_accumulator(list)
+                histo_dict[f"{sample}_runs_to_lumis"] = processor.value_accumulator(list)
 
         self._accumulator = processor.dict_accumulator(histo_dict)
         self.sample_name = ""
@@ -88,9 +88,6 @@ class Meta_Analyzer(processor.ProcessorABC):
             Golden_Json_LumiMask = lumi_tools.LumiMask(lumiMask_path)
             LumiMask = Golden_Json_LumiMask.__call__(runs, lumis) ## returns array of valid events
 
-            output[self.sample_name]["nEvents"] += ak.size(event_nums[LumiMask])
-            output[self.sample_name]["sumGenWeights"] += ak.size(event_nums[LumiMask])
-
             if ak.size(event_nums[LumiMask]) > 0:
                 valid_runs_lumis = np.unique(np.stack((ak.to_numpy(runs[LumiMask]), ak.to_numpy(lumis[LumiMask])), axis=1), axis=0) ## make 2D array of uniqe valid [[run, lumi], [run, lumi]...] pairs
                     # make dictionary of valid runs: sorted list of unique lumisections for each valid run
@@ -106,74 +103,67 @@ class Meta_Analyzer(processor.ProcessorABC):
             if "Int" in self.sample_name:
                 pos_evts = ak.where(genWeights > 0)
                 neg_evts = ak.where(genWeights < 0)
-                output[f"{self.sample_name}_pos"]["sumGenWeights"] += sum(genWeights[pos_evts])
-                output[f"{self.sample_name}_neg"]["sumGenWeights"] += sum(genWeights[neg_evts])
-
-                output["PU_nTrueInt"].fill(dataset="%s_pos" % self.sample_name, pu_nTrueInt=events["Pileup"]["nTrueInt"][pos_evts], weight=genWeights[pos_evts])
-                output["PU_nPU"].fill(dataset="%s_pos" % self.sample_name, pu_nPU=events["Pileup"]["nPU"][pos_evts], weight=genWeights[pos_evts])
-                output["PU_nTrueInt"].fill(dataset="%s_neg" % self.sample_name, pu_nTrueInt=events["Pileup"]["nTrueInt"][neg_evts], weight=genWeights[neg_evts])
-                output["PU_nPU"].fill(dataset="%s_neg" % self.sample_name, pu_nPU=events["Pileup"]["nPU"][neg_evts], weight=genWeights[neg_evts])
 
                 output[f"{self.sample_name}_pos"]["nEvents"] += ak.size(event_nums[pos_evts])
                 output[f"{self.sample_name}_neg"]["nEvents"] += ak.size(event_nums[neg_evts])
+                output[f"{self.sample_name}_pos"]["sumGenWeights"] += sum(genWeights[pos_evts])
+                output[f"{self.sample_name}_neg"]["sumGenWeights"] += sum(genWeights[neg_evts])
+                output[f"{self.sample_name}_pos"]["sumSquaredGenWeights"] += sum(np.square(genWeights[pos_evts]))
+                output[f"{self.sample_name}_neg"]["sumSquaredGenWeights"] += sum(np.square(genWeights[neg_evts]))
+
+                output["PU_nTrueInt"].fill(dataset=f"{self.sample_name}_pos", pu_nTrueInt=events["Pileup"]["nTrueInt"][pos_evts], weight=genWeights[pos_evts])
+                output["PU_nPU"].fill(dataset=f"{self.sample_name}_pos", pu_nPU=events["Pileup"]["nPU"][pos_evts], weight=genWeights[pos_evts])
+                output["PU_nTrueInt"].fill(dataset=f"{self.sample_name}_neg", pu_nTrueInt=events["Pileup"]["nTrueInt"][neg_evts], weight=genWeights[neg_evts])
+                output["PU_nPU"].fill(dataset=f"{self.sample_name}_neg", pu_nPU=events["Pileup"]["nPU"][neg_evts], weight=genWeights[neg_evts])
 
                 if "LHEPdfWeight" in events.fields:
                     LHEpdfWeights = events["LHEPdfWeight"]
                         ## get sum of each pdf weight over all events
                     sumLHEpdfWeights_pos = ak.sum(LHEpdfWeights[pos_evts]*genWeights[pos_evts], axis=0)
-                    #sumLHEpdfWeights_pos = ak.sum(LHEpdfWeights[pos_evts], axis=0)
                     output[f"{self.sample_name}_pos"]["sumLHEpdfWeights"] += ak.to_numpy(sumLHEpdfWeights_pos)
                     sumLHEpdfWeights_neg = ak.sum(LHEpdfWeights[neg_evts]*genWeights[neg_evts], axis=0)
-                    #sumLHEpdfWeights_neg = ak.sum(LHEpdfWeights[neg_evts], axis=0)
                     output[f"{self.sample_name}_neg"]["sumLHEpdfWeights"] += ak.to_numpy(sumLHEpdfWeights_neg)
 
                 if "PSWeight" in events.fields:
                     psweights = events["PSWeight"]
                         ## get sum of each weight over all events
                     sumPSweights_pos = ak.sum(psweights[pos_evts]*genWeights[pos_evts], axis=0)
-                    #sumPSweights_pos = ak.sum(psweights[pos_evts], axis=0)
                     output[f"{self.sample_name}_pos"]["sumPSWeights"] += ak.to_numpy(sumPSweights_pos)
                     sumPSweights_neg = ak.sum(psweights[neg_evts]*genWeights[neg_evts], axis=0)
-                    #sumPSweights_neg = ak.sum(psweights[neg_evts], axis=0)
                     output[f"{self.sample_name}_neg"]["sumPSWeights"] += ak.to_numpy(sumPSweights_neg)
 
                 if "LHEScaleWeight" in events.fields:
                     lheweights = events["LHEScaleWeight"]
                         ## get sum of each weight over all events
                     sumLHEscaleWeights_pos = ak.sum(lheweights[pos_evts]*genWeights[pos_evts], axis=0)
-                    #sumLHEscaleWeights_pos = ak.sum(lheweights[pos_evts], axis=0)
                     output[f"{self.sample_name}_pos"]["sumLHEscaleWeights"] += ak.to_numpy(sumLHEscaleWeights_pos)
                     sumLHEscaleWeights_neg = ak.sum(lheweights[neg_evts]*genWeights[neg_evts], axis=0)
-                    #sumLHEscaleWeights_neg = ak.sum(lheweights[neg_evts], axis=0)
                     output[f"{self.sample_name}_neg"]["sumLHEscaleWeights"] += ak.to_numpy(sumLHEscaleWeights_neg)
 
             else:
+                output[self.sample_name]["nEvents"] += ak.size(event_nums)
                 output[self.sample_name]["sumGenWeights"] += sum(genWeights)
+                output[self.sample_name]["sumSquaredGenWeights"] += sum(np.square(genWeights))
 
                 output["PU_nTrueInt"].fill(dataset=self.sample_name, pu_nTrueInt=events["Pileup"]["nTrueInt"], weight=genWeights)
                 output["PU_nPU"].fill(dataset=self.sample_name, pu_nPU=events["Pileup"]["nPU"], weight=genWeights)
-
-                output[self.sample_name]["nEvents"] += ak.size(event_nums)
 
                 if "LHEPdfWeight" in events.fields:
                     LHEpdfWeights = events["LHEPdfWeight"]
                         ## get sum of each pdf weight over all events
                     sumLHEpdfWeights = ak.sum(LHEpdfWeights*genWeights, axis=0)
-                    #sumLHEpdfWeights = ak.sum(LHEpdfWeights, axis=0)
                     output[self.sample_name]["sumLHEpdfWeights"] += ak.to_numpy(sumLHEpdfWeights)
 
                 if "PSWeight" in events.fields:
                     psweights = events["PSWeight"]
                         ## get sum of each weight over all events
                     sumPSweights = ak.sum(psweights*genWeights, axis=0)
-                    #sumPSweights = ak.sum(psweights, axis=0)
                     output[self.sample_name]["sumPSWeights"] += ak.to_numpy(sumPSweights)
 
                 if "LHEScaleWeight" in events.fields:
                     lheweights = events["LHEScaleWeight"]
                         ## get sum of each weight over all events
                     sumLHEscaleWeights = ak.sum(lheweights*genWeights, axis=0)
-                    #sumLHEscaleWeights = ak.sum(lheweights, axis=0)
                     output[self.sample_name]["sumLHEscaleWeights"] += ak.to_numpy(sumLHEscaleWeights)
 
 
