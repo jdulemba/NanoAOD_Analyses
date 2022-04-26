@@ -15,12 +15,12 @@ import coffea.processor as processor
 import Utilities.systematics as systematics
 import Utilities.final_analysis_binning as final_binning
 import Utilities.btag_sideband_regions as btag_sidebands
+import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
-parser.add_argument("--only_bkg", action="store_true", help="Make background templates only.")
-parser.add_argument("--only_sig", action="store_true", help="Make signal templates only.")
+parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
 parser.add_argument("--maskData", action="store_false", help="Mask templates for data, default is True.")
 parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
@@ -224,36 +224,44 @@ def get_sig_templates():
 
     names = [dataset for dataset in sorted(set([key[0] for key in rebin_histo.values().keys()]))] # get dataset names in hists
 
-    signals = sorted(set([key[0] for key in rebin_histo.values().keys()]))    
-    signals = [sig for sig in signals if "TTJetsSL" in sig] # only use SL decays
+    #set_trace()
+    signals = sorted(plt_tools.create_sig_groups("MC_combined")[args.year].keys()) # get combined signal to loop over
 
     systs = sorted(set([key[1] for key in rebin_histo.values().keys()]))
     systs.insert(0, systs.pop(systs.index("nosys"))) # move "nosys" to the front
 
     histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
 
-    #set_trace()
         # write signal dists to temp file        
     for lep in ["Muon", "Electron"]:
             # scale by lumi
         lumi_correction = lumi_corr_dict[args.year][f"{lep}s"]
         histo = rebin_histo.copy()
+        histo = histo[:, :, :, lep].integrate("leptype")
         histo.scale(lumi_correction, axis="dataset")
-        process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, gdict="templates")
+        process_groups = plt_tools.make_dataset_groups(lep, args.year, samples=names, bkgdict="templates", sigdict="MC_indiv")
         histo = histo.group("dataset", hist.Cat("process", "Process", sorting="placement"), process_groups)
-    
+
         for jmult in njets_to_run:
             for signal in signals:
                 for sys in systs:
                     if sys not in templates_to_check[args.year].keys(): continue
+                    #set_trace()
 
-                    template_histo = Plotter.linearize_hist(histo[signal, sys, jmult, lep].integrate("jmult").integrate("leptype").integrate("process").integrate("sys"))
-                    if not template_histo.values().keys(): continue
+                    sl_template_histo = Plotter.linearize_hist(histo[signal.replace("TT", "TTJetsSL"), sys, jmult].integrate("jmult").integrate("process").integrate("sys"))
+                    if not sl_template_histo.values().keys(): continue
+                    dl_template_histo = Plotter.linearize_hist(histo[signal.replace("TT", "TTJetsDiLep"), sys, jmult].integrate("jmult").integrate("process").integrate("sys"))
+                    if not dl_template_histo.values().keys(): continue
                     print(args.year, lep, jmult, signal, sys)
                     if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
                         #set_trace()
-                        lhe_scale = lumi_correction[f"{signal}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal]
-                        template_histo.scale(lhe_scale)
+                        sl_lhe_scale = lumi_correction[f"{signal.replace('TT', 'TTJetsSL')}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal.replace("TT", "TTJetsSL")]
+                        sl_template_histo.scale(sl_lhe_scale)
+                        dl_lhe_scale = lumi_correction[f"{signal.replace('TT', 'TTJetsDiLep')}_{signal_LHEscale_wts_name_dict[sys]}"]/lumi_correction[signal.replace("TT", "TTJetsDiLep")]
+                        dl_template_histo.scale(dl_lhe_scale)
+
+                    template_histo = sl_template_histo.copy()
+                    template_histo.add(dl_template_histo.copy())
 
                         ## save template histos to coffea dict
                     histo_dict[jmult][lep][f"{signal}_{sys}"] = template_histo.copy()
@@ -263,7 +271,110 @@ def get_sig_templates():
     print(f"{coffea_out} written")
 
 
+def get_MEreweight_sig_templates():
+    """
+    Function that writes linearized mtt vs costheta distributions to root file.
+    """
+    ## variables that only need to be defined/evaluated once
+    templates_to_check = systematics.template_sys_to_name if args.kfactors else systematics.combine_template_sys_to_name
+    histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
+    signal_kfactors = prettyjson.loads(open(os.path.join(proj_dir, "inputs", "signal_kfactors_ulkfactor_final_220129.json")).read())
+    hname_to_use = "mtt_vs_tlep_ctstar_abs"
+
+    allowed_masses = ["365", "380", "400", "425", "450", "475", "500", "525", "550", "575", "600", "625", "650", "675", "700", "725", "750", "775", "800", "825", "850", "875", "900", "925", "950", "975", "1000"]
+    #allowed_widths = ["2p5", "5p0", "10p0", "25p0"]
+    allowed_widths = ["2p5", "3p0", "4p0", "5p0", "8p0", "10p0", "25p0"]
+
+    fname_dir = f"/eos/user/{os.environ['USER'][0]}/{os.environ['USER']}/NanoAOD_Analyses/results/{args.year}_{jobid}/signal_ME_evtReweighting/RecoLevel"
+    fnames_to_run = [fname for fname in os.listdir(fname_dir) if fname.startswith("m")]
+    if not fnames_to_run: raise ValueError(f"No file found in {fname_dir}")
+    #set_trace()
+
+    for fname in fnames_to_run:
+        hdict = load(os.path.join(fname_dir, fname))
+
+            # get correct hist and rebin
+        if hname_to_use not in hdict.keys():
+            raise ValueError(f"{hname_to_use} not found in file")
+        xrebinning, yrebinning = linearize_binning
+        histo = hdict[hname_to_use] # process, sys, jmult, leptype, btag, lepcat
+
+        #set_trace()    
+        xaxis_name = histo.dense_axes()[0].name
+        yaxis_name = histo.dense_axes()[1].name
+            ## rebin x axis
+        if isinstance(xrebinning, np.ndarray):
+            new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
+        elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
+            new_xbins = xrebinning
+        histo = histo.rebin(xaxis_name, new_xbins)
+
+            ## rebin y axis
+        if isinstance(yrebinning, np.ndarray):
+            new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
+        elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
+            new_ybins = yrebinning
+        rebin_histo = histo.rebin(yaxis_name, new_ybins)
+
+        names = [dataset for dataset in sorted(set([key[0] for key in rebin_histo.values().keys()]))] # get dataset names in hists
+        process_groups = plt_tools.make_dataset_groups("Muon", args.year, samples=names, bkgdict="templates", sigdict="MEreweight_combined")
+        rebin_histo = rebin_histo.group("dataset", hist.Cat("process", "Process", sorting="placement"), process_groups)
+
+        #set_trace()
+        signals = sorted(set([key[0] for key in rebin_histo.values().keys()]))
+
+        systs = sorted(set([key[1] for key in rebin_histo.values().keys()]))
+        systs.insert(0, systs.pop(systs.index("nosys"))) # move "nosys" to the front
+
+            # write signal dists to temp file        
+        for lep in ["Muon", "Electron"]:
+            histo = rebin_histo[:, :, :, lep].integrate("leptype")
+
+            for jmult in njets_to_run:
+                for signal in signals:
+                        # only run over allowed masses and width points for now
+                    mass, width = signal.split("_")[1], signal.split("_")[2]
+                    if not ((mass.strip("M") in allowed_masses) and (width.strip("W") in allowed_widths)): continue
+                    for sys in systs:
+                        if sys not in templates_to_check[args.year].keys(): continue
+                        #set_trace()
+
+                        template_histo = Plotter.linearize_hist(histo[signal, sys, jmult].integrate("jmult").integrate("process").integrate("sys"))
+                        if not template_histo.values().keys(): continue
+                        print(args.year, lep, jmult, signal, sys)
+
+                        if args.kfactors:
+                            if ("RENORM" in sys.upper()) or ("FACTOR" in sys.upper()):
+                                #set_trace()
+                                if "Int_neg" in signal:
+                                    kfactor = signal_kfactors[f"{signal.replace('TT', 'TTJetsSL').strip('_neg')}_{signal_LHEscale_wts_name_dict[sys]}"] # same as DiLep
+                                if "Int_pos" in signal:
+                                    kfactor = signal_kfactors[f"{signal.replace('TT', 'TTJetsSL').strip('_pos')}_{signal_LHEscale_wts_name_dict[sys]}"]
+                                if "Res" in signal:
+                                    kfactor = signal_kfactors[f"{signal.replace('TT', 'TTJetsSL')}_{signal_LHEscale_wts_name_dict[sys]}"]
+                            else:
+                                if "Int_neg" in signal:
+                                    kfactor = signal_kfactors[signal.replace("TT", "TTJetsSL").strip("_neg")] # same as DiLep
+                                if "Int_pos" in signal:
+                                    kfactor = signal_kfactors[signal.replace("TT", "TTJetsSL").strip("_pos")] # same as DiLep
+                                if "Res" in signal:
+                                    kfactor = signal_kfactors[signal.replace("TT", "TTJetsSL")]
+                            template_histo.scale(kfactor)
+
+                            ## save template histos to coffea dict
+                        histo_dict[jmult][lep][f"{signal}_{sys}"] = template_histo.copy()
+
+    #set_trace()
+    coffea_out = os.path.join(outdir, f"raw_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else  f"raw_templates_lj_MEsig_{args.year}_{jobid}.coffea")
+    save(histo_dict, coffea_out)
+    print(f"{coffea_out} written")
+
+
 if __name__ == "__main__":
+    allowed_template_options = ["bkg", "sig", "MEreweight_sig"]
+    templates_to_run = (args.templates_to_run).split(":")
+    templates_to_run = [template for template in templates_to_run if template in allowed_template_options]
+
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
     base_jobid = os.environ["base_jobid"]
@@ -315,14 +426,17 @@ if __name__ == "__main__":
     ) 
 
     #set_trace()
-    if not args.only_sig:
+    if "bkg" in templates_to_run:
         print("Creating background templates")
         get_bkg_templates()
 
-    if not args.only_bkg:
+    if "sig" in templates_to_run:
         print("Creating signal templates")
-        #set_trace()
         get_sig_templates()
+
+    if "MEreweight_sig" in templates_to_run:
+        print("Creating ME reweighting signal templates")
+        get_MEreweight_sig_templates()
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
