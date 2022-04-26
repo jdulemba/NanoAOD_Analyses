@@ -44,12 +44,14 @@ if len(fileset.keys()) > 1:
     raise ValueError("Only one topology run at a time in order to determine which corrections and systematics to run")
 samplename = list(fileset.keys())[0]
 
+Nominal_ttJets = ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]
+isNominal_ttJets_ = samplename in Nominal_ttJets
 isTTSL_ = samplename == "ttJetsSL"
 isSignal_ = (samplename.startswith("AtoTT") or samplename.startswith("HtoTT"))
 isInt_ = isSignal_ and ("Int" in samplename)
 
-if not (isTTSL_ or isSignal_):
-    raise ValueError("This analyzer should only be run with tt l+jets or signal events")
+if not isNominal_ttJets_:
+    raise ValueError("This analyzer should only be run with ttbar events")
 
 # get dataset classification, used for corrections/systematics
 isTTbar_ = samplename.startswith("ttJets")
@@ -174,7 +176,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             ## make dict of cutflow for each systematic variation
         for sys in self.event_systematics_to_run:
-            histo_dict["cutflow_%s" % sys] = processor.defaultdict_accumulator(int)
+            histo_dict[f"cutflow_{sys}"] = processor.defaultdict_accumulator(int)
     
         self._accumulator = processor.dict_accumulator(histo_dict)
 
@@ -197,6 +199,13 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     for jmult in self.regions[sys][lepton].keys():
                         self.regions[sys][lepton][jmult].update({"semilep"})
 
+        if (samplename == "ttJetsSL") or (samplename == "ttJetsHad"):
+            self.gen_proc = samplename.strip("ttJets")
+        elif samplename == "ttJetsDiLep":
+            self.gen_proc = "DL"
+        else:
+            self.gen_proc = ""
+
 
     @property
     def accumulator(self):
@@ -207,9 +216,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
     def make_selection_hists(self):
         histo_dict = {}
         histo_dict["Reco_mtt_x_tlep_ctstar_abs_x_st_inds"] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.reco_st_mtt_ctstar_axis)
-        if isTTSL_:
-            histo_dict["Reco_VS_Gen_mtt_x_tlep_ctstar_abs_x_st_inds"] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis,
-                self.gen_st_mtt_ctstar_axis, self.reco_st_mtt_ctstar_axis)
+        if isNominal_ttJets_:
+            histo_dict["Reco_mtt_x_tlep_ctstar_abs_x_st_inds_VS_Gen_mtt_x_top_ctstar_abs_x_st_inds"] = hist.Hist("Events", self.dataset_axis,
+                self.sys_axis, self.jetmult_axis, self.leptype_axis, self.gen_st_mtt_ctstar_axis, self.reco_st_mtt_ctstar_axis)
 
         return histo_dict
 
@@ -221,8 +230,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             ## make event weights
                 # data or MC distinction made internally
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTSL_, isSignal=isSignal_)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTSL_, isSignal=isSignal_)
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
 
             ## initialize selections
         selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
@@ -254,7 +263,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
 
             # find gen level particles for ttbar system and other ttbar corrections
-        if isTTSL_:
+        if isNominal_ttJets_:
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
@@ -294,7 +303,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     )
 
             genpsel.select(events, mode="NORMAL")
-            {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()}
+            {selection[sys].add("semilep", ak.num(events["SL"]) > 0) for sys in selection.keys()} if isTTSL_ \
+                else {selection[sys].add("semilep", np.zeros(len(events), dtype=bool)) for sys in selection.keys()}
 
 
             # run over systematics that require changes to event objects (jets+MET)
@@ -309,7 +319,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             selection[evt_sys].add("DeepCSV_pass", ak.sum(events["SelectedJets"][btag_wps[0]], axis=1) >= 2)
 
                 # sort jets by btag value
-            events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btaggers[0] == "DeepCSV" else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
+            events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btaggers[0] == "DeepCSV" \
+                else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
 
                 ## apply btagging SFs to MC
             if corrections["BTagSF"] == True:
@@ -400,7 +411,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                         reco_perm=best_perms[valid_perms][MTHigh][neg_evts], gentt=None, evt_wts=wts[neg_evts])
                                 else:
                                     output = self.fill_hists(acc=output, sys=rewt_sys, jetmult=jmult, leptype=lepton,
-                                        reco_perm=best_perms[valid_perms][MTHigh], gentt=events["SL"][cut][valid_perms][MTHigh] if isTTSL_ else None, evt_wts=wts)
+                                        reco_perm=best_perms[valid_perms][MTHigh], gentt=events[self.gen_proc][cut][valid_perms][MTHigh] if isNominal_ttJets_ else None, evt_wts=wts)
 
                         else:
                             if to_debug: print("\tsysname:", evt_sys)
@@ -418,7 +429,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                     reco_perm=best_perms[valid_perms][MTHigh][neg_evts], gentt=None, evt_wts=wts[neg_evts])
                             else:
                                 output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton,
-                                    reco_perm=best_perms[valid_perms][MTHigh], gentt=events["SL"][cut][valid_perms][MTHigh] if isTTSL_ else None, evt_wts=wts)
+                                    reco_perm=best_perms[valid_perms][MTHigh], gentt=events[self.gen_proc][cut][valid_perms][MTHigh] if isNominal_ttJets_ else None, evt_wts=wts)
+                                    #reco_perm=best_perms[valid_perms][MTHigh], gentt=events["SL"][cut][valid_perms][MTHigh] if isNominal_ttJets_ else None, evt_wts=wts)
+                                    #reco_perm=best_perms[valid_perms][MTHigh], gentt=events["SL"][cut][valid_perms][MTHigh] if isTTSL_ else None, evt_wts=wts)
 
         return output
 
@@ -433,8 +446,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         #mtop_mask = (mtopcuts[jetmult][0] < reco_perm["THad"].mass) & (mtopcuts[jetmult][1] > reco_perm["THad"].mass)
 
             # find reco values
-        reco_thad_ctstar, reco_tlep_ctstar = make_vars.ctstar(reco_perm["THad"], reco_perm["TLep"])
-        reco_thad_ctstar, reco_tlep_ctstar = ak.flatten(reco_thad_ctstar, axis=None), ak.flatten(reco_tlep_ctstar, axis=None)
+        reco_thad_ctstar, reco_tlep_ctstar = make_vars.ctstar(reco_perm["THad"], reco_perm["TLep"], flatten=True)
         reco_tlep_ctstar_abs = np.abs(reco_tlep_ctstar)
         reco_ST = ak.flatten(reco_perm["THad"].pt + reco_perm["TLep"].pt, axis=None)
         reco_mtt = ak.flatten(reco_perm["TTbar"].mass, axis=None)
@@ -457,7 +469,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         acc["Reco_mtt_x_tlep_ctstar_abs_x_st_inds"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype,
             reco_st_mtt_ctstar_idx=reco_st_mtt_ctstar_ind_vals[reco_st_mtt_ctstar_inds_mask]-0.5, weight=evt_wts[reco_st_mtt_ctstar_inds_mask])
 
-        if isTTSL_:
+        if isNominal_ttJets_:
+        #if isTTSL_:
             #set_trace()
             #    # get kinematic cuts on charged lepton and both b quarks
             #gen_kin_cuts =  ak.flatten((gentt["Lepton"]["pt"] >= 25.) & (np.abs(gentt["Lepton"]["eta"]) <= 2.5) & \
@@ -465,20 +478,18 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             #            (gentt["BLep"]["pt"] >= 25.) & (np.abs(gentt["BLep"]["eta"]) <= 2.5), axis=1)
 
                 # find gen values
-            gen_thad_ctstar, gen_tlep_ctstar = make_vars.ctstar(gentt["THad"], gentt["TLep"])
-            gen_thad_ctstar, gen_tlep_ctstar = ak.flatten(gen_thad_ctstar, axis=None), ak.flatten(gen_tlep_ctstar, axis=None)
-            gen_tlep_ctstar_abs = np.abs(gen_tlep_ctstar)
-            gen_ST = ak.flatten(gentt["THad"].pt + gentt["TLep"].pt, axis=None)
+            gen_top_ctstar, gen_tbar_ctstar = make_vars.ctstar(gentt["Top"], gentt["Tbar"], flatten=True)
+            gen_top_ctstar_abs = np.abs(gen_top_ctstar)
+            gen_ST = ak.flatten(gentt["Top"].pt + gentt["Tbar"].pt, axis=None)
             gen_mtt = ak.flatten(gentt["TTbar"].mass, axis=None)
 
-            #set_trace()
             # Gen inds and masks
                 # mtt
             gen_mtt_ind_vals = np.array([np.argmax(gen_mtt[idx] < final_binning.mtt_binning) for idx in range(len(gen_mtt))])
             gen_mtt_inds_mask = (gen_mtt > final_binning.mtt_binning[0]) & (gen_mtt <= final_binning.mtt_binning[-1])
                 # ctstar
-            gen_ctstar_ind_vals = np.array([np.argmax(gen_tlep_ctstar_abs[idx] < final_binning.ctstar_abs_binning) for idx in range(len(gen_tlep_ctstar_abs))])
-            gen_ctstar_inds_mask = (gen_tlep_ctstar_abs > final_binning.ctstar_abs_binning[0]) & (gen_tlep_ctstar_abs <= final_binning.ctstar_abs_binning[-1])
+            gen_ctstar_ind_vals = np.array([np.argmax(gen_top_ctstar_abs[idx] < final_binning.ctstar_abs_binning) for idx in range(len(gen_top_ctstar_abs))])
+            gen_ctstar_inds_mask = (gen_top_ctstar_abs > final_binning.ctstar_abs_binning[0]) & (gen_top_ctstar_abs <= final_binning.ctstar_abs_binning[-1])
                 # ST
             gen_st_ind_vals = np.array([np.argmax(gen_ST[idx] < final_binning.st_binning) for idx in range(len(gen_ST))])
             gen_st_inds_mask = (gen_ST > final_binning.st_binning[0]) & (gen_ST <= final_binning.st_binning[-1])
@@ -491,7 +502,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                 # fill 2D gen (x axis) vs reco (y axis) inds hist
             gen_reco_inds_mask = reco_st_mtt_ctstar_inds_mask & gen_st_mtt_ctstar_inds_mask
-            acc["Reco_VS_Gen_mtt_x_tlep_ctstar_abs_x_st_inds"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype,
+            #acc["Reco_VS_Gen_mtt_x_tlep_ctstar_abs_x_st_inds"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype,
+            acc["Reco_mtt_x_tlep_ctstar_abs_x_st_inds_VS_Gen_mtt_x_top_ctstar_abs_x_st_inds"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype,
                 gen_st_mtt_ctstar_idx=gen_st_mtt_ctstar_ind_vals[gen_reco_inds_mask]-0.5,
                 reco_st_mtt_ctstar_idx=reco_st_mtt_ctstar_ind_vals[gen_reco_inds_mask]-0.5, weight=evt_wts[gen_reco_inds_mask])
 
