@@ -15,7 +15,7 @@ class ParseKwargs(argparse.Action):
 parser = argparse.ArgumentParser("submit analyzer to the batch queues")
 parser.add_argument("analyzer", help="Analyzer to use.")
 parser.add_argument("frange", type=str, help="Specify start:stop indices for files, inclusive. 0:1 means valid files in indices 0 and 1 will be used")
-parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2016preVFP", "2016postVFP", "2017", "2018"] if os.environ["base_jobid"] == "ULnanoAODv9" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("sample", type=str, help="Specify which sample to run over")
 parser.add_argument("--opts", nargs="*", action=ParseKwargs, help="Options to pass to analyzers.")
 args = parser.parse_args()
@@ -31,7 +31,7 @@ jobid = opts_dict.get("jobid", os.environ["jobid"])
 
     ## get samples to use
 #set_trace()
-indir = os.path.join(proj_dir, "inputs", f"{args.year}_{base_jobid}")
+indir = os.path.join(proj_dir, "inputs", f"{base_jobid}_{args.year}" if base_jobid == "ULnanoAODv9" else f"{args.year}_{base_jobid}")
 samples_to_use = tools.get_sample_list(indir=indir, sample=args.sample)
 
 fileset = {}
