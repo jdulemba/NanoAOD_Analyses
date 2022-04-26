@@ -2,7 +2,7 @@ from pdb import set_trace
 import numpy as np
 import awkward as ak
 
-def ctstar(top1, top2):
+def ctstar(top1, top2, flatten=False):
     ttbar = (top1+top2)
 
     # find top quarks in rest frame
@@ -12,7 +12,10 @@ def ctstar(top1, top2):
     # find ctstar
     top1_ctstar, top2_ctstar = ttbar.unit.dot(rf_top1.unit), ttbar.unit.dot(rf_top2.unit)
 
-    return top1_ctstar, top2_ctstar
+    if flatten:
+        return ak.flatten(top1_ctstar, axis=None), ak.flatten(top2_ctstar, axis=None)
+    else:
+        return top1_ctstar, top2_ctstar
 
 
 def cpTP(top1, top2):
@@ -58,3 +61,23 @@ def ctstar_flat(top_p4, tbar_p4):
     tbar_ctstar = ttbar.p3.unit.dot(rf_tbars.p3.unit)
 
     return top_ctstar, tbar_ctstar
+
+
+def rapidity(top, flatten=False):
+    yt = 0.5 * np.log((top.energy + top.z)/(top.energy - top.z))
+    if flatten:
+        return ak.flatten(yt, axis=None)
+    else:
+        return yt
+
+
+def deltaYtt(top, tbar, return_indiv=False, flatten=False):
+    Yt = rapidity(top, flatten)
+    Ytbar = rapidity(tbar, flatten)
+
+    if return_indiv:
+        return Yt, Ytbar, Yt - Ytbar
+    else:
+        return Yt - Ytbar
+    
+
