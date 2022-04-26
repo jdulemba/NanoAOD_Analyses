@@ -590,6 +590,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                 if to_debug: print(f"\t\tsysname: {evt_sys}")
                                 #if to_debug: set_trace()
                                 wts = (evt_weights.weight() * btag_weights["central"] *lep_SFs["central"])[cut][valid_perms][MTHigh]
+
                                         # fill hists for interference samples
                                 if isInt_:
                                     #set_trace()
