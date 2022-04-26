@@ -1,5 +1,5 @@
+root://xrootd-cms.infn.it:1194//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/280000/01105836-3C32-5249-91EB-D1B1E9F4A4E3.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/120000/DD9B6514-950F-C949-B031-2B585BA3A656.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/130000/F81EB864-7B72-E84D-B062-D088EE039292.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/270000/8BEFEF6B-8CEB-964D-B727-472A8A8162A7.root
-root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/280000/01105836-3C32-5249-91EB-D1B1E9F4A4E3.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/HscalarToTTTo2L2Nu_m400_w10p0_res_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/70000/F07E3605-B8E4-5E40-A53A-FDCA19A548D1.root

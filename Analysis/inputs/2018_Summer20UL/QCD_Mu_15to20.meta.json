@@ -1,7 +1,8 @@
 {
-    "sumGenWeights": 9232265.85064435,
     "nEvents": 9230748,
+    "sumGenWeights": 9232265.85064435,
+    "sumSquaredGenWeights": 9233887.485757709,
     "sumPSWeights": [
-        9232264.0
+        9232265.0
     ]
 }

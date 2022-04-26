@@ -1,4 +1,4 @@
-root://cms-t2-se01.sdfarm.kr:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/5F4A83BE-06F4-2D43-B7D0-8C66D27847EF.root
+root://xrootd.cmsaf.mit.edu:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/5F4A83BE-06F4-2D43-B7D0-8C66D27847EF.root
 root://cmsio7.rc.ufl.edu:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2500000/CFC68871-A036-5C41-9FFC-BA8FCC894624.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/100000/2FD79660-EA83-DD47-8EF6-B92D9A5890D1.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/250000/68B77FBC-4680-434B-9978-DBC04D8F4AF2.root

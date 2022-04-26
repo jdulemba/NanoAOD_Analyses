@@ -1,10 +1,11 @@
 {
-    "sumGenWeights": 7768000.0,
     "nEvents": 7768000,
+    "sumGenWeights": 7768000.0,
+    "sumSquaredGenWeights": 7768000.0,
     "sumPSWeights": [
         7767588.0,
         7767710.5,
         7768521.0,
-        7769003.0
+        7769003.5
     ]
 }

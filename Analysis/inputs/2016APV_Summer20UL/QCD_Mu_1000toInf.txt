@@ -1,4 +1,4 @@
-root://cmsio7.rc.ufl.edu:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/130000/03F28EFF-BE69-F34B-A391-E7668991187D.root
+root://cms-t2-se01.sdfarm.kr:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/130000/03F28EFF-BE69-F34B-A391-E7668991187D.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/280000/C1B31EBC-F132-E549-A5D6-0E269B9F31FE.root
 root://dcache-cms-xrootd.desy.de:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/130000/215ADE30-7FEA-F54A-BA70-F3ACE82D1759.root
 root://dcache-cms-xrootd.desy.de:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/130000/A4FE5048-CCD2-DB42-AD77-95CE16AA74D9.root
