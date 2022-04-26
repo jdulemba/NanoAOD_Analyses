@@ -8,19 +8,18 @@ import awkward as ak
 solver = None
 def year_to_run(**kwargs):
     global solver
-    solver = ttsolver.TTSolver(kwargs['year'])
+    solver = ttsolver.TTSolver(kwargs["year"])
 
 def run():
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    #parser.add_argument('year', choices=['2016', '2017', '2018'], help='Specify which year to run over')
     parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
     args = parser.parse_args()
     year_to_run(**kwargs)
 
 @njit()
 def find_best_3j_permutations(njets_array, jets_btag, j1_inds, j2_inds, massdisc, nsdisc, use_merged=False, btag_req=True):
-    '''
+    """
         Inputs:
             1D array with number of jets per event
             2D array of jets (px, py, pz, E, btag pass)
@@ -30,7 +29,7 @@ def find_best_3j_permutations(njets_array, jets_btag, j1_inds, j2_inds, massdisc
             [0]: List of jet assignment ordering
             [1]: List of neutrino solutions
             [2]: List of probabilities (Total, mass discriminant, nu discriminant)
-    '''
+    """
     start = 0
     stop = 0
     evt_idx = 0
@@ -41,7 +40,7 @@ def find_best_3j_permutations(njets_array, jets_btag, j1_inds, j2_inds, massdisc
     #set_trace()
     ## get best perms for 3 jet events
     for njets in njets_array:
-        #print('evt idx: ', evt_idx)#, ', njets: ', njets)
+        #print("evt idx: ", evt_idx)#, ", njets: ", njets)
         stop += njets
 
         ## initialize best_perm lists for event
@@ -64,7 +63,7 @@ def find_best_3j_permutations(njets_array, jets_btag, j1_inds, j2_inds, massdisc
                     if jets_btag[j1] < 0.5: continue
                 for j2 in range(j1+1, stop):
                     if j2 == j0: continue
-                    #    # btagged jets can't be assigned to wjets
+                    #    # btagged jets can"t be assigned to wjets
                     #if jets_btag[j2, 4] > 0.5: continue
                     #set_trace()
                     for idx in range(j1_inds[evt_idx].size):
@@ -72,13 +71,13 @@ def find_best_3j_permutations(njets_array, jets_btag, j1_inds, j2_inds, massdisc
                         if ((j0-start == jet1) or (j0-start == jet2)): continue
                         corr_idx = idx
                     mass_prob = massdisc[evt_idx][corr_idx]
-                    #print('\tns prob: %f, mass prob: %f, tot prob: %f' % (ns_prob, mass_prob, ns_prob+mass_prob))
-                    #print('\tj0: %i, j1: %i, j2: %i' % (j0-start, j1-start, j2-start))
+                    #print("\tns prob: %f, mass prob: %f, tot prob: %f" % (ns_prob, mass_prob, ns_prob+mass_prob))
+                    #print("\tj0: %i, j1: %i, j2: %i" % (j0-start, j1-start, j2-start))
                     if ns_prob+mass_prob < best_perm_probs[0]: ## have to be careful with indexing!!
                         best_perm_probs = np.array([ns_prob+mass_prob, mass_prob, ns_prob])
                         best_perm_ordering = np.array([j0-start, j1-start, j2-start])#, -10]) # set last element to -10 in order to make array have the same shape as 4+ jets
 
-        #print('Ordering:', best_perm_ordering, ', probs:', best_perm_probs)
+        #print("Ordering:", best_perm_ordering, ", probs:", best_perm_probs)
         best_perms_ordering.append(best_perm_ordering)
         best_perms_probs.append(best_perm_probs)
 
@@ -105,7 +104,7 @@ def get_best_3j_permutations(jets, nschi, jets_btagging, btag_req):
 
 @njit()
 def find_best_4pj_permutations(njets_array, jets_btag, mthad_jet_inds, mwhad_jet_inds, mthad_starts_stops, mwhad_starts_stops, massdisc, nsdisc, use_merged=False, btag_req=True):
-    '''
+    """
         Inputs:
             1D array with number of jets per event
             2D array of jets (px, py, pz, E, btag pass)
@@ -115,7 +114,7 @@ def find_best_4pj_permutations(njets_array, jets_btag, mthad_jet_inds, mwhad_jet
             [0]: List of jet assignment ordering
             [1]: List of neutrino solutions
             [2]: List of probabilities (Total, mass discriminant, nu discriminant)
-    '''
+    """
     start = 0
     stop = 0
     evt_idx = 0
@@ -128,8 +127,8 @@ def find_best_4pj_permutations(njets_array, jets_btag, mthad_jet_inds, mwhad_jet
 
     #set_trace()
     for njets in njets_array:
-        #print('evt idx: ', evt_idx)
-        #print('evt idx: ', evt_idx, ', njets: ', njets)
+        #print("evt idx: ", evt_idx)
+        #print("evt idx: ", evt_idx, ", njets: ", njets)
         stop += njets
 
         #set_trace()
@@ -177,13 +176,13 @@ def find_best_4pj_permutations(njets_array, jets_btag, mthad_jet_inds, mwhad_jet
                             else: continue
 
                         mass_prob = massdisc[mdisc_start+(corr_mt_idx-thad_inds_start)*(whad_inds_stop-whad_inds_start)+(corr_mw_idx-whad_inds_start)]
-                        #print('\tj0: %i, j1: %i, j2: %i, j3: %i' % (j0-start, j1-start, j2-start, j3-start))
-                        #print('\tProb = ', ns_prob+mass_prob, ', MassDiscr = ', mass_prob, ', NuDiscr = ', ns_prob)
+                        #print("\tj0: %i, j1: %i, j2: %i, j3: %i" % (j0-start, j1-start, j2-start, j3-start))
+                        #print("\tProb = ", ns_prob+mass_prob, ", MassDiscr = ", mass_prob, ", NuDiscr = ", ns_prob)
                         if ns_prob+mass_prob < best_perm_probs[0]: ## have to be careful with indexing!!
                             best_perm_probs = np.array([ns_prob+mass_prob, mass_prob, ns_prob])
                             best_perm_ordering = np.array([j0-start, j1-start, j2-start, j3-start])#, -10]) # set last element to -10 in order to make array have the same shape as 4+ jets
 
-        #print('evt idx: ', evt_idx, ', Ordering:', best_perm_ordering, ', probs:', best_perm_probs)
+        #print("evt idx: ", evt_idx, ", Ordering:", best_perm_ordering, ", probs:", best_perm_probs)
         best_perms_ordering.append(best_perm_ordering)
         best_perms_probs.append(best_perm_probs)
 
@@ -228,7 +227,7 @@ def get_best_4pj_permutations(jets, nschi, jets_btagging, btag_req):
 
 
 def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
-    '''
+    """
     Inputs:
         Jets, leptons, MET, and btag working point for jets
     Returns:
@@ -236,14 +235,14 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
             1: Jet objects (BLeps, BHads, WJas, WJbs)
             2: Leptons, Neutrinos
             3: Calculated probabilities (Total -> Prob, mass discriminant -> MassDiscr, neutrino discrminant -> NuDiscr)
-    '''
+    """
 
         # make leptons same shape as jets
     leps_rep, jets_rep = ak.unzip(ak.cartesian([leptons, jets]))
     met_rep, jets_rep = ak.unzip(ak.cartesian([MET, jets]))
-    lep_inputs = np.stack((ak.to_numpy(ak.flatten(leps_rep.px)), ak.to_numpy(ak.flatten(leps_rep.py)), ak.to_numpy(ak.flatten(leps_rep.pz)), ak.to_numpy(ak.flatten(leps_rep.energy))), axis=1).astype('float64') # one row has (px, py, pyz, E)
-    met_inputs = np.stack((ak.to_numpy(ak.flatten(met_rep.px)), ak.to_numpy(ak.flatten(met_rep.py))), axis=1).astype('float64') # one row has (px, py)
-    jets_inputs = np.stack((ak.to_numpy(ak.flatten(jets.px)), ak.to_numpy(ak.flatten(jets.py)), ak.to_numpy(ak.flatten(jets.pz)), ak.to_numpy(ak.flatten(jets.energy)), ak.to_numpy(ak.flatten(jets[btagWP]))), axis=1).astype('float64') # one row has (px, py, pyz, E)
+    lep_inputs = np.stack((ak.to_numpy(ak.flatten(leps_rep.px)), ak.to_numpy(ak.flatten(leps_rep.py)), ak.to_numpy(ak.flatten(leps_rep.pz)), ak.to_numpy(ak.flatten(leps_rep.energy))), axis=1).astype("float64") # one row has (px, py, pyz, E)
+    met_inputs = np.stack((ak.to_numpy(ak.flatten(met_rep.px)), ak.to_numpy(ak.flatten(met_rep.py))), axis=1).astype("float64") # one row has (px, py)
+    jets_inputs = np.stack((ak.to_numpy(ak.flatten(jets.px)), ak.to_numpy(ak.flatten(jets.py)), ak.to_numpy(ak.flatten(jets.pz)), ak.to_numpy(ak.flatten(jets.energy)), ak.to_numpy(ak.flatten(jets[btagWP]))), axis=1).astype("float64") # one row has (px, py, pyz, E)
 
     nu_array = np.zeros((jets_inputs.shape[0], 4))
     [pynusolver.run_nu_solver(lep_inputs[idx], jets_inputs[idx], met_inputs[idx], nu_array[idx]) for idx in range(nu_array.shape[0])]
@@ -255,11 +254,11 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     nu_phi = np.arctan2(nu_py, nu_px)
     nu_eta = np.arcsinh(nu_pz/nu_pt)
     Nu = ak.Array({
-        'pt' : ak.unflatten(nu_pt, ak.num(jets)),
-        'eta' : ak.unflatten(nu_eta, ak.num(jets)),
-        'phi' : ak.unflatten(nu_phi, ak.num(jets)),
-        'mass' : ak.zeros_like(ak.unflatten(nu_phi, ak.num(jets))),
-        'chi2' : ak.unflatten(nu_array[:, 3], ak.num(jets)),
+        "pt" : ak.unflatten(nu_pt, ak.num(jets)),
+        "eta" : ak.unflatten(nu_eta, ak.num(jets)),
+        "phi" : ak.unflatten(nu_phi, ak.num(jets)),
+        "mass" : ak.zeros_like(ak.unflatten(nu_phi, ak.num(jets))),
+        "chi2" : ak.unflatten(nu_array[:, 3], ak.num(jets)),
     }, with_name="PtEtaPhiMLorentzVector")
 
     if ak.num(jets)[0] == 3:
@@ -279,50 +278,50 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     # BLep
     blep_inds = ak.unflatten(bp_ordering[valid_evts][:, 0], valid_evts.astype(int))
     best_BLep = ak.Array({
-        'pt' : jets[blep_inds].pt,
-        'eta': jets[blep_inds].eta,
-        'phi': jets[blep_inds].phi,
-        'mass': jets[blep_inds].mass,
-        'jetIdx': blep_inds,
+        "pt" : jets[blep_inds].pt,
+        "eta": jets[blep_inds].eta,
+        "phi": jets[blep_inds].phi,
+        "mass": jets[blep_inds].mass,
+        "jetIdx": blep_inds,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # BHad
     bhad_inds = ak.unflatten(bp_ordering[valid_evts][:, 1], valid_evts.astype(int))
     best_BHad = ak.Array({
-        'pt' : jets[bhad_inds].pt,
-        'eta': jets[bhad_inds].eta,
-        'phi': jets[bhad_inds].phi,
-        'mass': jets[bhad_inds].mass,
-        'jetIdx': bhad_inds,
+        "pt" : jets[bhad_inds].pt,
+        "eta": jets[bhad_inds].eta,
+        "phi": jets[bhad_inds].phi,
+        "mass": jets[bhad_inds].mass,
+        "jetIdx": bhad_inds,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # WJa
     wja_inds = ak.unflatten(bp_ordering[valid_evts][:, 2], valid_evts.astype(int))
     best_WJa = ak.Array({
-        'pt' : jets[wja_inds].pt,
-        'eta': jets[wja_inds].eta,
-        'phi': jets[wja_inds].phi,
-        'mass': jets[wja_inds].mass,
-        'jetIdx': wja_inds,
+        "pt" : jets[wja_inds].pt,
+        "eta": jets[wja_inds].eta,
+        "phi": jets[wja_inds].phi,
+        "mass": jets[wja_inds].mass,
+        "jetIdx": wja_inds,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # WJb
     if len(bp_ordering[0]) == 4: # WJb exists
         wjb_inds = ak.unflatten(bp_ordering[valid_evts][:, 3], valid_evts.astype(int))
         best_WJb = ak.Array({
-            'pt' : jets[wjb_inds].pt,
-            'eta': jets[wjb_inds].eta,
-            'phi': jets[wjb_inds].phi,
-            'mass': jets[wjb_inds].mass,
-            'jetIdx': wjb_inds,
+            "pt" : jets[wjb_inds].pt,
+            "eta": jets[wjb_inds].eta,
+            "phi": jets[wjb_inds].phi,
+            "mass": jets[wjb_inds].mass,
+            "jetIdx": wjb_inds,
         }, with_name="PtEtaPhiMLorentzVector")
     else:
         best_WJb = ak.Array({
-            'pt' : ak.zeros_like(best_WJa.pt),
-            'eta' : ak.zeros_like(best_WJa.eta),
-            'phi' : ak.zeros_like(best_WJa.phi),
-            'mass' : ak.zeros_like(best_WJa.mass),
-            'jetIdx': -10*ak.ones_like(best_WJa.jetIdx),
+            "pt" : ak.zeros_like(best_WJa.pt),
+            "eta" : ak.zeros_like(best_WJa.eta),
+            "phi" : ak.zeros_like(best_WJa.phi),
+            "mass" : ak.zeros_like(best_WJa.mass),
+            "jetIdx": -10*ak.ones_like(best_WJa.jetIdx),
         }, with_name="PtEtaPhiMLorentzVector")
 
     # Nu
@@ -330,42 +329,42 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
 
     # WHad
     best_WHad = ak.Array({
-        'pt' : (best_WJa+best_WJb).pt,
-        'eta' : (best_WJa+best_WJb).eta,
-        'phi' : (best_WJa+best_WJb).phi,
-        'mass' : (best_WJa+best_WJb).mass,
+        "pt" : (best_WJa+best_WJb).pt,
+        "eta" : (best_WJa+best_WJb).eta,
+        "phi" : (best_WJa+best_WJb).phi,
+        "mass" : (best_WJa+best_WJb).mass,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # THad
     best_THad = ak.Array({
-        'pt' : (best_BHad+best_WHad).pt,
-        'eta' : (best_BHad+best_WHad).eta,
-        'phi' : (best_BHad+best_WHad).phi,
-        'mass' : (best_BHad+best_WHad).mass,
+        "pt" : (best_BHad+best_WHad).pt,
+        "eta" : (best_BHad+best_WHad).eta,
+        "phi" : (best_BHad+best_WHad).phi,
+        "mass" : (best_BHad+best_WHad).mass,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # WLep
     best_WLep = ak.Array({
-        'pt' : ak.flatten((leptons+best_Nu).pt, axis=1),
-        'eta' : ak.flatten((leptons+best_Nu).eta, axis=1),
-        'phi' : ak.flatten((leptons+best_Nu).phi, axis=1),
-        'mass' : ak.flatten((leptons+best_Nu).mass, axis=1),
+        "pt" : ak.flatten((leptons+best_Nu).pt, axis=1),
+        "eta" : ak.flatten((leptons+best_Nu).eta, axis=1),
+        "phi" : ak.flatten((leptons+best_Nu).phi, axis=1),
+        "mass" : ak.flatten((leptons+best_Nu).mass, axis=1),
     }, with_name="PtEtaPhiMLorentzVector")
 
     # TLep
     best_TLep = ak.Array({
-        'pt' : (best_BLep+best_WLep).pt,
-        'eta' : (best_BLep+best_WLep).eta,
-        'phi' : (best_BLep+best_WLep).phi,
-        'mass' : (best_BLep+best_WLep).mass,
+        "pt" : (best_BLep+best_WLep).pt,
+        "eta" : (best_BLep+best_WLep).eta,
+        "phi" : (best_BLep+best_WLep).phi,
+        "mass" : (best_BLep+best_WLep).mass,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # TTbar
     best_TTbar = ak.Array({
-        'pt' : (best_TLep+best_THad).pt,
-        'eta' : (best_TLep+best_THad).eta,
-        'phi' : (best_TLep+best_THad).phi,
-        'mass' : (best_TLep+best_THad).mass,
+        "pt" : (best_TLep+best_THad).pt,
+        "eta" : (best_TLep+best_THad).eta,
+        "phi" : (best_TLep+best_THad).phi,
+        "mass" : (best_TLep+best_THad).mass,
     }, with_name="PtEtaPhiMLorentzVector")
 
     # Lepton
@@ -374,8 +373,13 @@ def find_best_permutations(jets, leptons, MET, btagWP, btag_req=True):
     # MET
     best_MET = ak.Array({key: ak.unflatten(MET[key][valid_evts], valid_evts.astype(int)) for key in MET.fields}, with_name="PtEtaPhiMLorentzVector")
 
+    best_Top = ak.Array({key: ak.unflatten(ak.flatten(ak.where(np.sign(best_Lep.charge) == 1, best_TLep[key], best_THad[key])), valid_evts.astype(int)) for key in best_TLep.fields}, with_name="PtEtaPhiMLorentzVector")
+    best_Tbar = ak.Array({key: ak.unflatten(ak.flatten(ak.where(np.sign(best_Lep.charge) == -1, best_TLep[key], best_THad[key])), valid_evts.astype(int)) for key in best_TLep.fields}, with_name="PtEtaPhiMLorentzVector")
+
         ## Combine everything into a dictionary
     best_permutations = ak.zip({
+        "Top" : best_Top,
+        "Tbar" : best_Tbar,
         "BHad" : best_BHad,
         "BLep" : best_BLep,
         "WJa" : best_WJa,
