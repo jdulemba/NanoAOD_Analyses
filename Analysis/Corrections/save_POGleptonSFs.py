@@ -24,7 +24,6 @@ leptons = {
         },
         "Electrons" : {
             "ID" : ["egammaEffi.txt_Ele_Tight_preVFP_EGM2D.root", "EGamma_SF2D"],
-            #"ISO" : ["", ""],
             "TRIG" : ["", ""],
             "RECO" : ["egammaEffi_ptAbove20.txt_EGM2D_UL2016preVFP.root", "EGamma_SF2D"],
         },
@@ -38,7 +37,6 @@ leptons = {
         },
         "Electrons" : {
             "ID" : ["egammaEffi.txt_Ele_Tight_postVFP_EGM2D.root", "EGamma_SF2D"],
-            #"ISO" : ["", ""],
             "TRIG" : ["", ""],
             "RECO" : ["egammaEffi_ptAbove20.txt_EGM2D_UL2016postVFP.root", "EGamma_SF2D"],
         },
@@ -52,7 +50,6 @@ leptons = {
         },
         "Electrons" : {
             "ID" : ["egammaEffi.txt_EGM2D_Tight_UL17.root", "EGamma_SF2D"],
-            #"ISO" : ["", ""],
             "TRIG" : ["", ""],
             "RECO" : ["egammaEffi_ptAbove20.txt_EGM2D_UL2017.root", "EGamma_SF2D"],
         },
@@ -66,7 +63,6 @@ leptons = {
         },
         "Electrons" : {
             "ID" : ["egammaEffi.txt_Ele_Tight_EGM2D.root", "EGamma_SF2D"],
-            #"ISO" : ["", ""],
             "TRIG" : ["", ""],
             "RECO" : ["egammaEffi_ptAbove20.txt_EGM2D_UL2018.root", "EGamma_SF2D"],
         },
@@ -89,6 +85,29 @@ sf_output = {
     # load UR lepton SFs to add electron triggers
 UR_SFs = load(os.path.join(proj_dir, "Corrections", jobid, "leptonSF_noTAGvariation.coffea"))
 
+
+def average_sfs(sf_file, sf_dist):
+    central_vals = dense_lookup(*sf_file[(sf_dist, "dense_lookup")])
+    error_tot_vals = dense_lookup(*sf_file[(f"{sf_dist}_error", "dense_lookup")])
+
+        # find bins where pt >= 5 GeV
+    valid_ptbins = np.where(central_vals._axes[1] >= 5)[0][:-1]
+    #print(f"Central: {central_vals._values[:, valid_ptbins]}")
+    #print(f"Error: {error_tot_vals._values[:, valid_ptbins]}")
+        # find average values and errors weighted by 1./variance for each eta bin
+    sumeta_numerator = np.sum(np.where(error_tot_vals._values[:, valid_ptbins] == 0., 0., central_vals._values[:, valid_ptbins]/(error_tot_vals._values[:, valid_ptbins]**2)), axis=1)
+    sumeta_denom = np.sum(np.where(error_tot_vals._values[:, valid_ptbins] == 0., 0., 1./(error_tot_vals._values[:, valid_ptbins]**2)), axis=1)
+    average_eta_vals, average_eta_errors = sumeta_numerator/sumeta_denom, 1./np.sqrt(sumeta_denom)
+    central_lookup = dense_lookup(average_eta_vals, central_vals._axes[0])
+    toterror_lookup = dense_lookup(average_eta_errors, error_tot_vals._axes[0])
+    if (f"{sf_dist}_stat_error", "dense_lookup") in sf_file.keys():
+        set_trace()
+    if (f"{sf_dist}_syst_error", "dense_lookup") in sf_file.keys():
+        set_trace()
+
+    return central_lookup, toterror_lookup
+
+
 for year in leptons.keys():
     for lep in leptons[year].keys():
         for sf_type, (sf_fname, sf_dist) in leptons[year][lep].items():
@@ -96,9 +115,16 @@ for year in leptons.keys():
 
                 # save UR electron trigger SFs
             if (lep == "Electrons") and (sf_type == "TRIG"):
-                #set_trace()
-                sf_output[year][lep][sf_type]["Central"] = UR_SFs[year][lep]["Trig"]["Central"]
-                sf_output[year][lep][sf_type]["Error_tot"] = UR_SFs[year][lep]["Trig"]["Error"]
+                    # make SFs in 2018 start at 34 GeV instead of 35
+                if year == "2018":
+                    orig_cen_lookup = UR_SFs[year][lep]["Trig"]["Central"]
+                    orig_err_lookup = UR_SFs[year][lep]["Trig"]["Error"]
+                        # set dense lookups with updated bins
+                    sf_output[year][lep][sf_type]["Central"] = {eta_bin : dense_lookup(lookup._values[np.where(lookup._axes >= 35.)[0][0]:], np.r_[np.array([34.0]), lookup._axes[np.where(lookup._axes >= 35.)[0][0]+1:]]) for eta_bin, lookup in orig_cen_lookup.items()}
+                    sf_output[year][lep][sf_type]["Error_tot"] = {eta_bin : dense_lookup(lookup._values[np.where(lookup._axes >= 35.)[0][0]:], np.r_[np.array([34.0]), lookup._axes[np.where(lookup._axes >= 35.)[0][0]+1:]]) for eta_bin, lookup in orig_err_lookup.items()}
+                else:                
+                    sf_output[year][lep][sf_type]["Central"] = UR_SFs[year][lep]["Trig"]["Central"]
+                    sf_output[year][lep][sf_type]["Error_tot"] = UR_SFs[year][lep]["Trig"]["Error"]
                 sf_output[year][lep][sf_type]["eta_ranges"] = UR_SFs[year][lep]["eta_ranges"]
                 sf_output[year][lep][sf_type]["isAbsEta"] = UR_SFs[year][lep]["eta_ranges"][0][0] >= 0
                 del sf_output[year][lep][sf_type]["Error_stat"]
@@ -107,8 +133,15 @@ for year in leptons.keys():
                 sf_file = convert_histo_root_file(os.path.join(indir, year, lep, sf_fname))
 
                 sf_output[year][lep][sf_type]["isAbsEta"] = np.all(sf_file[(sf_dist, "dense_lookup")][1][0] >= 0)
-                sf_output[year][lep][sf_type]["Central"] = dense_lookup(*sf_file[(sf_dist, "dense_lookup")])
-                sf_output[year][lep][sf_type]["Error_tot"] = dense_lookup(*sf_file[(f"{sf_dist}_error", "dense_lookup")])
+                if (lep == "Muons") and (sf_type == "RECO"):
+                    central_lookup, tot_error_lookup = average_sfs(sf_file, sf_dist)
+                    #set_trace()
+                    sf_output[year][lep][sf_type]["Central"] = central_lookup
+                    sf_output[year][lep][sf_type]["Error_tot"] = tot_error_lookup
+                else:
+                    sf_output[year][lep][sf_type]["Central"] = dense_lookup(*sf_file[(sf_dist, "dense_lookup")])
+                    sf_output[year][lep][sf_type]["Error_tot"] = dense_lookup(*sf_file[(f"{sf_dist}_error", "dense_lookup")])
+
                 if (sf_type != "RECO") and (lep == "Muons"):
                     sf_output[year][lep][sf_type]["Error_stat"] = dense_lookup(*sf_file[(f"{sf_dist}_stat_error", "dense_lookup")])
                     sf_output[year][lep][sf_type]["Error_syst"] = dense_lookup(*sf_file[(f"{sf_dist}_syst_error", "dense_lookup")])
