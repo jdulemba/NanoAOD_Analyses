@@ -52,6 +52,8 @@ def get_file_splitting(sample, analyzer):
         splittings = splitting_dicts.alpha_dict
     elif analyzer == "permProbComputer":
         splittings = splitting_dicts.perm_dict
+    elif "signal_ME" in analyzer:
+        splittings = splitting_dicts.MEreweighting_dict
     else:
         splittings = splitting_dicts.other_dict
 

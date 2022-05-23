@@ -55,3 +55,5 @@ alpha_dict = {
     "ZJets*" : 5,
     "[WZ][WZ]" : 5
 }
+MEreweighting_dict = {"[AH]toTT*" : 10}
+#MEreweighting_dict = {"[AH]toTT*" : 2}
