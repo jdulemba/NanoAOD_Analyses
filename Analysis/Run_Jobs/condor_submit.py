@@ -33,6 +33,7 @@ opts_dict["allowed_masses"] = opts_dict.get("allowed_masses", "All")
 opts_dict["allowed_widths"] = opts_dict.get("allowed_widths", "All")
 sample = opts_dict.get("sample", None)
 if sample: opts_dict.pop("sample")
+opts_dict["isCondor"] = "True"
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
@@ -49,7 +50,6 @@ jobdir = f"BATCH_{jobdir}" if not jobdir.startswith("BATCH") else jobdir
 #set_trace()
 eos_dir = os.path.join("/eos", "user", os.environ["USER"][0], os.environ["USER"], "NanoAOD_Analyses")
 print(f"{os.path.join(eos_dir, jobdir)} written")
-#print(f"{os.path.join(proj_dir, jobdir)} written")
 
 
 def create_batch_job():
@@ -79,7 +79,7 @@ def base_condor_jdl():
 #WhenToTransferOutput = ON_EXIT
     condorfile = """universe = vanilla
 Executable = {BATCHDIR}/batch_job.sh
-+MaxRuntime = 10800
++MaxRuntime = 21600
 Proxy_path = {PROXYPATH}
 Requirements = HasSingularity
 """.format(BATCHDIR=os.path.join(proj_dir, jobdir, sample_name), PROXYPATH=proxy_path)
