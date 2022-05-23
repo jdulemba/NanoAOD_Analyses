@@ -18,6 +18,7 @@ import Utilities.Plotter as Plotter
 import Utilities.systematics as systematics
 from coffea.hist import plot
 from Utilities.styles import styles as hstyles
+import Utilities.final_analysis_binning as final_binning
 
 base_jobid = os.environ["base_jobid"]
 
@@ -28,7 +29,7 @@ parser.add_argument("lepton", choices=["Electron", "Muon"], help="Choose which l
 parser.add_argument("process", choices=["bkg", "MEreweight_sig", "sig"], help="Specify which process to use.")
 parser.add_argument("plot", choices=["indiv", "comp", "all"], help="Specify which systematic plots to create.")
 parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
-parser.add_argument("--kfactors", action="store_true", help="Use signal files scaled by kfactors")
+#parser.add_argument("--kfactors", action="store_true", help="Use signal files scaled by kfactors")
 args = parser.parse_args()
 
 proj_dir = os.environ["PROJECT_DIR"]
@@ -37,10 +38,11 @@ analyzer = "htt_btag_sb_regions"
 
 input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", f"Templates_{analyzer}")
 base_outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", f"Templates_{analyzer}", (args.process).upper())
-if ((args.process == "sig") or (args.process == "MEreweight_sig")) and (args.kfactors):
-    outdir = os.path.join(base_outdir, "SIG_KFACTORS", args.lepton)
-else:
-    outdir = os.path.join(base_outdir, args.lepton)
+#if ((args.process == "sig") or (args.process == "MEreweight_sig")) and (args.kfactors):
+#    outdir = os.path.join(base_outdir, "SIG_KFACTORS", args.lepton)
+#else:
+#    outdir = os.path.join(base_outdir, args.lepton)
+outdir = os.path.join(base_outdir, args.lepton)
 
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
@@ -77,12 +79,29 @@ if args.process == "sig":
 if args.process == "MEreweight_sig":
     templates_names = {
         "Orig" : load(os.path.join(input_dir, f"raw_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"raw_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
-        "Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
-        "Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
+        #"Smooth" : load(os.path.join(input_dir, f"smoothed_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
+        #"Flat" : load(os.path.join(input_dir, f"flattened_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"flattened_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
         #"Symm" : load(os.path.join(input_dir, f"symmetrized_templates_lj_MEsig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"symmetrized_templates_lj_MEsig_{args.year}_{jobid}.coffea")),
     }
 
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
+
+
+linearize_binning = (
+    final_binning.mtt_binning,
+    final_binning.ctstar_abs_binning
+)
+
+ctstar_binlabels = [r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s)$" % (linearize_binning[1][bin], linearize_binning[1][bin+1]) for bin in range(len(linearize_binning[1])-1)]
+ctstar_binlabels[-1] = r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s]$" % (linearize_binning[1][-2], linearize_binning[1][-1])
+ctstar_bin_locs = np.linspace((len(linearize_binning[0])-1)/2, (len(linearize_binning[0])-1)*(len(linearize_binning[1])-1) - (len(linearize_binning[0])-1)/2, len(linearize_binning[1])-1)
+#mtt_bins_to_plot = np.array([400., 500., 600., 800., 1200.])
+#set_trace()
+mtt_vals_to_plot = np.array([400, 600, 1000])
+mtt_tiled_labels = np.tile(linearize_binning[0][:-1], linearize_binning[1].size-1)
+mtt_bin_inds_to_plot = np.where(np.in1d(mtt_tiled_labels, mtt_vals_to_plot))[0]
+mtt_bins_to_plot = np.tile(mtt_vals_to_plot, linearize_binning[1].size-1)
+
 
 nom_styles = {"color":"k", "linestyle":"-", "label":"Nominal"}
 orig_styles = {"color":"b", "linestyle":"-", "label":"Original"}
@@ -93,21 +112,22 @@ flat_styles = {"color":"g", "linestyle":"-", "label":"Flattened"}
 #set_trace()
     ## make plots for background templates
 orig_hdict = templates_names["Orig"]
-smoothed_hdict = templates_names["Smooth"]
-flattened_hdict = templates_names["Flat"]
-#symmetrized_hdict = templates_names["Symm"]
+smoothed_hdict = templates_names["Smooth"] if "Smooth" in templates_names.keys() else None
+flattened_hdict = templates_names["Flat"] if "Flat" in templates_names.keys() else None
+symmetrized_hdict = templates_names["Symm"] if "Symm" in templates_names.keys() else None
 for jmult in orig_hdict.keys():
     orig_dict = orig_hdict[jmult][args.lepton]
-    smoothed_dict = smoothed_hdict[jmult][args.lepton]
-    flattened_dict = flattened_hdict[jmult][args.lepton]
-    #symmetrized_dict = symmetrized_hdict[jmult][args.lepton]
+    smoothed_dict = smoothed_hdict[jmult][args.lepton] if smoothed_hdict is not None else smoothed_hdict
+    flattened_dict = flattened_hdict[jmult][args.lepton] if flattened_hdict is not None else flattened_hdict
+    symmetrized_dict = symmetrized_hdict[jmult][args.lepton] if symmetrized_hdict is not None else symmetrized_hdict
 
         # get all keys from both files to make sure they"re the same    
     orig_keys = sorted(orig_dict.keys())
-    smoothed_keys = sorted(smoothed_dict.keys())
-    diff = list(set(orig_keys) - set(smoothed_keys))
-    if diff:
-        raise ValueError(f"Input templates for smoothed and original distributions not the same for {jmult}")
+    if smoothed_dict is not None:
+        smoothed_keys = sorted(smoothed_dict.keys())
+        diff = list(set(orig_keys) - set(smoothed_keys))
+        if diff:
+            raise ValueError(f"Input templates for smoothed and original distributions not the same for {jmult}")
 
     #set_trace()
     if (args.plot == "all") or (args.plot == "indiv"):
@@ -135,7 +155,7 @@ for jmult in orig_hdict.keys():
 
                 x_lims = (0, nominal.dense_axes()[0].centers().size)
     
-                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)            
+                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0))
                 fig.subplots_adjust(hspace=.07)
     
                     ## plot normal hists
@@ -181,7 +201,7 @@ for jmult in orig_hdict.keys():
                 figname = os.path.join(pltdir, "_".join([jmult, args.lepton, sys, proc, "Sys_Comp"]))
                 fig.savefig(figname)
                 print(f"{figname} written")
-                plt.close()
+                plt.close(fig)
 
     
     if (args.plot == "all") or (args.plot == "comp"):
@@ -213,8 +233,8 @@ for jmult in orig_hdict.keys():
                 smooth_dw = smoothed_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 flat_up = flattened_dict[f"{proc}_{up_sysname}"]
                 flat_dw = flattened_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
-                #sym_up = symmetrized_dict[f"{proc}_{up_sysname}"]
-                #sym_dw = symmetrized_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
+                sym_up = symmetrized_dict[f"{proc}_{up_sysname}"]
+                sym_dw = symmetrized_dict[f"{proc}_{dw_sysname}"] if dw_sysname is not None else None
                 nominal = orig_dict[f"{proc}_nosys"]
                 if (not nominal.values()) or (not orig_up.values()): continue
                 up_histos = [(orig_up, {"color": "r", "linestyle": "-", "label": "Up"}, False)] if np.array_equal(smooth_up.values()[()], orig_up.values()[()]) else \
@@ -222,7 +242,7 @@ for jmult in orig_hdict.keys():
                         (orig_up, {"color": "r", "linestyle": "--", "label": "Original Up"}, True),
                         (smooth_up, {"color": "r", "linestyle": "-", "label": "Smooth Up"}, False),
                         (flat_up, {"color": "r", "linestyle": "--", "label": "Flat Up"}, False),
-                        #(sym_up, {"color": "r", "linestyle": ":", "label": "Symmetrized Up"}, False),
+                        (sym_up, {"color": "r", "linestyle": ":", "label": "Symmetrized Up"}, False),
                     ]
 
                 if orig_dw:
@@ -231,49 +251,67 @@ for jmult in orig_hdict.keys():
                             (orig_dw, {"color": "b", "linestyle": "--", "label": "Original Down"}, True),
                             (smooth_dw, {"color": "b", "linestyle": "-", "label": "Smooth Down"}, False),
                             (flat_dw, {"color": "b", "linestyle": "--", "label": "Flat Down"}, False),
-                            #(sym_dw, {"color": "b", "linestyle": ":", "label": "Symmetrized Down"}, False),
+                            (sym_dw, {"color": "b", "linestyle": ":", "label": "Symmetrized Down"}, False),
                         ]
                 else: dw_histos = None
 
                 x_lims = (0, nominal.dense_axes()[0].centers().size)
     
-                fig, ax = plt.subplots()
+                fig, ax = plt.subplots(figsize=(15.0, 10.0))
                 fig.subplots_adjust(hspace=.07)
 
                     ## plot relative deviations
                 for up_histo, up_style, use_fill_between in up_histos:
                         # there is at least one actual value
                     if np.any(~np.isnan(up_histo.values()[()])):
-                        up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                        ax.fill_between(up_masked_bins, up_masked_vals, facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
+                        up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                        ax.fill_between(up_masked_bins, up_masked_vals, y2=1., facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
+                        #up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                        #ax.fill_between(up_masked_bins, up_masked_vals, facecolor=up_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
 
                 if dw_histos:
                     for dw_histo, dw_style, use_fill_between in dw_histos:
                             # there is at least one actual value
                         if np.any(~np.isnan(dw_histo.values()[()])):
-                            dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
-                            ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
+                            dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                            ax.fill_between(dw_masked_bins, dw_masked_vals, y2=1., facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
+                            #dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()]-nominal.values()[()], denom_vals=nominal.values()[()], input_bins=nominal.dense_axes()[0].edges())
+                            #ax.fill_between(dw_masked_bins, dw_masked_vals, facecolor=dw_style["color"], step="post", alpha=0.5) if use_fill_between else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
 
                 #set_trace()
-                ax.legend(loc="upper right", title=f"{sys}, {plt_tools.get_label(proc, hstyles)}")
-                ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
+                ax.legend(loc="upper right", ncol=int(((len(up_histos)-1) + (len(dw_histos)-1))/2))
+                #ax.legend(loc="upper right", title=f"{sys}, {plt_tools.get_label(proc, hstyles)}")
+                ax.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
+                #ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
                 ax.autoscale()
                 #set_trace()
-                ax.set_ylim(max(ax.get_ylim()[0], -0.2), min(ax.get_ylim()[1], 0.2))
-                ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.15)
+                #ax.set_ylim(max(ax.get_ylim()[0], -0.2), min(ax.get_ylim()[1], 0.2))
+                #ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.3)
+                ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.02)
                 ax.set_xlim(x_lims)
-                ax.set_xlabel("$m_{t\\bar{t}}$ $\otimes$ |cos($\\theta^{*}_{t_{l}}$)|")
-                ax.set_ylabel("Rel. Deviaton from Nominal")
+                ax.set_xlabel("$m_{t\\bar{t}}$ [GeV]")
+                #ax.set_xlabel("$m_{t\\bar{t}}$ $\otimes$ |cos($\\theta^{*}_{t_{l}}$)|")
+                ax.set_ylabel("Ratio to Nominal")
+                #ax.set_ylabel("Rel. Deviaton from Nominal")
                 
                     # add lepton/jet multiplicity label
                 ax.text(
-                    0.02, 0.94, f"{leptypes[args.lepton]}, {jet_mults[jmult]}",
-                    fontsize=rcParams["font.size"]*0.9, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                    #0.02, 0.88, f"{sys}, {plt_tools.get_label(proc, hstyles)}\n{leptypes[args.lepton]}, {jet_mults[jmult]}",
+                    0.02, 0.88, f"{sys}, {proc}\n{leptypes[args.lepton]}, {jet_mults[jmult]}",
+                    fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                 )
                     ## draw vertical lines for distinguishing different ctstar bins
                 vlines = [x_lims[1]*ybin/5 for ybin in range(1, 5)]
-                for vline in vlines:
-                    ax.axvline(vline, color="k", linestyle="--")
+                [ax.axvline(vline, color="k", linestyle="--") for vline in vlines]
+
+                for idx, label in enumerate(ctstar_binlabels):
+                    ax.annotate(label, xy=(ctstar_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
+                        xytext=(0, 450), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+
+                #set_trace()
+                ax.set_xticks(mtt_bin_inds_to_plot)
+                ax.set_xticklabels(mtt_bins_to_plot)
+
                 hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
                 
                 #if (("MTOP" in sys.upper()) and (args.scale_mtop3gev)): set_trace()
