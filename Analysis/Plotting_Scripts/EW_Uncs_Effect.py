@@ -145,19 +145,22 @@ for hname in variables.keys():
     nosys_vals = histo.values()[("nosys"),]
     EWunc_vals = histo.values()[("nloEWk_nnloQCDUp",)]
 
-    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0)) if is2d else plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    #fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
 
         # plot yields
     hep.plot.histplot(nosys_vals, histo.dense_axes()[0].edges(), ax=ax, histtype="step", **rewt_style_dict["nosys"])
     hep.plot.histplot(EWunc_vals, histo.dense_axes()[0].edges(), ax=ax, histtype="step", **rewt_style_dict["nloEWk_nnloQCDUp"])
 
-    ratio_masked_vals, ratio_masked_bins = Plotter.get_ratio_arrays(num_vals=EWunc_vals-nosys_vals, denom_vals=nosys_vals, input_bins=histo.dense_axes()[0].edges())
+    ratio_masked_vals, ratio_masked_bins = Plotter.get_ratio_arrays(num_vals=EWunc_vals, denom_vals=nosys_vals, input_bins=histo.dense_axes()[0].edges())
+    #ratio_masked_vals, ratio_masked_bins = Plotter.get_ratio_arrays(num_vals=EWunc_vals-nosys_vals, denom_vals=nosys_vals, input_bins=histo.dense_axes()[0].edges())
     rax.step(ratio_masked_bins, ratio_masked_vals, where='post', **{"color" : "k", "linestyle" : "-"})
 
     #set_trace()
     # plot yields
         # format axes
+    ax.set_yscale("log")
     ax.autoscale()
     ax.set_xlim((0, nbins) if is2d else x_lims)
     ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.2)
@@ -165,8 +168,10 @@ for hname in variables.keys():
     ax.set_ylabel("Events")
 
     rax.autoscale()
-    rax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax.set_ylabel("Rel. Deviaton from Nominal")
+    rax.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
+    rax.set_ylabel("Ratio to Nominal")
+    #rax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
+    #rax.set_ylabel("Rel. Deviaton from Nominal")
     rax.set_xlabel(xtitle)
     rax.set_xlim((0, nbins) if is2d else x_lims)
     if hname == "mtt": rax.set_ylim(-0.3, 0.3)
@@ -177,11 +182,8 @@ for hname in variables.keys():
     ax.legend(handles,labels, loc="upper right")
 
     if is2d:
-        # plot vertical lines for mtt vs ctstar
-        for vline in vlines:
-                # orig
-            ax.axvline(vline, color="k", linestyle="--")
-            rax.axvline(vline, color="k", linestyle="--")
+        [ax.axvline(vline, color="k", linestyle="--") for vline in vlines]
+        [rax.axvline(vline, color="k", linestyle="--") for vline in vlines]
 
     ax.text(
         0.02, 0.85, "$t\\bart$\nparton level",
@@ -194,4 +196,4 @@ for hname in variables.keys():
     fig.savefig(figname)
     #set_trace()
     print(f"{figname} written")
-    plt.close()
+    plt.close(fig)
