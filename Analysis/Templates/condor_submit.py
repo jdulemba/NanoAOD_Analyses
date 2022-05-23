@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser("submit analyzer to the batch queues")
 parser.add_argument("analyzer", help="Analyzer to use.")
 parser.add_argument("jobdir", help="Directory name to be created in nobackup area.")
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
 parser.add_argument("--opts", nargs="*", action=ParseKwargs, help="Options to pass to analyzers.")
 parser.add_argument("--submit", action="store_true", help="Submit jobs")
 args = parser.parse_args()
@@ -28,7 +29,8 @@ def create_batch_job():
 EXE="$@"
 echo "Executing python Templates/$EXE" from within singularity
 
-singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv -B /eos/user/j/jdulemba/NanoAOD_Analyses  /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+#singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
 """.format(PROJECTDIR=proj_dir)
 
     return batch_job
@@ -38,15 +40,15 @@ def condor_jdl(opts):
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-+MaxRuntime = 21600
++MaxRuntime = 43200
 Requirements = HasSingularity
 
 Output = con_0.stdout
 Error = con_0.stderr
 Log = con_0.log
-Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {OPTS}
+Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {TEMPLATES_TO_RUN} {OPTS}
 Queue
-""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, OPTS=opts)
+""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, TEMPLATES_TO_RUN=templates_to_run, OPTS=opts)
     return condorfile
 
 
@@ -57,7 +59,8 @@ export X509_USER_PROXY=$1
 EXE="${{@:2}}"
 echo "Executing python $PROJECT_DIR/Templates/" $EXE from within singularity
 
-singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv -B /eos/user/j/jdulemba/NanoAOD_Analyses  /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+#singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
 
 """.format(PROJECTDIR=proj_dir)
 
@@ -68,7 +71,7 @@ def rfile_condor_jdl(opts):
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
-+MaxRuntime = 21600
++MaxRuntime = 43200
 Proxy_path = {PROXYPATH}
 Requirements = HasSingularity
 
@@ -82,6 +85,13 @@ Queue
 
 
 if __name__ == "__main__":
+    allowed_template_options = ["bkg", "sig", "MEreweight_sig", "PDF"]
+    templates_to_run = [template for template in (args.templates_to_run).split(":") if template in allowed_template_options]
+    templates_to_not_run = [template for template in (args.templates_to_run).split(":") if template not in allowed_template_options]
+    if templates_to_not_run:
+        print(f"{templates_to_not_run} are not valid options for making templates, will be skipped")
+    templates_to_run = ":".join(templates_to_run)
+
     proj_dir = os.environ["PROJECT_DIR"]
     jobid = os.environ["jobid"]
     base_jobid = os.environ["base_jobid"]
@@ -94,11 +104,7 @@ if __name__ == "__main__":
     if analyzer == "convert_Otto_signal_to_combine":
         opts_dict["dir"] = opts_dict.get("dir")
     else:
-        opts_dict["only_bkg"] = opts_dict.get("only_bkg")
-        opts_dict["only_sig"] = opts_dict.get("only_sig")
         opts_dict["maskData"] = opts_dict.get("maskData")
-        opts_dict["kfactors"] = opts_dict.get("kfactors")
-        opts_dict["scale_mtop3gev"] = opts_dict.get("scale_mtop3gev")
     
         # get jobdir
     year, month, day = time.localtime().tm_year, time.localtime().tm_mon, time.localtime().tm_mday
