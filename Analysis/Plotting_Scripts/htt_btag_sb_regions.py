@@ -1,9 +1,15 @@
+#! /bin/env python
+
+import time
+tic = time.time()
+
 # matplotlib
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import mplhep as hep
-plt.style.use(hep.cms.style.ROOT)
+#plt.style.use(hep.cms.style.ROOT)
+plt.style.use(hep.style.CMS)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
@@ -41,7 +47,6 @@ parser.add_argument("--bkg_est", action="store_true", help="Estimate ewk+qcd con
 parser.add_argument("--vary_norm", action="store_true", help="Make plots varying normalization uncertainty for ewk+qcd estimation.")
 parser.add_argument("--vary_shape", action="store_true", help="Make plots varying shape for ewk+qcd estimation.")
 parser.add_argument("--vary_shape_and_norm", action="store_true", help="Make plots varying shape and norm for ewk+qcd estimation.")
-parser.add_argument("--save_sys", action="store_true", help="Save dists for all systematic variations")
 args = parser.parse_args()
 
 sys_to_name = systematics.sys_to_name[args.year]
@@ -95,9 +100,16 @@ linearize_binning = (
     final_binning.ctstar_abs_binning
 )
 
-ctstar_binlabels = ["%s $\leq$ |cos($\\theta^{*}_{t_{l}}$)| $\leq$ %s" % (linearize_binning[1][bin], linearize_binning[1][bin+1]) for bin in range(len(linearize_binning[1])-1)]
+ctstar_binlabels = [r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s)$" % (linearize_binning[1][bin], linearize_binning[1][bin+1]) for bin in range(len(linearize_binning[1])-1)]
+ctstar_binlabels[-1] = r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s]$" % (linearize_binning[1][-2], linearize_binning[1][-1])
 ctstar_bin_locs = np.linspace((len(linearize_binning[0])-1)/2, (len(linearize_binning[0])-1)*(len(linearize_binning[1])-1) - (len(linearize_binning[0])-1)/2, len(linearize_binning[1])-1)
-mtt_binlabels = ["%s $\leq$ m($t\\bar{t}$) $\leq$ %s" % (linearize_binning[0][bin], linearize_binning[0][bin+1]) for bin in range(len(linearize_binning[0])-1)]*len(ctstar_binlabels)
+#mtt_binlabels = ["%s-%s" % (linearize_binning[0][bin], linearize_binning[0][bin+1]) for bin in range(len(linearize_binning[0])-1)]*len(ctstar_binlabels)
+#mtt_bins_to_plot = np.array([400., 500., 600., 800., 1200.])
+#set_trace()
+mtt_vals_to_plot = np.array([400, 600, 1000])
+mtt_tiled_labels = np.tile(linearize_binning[0][:-1], linearize_binning[1].size-1)
+mtt_bin_inds_to_plot = np.where(np.in1d(mtt_tiled_labels, mtt_vals_to_plot))[0]
+mtt_bins_to_plot = np.tile(mtt_vals_to_plot, linearize_binning[1].size-1)
 
 # binning and bin labels for phi x eta
 phi_eta_binning = (
@@ -112,6 +124,7 @@ phi_binlabels = ["%s $\leq$ $\\phi$ $\leq$ %s" % (phi_eta_binning[0][bin], phi_e
 variables = {
     "mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", linearize_binning[0], linearize_binning[1], (linearize_binning[0][0], linearize_binning[0][-1]),
         (linearize_binning[1][0], linearize_binning[1][-1]), True, None, (ctstar_binlabels, ctstar_bin_locs)),
+        #(linearize_binning[1][0], linearize_binning[1][-1]), True, mtt_binlabels, (ctstar_binlabels, ctstar_bin_locs)),
     "Jets_phi_vs_eta" : ("$\\phi$(jets)", "$\\eta$(jets)", phi_eta_binning[0], phi_eta_binning[1], (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
     "Lep_phi_vs_eta" : ("$\\phi$(%s)" % objtypes["Lep"][args.lepton], "$\\eta$(%s)" % objtypes["Lep"][args.lepton], phi_eta_binning[0], phi_eta_binning[1],
         (-3.3, 3.3), (-2.6, 2.6), True, phi_binlabels, (eta_binlabels, eta_bin_locs)),
@@ -168,7 +181,7 @@ if len(ttJets_cats) > 0:
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting="placement")
 process_cat = "dataset"
-process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names)
+process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names, bkgdict="dataset", sigdict="MC_indiv")
 
 ## make btagging sideband groups
 btag_bin = hist.Cat("btag", "btag", sorting="placement")
@@ -281,7 +294,7 @@ def plot_shape_uncs(numerators=[], denom={}, **opts):
         0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     #set_trace()
 
     if not os.path.isdir(pltdir):
@@ -289,7 +302,8 @@ def plot_shape_uncs(numerators=[], denom={}, **opts):
     pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
+    print(f"{figname} written")
+    plt.close(fig)
     #set_trace()
 
 
@@ -397,10 +411,10 @@ def plot_qcd_dmp_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
             ax.axvline(vline, color="k", linestyle="--")
 
     ax.text(
-        0.02, 0.94, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
     #set_trace()
     if not os.path.isdir(pltdir):
@@ -408,13 +422,11 @@ def plot_qcd_dmp_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
     pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
+    print(f"{figname} written")
+    plt.close(fig)
 
 
 def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
-    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    fig.subplots_adjust(hspace=.07)
-
         # get opts
     xlimits = opts.get("xlims")
     xlabel = opts.get("xtitle")
@@ -422,6 +434,10 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
     pltdir = opts.get("pltdir")
     vlines = opts.get("vlines")
     overflow = opts.get("overflow", "none")
+
+    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0)) if vlines is not None else plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    #fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    fig.subplots_adjust(hspace=.07)
 
     labels = []
     if cen_sb:
@@ -514,7 +530,8 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
 
     ax.autoscale()
     ax.set_ylabel("Probability Density")
-    ax.set_ylim(0, None)
+    ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.5)
+    #ax.set_ylim(0, None)
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
 
@@ -532,11 +549,26 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
             ax.axvline(vline, color="k", linestyle="--")
             rax.axvline(vline, color="k", linestyle="--")
 
+    if "ytext" in opts.keys():
+        if opts["ytext"] is not None:
+            ybinlabels, ybin_locs = opts["ytext"]
+            #set_trace()
+            for idx, label in enumerate(ybinlabels):
+                ax.annotate(label, xy=(ybin_locs[idx], 0), xycoords=("data", "axes fraction"),
+                    xytext=(0, 280), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                    #xytext=(0, 250), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+    if "xtext" in opts.keys():
+        if opts["xtext"] is not None:
+            #set_trace()
+            xbin_inds, xbin_labels = opts["xtext"]
+            rax.set_xticks(xbin_inds)
+            rax.set_xticklabels(xbin_labels)
+
     ax.text(
-        0.02, 0.94, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
     #set_trace()
     if not os.path.isdir(pltdir):
@@ -544,7 +576,8 @@ def plot_ewk_qcd_dmtop_shape(cen_sb={}, up_sb={}, dw_sb={}, **opts):
     pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
+    print(f"{figname} written")
+    plt.close(fig)
 
 
 def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
@@ -634,10 +667,10 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
             ax.axvline(vline, color="k", linestyle="--")
 
     ax.text(
-        0.02, 0.94, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
     #set_trace()
     if not os.path.isdir(pltdir):
@@ -645,15 +678,12 @@ def plot_ewk_qcd_cont(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
     pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
+    print(f"{figname} written")
+    plt.close(fig)
 
 
 def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
     if not signal: raise ValueError("You need a distribution from the signal region")
-
-    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    #fig, ax = plt.subplots()
-    fig.subplots_adjust(hspace=.07)
 
         # get opts
     xlimits = opts.get("xlims")
@@ -662,7 +692,11 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
     pltdir = opts.get("pltdir")
     vlines = opts.get("vlines")
     overflow = opts.get("overflow", "none")
+    pltname = opts.get("fname")
     cols_to_label = {}
+
+    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0)) if vlines is not None else plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    fig.subplots_adjust(hspace=.07)
 
     #set_trace()
     if signal:
@@ -754,7 +788,8 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
 
     ax.autoscale()
     ax.set_ylabel("Events")
-    ax.set_ylim(0, None)
+    ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.3)
+    #ax.set_ylim(0, None)
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
 
@@ -772,20 +807,33 @@ def plot_bkg_mc_dd_comp(signal={}, cen_sb={}, up_sb={}, dw_sb={}, **opts):
             ax.axvline(vline, color="k", linestyle="--")
             rax.axvline(vline, color="k", linestyle="--")
 
+    if "ytext" in opts.keys():
+        if opts["ytext"] is not None:
+            ybinlabels, ybin_locs = opts["ytext"]
+            #set_trace()
+            for idx, label in enumerate(ybinlabels):
+                ax.annotate(label, xy=(ybin_locs[idx], 0), xycoords=("data", "axes fraction"),
+                    xytext=(0, 250), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+    if "xtext" in opts.keys():
+        if opts["xtext"] is not None:
+            #set_trace()
+            xbin_inds, xbin_labels = opts["xtext"]
+            rax.set_xticks(xbin_inds)
+            rax.set_xticklabels(xbin_labels)
+
     ax.text(
-        0.02, 0.94, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
     #set_trace()
     if not os.path.isdir(pltdir):
         os.makedirs(pltdir)
-    pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
-
+    print(f"{figname} written")
+    plt.close(fig)
 
 
 def plot_qcd_mc_shape(sig_reg=None, btag_sb=None, iso_sb=None, double_sb=None, print_ratios=False, **opts):
@@ -900,11 +948,8 @@ def plot_qcd_mc_shape(sig_reg=None, btag_sb=None, iso_sb=None, double_sb=None, p
             ax.axvline(vline, color="k", linestyle="--")
 
     ax.text(
-        0.02, 0.94, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
-        fontsize=rcParams["font.size"],
-        horizontalalignment="left",
-        verticalalignment="bottom",
-        transform=ax.transAxes
+        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
     hep.cms.label(ax=ax, data=withData,  year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
 
@@ -942,7 +987,8 @@ def plot_qcd_mc_shape(sig_reg=None, btag_sb=None, iso_sb=None, double_sb=None, p
     pltname = opts.get("fname")
     figname = os.path.join(pltdir, pltname)
     fig.savefig(figname)
-    print("%s written" % figname)
+    print(f"{figname} written")
+    plt.close(fig)
 
 
 def get_norm_unc(reg_A, reg_B):
@@ -964,7 +1010,7 @@ def get_norm_unc(reg_A, reg_B):
 if args.nosys:
     for hname in variables.keys():
         if hname not in hdict.keys():
-            raise ValueError("%s not found in file" % hname)
+            raise ValueError(f"{hname} not found in file")
         #set_trace()
         histo = hdict[hname][:, :, "nosys", :].integrate("sys") # process, sys, jmult, btag
         #set_trace()
@@ -980,8 +1026,8 @@ if args.nosys:
             #for jmult in ["3Jets"]:
             #for jmult in ["4PJets"]:
             for jmult in sorted(set([key[2] for key in histo.values().keys()])):
-                for btagregion in ["btagPass"]:
-                #for btagregion in sorted(set([key[1] for key in histo.values().keys()])):
+                #for btagregion in ["btagPass"]:
+                for btagregion in sorted(set([key[1] for key in histo.values().keys()])):
                     print(*[jmult, btagregion, hname], sep=", ")
                     pltdir = os.path.join(outdir, args.lepton, jmult, btagregion)
                     if not os.path.isdir(pltdir):
@@ -993,7 +1039,7 @@ if args.nosys:
                     #set_trace()
                     hslice = histo[:, btagregion, jmult].integrate("jmult").integrate("btag")
                     nonsignal_hslice = hslice[Plotter.nonsignal_samples]
-                    signal_hslice = hslice[Plotter.signal_samples]
+                    #signal_hslice = hslice[Plotter.signal_samples]
 
                     if "disc" in hname:
                         xtitle = orig_xtitle.replace("j", "3") if jmult == "3Jets" else orig_xtitle.replace("j", "4")
@@ -1024,16 +1070,16 @@ if args.nosys:
                         # add lepton/jet multiplicity label
                     #set_trace()
                     ax.text(
-                        0.02, 0.88, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
-                        fontsize=rcParams["font.size"]*0.75, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                        0.02, 0.86, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
+                        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+                    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     
                     #set_trace()
                     figname = os.path.join(pltdir, "_".join([jmult, args.lepton, btagregion, hname]))
                     fig.savefig(figname)
-                    print("%s written" % figname)
-                    plt.close()
+                    print(f"{figname} written")
+                    plt.close(fig)
         
         if histo.dense_dim() == 2:
             xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
@@ -1045,17 +1091,17 @@ if args.nosys:
                 new_xbins = hist.Bin(xaxis_name, xaxis_name, xrebinning)
             elif isinstance(xrebinning, float) or isinstance(xrebinning, int):
                 new_xbins = xrebinning
-            histo = histo.rebin(xaxis_name, new_xbins)
+            #histo = histo.rebin(xaxis_name, new_xbins)
                 ## rebin y axis
             if isinstance(yrebinning, np.ndarray):
                 new_ybins = hist.Bin(yaxis_name, yaxis_name, yrebinning)
             elif isinstance(yrebinning, float) or isinstance(yrebinning, int):
                 new_ybins = yrebinning
-            histo = histo.rebin(yaxis_name, new_ybins)
+            histo = histo.rebin(yaxis_name, new_ybins).rebin(xaxis_name, new_xbins)
    
             ## hists should have 3 category axes (dataset, jet multiplicity, lepton category) followed by variable
             #for jmult in ["3Jets"]:
-            #for jmult in ["4PJets"]:
+            ##for jmult in ["4PJets"]:
             #   for btagregion in ["btagPass"]:
             for jmult in sorted(set([key[2] for key in histo.values().keys()])):
                 #for btagregion in ["btagPass"]:
@@ -1100,11 +1146,11 @@ if args.nosys:
                         #set_trace()
                         und_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, btagregion, hname, "DeepCSV_underflow", "proj"]))
                         fig_und.savefig(und_figname)
-                        print("%s written" % und_figname)
-                        plt.close()
+                        print(f"{und_figname} written")
+                        plt.close(fig_und)
  
                             # plot 1D projection of normal bin region
-                        fig_norm, (ax_norm, rax_norm) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig_norm, (ax_norm, rax_norm) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0))
                         fig_norm.subplots_adjust(hspace=.07)
 
                         Plotter.plot_stack1d(ax_norm, rax_norm, normal_reg_hist, xlabel="%s DeepCSV normal region" % xtitle, xlimits=x_lims, **mc_opts)
@@ -1119,8 +1165,8 @@ if args.nosys:
                         #set_trace()
                         norm_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, btagregion, hname, "DeepCSV_normal", "proj"]))
                         fig_norm.savefig(norm_figname)
-                        print("%s written" % norm_figname)
-                        plt.close()
+                        print(f"{norm_figname} written")
+                        plt.close(fig_norm)
  
                         continue
 
@@ -1145,23 +1191,24 @@ if args.nosys:
     
                             # add lepton/jet multiplicity label
                         ax.text(
-                            0.02, 0.88, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
-                            fontsize=rcParams["font.size"]*0.75, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                            0.02, 0.86, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
+                            fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
                         hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
     
                         #set_trace()
                         fig.savefig(figname)
-                        print("%s written" % figname)
-                        plt.close()
+                        print(f"{figname} written")
+                        plt.close(fig)
  
                         # plot linearized view 
-                    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                    fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0))
                     fig.subplots_adjust(hspace=.07)
 
                     hline = Plotter.linearize_hist(hslice)
                     
-                    Plotter.plot_stack1d(ax, rax, hline, xlabel="%s $\otimes$ %s" % (xtitle, ytitle), xlimits=(0, len(hline.axis(hline.dense_axes()[0].name).edges())-1), **mc_opts)
+                    Plotter.plot_stack1d(ax, rax, hline, xlabel=f"{xtitle} [GeV]", xlimits=(0, len(hline.axis(hline.dense_axes()[0].name).edges())-1), **mc_opts)
+                    #Plotter.plot_stack1d(ax, rax, hline, xlabel=f"{xtitle} $\otimes$ {ytitle}", xlimits=(0, len(hline.axis(hline.dense_axes()[0].name).edges())-1), **mc_opts)
     
                         # draw vertical lines separating ctstar bins
                     bin_sep_lines = [hslice.values()[("EWK",)].shape[0]*ybin for ybin in range(1, hslice.values()[("EWK",)].shape[1])]
@@ -1172,6 +1219,7 @@ if args.nosys:
                         # plot unrolled x and y labels for each bin
                     ## plot x labels
                     if plot_xlabels is not None:
+                        #set_trace()
                         rax.set_xticks(np.arange(len(plot_xlabels)))
                         rax.set_xticklabels(plot_xlabels)
                         ax.tick_params(which="minor", bottom=False, top=False)
@@ -1181,21 +1229,26 @@ if args.nosys:
                     ## plot y labels
                     if plot_ylabels is not None: # (binlabels, bin_locs)
                         for idx, label in enumerate(plot_ylabels[0]):
-                            rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                            ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+
+                        if hname == "mtt_vs_tlep_ctstar_abs":
+                            #set_trace()
+                            rax.set_xticks(mtt_bin_inds_to_plot)
+                            rax.set_xticklabels(mtt_bins_to_plot)
 
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
-                        fontsize=rcParams["font.size"]*0.75, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                        0.02, 0.86, "%s, %s\n%s" % (objtypes["Lep"][args.lepton], jet_mults[jmult], btag_cats[btagregion]),
+                        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
+                    hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     
                     #set_trace()
                     figname = os.path.join(pltdir, "_".join([jmult, args.lepton, btagregion, hname]))
                     fig.savefig(figname)
-                    print("%s written" % figname)
-                    plt.close()
+                    print(f"{figname} written")
+                    plt.close(fig)
 
 
 if args.plot_signal:
@@ -1310,7 +1363,7 @@ if args.plot_signal:
                         #set_trace()
                         sig_figname = os.path.join(signal_dir, "_".join([signal, jmult, args.lepton, btagregion, hname]))
                         fig.savefig(sig_figname)
-                        plt.close()
+                        plt.close(fig)
                         print(f"{sig_figname} written")
         
         if histo.dense_dim() == 2:
@@ -1410,7 +1463,7 @@ if args.plot_signal:
                             #set_trace()
                             fig.savefig(sig_figname)
                             print(f"{sig_figname} written")
-                            plt.close()
+                            plt.close(fig)
  
                         #set_trace()
                         # plot linearized view 
@@ -1462,7 +1515,9 @@ if args.plot_signal:
                         if plot_ylabels is not None: # (binlabels, bin_locs)
                             for idx, label in enumerate(plot_ylabels[0]):
                                 ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                    xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                                    xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                                #ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                #    xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
 
                             # add lepton/jet multiplicity label
                         ax.text(
@@ -1473,7 +1528,7 @@ if args.plot_signal:
     
                         sig_figname = os.path.join(signal_dir, "_".join([signal, jmult, args.lepton, btagregion, hname]))
                         fig.savefig(sig_figname)
-                        plt.close()
+                        plt.close(fig)
                         print(f"{sig_figname} written")
         
 
@@ -1481,7 +1536,7 @@ if args.plot_signal:
 if args.sys:
     #set_trace()
     #systs_to_run = ["nosys"]
-    systs_to_run = sorted(sys_to_name.keys())# if args.save_sys else ["nosys"]
+    systs_to_run = sorted(sys_to_name.keys())
     print("\nPlotting distributions for systematics:\n\t", *systs_to_run)
 
     ## combine EWK and QCD processes into BKG groups
@@ -1496,12 +1551,6 @@ if args.sys:
     #bkg_groups["QCD"] = ["QCD"]
     #bkg_groups["BKG"] = ["EWK", "QCD"]
     #set_trace()
-    #    ## save post qcd-est dists for all systematics
-    #if (args.save_sys):
-    #    import itertools
-    #        # keys are (lepton, jmult, sys, hname)
-    #    save_keys = sorted(itertools.product([args.lepton], ["3Jets", "4PJets"], [sys_to_name[sys] for sys in systs_to_run], [name for name in variables.keys()]))
-    #    post_bkg_est = {key:None for key in save_keys}
 
     for hname in variables.keys():
         if "DeepCSV_bDisc_" in hname: continue
@@ -1606,19 +1655,14 @@ if args.sys:
                 #set_trace()
                 figname = os.path.join(sys_dir, "_".join([sys, jmult, args.lepton, hname]))
                 fig.savefig(figname)
-                print("%s written" % figname)
-                plt.close()
+                print(f"{figname} written")
+                plt.close(fig)
 
 
                 #for norm in ["SigMC"]:
                 #    #set_trace()
                 #    bkg_est_histo = Plotter.BKG_Est(sig_reg=sig_histo, sb_reg=cen_sb, norm_type=norm, sys=sys, ignore_uncs=True)
                 #    #set_trace()
-
-                #        # save post bkg-est dist to dict
-                #    #if norm == "Sideband":
-                #    #    if args.save_sys:
-                #    #        post_bkg_est[(args.lepton, jmult, sys_to_name[sys], hname)] = bkg_est_histo
 
                 #    if sys == "nosys":                 
                 #        #bkg_name = "%s%s_Norm" % (shape_reg, norm) if norm == "Sideband" else "%s_Norm" % norm
@@ -1799,8 +1843,16 @@ if args.bkg_shapes:
         if histo.dense_dim() == 2:
             xtitle, ytitle, xrebinning, yrebinning, x_lims, y_lims, withData, plot_xlabels, plot_ylabels = variables[hname]
             if (hname == "mtt_vs_tlep_ctstar_abs"):
-                xrebinning = np.array([300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1500.0])
+                #set_trace()
+                xrebinning = np.array([linearize_binning[0][0], 400., 500.0, 600.0, 800.0, 1000.0, 1500.0, linearize_binning[0][-1]])
                 x_lims = (xrebinning[0], xrebinning[-1])
+                ctstar_binlabels = [r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s)$" % (yrebinning[bin], yrebinning[bin+1]) for bin in range(len(yrebinning)-1)]
+                ctstar_binlabels[-1] = r"|$\cos (\theta^{*}_{t_{l}})$| $\in [%s, %s]$" % (yrebinning[-2], yrebinning[-1])
+                tmp_ctstar_bin_locs = np.linspace((len(xrebinning)-1)/2, (len(xrebinning)-1)*(len(yrebinning)-1) - (len(xrebinning)-1)/2, len(yrebinning)-1)
+                #mtt_vals_to_plot = np.array([400, 600, 1000])
+                tmp_mtt_tiled_labels = np.tile(xrebinning[:-1], yrebinning.size-1)
+                tmp_mtt_bin_inds_to_plot = np.where(np.in1d(tmp_mtt_tiled_labels, mtt_vals_to_plot))[0]
+                tmp_mtt_bins_to_plot = np.tile(mtt_vals_to_plot, yrebinning.size-1)
 
             if "DeepCSV_bDisc" not in hname:
                 vlines = [(len(xrebinning)-1)*ybin for ybin in range(1, len(yrebinning)-1)] if histo.dense_dim() == 2 else None
@@ -1908,7 +1960,9 @@ if args.bkg_shapes:
                     cen_sb={"histo" : cen_sb_lin, "label" : btag_reg_names_dict["Central"]["label"], "color" : btag_reg_names_dict["Central"]["color"]},
                     up_sb={"histo" : up_sb_lin, "label" : btag_reg_names_dict["Up"]["label"], "color" : btag_reg_names_dict["Up"]["color"]},
                     dw_sb={"histo" : dw_sb_lin, "label" : btag_reg_names_dict["Down"]["label"], "color" : btag_reg_names_dict["Down"]["color"]},
-                   **{"xtitle":"%s $\otimes$ %s" % (xtitle, ytitle), "xlims":(0, nbins), "pltdir":shape_dir, "hname": hname, "jmult":jmult, "vlines":vlines, "fname": "BKG_DD_Shapes_%s_%s_%s" % (args.lepton, jmult, hname)})
+                   **{"xtitle":f"{xtitle} [GeV]", "xlims":(0, nbins), "pltdir":shape_dir, "hname": hname, "jmult":jmult, "vlines":vlines, "fname": f"BKG_DD_Shapes_{args.lepton}_{jmult}_{hname}",
+                        "ytext":(ctstar_binlabels, tmp_ctstar_bin_locs) if hname == "mtt_vs_tlep_ctstar_abs" else None, "xtext":(tmp_mtt_bin_inds_to_plot, tmp_mtt_bins_to_plot) if hname == "mtt_vs_tlep_ctstar_abs" else None})
+                   #**{"xtitle":"%s $\otimes$ %s" % (xtitle, ytitle), "xlims":(0, nbins), "pltdir":shape_dir, "hname": hname, "jmult":jmult, "vlines":vlines, "fname": "BKG_DD_Shapes_%s_%s_%s" % (args.lepton, jmult, hname)})
 
                 # make 1D projection along dense axes
                 for dax in range(2):
@@ -1936,7 +1990,9 @@ if args.bkg_shapes:
                     up_sb={"histo" : up_sb_lin, "label" : btag_reg_names_dict["Up"]["label"], "color" : btag_reg_names_dict["Up"]["color"]},
                     dw_sb={"histo" : dw_sb_lin, "label" : btag_reg_names_dict["Down"]["label"], "color" : btag_reg_names_dict["Down"]["color"]},
                     signal={"histo" : sig_lin},
-                   **{"xtitle":"%s $\otimes$ %s" % (xtitle, ytitle), "xlims":(0, nbins), "pltdir":comp_dir, "hname": hname, "jmult":jmult, "vlines":vlines, "fname": "BKG_MC_DD_Comparison_%s_%s_%s" % (args.lepton, jmult, hname)})
+                   **{"xtitle":f"{xtitle} [GeV]", "xlims":(0, nbins), "pltdir":comp_dir, "hname": hname, "jmult":jmult, "vlines":vlines, "fname": f"BKG_MC_DD_Comparison_{args.lepton}_{jmult}_{hname}",
+                         "ytext":(ctstar_binlabels, tmp_ctstar_bin_locs) if hname == "mtt_vs_tlep_ctstar_abs" else None, "xtext":(tmp_mtt_bin_inds_to_plot, tmp_mtt_bins_to_plot) if hname == "mtt_vs_tlep_ctstar_abs" else None})
+                        #"fname": "BKG_MC_DD_Comparison_%s_%s_%s" % (args.lepton, jmult, hname), "bintext":(mtt_ctstar_binlabels, mtt_ctstar_bin_locs) if hname == "mtt_vs_tlep_ctstar_abs" else None})
 
                 # make 1D projection along dense axes
                 for dax in range(2):
@@ -1962,7 +2018,7 @@ if args.bkg_shapes:
 # plot with EWK+QCD estimation
 if args.bkg_est:
     systs_to_run = ["nosys"]
-    #systs_to_run = sorted(sys_to_name.keys()) if args.save_sys else ["nosys"]
+    #systs_to_run = sorted(sys_to_name.keys())
     print("\nPlotting distributions for systematics:\n\t", *systs_to_run)
 
     #set_trace()
@@ -2063,7 +2119,8 @@ if args.bkg_est:
                         if not os.path.isdir(bkg_dir):
                             os.makedirs(bkg_dir)
     
-                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        #fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                        fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0)) if histo.dense_dim() == 2 else plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
                         fig.subplots_adjust(hspace=.07)
    
                         if hname == "Jets_njets":
@@ -2077,7 +2134,8 @@ if args.bkg_est:
 
                         #set_trace() 
                         Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=xtitle, xlimits=x_lims, **mc_opts) if histo.dense_dim() == 1\
-                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=f"{xtitle} $\otimes$ {ytitle}", xlimits=(0, nbins), **mc_opts)
+                            else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=f"{xtitle} [GeV]", xlimits=(0, nbins), **mc_opts)
+                            #else Plotter.plot_stack1d(ax, rax, bkg_est_histo, xlabel=f"{xtitle} $\otimes$ {ytitle}", xlimits=(0, nbins), **mc_opts)
     
                             # add lepton/jet multiplicity label
                         ax.text(
@@ -2100,11 +2158,16 @@ if args.bkg_est:
                                 rax.tick_params(which="minor", bottom=False, top=False)
                                 plt.setp(rax.get_xticklabels(), rotation=90, ha="left", fontsize=rcParams["font.size"]*0.5)
 
-                            ## plot y labels
                             if plot_ylabels is not None: # (binlabels, bin_locs)
                                 for idx, label in enumerate(plot_ylabels[0]):
-                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                                    ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                        xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+
+                                if hname == "mtt_vs_tlep_ctstar_abs":
+                                    #set_trace()
+                                    rax.set_xticks(mtt_bin_inds_to_plot)
+                                    rax.set_xticklabels(mtt_bins_to_plot)
+
 
                         hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
     
@@ -2112,7 +2175,7 @@ if args.bkg_est:
                         figname = os.path.join(bkg_dir, "%s_BKG_Est_orthog_%s" % ("_".join([sys, jmult, args.lepton, hname]), bkg_name))
                         fig.savefig(figname)
                         print(f"{figname} written")
-                        plt.close()
+                        plt.close(fig)
 
 
 # plots with EWK+QCD estimation
@@ -2285,16 +2348,18 @@ if args.vary_norm:
                             ## plot y labels
                             if plot_ylabels is not None: # (binlabels, bin_locs)
                                 for idx, label in enumerate(plot_ylabels[0]):
-                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                                    ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                        xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                                    #rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                    #    xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
 
                         hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(bkg_dir, "%s_BKG_Est_orthog_VARY_NORM_%s" % ("_".join([sys, jmult, args.lepton, hname]), bkg_name))
                         fig.savefig(figname)
-                        print("%s written" % figname)
-                        plt.close()
+                        print(f"{figname} written")
+                        plt.close(fig)
 
 
 if args.vary_shape:
@@ -2468,16 +2533,18 @@ if args.vary_shape:
                             ## plot y labels
                             if plot_ylabels is not None: # (binlabels, bin_locs)
                                 for idx, label in enumerate(plot_ylabels[0]):
-                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                                    ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                        xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                                    #rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                    #    xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
 
                         hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(bkg_dir, "%s_BKG_Est_orthog_VARY_SHAPE_%s" % ("_".join([sys, jmult, args.lepton, hname]), bkg_name))
                         fig.savefig(figname)
-                        print("%s written" % figname)
-                        plt.close()
+                        print(f"{figname} written")
+                        plt.close(fig)
 
 
 if args.vary_shape_and_norm:
@@ -2690,23 +2757,19 @@ if args.vary_shape_and_norm:
                             ## plot y labels
                             if plot_ylabels is not None: # (binlabels, bin_locs)
                                 for idx, label in enumerate(plot_ylabels[0]):
-                                    rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
-                                        xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
+                                    ax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                        xytext=(0, 250 if plot_xlabels is None else 120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                                    #rax.annotate(label, xy=(plot_ylabels[1][idx], 0), xycoords=("data", "axes fraction"),
+                                    #    xytext=(0, -50 if plot_xlabels is None else -120), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.5, rotation=45)
 
                         hep.cms.label(ax=ax, data=withData, year=args.year, lumi=round(data_lumi_year["%ss" % args.lepton]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(bkg_dir, "%s_BKG_Est_orthog_VARY_SHAPE_AND_NORM_%s" % ("_".join([sys, jmult, args.lepton, hname]), bkg_name))
                         fig.savefig(figname)
-                        print("%s written" % figname)
-                        plt.close()
+                        print(f"{figname} written")
+                        plt.close(fig)
 
 
-#    if args.save_sys:
-#        from coffea.util import save
-#        outname = "%s/%s/%s_Post_QCD_Est_dict.coffea" % (outdir, args.lepton, args.lepton)
-#        save(post_bkg_est, outname)
-#        #outname = "%s/%s/%s_QCD_Est_mtt_ctstar_dict.coffea" % (outdir, args.lepton, args.lepton)
-#        #save(mtt_ctstar_bkg_est, outname)
-#        print("%s written" % outname)
-
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
