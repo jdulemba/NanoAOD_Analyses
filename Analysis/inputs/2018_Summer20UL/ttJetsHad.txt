@@ -118,11 +118,11 @@ root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/EAA65746-9B4C-0849-899A-2EBCF315D49D.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/EBD09425-13A3-754A-8743-32DE9506D670.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F1BA27CA-333F-3D47-96B9-581B94F5416D.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F4FFAF61-5B6F-9143-AC96-6FA92EE7AEEA.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F62AFECD-F162-F545-9644-C459D3C88B37.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F749A185-960A-AE45-A4D6-B5DA317B176E.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F94409D3-272D-A744-BFED-489A8132ACD8.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/FC24806A-F0C1-044F-BD4A-9D9DEA11BB3A.root
+root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F4FFAF61-5B6F-9143-AC96-6FA92EE7AEEA.root
+root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F62AFECD-F162-F545-9644-C459D3C88B37.root
+root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F749A185-960A-AE45-A4D6-B5DA317B176E.root
+root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/F94409D3-272D-A744-BFED-489A8132ACD8.root
+root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/FC24806A-F0C1-044F-BD4A-9D9DEA11BB3A.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/10000/1B9E2805-303F-6942-A597-53E0CD6A6DF4.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/10000/2354AF5D-65AB-2943-BF1E-E2EF4DC03921.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/10000/24C9B3F7-A7BE-AD42-BA98-6C58C42F035C.root

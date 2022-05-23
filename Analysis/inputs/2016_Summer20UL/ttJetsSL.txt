@@ -256,7 +256,7 @@ root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLept
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/4CA26608-6F0B-F044-AD29-EF3EB5B14D28.root
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/533019FB-B6BC-844A-8765-CD9353CCAFAA.root
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/6546823D-A1FF-ED4F-BD37-17BA3BB84942.root
-root://xrootd-cms.infn.it//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/65C5763B-875B-2944-BFCF-439C041083DA.root
+root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/65C5763B-875B-2944-BFCF-439C041083DA.root
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/88A75C2C-2538-A24A-B917-3968FE8AE7FA.root
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/8BAF562E-0AA2-F74E-B390-14EDA2AE4902.root
 root://eos.grid.vbc.ac.at:1094//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/C8F4B3BC-30D7-9E40-99FB-1D179C1A72F0.root
