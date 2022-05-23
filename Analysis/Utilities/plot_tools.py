@@ -32,7 +32,8 @@ def create_bkg_groups(mode):
         #template_groups = {
             year: {
                 "EWQCD" : ["QCD*", "[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"] if base_jobid == "Summer20UL" else ["QCD*", "[WZ][WZ]", "[WZ]Jets*", "tt[WZ]*"],
-                "TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
+                "TT" : ["ttJets*"],
+                #"TT" : ["ttJets*_right", "ttJets*_matchable", "ttJets*_unmatchable", "ttJets*_sl_tau", "ttJets*_other"],
                 #"QCD" : ["QCD*"],
                 #"VV" : ["[WZ][WZ]"],
                 #"TTV" : ["tt[WZ]*"],
@@ -155,28 +156,36 @@ def create_sig_groups(mode):
 
 
 def get_styles(sample, styles):
-    best_pattern = ""
-    for pattern, style_dict in styles.items():
-        if fnmatch.fnmatch(sample, pattern):
-            if len(pattern) > len(best_pattern):
-                best_pattern = pattern
-    if best_pattern:
-        return styles[best_pattern]["facecolor"], styles[best_pattern]["name"]
+    #set_trace()
+    if sample in styles.keys():
+        return styles[sample]["facecolor"], styles[sample]["name"]
     else:
-        return "r", sample
+        best_pattern = ""
+        for pattern, style_dict in styles.items():
+            if sample in style_dict.keys():
+                best_pattern = pattern
+            if fnmatch.fnmatch(sample, pattern):
+                if len(pattern) > len(best_pattern):
+                    best_pattern = pattern
+        if best_pattern:
+            return styles[best_pattern]["facecolor"], styles[best_pattern]["name"]
+        else:
+            return "r", sample
 
 def get_label(sample, styles):
-    best_pattern = ""
-    for pattern, style_dict in styles.items():
-        if fnmatch.fnmatch(sample, pattern):
-            if len(pattern) > len(best_pattern):
-                best_pattern = pattern
-    if best_pattern:
-        return styles[best_pattern]["name"]
+    if sample in styles.keys():
+        return styles[sample]["name"]
     else:
-        return sample
+        best_pattern = ""
+        for pattern, style_dict in styles.items():
+            if fnmatch.fnmatch(sample, pattern):
+                if len(pattern) > len(best_pattern):
+                    best_pattern = pattern
+        if best_pattern:
+            return styles[best_pattern]["name"]
+        else:
+            return sample
 
-#def get_group(sample, styles=dataset_groups):
 def get_group(sample, styles=create_bkg_groups("dataset")):
     best_pattern = ""
     for group_name, patterns in styles.items():
