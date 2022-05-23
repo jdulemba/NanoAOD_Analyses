@@ -29,9 +29,9 @@ to_merge_txt = open(finished_jobs_fname).read()
 finished_samples = to_merge_txt.split("\n")
 
 for sample in finished_samples:
-    coffea_files = [fname for fname in os.listdir(os.path.join(eos_jobdir, sample)) if fname.endswith(".coffea")]
-    if f"{sample}_TOT.coffea" in coffea_files:
-        files_to_remove = [os.path.join(eos_jobdir, sample, fname) for fname in coffea_files if fname != f"{sample}_TOT.coffea"]
+    input_files = [fname for fname in os.listdir(os.path.join(eos_jobdir, sample))]
+    if f"{sample}_TOT.coffea" in input_files:
+        files_to_remove = [os.path.join(eos_jobdir, sample, fname) for fname in input_files if fname != f"{sample}_TOT.coffea"]
         if files_to_remove:
             cmd = f"rm {' '.join(files_to_remove)}"
             print(f"{sample} Executing:\n\t{cmd}\n")
