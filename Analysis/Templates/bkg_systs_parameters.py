@@ -24,7 +24,7 @@ treatment = {
             "TQ" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
             "TW" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
-        "EWQCD_SHAPE" : {
+        "SHAPE" : {
             "EWQCD" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
         "FACTOR" : {
@@ -332,7 +332,7 @@ treatment = {
             "TQ" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
             "TW" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
-        "EWQCD_SHAPE" : {
+        "SHAPE" : {
             "EWQCD" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
         "FACTOR" : {
@@ -640,7 +640,7 @@ treatment = {
             "TQ" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
             "TW" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
-        "EWQCD_SHAPE" : {
+        "SHAPE" : {
             "EWQCD" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
         "FACTOR" : {
@@ -948,7 +948,7 @@ treatment = {
             "TQ" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
             "TW" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
-        "EWQCD_SHAPE" : {
+        "SHAPE" : {
             "EWQCD" : {"m3" : "symm", "m4" : "symm", "e3" : "symm", "e4" : "symm"},
         },
         "FACTOR" : {
