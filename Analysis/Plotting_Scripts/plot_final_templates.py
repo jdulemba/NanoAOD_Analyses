@@ -129,7 +129,7 @@ for jmult in final_hdict.keys():
                     ]
                 else: dw_histos = None
 
-                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+                fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0))
                 #fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
 
