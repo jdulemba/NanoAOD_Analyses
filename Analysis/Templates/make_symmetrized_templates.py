@@ -16,8 +16,6 @@ parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("--only_bkg", action="store_true", help="Make background templates only.")
 parser.add_argument("--only_sig", action="store_true", help="Make signal templates only.")
-parser.add_argument("--kfactors", action="store_true", help="Apply signal k-factors to signal")
-parser.add_argument("--scale_mtop3gev", action="store_true", help="Scale 3GeV mtop variations by 1/6")
 args = parser.parse_args()
 
 
@@ -73,9 +71,9 @@ def check_templates(fname, isSignal=False):
 
     #set_trace()
     if isSignal:
-        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"symmetrized_templates_lj_sig_{args.year}_{jobid}.coffea")
+        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_sig_{args.year}_{jobid}.coffea")
     else:
-        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"symmetrized_templates_lj_bkg_{args.year}_{jobid}.coffea")
+        coffea_out = os.path.join(input_dir, f"symmetrized_templates_lj_bkg_{args.year}_{jobid}.coffea")
 
     save(histo_dict, coffea_out)
     print(f"{coffea_out} written")
@@ -86,8 +84,8 @@ if __name__ == "__main__":
     jobid = os.environ["jobid"]
 
     analyzer = "htt_btag_sb_regions"
-    base_bkg_template_name = f"smoothed_templates_lj_bkg_mtopscaled_{args.year}_{jobid}.coffea" if args.scale_mtop3gev else f"smoothed_templates_lj_bkg_{args.year}_{jobid}.coffea"
-    base_sig_template_name = f"smoothed_templates_lj_sig_kfactors_{args.year}_{jobid}.coffea" if args.kfactors else f"smoothed_templates_lj_sig_{args.year}_{jobid}.coffea"
+    base_bkg_template_name = f"smoothed_templates_lj_bkg_{args.year}_{jobid}.coffea"
+    base_sig_template_name = f"smoothed_templates_lj_sig_{args.year}_{jobid}.coffea"
 
     njets_to_run = ["3Jets", "4PJets"]
 
