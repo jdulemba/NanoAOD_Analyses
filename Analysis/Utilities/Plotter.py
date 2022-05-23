@@ -76,7 +76,8 @@ def plot_stack1d(ax, rax, hdict, xlabel="", ylabel="", sys="nosys", xlimits=None
     #ax.set_ylim(0, None)
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
-    
+
+    #set_trace()    
         ## set legend and corresponding colors
     handles, labels = ax.get_legend_handles_labels()
     for idx, sample in enumerate(labels):
@@ -260,11 +261,19 @@ def plot_2d_norm(values, xlimits, ylimits, xlabel="", ylabel="", hdict=None, mas
     return ax
 
 
-def plot_1D(values, bins, xlimits=None, xlabel="", ylabel="Events", linestyle="-", color="k", density=False, weights=None, ax=None, label="", histtype="step", **kwargs):
+def plot_1D(values, bins, xlimits=None, xlabel="", ylabel="Events", linestyle="-", color="k", density=False, weights=None, ax=None, label="", histtype="step", show_step=True, sumw2=None, **kwargs):
     if ax is None:
         ax = plt.gca()
 
-    hep.plot.histplot(values, bins, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
+    if histtype == "errorbar":
+        #set_trace()
+        if sumw2 is None: raise ValueError("Sumw2 must be specified when plotting errorbars")
+        hep.plot.histplot(values, bins, w2=sumw2, density=density, ax=ax, label=label, marker=None, color=color, histtype=histtype, xerr=True)
+        #hep.plot.histplot(values, bins, density=density, ax=ax, label=label, marker=None, color=color, histtype=histtype, xerr=True)
+        if show_step:
+            hep.plot.histplot(values, bins, density=density, ax=ax, label=None, linestyle=linestyle, color=color, histtype="step")
+    else:
+        hep.plot.histplot(values, bins, density=density, ax=ax, label=label, linestyle=linestyle, color=color, histtype=histtype)
     #ax.autoscale(axis="x", tight=True)
     ax.autoscale()
     ax.set_xlim(min(bins), max(bins)) if xlimits is None else ax.set_xlim(xlimits)
@@ -569,12 +578,14 @@ def linearize_hist(histo, overflow=False, no_transpose=False, debug=False):
     yaxis = histo.dense_axes()[1]
     nbinsy = len(yaxis.edges())-1
     nbins = nbinsx*nbinsy
+    #set_trace()
     output_hist = hist.Hist(
         "Events",
         *histo.sparse_axes(),
         hist.Bin("x_y","x_y", nbins, 0., nbins)
         #hist.Bin("%s_%s" % (xaxis.name, yaxis.name),"%s_%s" % (xaxis.name, yaxis.name), nbins, 0., nbins)
     )
+    output_hist.axis("x_y")._bin_names = np.tile(histo.axis(xaxis).edges(), histo.axis(yaxis).edges().size)
 
         ## initialize hist to have empty bins for each key in histo.values().keys()
     for key in histo.values().keys():
