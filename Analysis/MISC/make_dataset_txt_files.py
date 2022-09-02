@@ -55,19 +55,24 @@ for sample in samples_to_run:
         flist = das.query(f"file dataset={sample['DBSName']} instance={sample['tier']}") if "tier" in sample else das.query(f"file dataset={sample['DBSName']}")#, True)
         #set_trace()
         for idx, fname in enumerate(flist):
-            site_list = das.query(f"site file={fname}")
-            already_changed = False
-            for site in site_list:
-                if already_changed: continue
-                if site in site_name_to_xrootd.keys():
-                    flist[idx] = fname.replace("/store", f"root://{site_name_to_xrootd[site]}//store")
-                    #flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
-                    already_changed = True
+            if "site" in sample:
+                #set_trace()
+                flist[idx] = fname.replace("/store", f"root://{sample['site']}//store")
+                already_changed = True
+            else:
+                site_list = das.query(f"site file={fname}")
+                already_changed = False
+                for site in site_list:
+                    if already_changed: continue
+                    if site in site_name_to_xrootd.keys():
+                        flist[idx] = fname.replace("/store", f"root://{site_name_to_xrootd[site]}//store")
+                        #flist[idx] = fname.replace("/store", "root://%s//store" % site_name_to_xrootd[site])
+                        already_changed = True
 
             if not already_changed:
-                set_trace()
+                #set_trace()
                 print(f"No site found for {fname}")
-                flist[idx] = fname.replace("/store", f"root://{site_name_to_xrootd['NEED']}//store")
+                flist[idx] = fname.replace("/store", "root://cmseos.fnal.gov//store") if "tier" in sample else fname.replace("/store", f"root://{site_name_to_xrootd['NEED']}//store")
 
         fnames = "\n".join(sorted(flist))
 
