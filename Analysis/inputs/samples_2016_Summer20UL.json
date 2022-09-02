@@ -5,6 +5,21 @@
         "name": "ttJetsDiLep"
     },
     {
+        "DBSName": "/TTTo2L2Nu_TuneCP5CR1_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_CR1"
+    },
+    {
+        "DBSName": "/TTTo2L2Nu_TuneCP5CR2_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_CR2"
+    },
+    {
+        "DBSName": "/TTTo2L2Nu_TuneCP5_erdON_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 87.3348,
+        "name": "ttJetsDiLep_erdON"
+    },
+    {
         "DBSName": "/TTTo2L2Nu_TuneCP5down_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 87.3348,
         "name": "ttJetsDiLep_ueDOWN"
@@ -58,6 +73,21 @@
         "DBSName": "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 380.11432,
         "name": "ttJetsHad"
+    },
+    {
+        "DBSName": "/TTToHadronic_TuneCP5CR1_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_CR1"
+    },
+    {
+        "DBSName": "/TTToHadronic_TuneCP5CR2_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_CR2"
+    },
+    {
+        "DBSName": "/TTToHadronic_TuneCP5_erdON_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 380.11432,
+        "name": "ttJetsHad_erdON"
     },
     {
         "DBSName": "/TTToHadronic_TuneCP5down_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
@@ -114,6 +144,21 @@
         "DBSName": "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
         "xsection": 364.31088,
         "name": "ttJetsSL"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_TuneCP5CR1_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_CR1"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_TuneCP5CR2_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_CR2"
+    },
+    {
+        "DBSName": "/TTToSemiLeptonic_TuneCP5_erdON_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+        "xsection": 364.31088,
+        "name": "ttJetsSL_erdON"
     },
     {
         "DBSName": "/TTToSemiLeptonic_TuneCP5down_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
@@ -1019,6 +1064,48 @@
         "name": "HtoTTJetsDiLep_M1000_W25p0_Res"
     },
 
+
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m450_w40p5_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsSL_M450_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m550_w49p5_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsSL_M550_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m700_w63p0_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsSL_M700_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo1L1Nu2J_m900_w81p0_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsSL_M900_W9p0_Res"
+    },
+
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m450_w40p5_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-v1-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsDiLep_M450_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m550_w49p5_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-v1-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsDiLep_M550_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m700_w63p0_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-v1-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsDiLep_M700_W9p0_Res"
+    },
+    {
+        "DBSName": "/HpseudoToTTTo2L2Nu_m900_w81p0_res_TuneCP5_13TeV-madgraph_pythia8/lpcbtag-nanoAODv2_16post-v1-00000000000000000000000000000000/USER",
+        "tier": "prod/phys03",
+        "name": "AtoTTJetsDiLep_M900_W9p0_Res"
+    },
 
 
     {
