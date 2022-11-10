@@ -11,7 +11,8 @@ import operator
 from coffea.jetmet_tools.CorrectedJetsFactory import awkward_rewrap
 from coffea.jetmet_tools.CorrectedJetsFactory import rewrap_recordarray
 
-def hem1516_corr(jets, MET, corr, lazy_cache): # HEM region that had issues in 2018 data
+def hem1516_corr(jets, MET, met_factory, lazy_cache): # HEM region that had issues in 2018 data
+    #set_trace()
     # all values based on recommendation from https://hypernews.cern.ch/HyperNews/CMS/get/JetMET/2000.html
     jets_scale = ak.to_numpy(ak.ones_like(ak.flatten(jets["pt"])))
     jets_20pc_mask = ak.to_numpy(ak.flatten((-1.57 < jets["phi"]) & (jets["phi"] < -0.87) & (-2.5 < jets["eta"]) & (jets["eta"] < -1.3)))
@@ -46,7 +47,7 @@ def hem1516_corr(jets, MET, corr, lazy_cache): # HEM region that had issues in 2
 
         ## rescale MET based on updated jet values, using form from CorrectedMETFactory
     #set_trace()
-    new_met = corr["MC"]["METFactory"].build(MET, new_jets, lazy_cache=lazy_cache)
+    new_met = met_factory.build(MET, new_jets, lazy_cache=lazy_cache)
 
     return new_jets, new_met
 
@@ -166,35 +167,142 @@ def select_leptons(events, year, noIso=False, cutflow=None, hem_15_16=False):
 
     return evt_sel.require(lep_and_filter_pass=True)
 
-def jets_selection(events, year, cutflow=None, shift="", hem_15_16=False):
+def jets_selection(events, year, cutflow=None, shift="", hem_15_16=False, hem_treat="Remove", met_factory=None):
         # get jet selection for systematic shift (can only support one at a time)
-    if "JES" in shift:
+
+    if "JES_FlavorPureBottomOnlyBottomJets" in shift:
+        print("Only bottom jets: "+shift)
         _, sysvar = shift.split("JES_") # get name of systematic variation
         var = sysvar.split("_")[-1] # get variation
         unc = sysvar.split(f"_{var}")[0]
 
-            # have to change the name in 2016APV because both 2016 eras have the same fucking names
+            # have to change the name in 2016APV because both 2016 eras have the same names
         if year == "2016APV":
             unc = unc.replace("2016APV", "2016")
 
-        jets_to_use = events["Jet"][f"JES_{unc}"]["up" if var == "UP" else "down"]
-        met_to_use = events["MET"][f"JES_{unc}"]["up" if var == "UP" else "down"]
+            # combine varied b jets with original corrected light jets
+        varied_jets = events["CorrectedJets"]["JES_FlavorPureBottom"]["up" if var == "UP" else "down"]
+        varied_bottom_jets = varied_jets[np.abs(varied_jets["partonFlavour"]) == 5]
+        orig_light_jets = events["CorrectedJets"][np.abs(events["CorrectedJets"]["partonFlavour"]) != 5]
+        jets_to_use = ak.concatenate( [varied_bottom_jets, orig_light_jets] , axis=1)
+
+            # recompute MET with new collection of jets
+        met_to_use = met_factory.build(events["MET"], jets_to_use, lazy_cache=events.caches[0])
+
+    elif "JES_FlavorPureCharmOnlyCharmJets" in shift:
+        print("Only bottom jets: "+shift)
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
+            # combine varied b jets with original corrected light jets
+        varied_jets = events["CorrectedJets"]["JES_FlavorPureCharm"]["up" if var == "UP" else "down"]
+        varied_charm_jets = varied_jets[np.abs(varied_jets["partonFlavour"]) == 4]
+        orig_other_jets = events["CorrectedJets"][np.abs(events["CorrectedJets"]["partonFlavour"]) != 4]
+        jets_to_use = ak.concatenate( [varied_charm_jets, orig_other_jets] , axis=1)
+
+            # recompute MET with new collection of jets
+        met_to_use = met_factory.build(events["MET"], jets_to_use, lazy_cache=events.caches[0])
+
+    elif "JES_FlavorPureQuarkOnlyQuarkJets" in shift:
+        print("Only bottom jets: "+shift)
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
+            # combine varied b jets with original corrected light jets
+        varied_jets = events["CorrectedJets"]["JES_FlavorPureQuark"]["up" if var == "UP" else "down"]
+        varied_quark_jets = varied_jets[(np.abs(varied_jets["partonFlavour"]) == 1) | (np.abs(varied_jets["partonFlavour"]) == 2) | (np.abs(varied_jets["partonFlavour"]) == 3)]
+        orig_other_jets = events["CorrectedJets"][(np.abs(events["CorrectedJets"]["partonFlavour"]) != 1) & (np.abs(events["CorrectedJets"]["partonFlavour"]) != 2) & (np.abs(events["CorrectedJets"]["partonFlavour"]) != 3)]
+        jets_to_use = ak.concatenate( [varied_quark_jets, orig_other_jets] , axis=1)
+
+            # recompute MET with new collection of jets
+        met_to_use = met_factory.build(events["MET"], jets_to_use, lazy_cache=events.caches[0])
+
+    elif "JES_FlavorPureGluonOnlyGluonJets" in shift:
+        print("Only bottom jets: "+shift)
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
+            # combine varied b jets with original corrected light jets
+        varied_jets = events["CorrectedJets"]["JES_FlavorPureGluon"]["up" if var == "UP" else "down"]
+        varied_quark_jets = varied_jets[np.abs(varied_jets["partonFlavour"]) == 21]
+        orig_other_jets = events["CorrectedJets"][np.abs(events["CorrectedJets"]["partonFlavour"]) != 21]
+        jets_to_use = ak.concatenate( [varied_quark_jets, orig_other_jets] , axis=1)
+
+            # recompute MET with new collection of jets
+        met_to_use = met_factory.build(events["MET"], jets_to_use, lazy_cache=events.caches[0])
+
+    elif "JES_FlavorQCDOnlyLightJets" in shift:
+        print("Only Light jets: "+shift)
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
+        #set_trace()
+            # combine varied light jets with original corrected bottom jets
+        varied_jets = events["CorrectedJets"]["JES_FlavorQCD"]["up" if var == "UP" else "down"]
+        varied_light_jets = varied_jets[np.abs(varied_jets["partonFlavour"]) != 5]
+        orig_bottom_jets = events["CorrectedJets"][np.abs(events["CorrectedJets"]["partonFlavour"]) == 5]
+        jets_to_use = ak.concatenate( [varied_light_jets, orig_bottom_jets] , axis=1)
+
+            # recompute MET with new collection of jets
+        met_to_use = met_factory.build(events["MET"], jets_to_use, lazy_cache=events.caches[0])
+
+    elif "JES" in shift:
+        print(shift)
+        _, sysvar = shift.split("JES_") # get name of systematic variation
+        var = sysvar.split("_")[-1] # get variation
+        unc = sysvar.split(f"_{var}")[0]
+
+            # have to change the name in 2016APV because both 2016 eras have the same names
+        if year == "2016APV":
+            unc = unc.replace("2016APV", "2016")
+
+        jets_to_use = events["CorrectedJets"][f"JES_{unc}"]["up" if var == "UP" else "down"]
+        met_to_use = events["CorrectedMET"][f"JES_{unc}"]["up" if var == "UP" else "down"]
+        #set_trace()
     elif "JER" in shift:
         _, var = shift.split("_")
-        jets_to_use = events["Jet"]["JER"]["up" if var == "UP" else "down"]
-        met_to_use = events["MET"]["JER"]["up" if var == "UP" else "down"]
+        jets_to_use = events["CorrectedJets"]["JER"]["up" if var == "UP" else "down"]
+        met_to_use = events["CorrectedMET"]["JER"]["up" if var == "UP" else "down"]
     elif "MET" in shift:
         _, var = shift.split("_")
-        jets_to_use = events["Jet"]
-        met_to_use = events["MET"]["MET_UnclusteredEnergy"]["up" if var == "UP" else "down"]
+        jets_to_use = events["CorrectedJets"]
+        met_to_use = events["CorrectedMET"]["MET_UnclusteredEnergy"]["up" if var == "UP" else "down"]
     else:
-        jets_to_use = events["Jet"]
-        met_to_use = events["MET"]
+        jets_to_use = events["CorrectedJets"]
+        met_to_use = events["CorrectedMET"]
 
     if (year == "2018") and (hem_15_16):
         #set_trace()
-        jets_to_use = remove_HEM_objs(obj=jets_to_use, isData=events.run if events.metadata["dataset"].startswith("data_Single") else None)
-        #jets_to_use, met_to_use = hem1516_corr(jets=jets_to_use, MET=met_to_use, corr=hem_15_16, lazy_cache=events.caches[0])
+        if hem_treat == "Remove":
+            #print("removing HEM objects")
+            jets_to_use = remove_HEM_objs(obj=jets_to_use, isData=events.run if events.metadata["dataset"].startswith("data_Single") else None)
+        elif hem_treat == "Scale":
+            if not met_factory:
+                raise ValueError("You must provide a 'MET factory' in order to rebuild MET after scaling jets")
+            #print("scaling HEM objects")
+            jets_to_use, met_to_use = hem1516_corr(jets=jets_to_use, MET=met_to_use, met_factory=met_factory, lazy_cache=events.caches[0])
+        else:
+            raise ValueError(f"{hem_treat} not supported")
         #set_trace()
 
         # evaluate selection on jets

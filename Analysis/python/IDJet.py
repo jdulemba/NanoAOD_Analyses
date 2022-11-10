@@ -5,6 +5,8 @@ import numpy as np
 import os
 from cachetools import LRUCache
 
+btag_tagger_to_disc_name = {"DeepJet" : "btagDeepFlavB", "DeepCSV" : "btagDeepB"}
+
 btag_values = {}
 if os.environ["base_jobid"] == "NanoAODv6":
     btag_values["2016"] = {
@@ -118,6 +120,7 @@ def make_leadjet_pt_cut(jets):
 
 def process_jets(events, year, corrections=None):
 
+    orig_met = events["MET"]
     jets = events["Jet"]
     jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
     jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
@@ -152,13 +155,16 @@ def process_jets(events, year, corrections=None):
         if ak.sum(ak.num(jets)) > 0:
             cache = LRUCache(int(1e10), lambda a: a.nbytes)
             corrected_jets = jet_factory.build(jets, lazy_cache=cache)
-            corrected_met = met_factory.build(events["MET"], corrected_jets, lazy_cache=cache)
+            corrected_met = met_factory.build(orig_met, corrected_jets, lazy_cache=cache)
+            #corrected_met = met_factory.build(events["MET"], corrected_jets, lazy_cache=cache)
         else:
             corrected_jets = jets
-            corrected_met = events["MET"]
+            corrected_met = orig_met
+            #corrected_met = events["MET"]
 
     else:
         corrected_jets = jets
-        corrected_met = events["MET"]
+        corrected_met = orig_met
+        #corrected_met = events["MET"]
 
     return corrected_jets, corrected_met
