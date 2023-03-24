@@ -8,7 +8,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 import Utilities.Plotter as Plotter
@@ -23,6 +23,7 @@ import numpy as np
 from coffea.lookup_tools.root_converters import convert_histo_root_file
 from coffea.lookup_tools.dense_lookup import dense_lookup
 from fnmatch import fnmatch
+import Utilities.common_features as cfeatures
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -34,15 +35,17 @@ proj_dir = os.environ["PROJECT_DIR"]
 base_jobid = os.environ["base_jobid"]
 jobid = os.environ["jobid"]
 analyzer = "make_nnlo_dists"
+plots_dir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 f_ext = "TOT.coffea"
-outdir = os.path.join(proj_dir, "plots", base_jobid, analyzer)
+outdir = os.path.join(plots_dir, base_jobid, analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
     
 style_dict = {
-    "2016APV" : ("2016 pre-VFP", "#984ea3"), # purple
-    "2016" : ("2016 post-VFP", "#377eb8"), ## blue
+    "2016APV" : ("2016preVFP", "#984ea3"), # purple
+    "2016" : ("2016postVFP", "#377eb8"), ## blue
     "2017" : ("2017", "#e41a1c"), ## red
     "2018" : ("2018", "#4daf4a"), ## green
 }
@@ -56,7 +59,6 @@ nnlo_fname = "MATRIX_ttmVStheta.root" # "xsec_central" dist has only statistical
 nnlo_file = convert_histo_root_file(os.path.join(proj_dir, "NNLO_files", nnlo_fname))
 #set_trace()
 nnlo_var = "xsec_central"
-#nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=[nnlo_var],
 nnlo_dict = Plotter.root_converters_dict_to_hist(nnlo_file, vars=["xsec_central", "xsec_down", "xsec_up"],
     sparse_axes_list=[{"name": "dataset", "label" : "Event Process", "fill" : "nnlo"}],
     dense_axes_list=[{"name" : "ctstar", "idx" : 0}, {"name": "mtt", "idx" : 1}],
@@ -72,16 +74,25 @@ nnlo_down_normed_histo.scale(1./nnlo_down_normed_histo.values(overflow="all")[()
 nnlo_up_normed_histo = nnlo_dict["xsec_up"].integrate("dataset").copy()
 nnlo_up_normed_histo.scale(1./nnlo_up_normed_histo.values(overflow="all")[()].sum())
 
+max_mtt_val = 2000.
 mtt_binning = np.around(nnlo_dict[nnlo_var].axis("mtt").edges(), decimals=0)
+max_mtt_val_bin = np.argwhere(mtt_binning == max_mtt_val)[0][0]
+mtt_binwidths = np.array([mtt_binning[i+1] - mtt_binning[i] for i in range(max_mtt_val_bin)])
 ctstar_binning = np.around(nnlo_dict[nnlo_var].axis("ctstar").edges(), decimals=2)
+ctstar_binwidths = np.array([ctstar_binning[i+1] - ctstar_binning[i] for i in range(len(ctstar_binning) - 1)])
+tiled_mtt_binwidths = np.tile(mtt_binwidths, (ctstar_binwidths.size, 1)).T
+tiled_ctstar_binwidths = np.tile(ctstar_binwidths, (mtt_binwidths.size, 1))
+
 #set_trace()
 vlines = [(len(mtt_binning)-1)*ybin for ybin in range(1, len(ctstar_binning)-1)]
 png_ext = "StatUncs"
 nnlo_leg = "(Stat.)"
 
 axis_labels_dict = {
-    "mtt" : "$m_{t\\bar{t}}$",
-    "ctstar" : "cos($\\theta^{*}_{t}$)"
+    #"mtt" : "$m_{t\\bar{t}}$ [GeV]",
+    #"ctstar" : "cos($\\theta^{*}_{t}$)"
+    "mtt" : cfeatures.variable_names_to_labels["mtt"],
+    "ctstar" : cfeatures.variable_names_to_labels["ctstar"],
 }
 
         # histo plotting params
@@ -89,8 +100,8 @@ xtitle, ytitle = axis_labels_dict[nnlo_histo.dense_axes()[0].name], axis_labels_
 ztitle = "$\dfrac{d^{2} \\sigma}{d m_{t\\bar{t}} d cos(\\theta^{*}_{t})}$"
 opts = {"cmap_label" : ztitle}
 norm_opts = {"cmap_label" : "$\dfrac{1}{\\sigma}$%s [$GeV^{-1}$]" % ztitle}
-x_lims = (np.min(nnlo_histo.dense_axes()[0].edges()), np.max(nnlo_histo.dense_axes()[0].edges()))
-y_lims = (np.min(nnlo_histo.dense_axes()[1].edges()), np.max(nnlo_histo.dense_axes()[1].edges()))
+x_lims = (np.min(nnlo_histo.dense_axes()[0].edges()), min(np.max(nnlo_histo.dense_axes()[0].edges()), max_mtt_val))
+y_lims = (np.min(nnlo_histo.dense_axes()[1].edges()), min(np.max(nnlo_histo.dense_axes()[1].edges()), max_mtt_val))
 
 #set_trace()
 
@@ -109,16 +120,17 @@ if args.combine_years:
     histos_dict = {}
     #set_trace()
     for year in years_to_run:
-        input_dir = os.path.join(proj_dir, "results", f"{year}_{base_jobid}", analyzer)
+        input_dir = os.path.join(eos_dir, "results", f"{year}_{base_jobid}", analyzer)
         fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
         hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
     
         tune_histo = hdict[tune_var]
-        scale_dict = {tt : lumi_correction[year]["Muons"][tt] for tt in ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]}
+        scale_dict = {tt : lumi_correction["TOT"]["Muons"][tt] for tt in ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]}
         tune_histo.scale(scale_dict, axis="dataset")
-    
+
             # orig
-        tune_histo = hdict[tune_var].integrate("dataset")
+        tune_histo = tune_histo.integrate("dataset")
+        #tune_histo = hdict[tune_var].integrate("dataset")
             # rebin
         tune_histo = tune_histo.rebin("mtt", hist.Bin("mtt", "mtt", mtt_binning))
         tune_histo = tune_histo.rebin("ctstar", hist.Bin("ctstar", "ctstar", ctstar_binning))
@@ -139,10 +151,11 @@ if args.combine_years:
         # plot yield 2d version of MC hist for each year
     fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
-    
-    tune_vals = tune_histo.values()[()]        
+
+    #set_trace()    
+    tune_vals = tune_histo[y_lims[0]:y_lims[-1], :].values()[()]        
     tune_vals = np.where(abs(tune_vals) < 1e-10, 0, tune_vals) # set values that are less than 1e-10 to 0
-    Plotter.plot_2d_norm(tune_histo, xaxis_name=tune_histo.dense_axes()[0].name, yaxis_name=tune_histo.dense_axes()[1].name,
+    Plotter.plot_2d_norm(hdict=tune_histo[y_lims[0]:y_lims[-1], :], xaxis_name=tune_histo.dense_axes()[0].name, yaxis_name=tune_histo.dense_axes()[1].name,
         values=np.ma.masked_where(tune_vals <= 0.0, tune_vals), # mask nonzero probabilities for plotting
         xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_histo.dense_axes()[1].name],
         ax=ax, **opts)
@@ -152,7 +165,7 @@ if args.combine_years:
         0.98, 0.90, "$t\\bart$\nparton level",
         fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes, color="w",
     )
-    hep.cms.label(ax=ax, data=False, year="All Eras")
+    hep.cms.label(ax=ax, data=False, year="Run 2")
     
     figname = os.path.join(outdir, f"AllYears_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}")
     fig.savefig(figname)
@@ -162,10 +175,13 @@ if args.combine_years:
         # plot normalized 2d version of MC hists for each year
     fig_norm, ax_norm = plt.subplots()
     fig_norm.subplots_adjust(hspace=.07)
-    
-    tune_norm_vals = tune_normed_histo.values()[()]
+
+    tune_norm_vals = tune_normed_histo[y_lims[0]:y_lims[-1], :].values()[()]
     tune_norm_vals = np.where(abs(tune_norm_vals) < 1e-10, 0, tune_norm_vals) # set values that are less than 1e-10 to 0
-    Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+    #set_trace()    
+        # make values differential
+    tune_norm_vals = tune_norm_vals/(tiled_ctstar_binwidths*tiled_mtt_binwidths)
+    Plotter.plot_2d_norm(hdict=tune_normed_histo[y_lims[0]:y_lims[-1], :], xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
         values=np.ma.masked_where(tune_norm_vals <= 0.0, tune_norm_vals), # mask nonzero probabilities for plotting
         xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
         ax=ax_norm, **norm_opts)
@@ -174,9 +190,10 @@ if args.combine_years:
         0.98, 0.90, "$t\\bart$\nparton level",
         fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_norm.transAxes, color="w",
     )
-    hep.cms.label(ax=ax_norm, data=False, year="All Eras")
+    hep.cms.label(ax=ax_norm, data=False, year="Run 2")
     
-    figname_norm = os.path.join(outdir, f"AllYears_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}_Norm")
+    figname_norm = os.path.join(outdir, f"AllYears_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}_Differential")
+    #figname_norm = os.path.join(outdir, f"AllYears_{base_jobid}_ttJets_xsec_{tune_var}_{png_ext}_Norm")
     fig_norm.savefig(figname_norm)
     print(f"{figname_norm} written")
     
@@ -186,21 +203,26 @@ if args.combine_years:
     fig_ratio.subplots_adjust(hspace=.07)
     
     #set_trace()
-    normed_ratio_vals = nnlo_normed_histo.values()[()].T/tune_norm_vals
+    nnlo_norm_vals = nnlo_normed_histo.values()[()][:, 0:max_mtt_val_bin].T
+    nnlo_norm_vals = nnlo_norm_vals/(tiled_ctstar_binwidths*tiled_mtt_binwidths)
+    normed_ratio_vals = nnlo_norm_vals/tune_norm_vals
+    #normed_ratio_vals = nnlo_normed_histo[:, y_lims[0]:y_lims[-1]].values()[()].T/tune_norm_vals
     normed_ratio_vals = np.where(normed_ratio_vals <= 0, 1, normed_ratio_vals)
     normed_ratio_vals = np.where(normed_ratio_vals == np.inf, 1, normed_ratio_vals)
-    Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+    Plotter.plot_2d_norm(hdict=tune_normed_histo[y_lims[0]:y_lims[-1], :], xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
         values=np.ma.masked_where(normed_ratio_vals <= 0.0, normed_ratio_vals), # mask nonzero probabilities for plotting
         xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
-        ax=ax_ratio, **{"cmap_label" : "NNLO/Tune"})
+        ax=ax_ratio, **{"cmap_label" : "NNLO QCD/NLO QCD"})
     
     ax_ratio.text(
         0.98, 0.90, "$t\\bart$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_ratio.transAxes, color="w",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_ratio.transAxes,
+        #fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_ratio.transAxes, color="w",
     )
-    hep.cms.label(ax=ax_ratio, data=False, year="All Eras")
+    hep.cms.label(ax=ax_ratio, data=False, year="Run 2", exp="")
     
-    figname_ratio = os.path.join(outdir, f"AllYears_{base_jobid}_NNLO_to_Tune_Ratio_xsec_{tune_var}")
+    figname_ratio = os.path.join(outdir, f"AllYears_{base_jobid}_NNLO_to_Tune_Ratio_xsec_{tune_var}_Differential")
+    #figname_ratio = os.path.join(outdir, f"AllYears_{base_jobid}_NNLO_to_Tune_Ratio_xsec_{tune_var}")
     fig_ratio.savefig(figname_ratio)
     print(f"{figname_ratio} written")
     
@@ -231,7 +253,8 @@ else:
     #years_to_run = ["2017"]
     years_to_run = ["2016APV", "2016", "2017", "2018"]    
     for year in years_to_run:
-        input_dir = os.path.join(proj_dir, "results", f"{year}_{base_jobid}", analyzer)
+        input_dir = os.path.join(eos_dir, "results", f"{year}_{base_jobid}", analyzer)
+        #input_dir = os.path.join(proj_dir, "results", f"{year}_{base_jobid}", analyzer)
         fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
         hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
     
@@ -260,7 +283,7 @@ else:
     
         tune_vals = tune_histo.values()[()]        
         tune_vals = np.where(abs(tune_vals) < 1e-10, 0, tune_vals) # set values that are less than 1e-10 to 0
-        Plotter.plot_2d_norm(tune_histo, xaxis_name=tune_histo.dense_axes()[0].name, yaxis_name=tune_histo.dense_axes()[1].name,
+        Plotter.plot_2d_norm(hdict=tune_histo, xaxis_name=tune_histo.dense_axes()[0].name, yaxis_name=tune_histo.dense_axes()[1].name,
             values=np.ma.masked_where(tune_vals <= 0.0, tune_vals), # mask nonzero probabilities for plotting
             xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_histo.dense_axes()[1].name],
             ax=ax, **opts)
@@ -283,7 +306,7 @@ else:
         
         tune_norm_vals = tune_normed_histo.values()[()]
         tune_norm_vals = np.where(abs(tune_norm_vals) < 1e-10, 0, tune_norm_vals) # set values that are less than 1e-10 to 0
-        Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+        Plotter.plot_2d_norm(hdict=tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
             values=np.ma.masked_where(tune_norm_vals <= 0.0, tune_norm_vals), # mask nonzero probabilities for plotting
             xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
             ax=ax_norm, **norm_opts)
@@ -307,10 +330,11 @@ else:
         normed_ratio_vals = nnlo_normed_histo.values()[()].T/tune_norm_vals
         normed_ratio_vals = np.where(normed_ratio_vals <= 0, 1, normed_ratio_vals)
         normed_ratio_vals = np.where(normed_ratio_vals == np.inf, 1, normed_ratio_vals)
-        Plotter.plot_2d_norm(tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
+        Plotter.plot_2d_norm(hdict=tune_normed_histo, xaxis_name=tune_normed_histo.dense_axes()[0].name, yaxis_name=tune_normed_histo.dense_axes()[1].name,
             values=np.ma.masked_where(normed_ratio_vals <= 0.0, normed_ratio_vals), # mask nonzero probabilities for plotting
             xlimits=y_lims, ylimits=x_lims, xlabel=axis_labels_dict[tune_normed_histo.dense_axes()[0].name], ylabel=axis_labels_dict[tune_normed_histo.dense_axes()[1].name],
-            ax=ax_ratio, **{"cmap_label" : "NNLO/Tune"})
+            ax=ax_ratio, **{"cmap_label" : "NNLO QCD/NLO QCD"})
+            #ax=ax_ratio, **{"cmap_label" : "NNLO/Tune"})
         
         ax_ratio.text(
             0.98, 0.90, "$t\\bart$\nparton level",
