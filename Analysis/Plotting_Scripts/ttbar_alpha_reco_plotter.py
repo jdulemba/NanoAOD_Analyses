@@ -5,7 +5,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 from coffea.util import load, save
@@ -25,11 +25,14 @@ from scipy import stats
 from scipy import interpolate
 from coffea.lookup_tools.dense_lookup import dense_lookup
 from scipy.optimize import curve_fit
+import Utilities.common_features as cfeatures
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "ttbar_alpha_reco"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -42,8 +45,7 @@ max_years = 4
 #years_to_run = [args.year] if args.year else ["2017", "2018"]
 #max_years = 2
 
-blurb = "$e/\mu$, 3 jets\n$n_{btags} \geq$ 2"
-
+blurb = cfeatures.channel_labels["Lepton_3Jets"]
 
 alpha_corrections = {year : {"E" : {}, "P" : {}} for year in years_to_run}
 
@@ -197,15 +199,14 @@ def find_alpha_correction(medians, xbins, output_xbins, errors=None, ybins=None,
 
     
 for year in years_to_run:
-    input_dir = os.path.join(proj_dir, "results", f"{year}_{jobid}", analyzer)
+    input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", analyzer)
     f_ext = "TOT.coffea"
-    outdir = os.path.join(proj_dir, "plots", f"{year}_{jobid}", analyzer)
+    fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
+    hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+
+    outdir = os.path.join(plot_outdir, f"{year}_{jobid}", analyzer)
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
-
-    fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
-
-    hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
     lumi_to_use = (data_lumi_dict[year]["Muons"]+data_lumi_dict[year]["Electrons"])/2000.
 
@@ -297,7 +298,8 @@ for year in years_to_run:
                 mtt_label = "$m_{t\\bar{t}}^{Reco}$ $\geq$ %s" % bin_min if idx == len(mtt_bin_ranges)-1 else "%s $\leq$ $m_{t\\bar{t}}^{Reco}$ $<$ %s" % (bin_min, bin_max)
                    # add lepton/jet multiplicity label
                 ax.text(
-                    0.02, 0.84, "%s\n%s" % (blurb, mtt_label),
+                    0.02, 0.88, "%s\n%s" % (blurb, mtt_label),
+                    #0.02, 0.84, "%s\n%s" % (blurb, mtt_label),
                     #0.02, 0.88, blurb,
                     horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                 )
@@ -307,13 +309,14 @@ for year in years_to_run:
                 #    horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
                 #)
                     ## add lumi/cms label
-                hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
+                #hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
 
                 #set_trace()
                 figname = os.path.join(pltdir, "_".join([year, jobid, hname, "Mtt%sto%s" % (int(bin_min), int(bin_max))]))
                 fig.savefig(figname)
                 print(f"{figname} written")
-                plt.close()
+                plt.close(fig)
 
                 ## make 2d interpolated fit
             if cat == "ttJets_right":
@@ -330,11 +333,12 @@ for year in years_to_run:
 
                 Plotter.plot_2d_norm(hdict=histo, xlimits=(min(lookup_mtt._axes[0]), max(lookup_mtt._axes[0])), ylimits=mtt_lims, xlabel=mthad_title, ylabel="$m_{t\\bar{t}}^{Reco}$) [GeV]", ax=ax,
                     values=fitvals_mtt.T, xbins=lookup_mtt._axes[0], ybins=lookup_mtt._axes[1], **{"cmap_label" : "%s Fit Values" % alpha_title.split("=")[0]})
-                hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
+                #hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
                 figname = os.path.join(pltdir, "_".join([year, jobid, hname, "Mtt_FitVals"]))
                 fig.savefig(figname)
                 print(f"{figname} written")
-                plt.close()
+                plt.close(fig)
 
 
                 # plots over entire mttbar range
@@ -361,18 +365,20 @@ for year in years_to_run:
                 #set_trace()
                 #plt.plot(lookup_all_1d._axes, fitvals_all_1d, color="r", label="Linear Fit, $\\chi^2$/ndof=%.4f" % chisq_1d)
                 #plt.plot(lookup_all_2d._axes, fitvals_all_2d, color="b", label="Quadratic Fit, $\\chi^2$/ndof=%.4f" % chisq_2d)
-                plt.plot(lookup_all_2d._axes, fitvals_all_2d, color="b", label="$\\alpha_E$ Quadratic Fit, $\\chi^2$/ndof=%.4f" % chisq_2d if hname == "Alpha_THad_E" else "$\\alpha_P$ Quadratic Fit, $\\chi^2$/ndof=%.4f" % chisq_2d)
+                plt.plot(lookup_all_2d._axes, fitvals_all_2d, color="b", label="$\\alpha_E$ Quadratic Fit" if hname == "Alpha_THad_E" else "$\\alpha_P$ Quadratic Fit")
+                #plt.plot(lookup_all_2d._axes, fitvals_all_2d, color="b", label="$\\alpha_E$ Quadratic Fit, $\\chi^2$/ndof=%.4f" % chisq_2d if hname == "Alpha_THad_E" else "$\\alpha_P$ Quadratic Fit, $\\chi^2$/ndof=%.4f" % chisq_2d)
                 plt.errorbar(valid_mthad_bins, valid_medians_all, marker="o", color="black", fmt=".", label="Medians")
                 ax.autoscale()
                 ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.05)
                 ax.legend(loc="upper right")
                 ax.set_xlabel(mthad_title)
                 ax.set_ylabel(alpha_title.split("=")[0])
-                hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
+                #hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
                 figname = os.path.join(pltdir, "_".join([year, jobid, hname, "All_FitVals"]))
                 fig.savefig(figname)
                 print(f"{figname} written")
-                plt.close()
+                plt.close(fig)
 
 
             fig, ax = plt.subplots()
@@ -385,7 +391,8 @@ for year in years_to_run:
 
                # add lepton/jet multiplicity label
             ax.text(
-                0.02, 0.84, "%s\n$m_{t\\bar{t}}^{Reco}$ $\geq$ %s" % (blurb, mtt_range),
+                0.02, 0.88, "%s\n$m_{t\\bar{t}}^{Reco}$ $\geq$ %s" % (blurb, mtt_range),
+                #0.02, 0.84, "%s\n$m_{t\\bar{t}}^{Reco}$ $\geq$ %s" % (blurb, mtt_range),
                 #0.02, 0.88, blurb,
                 horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
             )
@@ -395,13 +402,14 @@ for year in years_to_run:
             #    horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
             #)
                 ## add lumi/cms label
-            hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
+            hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
+            #hep.cms.label(ax=ax, data=False, year=year, lumi=round(lumi_to_use, 1))
 
             #set_trace()
             figname = os.path.join(pltdir, "_".join([year, jobid, hname, "All"]))
             fig.savefig(figname)
             print(f"{figname} written")
-            plt.close()
+            plt.close(fig)
 
 
     ## save corrections
