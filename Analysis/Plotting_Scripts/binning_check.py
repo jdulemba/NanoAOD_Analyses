@@ -36,18 +36,20 @@ args = parser.parse_args()
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 analyzer = "binning_check"
+plot_outdir = os.environ["plots_dir"]
 
 input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", analyzer)
 f_ext = "TOT.coffea"
+fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
+hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
+
 #outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer, "NoNNLOqcdNLOew")
-outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer)
+#outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer)
+outdir = os.path.join(plot_outdir, f"{args.year}_{jobid}", analyzer)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
-fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
-
 #set_trace()
-hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
 jet_mults = {
     "3Jets" : "3 jets",
@@ -482,7 +484,6 @@ if (args.plots == "REL_RESO") or (args.plots == "All"):
                         plt.close()
 
                         fout[f"{hname}_{jmult}_{proc[0]}"] = export2d(hslice[proc].integrate("process"))
-                #set_trace()
                 #fout[f"{hname}_{jmult}"] = export2d(hslice)
 
                 # make plots of relative bin width and resolution for each bin in mtt
@@ -490,6 +491,7 @@ if (args.plots == "REL_RESO") or (args.plots == "All"):
                 #    700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.])
                 #hslice = hslice.rebin(xaxis_name, hist.Bin(xaxis_name, xaxis_name, test_mtt_bins))
 
+                #set_trace()
                     # calculate bin widths
                 mtt_edges = hslice.axis("mtt").edges()
                 #mtt_edges = mtt_edges[np.argwhere(mtt_edges == 300.)[0][0]:] # start mtt bins at 300 GeV
@@ -529,7 +531,7 @@ if (args.plots == "REL_RESO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.92, f"{objtypes['Lep'][args.lepton]}/{jet_mults[jmult]}",
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
                     hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
