@@ -15,7 +15,7 @@ styles = {
         "facecolor" : "#984ea3", ## purple
         "name" : "Z+jets",
     },
-    "single" : {
+    "singlet" : {
         "facecolor" : "#ff7f00", ## orange
         "name" : "single top",
     },
@@ -29,9 +29,13 @@ styles = {
         "facecolor" : "#ff7f00", ## orange
         "name" : "W+jets",
     },
+    "ttJets" : {
+        "facecolor" : "#e41a1c", ## red
+        "name" : "$t\\bar{t}$",
+    },
     "tt" : {
         "facecolor" : "#e41a1c", ## red
-        "name" : "$t\\bart$",
+        "name" : "$t\\bar{t}$",
     },
 #   "tt[WZ]" : {
 #      "legendstyle" : "f",
@@ -45,11 +49,11 @@ styles = {
 #      },
     "QCD" : {
         "facecolor" : "#377eb8", ## blue
-        "name" : "QCD",
+        "name" : "QCD (Sim.)",
     },
     "EWK" : {
         "facecolor" : "#4daf4a", ## green
-        "name" : "EW",
+        "name" : "EW (Sim.)",
     },
     "BKG" : {
         "facecolor" : "#4daf4a", ## green
@@ -57,13 +61,26 @@ styles = {
     },
     "EWQCD" : {
         "facecolor" : "#4daf4a", ## green
-        "name" : "EWQCD (Est.)",
+        "name" : "EWQCD (Data-Driven)",
     },
         ## default name for coffea statistical errors
     "Sum unc." : {
         "facecolor" : "none",
         "linewidth" : 0,
         "name" : "Stat. Unc.",
+        "hatch" : "///",
+    },
+    "Total MEscale Unc." : {
+        "facecolor" : "none",
+        "linewidth" : 0,
+        "name" : "$\mu_{R}$+$\mu_{F}$ Unc.",
+        "hatch" : "///",
+    },
+        ## default name for coffea statistical errors
+    "Total Unc." : {
+        "facecolor" : "none",
+        "linewidth" : 0,
+        "name" : "Stat.+Syst. Unc.",
         "hatch" : "///",
     },
     "data_err_opts" : {
@@ -76,32 +93,32 @@ styles = {
         ## permutation categories
     "ttJets_right" : {
         "facecolor" : "#e41a1c", ## red
-        "name" : "$t\\bart$ correct",
+        "name" : "$t\\bar{t}$ correct",
     },
     "ttJets_matchable" : {
         "facecolor" : "#984ea3", ## purple
-        "name" : "$t\\bart$ matchable",
+        "name" : "$t\\bar{t}$ matchable",
     },
     "ttJets_unmatchable" : {
         "facecolor" : "#ffff33", ## yellow
-        "name" : "$t\\bart$ unmatchable",
+        "name" : "$t\\bar{t}$ unmatchable",
     },
     "ttJets_sl_tau" : {
         "facecolor" : "b",
-        "name" : "$t\\bart$, SL $\\tau$",
+        "name" : "$t\\bar{t}$, SL $\\tau$",
     },
     "ttJets_other" : {
         "facecolor" : "#a65628", ## brown
-        "name" : "$t\\bart$ other",
+        "name" : "$t\\bar{t}$ other",
     },
     "Correct_BLep" : {
-        "name" : "Correct $b_{l}$",
+        "name" : "Correct $b_{\ell}$",
         "linestyle" : "-",
         "color" : "r",
         "elinewidth" : 1,
     },
     "Wrong_BLep" : {
-        "name" : "Wrong $b_{l}$",
+        "name" : "Wrong $b_{\ell}$",
         "linestyle" : "-",
         "color" : "b",
         "elinewidth" : 1,
@@ -176,32 +193,42 @@ styles = {
     "AtoTT" : {
         "color" : "#377eb8", # blue
         "linewidth" : 2,
-        "name" : "$\mathsf{A \\rightarrow t\\bar t}$",
+        "name" : "$\mathsf{A \\rightarrow t\\bar {t}}$",
     },
     "HtoTT" : {
         "color" : "#e41a1c", # red
         "linewidth" : 2,
-        "name" : "$\mathsf{H \\rightarrow t\\bar t}$",
+        "name" : "$\mathsf{H \\rightarrow t\\bar {t}}$",
+    },
+    "M365" : { 
+        "color" : "#e41a1c", # red
+        "linewidth" : 2,
+        "name" : "m=365 GeV",
     },
     "M400" : { 
-        "color" : "#e41a1c", # red
+        "color" : "#377eb8", # blue
         "linewidth" : 2,
         "name" : "m=400 GeV",
     },
     "M500" : { 
-        "color" : "#377eb8", # blue
+        "color" : "#4daf4a", # green
         "linewidth" : 2,
         "name" : "m=500 GeV",
     },
     "M600" : { 
-        "color" : "k", # black
+        "color" : "#984ea3", # purple
         "linewidth" : 2,
         "name" : "m=600 GeV",
     },
-    "M750" : { 
-        "color" : "#4daf4a", # green
+    "M800" : { 
+        "color" : "#ff7f00", # orange
         "linewidth" : 2,
-        "name" : "m=750 GeV",
+        "name" : "m=800 GeV",
+    },
+    "M1000" : { 
+        "color" : "k", # black
+        "linewidth" : 2,
+        "name" : "m=1000 GeV",
     },
     "W2p5" : { 
         "color" : "#e41a1c", # red
@@ -246,15 +273,15 @@ styles = {
         ## ttbar decays
     "ttJetsSL" : {
         "facecolor" : "k",
-        "name" : "$\mathrm{t\\bart}_{\ell j}$",
+        "name" : "$\mathrm{t\\bar{t}}_{\ell j}$",
     },
     "ttJetsDiLep" : {
         "facecolor" : "k",
-        "name" : "$\mathrm{t\\bart}_{\ell \ell}$",
+        "name" : "$\mathrm{t\\bar{t}}_{\ell \ell}$",
     },
     "ttJetsHad" : {
         "facecolor" : "k",
-        "name" : "$\mathrm{t\\bart}_{j j}$",
+        "name" : "$\mathrm{t\\bar{t}}_{j j}$",
     },
 
     "SL e" : {
@@ -363,80 +390,107 @@ for bundle in product(masses, [str(width).replace(".", "p") for width in sorted(
         "facecolor" : "#e41a1c",
         "name" : "$H_{%d\ GeV}^{%s\%%}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
+        # total signal res+int
+    styles["AtoTT_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$A_{%d\ GeV}^{%s\%%}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+    }
+    styles["HtoTT_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$H_{%d\ GeV}^{%s\%%}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+    }
 
     # DiLep events
         # individual positive, negative weights for interference
     styles["AtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["AtoTTJetsDiLep_M%d_W%s_Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTTJetsDiLep_M%d_W%s_Res" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # individual positive, negative weights for interference
     styles["HtoTTJetsDiLep_M%d_W%s_Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTTJetsDiLep_M%d_W%s_Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["HtoTTJetsDiLep_M%d_W%s_Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTTJetsDiLep_M%d_W%s_Res" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+    }
+        # total signal res+int
+    styles["AtoTTJetsDiLep_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+    }
+    styles["HtoTTJetsDiLep_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell \ell}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
     }
 
     # Semilep events
         # individual positive, negative weights for interference
     styles["AtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["AtoTTJetsSL_M%d_W%s_Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["AtoTTJetsSL_M%d_W%s_Res" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
     }
 
         # individual positive, negative weights for interference
     styles["HtoTTJetsSL_M%d_W%s_Int_neg" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int, w$<$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTTJetsSL_M%d_W%s_Int_pos" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int, w$>$0" % (bundle[0], bundle[1].replace("p", ".")),
     }
         # combined Interference
     styles["HtoTTJetsSL_M%d_W%s_Int" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Int" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTTJetsSL_M%d_W%s_Res" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar t}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Res" % (bundle[0], bundle[1].replace("p", ".")),
+    }
+        # total signal res+int
+    styles["AtoTTJetsSL_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$A_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+    }
+    styles["HtoTTJetsSL_M%d_W%s_Total" % bundle] = {
+        "facecolor" : "#e41a1c",
+        "name" : "$H_{%d\ GeV}^{%s\%%}$ $\\rightarrow \mathrm{t\\bar {t}}_{\ell j}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
     }
