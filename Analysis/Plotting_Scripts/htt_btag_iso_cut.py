@@ -32,7 +32,7 @@ parser.add_argument('--plot_shapes', action='store_true', help='Make plots of qc
 parser.add_argument('--save_sys', action='store_true', help='Save dists for all systematic variations')
 args = parser.parse_args()
 
-sys_to_name = systematics.sys_to_name[args.year]
+sys_to_name = systematics.combine_template_sys_to_name[args.year]
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
@@ -1008,4 +1008,3 @@ if args.qcd_est:
         #outname = '%s/%s/%s_QCD_Est_mtt_ctstar_dict.coffea' % (outdir, args.lepton, args.lepton)
         #save(mtt_ctstar_qcd_est, outname)
         print('%s written' % outname)
-
