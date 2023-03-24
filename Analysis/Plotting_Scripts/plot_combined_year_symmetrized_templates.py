@@ -173,15 +173,15 @@ for jmult in templates_names.keys():
     
     if args.comp:
         #set_trace()
-        systypes = sorted(set([baseSys(systematics.sys_to_name["2016APV"][sys]) for sys in systs])) 
+        systypes = sorted(set([baseSys(systematics.combine_template_sys_to_name["2016APV"][sys]) for sys in systs])) 
         for sys in systypes:
             pltdir = os.path.join(outdir, jmult, "Comp", sys)
             if not os.path.isdir(pltdir):
                 os.makedirs(pltdir)
 
                 # find histograms of associated systematics and their processes
-            up_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_UP"][0]
-            dw_sysname = [key for key, val in systematics.sys_to_name["2016APV"].items() if val == f"{sys}_DW"][0]
+            up_sysname = [key for key, val in systematics.combine_template_sys_to_name["2016APV"].items() if val == f"{sys}_UP"][0]
+            dw_sysname = [key for key, val in systematics.combine_template_sys_to_name["2016APV"].items() if val == f"{sys}_DW"][0]
             procs_sys = sorted(set([key.split(f"_{up_sysname}")[0] for key in orig_keys if up_sysname in key] + [key.split(f"_{dw_sysname}")[0] for key in orig_keys if dw_sysname in key]))
             for proc in procs_sys:
                 print(jmult, sys, proc)
