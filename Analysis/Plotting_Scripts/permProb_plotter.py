@@ -7,7 +7,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 from coffea.util import load, save
@@ -21,6 +21,7 @@ from coffea.lookup_tools.dense_lookup import dense_lookup
 import numpy as np
 from Utilities import Plotter as Plotter
 from scipy import interpolate
+import Utilities.common_features as cfeatures
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -34,6 +35,8 @@ proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "permProbComputer"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 years_to_run = [args.year] if args.year else ["2016APV", "2016", "2017", "2018"]
 max_years = 4
@@ -49,19 +52,6 @@ else:
 combine_2016 = ("2016" in years_to_run) and ("2016APV" in years_to_run) and (base_jobid != "NanoAODv6") and (args.combine_2016)
 permProbs = {year : {"3Jets" : {},"4PJets" : {}}  for year in years_to_run}
 
-jet_mults = {
-    "3Jets" : "3 jets",
-    "4PJets" : "4+ jets",
-    #"4Jets" : "4 jets",
-    #"5Jets" : "5 jets",
-    #"6PJets" : "5+ jets"
-}
-
-lep_cats = {
-    "LoT" : "loose or tight $e/\mu$",
-    "Tight" : "$e/\mu$",
-    #"Tight" : "tight $e/\mu$",
-}
 
 perm_cats = {
     "3Jets" : {
@@ -83,18 +73,24 @@ perm_cats = {
 variables = {}
 if "3" in njets_to_run:
     variables.update({
-        "Lost_nusolver_chi2" : ("$\\chi_{\\nu}^{2}$", 5, (0., 1000.), True, True),
-        "Lost_nusolver_dist" : ("$D_{\\nu, min}$ [GeV]", 1, (0., 150.), True, True),
+        #"Lost_nusolver_chi2" : ("$\\chi_{\\nu}^{2}$", 5, (0., 1000.), True, True),
+        #"Lost_nusolver_dist" : ("$D_{\\nu, min}$ [GeV]", 1, (0., 150.), True, True),
+        #"Lost_mTHadProxy" : ("$m_{t_{h}^{proxy}}$ [GeV]", 1, (0., 500.), True, True),
+        #"Merged_nusolver_chi2" : ("$\\chi_{\\nu}^{2}$", 5, (0., 1000.), True, True),
+        #"Merged_nusolver_dist" : ("$D_{\\nu, min}$ [GeV]", 1, (0., 150.), True, True),
+        #"Merged_mTHadProxy_vs_maxmjet" : ("max m(jet) [GeV]", "$m_{t_{h}^{proxy}}$ [GeV]", 1, (0., 150.), 1, (0., 500.), True, True),
+        "Lost_nusolver_chi2" : (cfeatures.variable_names_to_labels["nusolver_chi2"], 5, (0., 1000.), True, True),
+        "Lost_nusolver_dist" : (cfeatures.variable_names_to_labels["ns_dist"], 1, (0., 150.), True, True),
         "Lost_mTHadProxy" : ("$m_{t_{h}^{proxy}}$ [GeV]", 1, (0., 500.), True, True),
-        "Merged_nusolver_chi2" : ("$\\chi_{\\nu}^{2}$", 5, (0., 1000.), True, True),
-        "Merged_nusolver_dist" : ("$D_{\\nu, min}$ [GeV]", 1, (0., 150.), True, True),
-        "Merged_mTHadProxy_vs_maxmjet" : ("max m(jet) [GeV]", "$m_{t_{h}^{proxy}}$ [GeV]", 1, (0., 150.), 1, (0., 500.), True, True),
+        "Merged_nusolver_chi2" : (cfeatures.variable_names_to_labels["nusolver_chi2"], 5, (0., 1000.), True, True),
+        "Merged_nusolver_dist" : (cfeatures.variable_names_to_labels["ns_dist"], 1, (0., 150.), True, True),
+        "Merged_mTHadProxy_vs_maxmjet" : ("max $m_{jet}$ [GeV]", "$m_{t_{h}^{proxy}}$ [GeV]", 1, (0., 150.), 1, (0., 500.), True, True),
     })
 if "4+" in njets_to_run:
     variables.update({
-        "nusolver_chi2" : ("$\\chi_{\\nu}^{2}$", 5, (0., 1000.), True, False),
-        "nusolver_dist" : ("$D_{\\nu, min}$ [GeV]", 1, (0., 150.), True, False),
-        "mWHad_vs_mTHad" : ("$m_{t_{h}}$ [GeV]", "$m_{W_{h}}$ [GeV]", 10, (0., 500.), 10, (0., 500.), True, False),
+        "nusolver_chi2" : (cfeatures.variable_names_to_labels["nusolver_chi2"], 5, (0., 1000.), True, False),
+        "nusolver_dist" : (cfeatures.variable_names_to_labels["ns_dist"], 1, (0., 150.), True, False),
+        "mWHad_vs_mTHad" : (cfeatures.variable_names_to_labels["mthad"], cfeatures.variable_names_to_labels["mWHad"], 10, (0., 500.), 10, (0., 500.), True, False),
     })
 
 
@@ -135,8 +131,8 @@ for year in years_to_run:
         computed_combined_2016_year_key = year
 
     else:
-        input_dir = os.path.join(proj_dir, "results", f"{year}_{jobid}", analyzer)
-        outdir = os.path.join(proj_dir, "plots", f"{year}_{jobid}", analyzer)
+        input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", analyzer)
+        outdir = os.path.join(plot_outdir, f"{year}_{jobid}", analyzer)
         
         fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)]
         fnames = sorted(fnames)
@@ -249,11 +245,12 @@ for year in years_to_run:
         
                         # add lep category
                     ax.text(
-                        0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
+                        0.02, 0.92, cfeatures.channel_labels["Lepton_3Jets"],
+                        #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
                         ## set axes labels and titles
-                    hep.cms.label(ax=ax, data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                    hep.cms.label(ax=ax, data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                     #set_trace()
                     figname = os.path.join(pltdir, "_".join([year, jobid, "3Jets", lepcat, hname]))
@@ -322,12 +319,13 @@ for year in years_to_run:
         
                             # add lep category
                         ax.text(
-                            0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
+                            0.02, 0.92, cfeatures.channel_labels["Lepton_3Jets"],
+                            #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
         
                             ## set axes labels and titles
-                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                         figname = os.path.join(pltdir, "_".join([year, jobid, "3Jets", lepcat, topo, yvar if dax == 0 else xvar]))
                         fig.savefig(figname)
@@ -351,16 +349,16 @@ for year in years_to_run:
     
                             # add lep category
                         ax.text(
-                            0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
+                            0.02, 0.92, cfeatures.channel_labels["Lepton_3Jets"],
+                            #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["3Jets"]),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
                             # add perm category
                         ax.text(
                             1, 0.95, cat,
-                            fontsize=rcParams["font.size"], 
-                            horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
+                            fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                         figname = os.path.join(pltdir, "_".join([year, jobid, "3Jets", lepcat, hname, cat, "norm"]))
                         fig.savefig(figname)
@@ -422,11 +420,12 @@ for year in years_to_run:
         
                         # add lep category
                     ax.text(
-                        0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
+                        0.02, 0.92, cfeatures.channel_labels["Lepton_4PJets"],
+                        #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
                         ## set axes labels and titles
-                    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                     figname = os.path.join(pltdir, "_".join([year, jobid, "4PJets", lepcat, hname]))
                     fig.savefig(figname)
@@ -489,13 +488,14 @@ for year in years_to_run:
                         #set_trace()
                             # add lep category
                         ax.text(
-                            0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
+                            0.02, 0.92, cfeatures.channel_labels["Lepton_4PJets"],
+                            #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
                             fontsize=rcParams["font.size"], 
                             horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
         
                             ## set axes labels and titles
-                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
     
                         figname = os.path.join(pltdir, "_".join([year, jobid, "4PJets", lepcat, hname.split("_vs_")[0] if dax == 0 else hname.split("_vs_")[1]]))
                         fig.savefig(figname)
@@ -519,7 +519,8 @@ for year in years_to_run:
     
                             # add lep category
                         ax.text(
-                            0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
+                            0.02, 0.92, cfeatures.channel_labels["Lepton_4PJets"],
+                            #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
                             # add perm category
@@ -527,7 +528,7 @@ for year in years_to_run:
                             0.95, 0.95, hstyles[cat]["name"],
                             fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                         figname = os.path.join(pltdir, "_".join([year, jobid, "4PJets", lepcat, hname, cat, "norm", "orig"]))
                         fig.savefig(figname)
@@ -563,7 +564,8 @@ for year in years_to_run:
     
                             # add lep category
                         ax.text(
-                            0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
+                            0.02, 0.92, cfeatures.channel_labels["Lepton_4PJets"],
+                            #0.02, 0.91, "%s\n%s" % (lep_cats[lepcat], jet_mults["4PJets"]),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
                             # add perm category
@@ -571,7 +573,7 @@ for year in years_to_run:
                             0.95, 0.95, hstyles[cat]["name"],
                             fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else year, lumi=round(lumi_to_use, 1))
+                        hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year="2016APV+2016" if (combine_2016 and ("2016" in year)) else cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
         
                         figname = os.path.join(pltdir, "_".join([year, jobid, "4PJets", lepcat, hname, cat, "norm", "interp"]))
                         fig.savefig(figname)
