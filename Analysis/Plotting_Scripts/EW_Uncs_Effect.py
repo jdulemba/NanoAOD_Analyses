@@ -7,7 +7,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 import Utilities.Plotter as Plotter
@@ -18,11 +18,15 @@ import os
 import Utilities.prettyjson as prettyjson
 import Utilities.plot_tools as plt_tools
 import numpy as np
+import Utilities.common_features as cfeatures
+import Utilities.final_analysis_binning as final_binning
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "EW_Uncs_Effect"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -30,17 +34,17 @@ parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="S
 args = parser.parse_args()
 
 f_ext = "TOT.coffea"
-input_dir = os.path.join(proj_dir, "results", f"{args.year}_{base_jobid}", analyzer)
+input_dir = os.path.join(eos_dir, "results", f"{args.year}_{base_jobid}", analyzer)
 fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
     
-outdir = os.path.join(proj_dir, "plots", base_jobid, analyzer, args.year)
+outdir = os.path.join(plot_outdir, base_jobid, analyzer, args.year)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
     
 rewt_style_dict = {
-    "nosys" : {"label" : "Nominal", "color" : "k", "linestyle" : "-"},
-    "nloEWk_nnloQCDUp" : {"label" : "EW Unc", "color" : "#e41a1c", "linestyle" : "-"}, ## red
+    "nosys" : {"label" : "Powheg", "color" : "k", "linestyle" : "-"},
+    "nloEWk_nnloQCDUp" : {"label" : "Powheg x EWK Scheme", "color" : "#e41a1c", "linestyle" : "-"}, ## red
 }
 
 variables = {
@@ -65,21 +69,35 @@ variables = {
     "eta_tt" : ("$\\eta$($t\\bar{t}$)", 2, (-4., 4.)),
     "phi_tt" : ("$\phi$($t\\bar{t}$)", 1, (-3.2, 3.2)),
     "mtt" : ("$m_{t\\bar{t}}$ [GeV]", 10, (350., 4000.)),
-    "mtt_vs_top_ctstar" : ("$m_{t\\bar{t}}$ $\otimes$ cos($\\theta^{*}_{t}$)", 1, None),
-    "mtt_vs_top_ctstar_abs" : ("$m_{t\\bar{t}}$ $\otimes$ |cos($\\theta^{*}_{t}$)|", 1, None),
+    "mtt_vs_top_ctstar" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["ctstar"], 1, None),
+    "mtt_vs_top_ctstar_abs" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["ctstar_abs"], 1, None),
 }
 
+mtt_vals_to_plot = np.array([400, 600, 1000])
 mtt_vs_top_ctstar_abs_binning = (
-    np.array([360.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-        700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
-    np.array([0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
+    final_binning.mtt_binning,
+    final_binning.ctstar_abs_binning
 )
 
+ctstar_abs_binlabels = [r"%s $\in [%s, %s)$" % (cfeatures.variable_names_to_labels["ctstar_abs"], mtt_vs_top_ctstar_abs_binning[1][bin], mtt_vs_top_ctstar_abs_binning[1][bin+1]) for bin in range(len(mtt_vs_top_ctstar_abs_binning[1])-1)]
+ctstar_abs_binlabels[-1] = r"%s $\in [%s, %s]$" % (cfeatures.variable_names_to_labels["ctstar_abs"], mtt_vs_top_ctstar_abs_binning[1][-2], mtt_vs_top_ctstar_abs_binning[1][-1])
+ctstar_abs_bin_locs = np.linspace((len(mtt_vs_top_ctstar_abs_binning[0])-1)/2, (len(mtt_vs_top_ctstar_abs_binning[0])-1)*(len(mtt_vs_top_ctstar_abs_binning[1])-1) - (len(mtt_vs_top_ctstar_abs_binning[0])-1)/2, len(mtt_vs_top_ctstar_abs_binning[1])-1)
+mtt_abs_tiled_labels = np.tile(mtt_vs_top_ctstar_abs_binning[0][:-1], mtt_vs_top_ctstar_abs_binning[1].size-1)
+mtt_abs_bin_inds_to_plot = np.where(np.in1d(mtt_abs_tiled_labels, mtt_vals_to_plot))[0]
+mtt_abs_bins_to_plot = np.tile(mtt_vals_to_plot, mtt_vs_top_ctstar_abs_binning[1].size-1)
+
 mtt_vs_top_ctstar_binning = (
-    np.array([360.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0,
-        700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.]),
+    final_binning.mtt_binning,
     np.array([-1.0, -0.9, -0.75, -0.6, -0.4, 0.0, 0.4, 0.6, 0.75, 0.9, 1.0])
 )
+
+ctstar_binlabels = [r"%s $\in [%s, %s)$" % (cfeatures.variable_names_to_labels["ctstar"], mtt_vs_top_ctstar_binning[1][bin], mtt_vs_top_ctstar_binning[1][bin+1]) for bin in range(len(mtt_vs_top_ctstar_binning[1])-1)]
+ctstar_binlabels[-1] = r"%s $\in [%s, %s]$" % (cfeatures.variable_names_to_labels["ctstar"], mtt_vs_top_ctstar_binning[1][-2], mtt_vs_top_ctstar_binning[1][-1])
+ctstar_bin_locs = np.linspace((len(mtt_vs_top_ctstar_binning[0])-1)/2, (len(mtt_vs_top_ctstar_binning[0])-1)*(len(mtt_vs_top_ctstar_binning[1])-1) - (len(mtt_vs_top_ctstar_binning[0])-1)/2, len(mtt_vs_top_ctstar_binning[1])-1)
+mtt_tiled_labels = np.tile(mtt_vs_top_ctstar_binning[0][:-1], mtt_vs_top_ctstar_binning[1].size-1)
+mtt_bin_inds_to_plot = np.where(np.in1d(mtt_tiled_labels, mtt_vals_to_plot))[0]
+mtt_bins_to_plot = np.tile(mtt_vals_to_plot, mtt_vs_top_ctstar_binning[1].size-1)
+
 
     ## get data lumi and scale MC by lumi
 data_lumi_year = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())[args.year]
@@ -137,7 +155,9 @@ for hname in variables.keys():
         hline = hline.group(hline.sparse_axes()[0].name, reweighting_axis, {key[0]:key[0] for key in histo.values().keys()})
         histo = hline
 
-    xtitle, rebinning, x_lims = variables[hname]
+        xtitle, ytitle, rebinning, x_lims = variables[hname]
+    else:
+        xtitle, rebinning, x_lims = variables[hname]
     if rebinning != 1:
         histo = histo.rebin(*axes_to_sum, rebinning)
 
@@ -146,7 +166,6 @@ for hname in variables.keys():
     EWunc_vals = histo.values()[("nloEWk_nnloQCDUp",)]
 
     fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True, figsize=(15.0, 10.0)) if is2d else plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
-    #fig, (ax, rax) = plt.subplots(2, 1, gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
 
         # plot yields
@@ -154,7 +173,6 @@ for hname in variables.keys():
     hep.plot.histplot(EWunc_vals, histo.dense_axes()[0].edges(), ax=ax, histtype="step", **rewt_style_dict["nloEWk_nnloQCDUp"])
 
     ratio_masked_vals, ratio_masked_bins = Plotter.get_ratio_arrays(num_vals=EWunc_vals, denom_vals=nosys_vals, input_bins=histo.dense_axes()[0].edges())
-    #ratio_masked_vals, ratio_masked_bins = Plotter.get_ratio_arrays(num_vals=EWunc_vals-nosys_vals, denom_vals=nosys_vals, input_bins=histo.dense_axes()[0].edges())
     rax.step(ratio_masked_bins, ratio_masked_vals, where='post', **{"color" : "k", "linestyle" : "-"})
 
     #set_trace()
@@ -163,15 +181,14 @@ for hname in variables.keys():
     ax.set_yscale("log")
     ax.autoscale()
     ax.set_xlim((0, nbins) if is2d else x_lims)
-    ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.2)
+    ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.5)
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
 
     rax.autoscale()
     rax.axhline(1, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    rax.set_ylabel("Ratio to Nominal")
-    #rax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
-    #rax.set_ylabel("Rel. Deviaton from Nominal")
+    rax.set_ylabel("Ratio to Powheg")
+    #rax.set_ylabel("Ratio to Nominal")
     rax.set_xlabel(xtitle)
     rax.set_xlim((0, nbins) if is2d else x_lims)
     if hname == "mtt": rax.set_ylim(-0.3, 0.3)
@@ -185,11 +202,25 @@ for hname in variables.keys():
         [ax.axvline(vline, color="k", linestyle="--") for vline in vlines]
         [rax.axvline(vline, color="k", linestyle="--") for vline in vlines]
 
+        y_binlabels = ctstar_abs_binlabels if hname == "mtt_vs_top_ctstar_abs" else ctstar_binlabels
+        y_bin_locs = ctstar_abs_bin_locs if hname == "mtt_vs_top_ctstar_abs" else ctstar_bin_locs
+        x_inds_to_plot = mtt_abs_bin_inds_to_plot if hname == "mtt_vs_top_ctstar_abs" else mtt_bin_inds_to_plot
+        x_bins_to_plot = mtt_abs_bins_to_plot if hname == "mtt_vs_top_ctstar_abs" else mtt_bins_to_plot
+
+        ## plot y labels
+        for idx, label in enumerate(y_binlabels):
+            ax.annotate(label, xy=(y_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
+                xytext=(0, 30), textcoords="offset points", va="top", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+
+        rax.set_xticks(x_inds_to_plot)
+        rax.set_xticklabels(x_bins_to_plot)
+
+
     ax.text(
-        0.02, 0.85, "$t\\bart$\nparton level",
+        0.05, 0.85, "$t\\bar{t}$\nparton level",
         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1))    
+    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(lumi_to_use, 1))    
 
     #set_trace()
     figname = os.path.join(outdir, f"{args.year}_TTbar_EWuncs_Effect_{hname}")
