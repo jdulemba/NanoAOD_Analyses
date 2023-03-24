@@ -32,8 +32,6 @@ args = parser.parse_args()
 if (not args.comp) and (not args.ratio) and (not args.ind):
     raise ValueError("No plots chosen to make")
 
-sys_to_name = systematics.sys_to_name[args.year]
-
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 analyzer = "htt_btag_iso_cut"
