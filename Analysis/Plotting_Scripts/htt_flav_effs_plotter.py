@@ -7,19 +7,22 @@ from coffea import hist
 from coffea.hist import plot
 # matplotlib
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 import Utilities.prettyjson as prettyjson
+import Utilities.common_features as cfeatures
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("--year", type=str, help="What year is the ntuple from.")
 parser.add_argument("--construct_btag", action="store_false", help="Makes btag SF constructor (default is True)")
+parser.add_argument("--no_plots", action="store_true", help="Don't plot efficienies (default is False)")
 parser.add_argument("--force_save", action="store_true", help="Force the efficiencies to be saved.")
 args = parser.parse_args()
 
@@ -27,6 +30,8 @@ proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "htt_flav_effs"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 outdir = os.path.join(proj_dir, "Corrections", jobid)
 if not os.path.isdir(outdir):
@@ -39,12 +44,7 @@ flav_effs = {year : {"DeepJet" : {"3Jets" : {}, "4PJets" : {}}, "DeepCSV" : {"3J
 
 if args.construct_btag:
     from copy import deepcopy
-    btag_contructs_dict = deepcopy(flav_effs)
-
-jet_mults = {
-    "3Jets" : "3 jets",
-    "4PJets" : "4+ jets",
-}
+    btag_constructs_dict = deepcopy(flav_effs)
 
 flav_to_name = {"bjet" : "bottom", "cjet" : "charm", "ljet" : "light"}
 hname = "Jets_pt_eta"
@@ -63,33 +63,38 @@ def plot_effs(heff, edges, lumi_to_use, year, jmult, btagger, wp, flav, plotdir,
     fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
 
-    opts = {"cmap" : "OrRd"}
+    opts = {}
+    #opts = {"cmap" : "OrRd"}
     xedges, yedges = edges[0], edges[1]
     sumw = heff._values
     pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
     ax.add_collection(pc)
     if clear:
-        fig.colorbar(pc, ax=ax, label=f"{flav_to_name[flav]} Efficiency, btagger wp", pad=0.)
+        fig.colorbar(pc, ax=ax, label=f"{flav_to_name[flav]} jet Efficiency, {btagger} {wp}", pad=0.)
     ax.autoscale()
-    ax.set_xlim(xedges[0], xedges[-1])
+    ax.set_xlim(xedges[0], xedges[-2]+50.)
+    #ax.set_xlim(xedges[0], xedges[-1])
     ax.set_ylim(yedges[0], yedges[-1])
+
+    ax.set_xscale("log")
+    ax.xaxis.set_major_formatter(mpl.ticker.ScalarFormatter())
+    ax.xaxis.set_minor_formatter(mpl.ticker.ScalarFormatter())
+    ax.ticklabel_format(style="plain", axis="x",useOffset=False)
     
         ## set axes labels and titles
-    plt.xlabel("$p_{T}$ [GeV]")
-    plt.ylabel("$\\eta$")
+    ax.set_xlabel("$p_{T}$ [GeV]")
+    ax.set_ylabel("$\\eta$")
         # add lepton/jet multiplicity label
     ax.text(
-        0.02, 0.95, jet_mults[jmult],
-        fontsize=rcParams["font.size"],
-        #fontsize=18,
-        horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+        0.02, 0.95, cfeatures.channel_labels[f"Lepton_{jmult}"],
+        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
     )
-    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year=year, lumi=round(lumi_to_use, 1))
+    hep.cms.label(ax=ax, fontsize=rcParams["font.size"], data=False, year=cfeatures.year_labels[year], lumi=round(lumi_to_use, 1))
 
-    figname = os.path.join(plotdir, "%s_Efficiency" % "_".join([btagger, wp, jmult, flav]))
+    figname = os.path.join(plotdir, f"{btagger}_{wp}_{jmult}_{flav}_Efficiency")
     fig.savefig(figname)
     print(f"{figname} written")
-    plt.close()
+    plt.close(fig)
 
 
 data_lumi_dict = prettyjson.loads(open(os.path.join(proj_dir, "inputs", f"{base_jobid}_lumis_data.json")).read())
@@ -156,7 +161,7 @@ for year in years_to_run:
             raise ValueError("Passing and All hists don't have the same binning!")
 
     else:
-        input_dir = os.path.join(proj_dir, "results", f"{year}_{jobid}", analyzer)
+        input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", analyzer)
         fnames = [f"{input_dir}/{fname}" for fname in os.listdir(input_dir) if fname.endswith("TOT.coffea")]
         if len(fnames) > 1:
             raise ValueError("Only one TOT file should be used")
@@ -165,7 +170,7 @@ for year in years_to_run:
             ## get data lumi and scale MC by lumi
         lumi_to_use = (data_lumi_dict[year]["Muons"]+data_lumi_dict[year]["Electrons"])/2000.
     
-        pltdir = os.path.join(proj_dir, "plots", f"{year}_{jobid}", analyzer)
+        pltdir = os.path.join(plot_outdir, f"{year}_{jobid}", analyzer)
 
         hpass = hdict[f"{hname}_pass"]
         hall = hdict[f"{hname}_all"]
@@ -220,7 +225,7 @@ for year in years_to_run:
                 working_points.append(wp.upper().split(tagger.upper())[-1])
                 flav_effs[year][tagger][jmult].update({flav_to_name[flav] : eff_lookup})
 
-                plot_effs(eff_lookup, edges, lumi_to_use, year, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
+                if not args.no_plots: plot_effs(eff_lookup, edges, lumi_to_use, year, jmult, tagger, wp.upper().split(tagger.upper())[-1][0], flav, pltdir)
 
 wp_name = list(set(working_points))[0]
 
@@ -241,6 +246,7 @@ if args.construct_btag:
 
     cfg_file = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 
+    #set_trace()
     for year in flav_effs.keys():
         for btagger in flav_effs[year].keys():
             csv_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "btagSFs", btagSF.btag_csvFiles[year][btagger])
@@ -257,10 +263,12 @@ if args.construct_btag:
                 )
 
                 print(f"BTag SF constructed for {year}, {btagger} {wp_name.lower().capitalize()} wp, {njets_cat}")
-                btag_contructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
+                btag_constructs_dict[year][btagger][njets_cat].update({wp_name.lower().capitalize() : sf_computer})
 
+    #set_trace()
         # save files
     if (len(years_to_run) == max_years) or (args.force_save):
-        btagSFs_name = os.path.join(outdir, f"htt_3PJets_{wp_name}_btag_scalefactors_{jobid}.coffea")
-        save(btag_contructs_dict, btagSFs_name)
+        btagSFs_name = os.path.join(outdir, f"htt_3PJets_{wp_name}_btag_scalefactors_Subsources_{jobid}.coffea")
+        #btagSFs_name = os.path.join(outdir, f"htt_3PJets_{wp_name}_btag_scalefactors_{jobid}.coffea")
+        save(btag_constructs_dict, btagSFs_name)
         print("\n", btagSFs_name, "written")
