@@ -13,18 +13,12 @@ from pdb import set_trace
 from coffea.util import save, load
 import os
 import python.ObjectSelection as objsel
-import Utilities.plot_tools as plt_tools
 import python.MCWeights as MCWeights
 import numpy as np
 import Utilities.prettyjson as prettyjson
-import coffea.lumi_tools.lumi_tools as lumi_tools
 import Utilities.make_variables as make_vars
-from python.IDJet import btag_values as btag_values
 import python.GenParticleSelector as genpsel
-import python.TTGenMatcher as ttmatcher
 import python.TTPermutator as ttpermutator
-from python.Permutations import compare_matched_best_perms
-import Utilities.systematics as systematics
 import python.IDJet as IDJet
 from copy import deepcopy
 
@@ -69,6 +63,31 @@ apply_hem = ast.literal_eval(opts_dict.get("apply_hem", "True"))
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
 
+
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        from subprocess import check_output, STDOUT
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=1200, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=600, stderr=STDOUT)
+                    output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
+
 #set_trace()
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 ## load corrections for event weights
@@ -91,12 +110,12 @@ corrections = {
 
     ## parameters for b-tagging
 jet_pars = cfg_pars["Jets"]
-btaggers = ["DeepCSV"]
+btaggers = [jet_pars["btagger"]]
 
 wps_to_use = list(set([jet_pars["permutations"]["tightb"],jet_pars["permutations"]["looseb"]]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
-btag_wps = ["DeepCSVMedium"]
+btag_wp = btaggers[0]+wps_to_use[0]
 
 if corrections["BTagSF"] == True:
     sf_file = os.path.join(proj_dir, "Corrections", base_jobid, jet_pars["btagging"]["btagSF_file"])
@@ -113,15 +132,6 @@ if corrections["BTagSF"] == True:
 
 MTcut = jet_pars["MT"]
 
-# 0 == "" (no gen matching), 1 == "right", 2 == "matchable", 3 == "unmatchable", 4 == "sl_tau", 5 == "other" (not semilep)
-perm_cats = {
-    0 : "",
-    1 : "right",
-    2 : "matchable",
-    3 : "unmatchable",
-    4 : "sl_tau",
-    5 : "other",
-}
 
 # get systematics to run
 event_systematics_to_run = ["nosys"]
@@ -152,20 +162,20 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             ## make dict of cutflow for each systematic variation
         for sys in self.event_systematics_to_run:
-            histo_dict["cutflow_%s" % sys] = processor.defaultdict_accumulator(int)
+            histo_dict[f"cutflow_{sys}"] = processor.defaultdict_accumulator(int)
     
         self._accumulator = processor.dict_accumulator(histo_dict)
 
             ## define regions depending on data or MC, systematic or nosys
         base_regions = {
             "Muon" : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", "DeepCSV_pass"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", "DeepCSV_pass"},
+                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"{btaggers[0]}_pass"},
+                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"{btaggers[0]}_pass"},
                 #},
             },
             "Electron" : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", "DeepCSV_pass"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", "DeepCSV_pass"},
+                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"{btaggers[0]}_pass"},
+                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"{btaggers[0]}_pass"},
                 #},
             },
         }
@@ -209,7 +219,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         {selection[sys].add("lep_and_filter_pass", lep_and_filter_pass) for sys in selection.keys()} # add passing leptons requirement to all systematics
 
             ## build corrected jets and MET
-        events["Jet"], events["MET"] = IDJet.process_jets(events, args.year, self.corrections["JetCor"])
+        events["CorrectedJets"], events["CorrectedMET"] = IDJet.process_jets(events, args.year, self.corrections["JetCor"])
 
         ## add different selections
                 ## muons
@@ -254,50 +264,57 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+                    mu_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
+                    )
+                    el_evt_weights.add("EWunc",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                        shift=True
+                    )
+
                         # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
                     )
                     el_evt_weights.add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
+                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
                     )
 
 
             # run over systematics that require changes to event objects (jets+MET)
         for evt_sys in self.event_systematics_to_run:
-            output["cutflow_%s" % evt_sys]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
+            output[f"cutflow_{evt_sys}"]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
                 # jet selection
-            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output["cutflow_%s" % evt_sys], shift=evt_sys, hem_15_16=apply_hem)
-            output["cutflow_%s" % evt_sys]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
+            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output[f"cutflow_{evt_sys}"], shift=evt_sys, hem_15_16=apply_hem)
+            output[f"cutflow_{evt_sys}"]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
             selection[evt_sys].add("passing_jets", passing_jets)
             selection[evt_sys].add("jets_3",  ak.num(events["SelectedJets"]) == 3)
             selection[evt_sys].add("jets_4p",  ak.num(events["SelectedJets"]) > 3) # only for getting btag weights
-            selection[evt_sys].add("DeepCSV_pass", ak.sum(events["SelectedJets"][btag_wps[0]], axis=1) >= 2)
+            selection[evt_sys].add(f"{btaggers[0]}_pass", ak.sum(events["SelectedJets"][btag_wp], axis=1) >= 2)
 
                 # sort jets by btag value
-            events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btaggers[0] == "DeepCSV" else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
-
-                # btag sidebands
-            deepcsv_sorted = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)]["btagDeepB"]
+            events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)]
 
                 ## apply btagging SFs to MC
             if corrections["BTagSF"] == True:
-                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].schema_.keys()}
 
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
-                deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
-
+                btagger_3j_wts = self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut=btag_wp)
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
-                deepcsv_4pj_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
+                btagger_4pj_wts = self.corrections["BTag_Constructors"][btaggers[0]]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut=btag_wp)
 
                     # fll dict of btag weights
-                for wt_name in deepcsv_3j_wts.keys():
-                    btag_weights[wt_name][threeJets_cut] = ak.prod(deepcsv_3j_wts[wt_name], axis=1)
-                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(deepcsv_4pj_wts[wt_name], axis=1)
+                for wt_name in btagger_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(btagger_3j_wts[wt_name], axis=1)
+                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(btagger_4pj_wts[wt_name], axis=1)
 
             #set_trace()
             ## fill hists for each region
@@ -307,17 +324,17 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 for jmult in self.regions[evt_sys][lepton].keys():
                     cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][jmult])
 
-                    output["cutflow_%s" % evt_sys]["nEvts %s" % ", ".join([lepton, jmult])] += cut.sum()
+                    output[f"cutflow_{evt_sys}"]["nEvts %s" % ", ".join([lepton, jmult])] += cut.sum()
 
                     if to_debug: print(lepton, jmult)
                     if cut.sum() > 0:
                         ltype = "MU" if lepton == "Muon" else "EL"
-                        if "loose_or_tight_%s" % ltype in self.regions[evt_sys][lepton][jmult]:
-                            leptons = events[lepton][cut][((events[lepton][cut]["TIGHT%s" % ltype] == True) | (events[lepton][cut]["LOOSE%s" % ltype] == True))]
-                        elif "tight_%s" % ltype in self.regions[evt_sys][lepton][jmult]:
-                            leptons = events[lepton][cut][(events[lepton][cut]["TIGHT%s" % ltype] == True)]
-                        elif "loose_%s" % ltype in self.regions[evt_sys][lepton][jmult]:
-                            leptons = events[lepton][cut][(events[lepton][cut]["LOOSE%s" % ltype] == True)]
+                        if f"loose_or_tight_{ltype}" in self.regions[evt_sys][lepton][jmult]:
+                            leptons = events[lepton][cut][((events[lepton][cut][f"TIGHT{ltype}"] == True) | (events[lepton][cut][f"LOOSE{ltype}"] == True))]
+                        elif f"tight_{ltype}"in self.regions[evt_sys][lepton][jmult]:
+                            leptons = events[lepton][cut][(events[lepton][cut][f"TIGHT{ltype}"] == True)]
+                        elif f"loose_{ltype}" in self.regions[evt_sys][lepton][jmult]:
+                            leptons = events[lepton][cut][(events[lepton][cut][f"LOOSE{ltype}"] == True)]
                         else:
                             raise ValueError("Not sure what lepton type to choose for event")
 
@@ -325,38 +342,22 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         jets, met = events["SelectedJets"][cut], events["SelectedMET"][cut]
 
                             # find best permutations
-                        best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wps[0], btag_req=True)
+                        best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wp, btag_req=True)
                         valid_perms = ak.num(best_perms["TTbar"].pt) > 0
-                        output["cutflow_%s" % evt_sys]["nEvts %s: valid perms" % ", ".join([lepton, jmult])] += ak.sum(valid_perms)
-
-                        bp_status = np.zeros(cut.size, dtype=int) # 0 == "" (no gen matching), 1 == "right", 2 == "matchable", 3 == "unmatchable", 4 == "sl_tau", 5 == "noslep"
-                            # get matched permutation (semilep ttbar only)
-                        if isTTbar_:
-                            semilep_evts = selection[evt_sys].require(semilep=True)
-                            bp_status[~semilep_evts] = 5
-                            if semilep_evts.sum() > 0:
-                                    # find matched permutations
-                                mp = ttmatcher.best_match(gen_hyp=events["SL"][cut], jets=jets, leptons=leptons, met=met)
-                                #set_trace()
-                                perm_cat_array = compare_matched_best_perms(mp, best_perms, njets=jmult)
-                                bp_status[cut] = perm_cat_array
-                                if ak.any(ak.num(events["SL"]["Lepton"].pdgId) != 1): raise ValueError("Number of leptons is incorrect for classifying tau+jets events")
-                                sl_tau_evts = ak.where(np.abs(events["SL"]["Lepton"].pdgId) == 15)[0]
-                                bp_status[sl_tau_evts] = 4
+                        output[f"cutflow_{evt_sys}"]["nEvts %s: valid perms" % ", ".join([lepton, jmult])] += ak.sum(valid_perms)
 
                             ## create MT regions
                         MT = make_vars.MT(leptons, met)
                         MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
-                        output["cutflow_%s" % evt_sys]["nEvts %s: pass MT cut" % ", ".join([lepton, jmult])] += ak.sum(MTHigh)
+                        output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, jmult])] += ak.sum(MTHigh)
 
                             # fill hists for each systematic
                         #set_trace()
-                        if to_debug: print("  evt sys:", evt_sys)
+                        if to_debug: print(f"evt sys: {evt_sys}")
                         if evt_sys == "nosys":
                             nom_wts = (evt_weights.weight() * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
-                            #nom_wts = (evt_weights.weight()*btag_weights["central"])[cut][valid_perms][MTHigh]
                                 # fill hists for nominal
-                            output = self.fill_hists(acc=output, sys="nosys", jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh],
+                            output = self.fill_hists(acc=output, sys="nosys", jetmult=jmult, leptype=lepton,
                                 perm=best_perms[valid_perms][MTHigh], evt_wts=nom_wts)
 
                                 # fill hists for each pdf variation
@@ -368,38 +369,39 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                 if to_debug: print(f"\tsysname: {pdf_name}")
                                 pdf_wts = pdfWeights[:, pdf_idx][cut][valid_perms][MTHigh]
                                 wts = nom_wts*pdf_wts
-                                output = self.fill_hists(acc=output, sys=pdf_name, jetmult=jmult, leptype=lepton, permarray=bp_status[cut][valid_perms][MTHigh],
+                                output = self.fill_hists(acc=output, sys=pdf_name, jetmult=jmult, leptype=lepton,
                                     perm=best_perms[valid_perms][MTHigh], evt_wts=wts)
 
 
         return output
 
-    def fill_hists(self, acc, sys, jetmult, leptype, permarray, perm, evt_wts):
+    def fill_hists(self, acc, sys, jetmult, leptype, perm, evt_wts):
             ## apply alpha correction for 3Jets
         if (jetmult == "3Jets") and ("Alpha" in self.corrections):
             alpha_corr = self.corrections["Alpha"](172.5/perm["THad"].mass)
             perm["THad"] = perm["THad"].multiply(alpha_corr) # correct thad
             perm["TTbar"] = ak.flatten(perm["THad"]+perm["TLep"]) # correct ttbar
 
-        thad_ctstar, tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"])
-        thad_ctstar, tlep_ctstar = ak.flatten(thad_ctstar, axis=None), ak.flatten(tlep_ctstar, axis=None)
+        thad_ctstar, tlep_ctstar = make_vars.ctstar(perm["THad"], perm["TLep"], flatten=True)
 
-        #set_trace()
-        for permval in np.unique(permarray).tolist():
-            perm_inds = np.where(permarray == permval)
-            dataset_name = "%s_%s" % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
-
-            acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, sys=sys,  jmult=jetmult, leptype=leptype,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+        acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=self.sample_name, sys=sys,  jmult=jetmult, leptype=leptype,
+            mtt=ak.flatten(perm["TTbar"].mass, axis=None), ctstar_abs=np.abs(tlep_ctstar), weight=evt_wts)
 
         return acc        
 
     def postprocess(self, accumulator):
         return accumulator
 
-
-proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
-proc_exec_args = {"schema": processor.NanoAODSchema} if to_debug else {"schema": processor.NanoAODSchema, "workers": 8}
+if to_debug:
+    proc_executor = processor.iterative_executor
+    proc_exec_args = {"schema": processor.NanoAODSchema}
+else:
+    proc_executor = processor.futures_executor
+    proc_exec_args = {
+        "schema": processor.NanoAODSchema,
+        "workers": 8,
+        "merging": True,
+    }
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
@@ -411,6 +413,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))
