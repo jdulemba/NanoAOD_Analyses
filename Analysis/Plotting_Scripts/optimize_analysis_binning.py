@@ -7,7 +7,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 from coffea.util import load
@@ -21,8 +21,8 @@ import fnmatch
 import Utilities.Plotter as Plotter
 from Utilities.styles import styles as hstyles
 import Utilities.final_analysis_binning as final_binning
-
-base_jobid = os.environ["base_jobid"]
+from scipy.signal import peak_widths
+import Utilities.common_features as cfeatures
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -34,29 +34,19 @@ parser.add_argument("binning", choices=["Final", "Default"], help="Choose which 
 args = parser.parse_args()
 
 proj_dir = os.environ["PROJECT_DIR"]
+base_jobid = os.environ["base_jobid"]
 jobid = os.environ["jobid"]
 analyzer = "binning_check"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
-input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", analyzer)
-outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
+input_dir = os.path.join(eos_dir, "results", f"{args.year}_{jobid}", analyzer)
 fnames = [os.path.join(input_dir, fname) for fname in fnmatch.filter(os.listdir(input_dir), "*TOT.coffea")]
 hdict = load(fnames[0])
 
-jet_mults = {
-    "3Jets" : "3 jets",
-    "4PJets" : "4+ jets"
-}
-
-objtypes = {
-    "Jets" : "jets",
-    "Lep" :  {
-        "Muon" : "$\\mu$",
-        "Electron" : "$e$",
-    }
-}
+outdir = os.path.join(plot_outdir, f"{args.year}_{jobid}", analyzer)
+if not os.path.isdir(outdir):
+    os.makedirs(outdir)
 
 rewt_style_dict = {
     "TT" : {"label" : "SM $\mathrm{t\\bar t}_{\ell j}$", "facecolor" : "none", "hatch" : "//", "edgecolor" : "r"},
@@ -67,25 +57,25 @@ rewt_style_dict = {
 
 
 reco_variables = {
-    #"RECO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "cos($\\theta^{*}_{t_{l}}$)", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
-    #"RECO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
-    #"RECO_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-3., 3.)),
-    #"RECO_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
-    "RECO_mtt_vs_deltaYtt_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
+    "RECO_mtt_vs_tlep_ctstar" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["tlep_ctstar"], final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
+    "RECO_mtt_vs_tlep_ctstar_abs" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["tlep_ctstar_abs"], final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
+    "RECO_mtt_vs_topRapidity" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["rapidity_top"], 1, 1, (200., 2000.), (-3., 3.)),
+    "RECO_mtt_vs_deltaYtt" : (cfeatures.variable_names_to_labels["mtt"], "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
+    "RECO_mtt_vs_deltaYtt_abs" : (cfeatures.variable_names_to_labels["mtt"], "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
 }
 gen_variables = {
-    #"GEN_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
-    #"GEN_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
-    #"GEN_mtt_vs_topRapidity" : ("$m_{t\\bar{t}}$ [GeV]", "$y_t$", 1, 1, (200., 2000.), (-3., 3.)),
-    #"GEN_mtt_vs_deltaYtt" : ("$m_{t\\bar{t}}$ [GeV]", "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
-    "GEN_mtt_vs_deltaYtt_abs" : ("$m_{t\\bar{t}}$ [GeV]", "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
+    "GEN_mtt_vs_tlep_ctstar" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["tlep_ctstar"], final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
+    "GEN_mtt_vs_tlep_ctstar_abs" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["tlep_ctstar_abs"], final_binning.mtt_binning if (args.binning == "Final") else 1, final_binning.ctstar_abs_binning if (args.binning == "Final") else 1, (200., 2000.),  (0., 1.)),
+    "GEN_mtt_vs_topRapidity" : (cfeatures.variable_names_to_labels["mtt"], cfeatures.variable_names_to_labels["rapidity_top"], 1, 1, (200., 2000.), (-3., 3.)),
+    "GEN_mtt_vs_deltaYtt" : (cfeatures.variable_names_to_labels["mtt"], "$\\Delta y_{t\\bar{t}}$", 1, 1, (200., 2000.), (-5., 5.)),
+    "GEN_mtt_vs_deltaYtt_abs" : (cfeatures.variable_names_to_labels["mtt"], "|$\\Delta y_{t\\bar{t}}$|", 1, 1, (200., 2000.), (0., 5.)),
 }
 reso_variables = {
-    "RESO_mtt_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco $m_{t\\bar{t}}$ [GeV]", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-500., 500.)),
-    "RESO_ctstar_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco cos($\\theta^{*}_{t_{l}}$)", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-2., 2.)),
-    "RESO_ctstar_abs_vs_mtt" : ("$m_{t\\bar{t}}$ [GeV]", "Gen-Reco |cos($\\theta^{*}_{t_{l}}$)|", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
-    #"RESO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (-500., 500.),  (-2., 2.)),
-    #"RESO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (-500., 500.),  (-1., 1.)),
+    "RESO_mtt_vs_mtt" : (cfeatures.variable_names_to_labels["mtt"], f"Gen-Reco {cfeatures.variable_names_to_labels['mtt']}", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-500., 500.)),
+    "RESO_ctstar_vs_mtt" : (cfeatures.variable_names_to_labels["mtt"], f"Gen-Reco {cfeatures.variable_names_to_labels['tlep_ctstar']}", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-2., 2.)),
+    "RESO_ctstar_abs_vs_mtt" : (cfeatures.variable_names_to_labels["mtt"], f"Gen-Reco {cfeatures.variable_names_to_labels['tlep_ctstar_abs']}", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-1., 1.)),
+    ##"RESO_mtt_vs_tlep_ctstar" : ("$m_{t\\bar{t}}$", "cos($\\theta^{*}_{t_{l}}$)", 1, 1, (-500., 500.),  (-2., 2.)),
+    ##"RESO_mtt_vs_tlep_ctstar_abs" : ("$m_{t\\bar{t}}$", "|cos($\\theta^{*}_{t_{l}}$)|", 1, 1, (-500., 500.),  (-1., 1.)),
 }
 rel_reso_variables = {
     "REL_RESO_mtt_vs_mtt" : ("$m^{reco}_{t\\bar{t}}$ [GeV]", "($m^{reco}_{t\\bar{t}}$-$m^{parton}_{t\\bar{t}}$)/$m^{parton}_{t\\bar{t}}$", final_binning.mtt_binning if (args.binning == "Final") else 1, 1, (200., 2000.),  (-2., 2.)),
@@ -109,8 +99,7 @@ if len(ttJets_cats) > 0:
 ## make groups based on process
 process = hist.Cat("process", "Process", sorting="placement")
 process_cat = "dataset"
-process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names, gdict="dataset" if (args.plots == "REL_RESO") else "templates")
-#process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names)
+process_groups = plt_tools.make_dataset_groups(args.lepton, args.year, samples=names, bkgdict="dataset" if (args.plots == "REL_RESO") else "templates")
 #set_trace()
 
     # scale and group hists by process
@@ -210,15 +199,15 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, f"{cfeatures.channel_labels[f'{args.lepton}_{jmult}']}\ndetector level",
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=False, year=args.year)
+                    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year])
     
                     #set_trace()
                     fig.savefig(figname)
                     print(f"{figname} written")
-                    plt.close()
+                    plt.close(fig)
     
                     #set_trace()
                         # plot resonant/ttbar
@@ -237,15 +226,15 @@ if (args.plots == "RECO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax_ratio.text(
-                        0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, f"{cfeatures.channel_labels[f'{args.lepton}_{jmult}']}\ndetector level",
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_ratio.transAxes
                     )
-                    hep.cms.label(ax=ax_ratio, data=False, year=args.year)
+                    hep.cms.label(ax=ax_ratio, data=False, label="Preliminary", year=cfeatures.year_labels[args.year])
     
                     #set_trace()
                     fig_ratio.savefig(figname_ratio)
                     print(f"{figname_ratio} written")
-                    plt.close()
+                    plt.close(fig_ratio)
 
 
                     #set_trace()
@@ -258,30 +247,32 @@ if (args.plots == "RECO") or (args.plots == "All"):
    
                         bin_edges = hproj.dense_axes()[0].edges()
                         vals = hproj.values()[("TT",)]
-                        ax.fill_between(bin_edges, np.r_[vals, vals[-1]], step="post", **{"label": "SM $\\mathrm{t\\bar t}_{\\ell j}$", "facecolor": "r", "edgecolor": "k"})
+                        ax.fill_between(bin_edges, np.r_[vals, vals[-1]], step="post", **{"label": "$\\mathrm{t\\bar t}_{\\ell j}$", "facecolor": "r", "edgecolor": "k"})
 
-                        for vline in final_binning.mtt_binning:
-                            ax.axvline(vline, color="k", linestyle="--")
-                                
                         ax.legend(loc="upper right")
                         ax.autoscale()
+                        #set_trace()
+                        ymax = ax.get_ylim()[1]*1.01
+                        [ax.vlines(vline, ymin=0., ymax=ymax, color="k", linestyle="--") for vline in final_binning.mtt_binning]
+
                         ax.set_xlabel(xlabel)
                         ax.set_ylabel("Events")
                         ax.set_xlim((final_binning.mtt_binning[0], final_binning.mtt_binning[-1]))
                         ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+                                
     
                             # add lepton/jet multiplicity label
                         ax.text(
-                            0.02, 0.88, "%s, %s\ndetector level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                            0.02, 0.88, f"{cfeatures.channel_labels[f'{args.lepton}_{jmult}']}\ndetector level",
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+                        hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     
                         #set_trace()
                         figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "RECO", xaxis_name]))
                         fig.savefig(figname)
                         print(f"{figname} written")
-                        plt.close()
+                        plt.close(fig)
     
 
     ## make gen plots
@@ -348,15 +339,15 @@ if (args.plots == "GEN") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.88, "%s, %s\nparton level" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.88, f"{cfeatures.channel_labels[f'{args.lepton}_{jmult}']}\nparton level",
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+                    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     
                     #set_trace()
                     fig.savefig(figname)
                     print(f"{figname} written")
-                    plt.close()
+                    plt.close(fig)
 
 
     ## make resolution plots
@@ -403,13 +394,11 @@ if (args.plots == "RESO") or (args.plots == "All"):
                         xlimits = y_lims
                         figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RESO", yaxis_name])) if (args.binning == "Final") \
                             else os.path.join(pltdir, "_".join([jmult, args.lepton, "RESO", yaxis_name]))
-                        #figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "RESO", yaxis_name]))
                     else:
                         xlabel = xtitle
                         xlimits = x_lims
                         figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RESO", xaxis_name])) if (args.binning == "Final") \
                             else os.path.join(pltdir, "_".join([jmult, args.lepton, "RESO", xaxis_name]))
-                        #figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "RESO", xaxis_name]))
    
                     #set_trace() 
                     hproj = hslice.integrate(hslice.dense_axes()[dax].name)
@@ -432,19 +421,19 @@ if (args.plots == "RESO") or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.86, "%s, %s\nmean=%.4f\nstd=%.4f" % (objtypes["Lep"][args.lepton], jet_mults[jmult], mean, stdev),
+                        0.02, 0.84, "%s\nmean=%.4f\nstd=%.4f" % (cfeatures.channel_labels[f"{args.lepton}_{jmult}"], mean, stdev),
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+                    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
     
                     #set_trace()
                     fig.savefig(figname)
                     print(f"{figname} written")
-                    plt.close()
+                    plt.close(fig)
 
 
     ## make relative resolution plots
-if (args.plots == "REL_RESO"):# or (args.plots == "All"):
+if (args.plots == "REL_RESO") or (args.plots == "All"):
     #from hepstats.modeling import bayesian_blocks
     for hname in rel_reso_variables.keys():
         if hname not in hdict.keys():
@@ -479,7 +468,6 @@ if (args.plots == "REL_RESO"):# or (args.plots == "All"):
                     os.makedirs(pltdir)
    
                 #set_trace() 
-                #hslice = histo[:, jmult].integrate("jmult").integrate("process")
                 hslice = histo[:, jmult].integrate("jmult")
    
                     # make 1D projection along dense axes
@@ -490,65 +478,121 @@ if (args.plots == "REL_RESO"):# or (args.plots == "All"):
                         xlimits = y_lims
                         base_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "REL_RESO", yaxis_name])) if (args.binning == "Final") \
                             else os.path.join(pltdir, "_".join([jmult, args.lepton, "REL_RESO", yaxis_name]))
-                        #base_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "REL_RESO", yaxis_name]))
                     else:
                         xlabel = xtitle
                         xlimits = x_lims
                         base_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "REL_RESO", xaxis_name])) if (args.binning == "Final") \
                             else os.path.join(pltdir, "_".join([jmult, args.lepton, "REL_RESO", xaxis_name]))
-                        #base_figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "REL_RESO", xaxis_name]))
    
                     #set_trace() 
                     hproj = hslice.integrate(hslice.dense_axes()[dax].name)
                     bin_edges = hproj.dense_axes()[0].edges()
                     bin_centers = hproj.dense_axes()[0].centers()
-                    #vals = hproj.values()[()]
+                    bin_numbers = np.arange(0, bin_edges.size) 
+                        # make plots for individual categories
                     for proc in hproj.values().keys():
                         proc_histo = hproj[proc].integrate("process")
                         vals = proc_histo.values()[()]
 
                         mean = np.average(bin_centers, weights=vals)
                         stdev = np.sqrt(np.average((bin_centers-mean)**2, weights=vals))                    
-    
+   
+                            # find FWHM of distribution
+                        peak = np.array([np.argmax(vals)])
+                        results_half_width, results_half_height, results_half_leftpos, results_half_rightpos = peak_widths(vals, peak, rel_height=0.5)
+                        #if results_half_height.size != 1: raise ValueError(f"{results_half_height.size} peaks have been found")
+                                # interpolate bin widths into bin values
+                        interp_bin_minval, interp_bin_maxval = np.interp(results_half_leftpos, bin_numbers, bin_edges), np.interp(results_half_rightpos, bin_numbers, bin_edges)
+                        interp_fwhm = abs(interp_bin_maxval- interp_bin_minval)[0]
+ 
                             # plots
                         fig, ax = plt.subplots()
                         fig.subplots_adjust(hspace=.07)
   
                         #set_trace()
                         Plotter.plot_1D(vals, bin_edges, xlimits=xlimits, xlabel=xlabel, ax=ax, label=plt_tools.get_label(proc[0], hstyles))
+                        ax.hlines(results_half_height, interp_bin_minval, interp_bin_maxval, color="r")
                                 
                         ax.legend(loc="upper right")
                         ax.set_ylim(0, ax.get_ylim()[1]*1.15)
     
                             # add lepton/jet multiplicity label
                         ax.text(
-                            0.02, 0.86, "%s, %s\nmean=%.4f\nstdev=%.4f" % (objtypes["Lep"][args.lepton], jet_mults[jmult], mean, stdev),
+                            0.02, 0.82, "%s\nmean=%.4f\nstd=%.4f\nFWHM=%.4f" % (cfeatures.channel_labels[f"{args.lepton}_{jmult}"], mean, stdev, interp_fwhm),
                             fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                         )
-                        hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+                        hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
                         figname = "_".join([base_figname, proc[0]]) 
                         #set_trace()
                         fig.savefig(figname)
                         print(f"{figname} written")
-                        plt.close()
+                        plt.close(fig)
+
+                        # make plots for all categories
+                    proc_histo = hproj.integrate("process")
+                    vals = proc_histo.values()[()]
+
+                    mean = np.average(bin_centers, weights=vals)
+                    stdev = np.sqrt(np.average((bin_centers-mean)**2, weights=vals))                    
+    
+                        # find FWHM of distribution
+                    peak = np.array([np.argmax(vals)])
+                    results_half_width, results_half_height, results_half_leftpos, results_half_rightpos = peak_widths(vals, peak, rel_height=0.5)
+                    #if results_half_height.size != 1: raise ValueError(f"{results_half_height.size} peaks have been found")
+                            # interpolate bin widths into bin values
+                    interp_bin_minval, interp_bin_maxval = np.interp(results_half_leftpos, bin_numbers, bin_edges), np.interp(results_half_rightpos, bin_numbers, bin_edges)
+                    interp_fwhm = abs(interp_bin_maxval- interp_bin_minval)[0]
+ 
+                        # plots
+                    fig, ax = plt.subplots()
+                    fig.subplots_adjust(hspace=.07)
+  
+                    #set_trace()
+                    Plotter.plot_1D(vals, bin_edges, xlimits=xlimits, xlabel=xlabel, ax=ax, label=plt_tools.get_label("ttJetsSL", hstyles))
+                    ax.hlines(results_half_height, interp_bin_minval, interp_bin_maxval, color="r")
+                            
+                    ax.legend(loc="upper right")
+                    ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+    
+                        # add lepton/jet multiplicity label
+                    ax.text(
+                        0.02, 0.82, "%s\nmean=%.4f\nstd=%.4f\nFWHM=%.4f" % (cfeatures.channel_labels[f"{args.lepton}_{jmult}"], mean, stdev, interp_fwhm),
+                        fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                    )
+                    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+
+                    figname = "_".join([base_figname, "ttJetsSL"]) 
+                    #set_trace()
+                    fig.savefig(figname)
+                    print(f"{figname} written")
+                    plt.close(fig)
 
 
                 # make plots of relative bin width and resolution for each bin in mtt
-                #test_mtt_bins = np.array([300., 360.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 625.0, 650.0, 675.0, 
-                #    700.0, 730.0, 760.0, 800.0, 850.0, 900.0, 950., 1000.0, 1050., 1100.0, 1150., 1200., 1300., 1500., 2000.])
-                #hslice = hslice.rebin(xaxis_name, hist.Bin(xaxis_name, xaxis_name, test_mtt_bins))
-
                     # calculate bin widths
+                #set_trace()
                 mtt_edges = hslice.axis("mtt").edges()
+                mtt_centers = hslice.axis("mtt").centers()
                 #mtt_edges = mtt_edges[np.argwhere(mtt_edges == 300.)[0][0]:] # start mtt bins at 300 GeV
                 mtt_min, mtt_max = mtt_edges[0], mtt_edges[-1]
-                rel_mtt_bin_widths = np.array([(mtt_edges[idx+1]-mtt_edges[idx])/(mtt_max-mtt_min) for idx in range(mtt_edges.size-1)])
+                rel_mtt_bin_widths = np.array([(mtt_edges[idx+1]-mtt_edges[idx])/mtt_centers[idx] for idx in range(mtt_centers.size)])
+                #rel_mtt_bin_widths = np.array([(mtt_edges[idx+1]-mtt_edges[idx])/(mtt_max-mtt_min) for idx in range(mtt_edges.size-1)])
 
                 rel_res_bin_centers = hslice.axis("rel_reso_mtt").centers()
+                rel_res_bin_edges = hslice.axis("rel_reso_mtt").edges()
+                rel_res_bin_numbers = np.arange(0, rel_res_bin_edges.size)
+
+                ### initialize plots comparing correct and all l+jets ttbar
+                fig_comp, ax_comp = plt.subplots()
+                fig_comp.subplots_adjust(hspace=.07)
+
+                #set_trace()
+                    # make plots for individual categories
                 for proc in hproj.values().keys():
                     proc_histo = hslice[proc].integrate("process")
                     rel_res_array = np.zeros(mtt_edges.size-1)
+                    rel_fwhm_array = np.zeros(mtt_edges.size-1)
                         # loop over mtt bin values and calculate mean, stdev of relative resolution
                     #set_trace()
                     for idx in range(mtt_edges.size-1):
@@ -559,15 +603,32 @@ if (args.plots == "REL_RESO"):# or (args.plots == "All"):
                             bin_mean = np.average(rel_res_bin_centers, weights=rel_res_vals)
                             bin_stdev = np.sqrt(np.average((rel_res_bin_centers-bin_mean)**2, weights=rel_res_vals))
                             rel_res_array[idx] = bin_stdev
+
+                            #set_trace()
+                                # find FWHM of distribution
+                            peak = np.array([np.argmax(rel_res_vals)])
+                            results_half_width, results_half_height, results_half_leftpos, results_half_rightpos = peak_widths(rel_res_vals, peak, rel_height=0.5)
+                            #if results_half_height.size != 1: raise ValueError(f"{results_half_height.size} peaks have been found")
+                                    # interpolate bin widths into bin values
+                            interp_bin_minval, interp_bin_maxval = np.interp(results_half_leftpos, rel_res_bin_numbers, rel_res_bin_edges), np.interp(results_half_rightpos, rel_res_bin_numbers, rel_res_bin_edges)
+                            interp_fwhm = abs(interp_bin_maxval- interp_bin_minval)[0]
+                            rel_fwhm_array[idx] = interp_fwhm
+ 
                         else:
                             rel_res_array[idx] = np.nan
+
+
+                        # plot correct ttbar in comp figure
+                    #if proc[0] == "ttJets_right": set_trace()
+                    if proc[0] == "ttJets_right": Plotter.plot_1D(rel_fwhm_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax_comp, label=f"{plt_tools.get_label(proc[0], hstyles)} FWHM", color="b")
+                    #if proc[0] == "ttJets_right": Plotter.plot_1D(rel_res_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax_comp, label=f"{plt_tools.get_label(proc[0], hstyles)}"+" $m_{t\\bar{t}}$ resolution", color="m")
 
                     #set_trace()
                     fig, ax = plt.subplots()
                     fig.subplots_adjust(hspace=.07)
   
-                    #Plotter.plot_1D(rel_res_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="Relative resolution", color="r")
                     Plotter.plot_1D(rel_res_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="$m_{t\\bar{t}}$ resolution", color="r")
+                    Plotter.plot_1D(rel_fwhm_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="$m_{t\\bar{t}}$ FWHM", color="b")
                     Plotter.plot_1D(rel_mtt_bin_widths, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="Relative bin width", color="k")
                             
                     ax.legend(loc="upper right", title=plt_tools.get_label(proc[0], hstyles))
@@ -575,10 +636,10 @@ if (args.plots == "REL_RESO"):# or (args.plots == "All"):
     
                         # add lepton/jet multiplicity label
                     ax.text(
-                        0.02, 0.92, "%s, %s" % (objtypes["Lep"][args.lepton], jet_mults[jmult]),
+                        0.02, 0.92, cfeatures.channel_labels[f"{args.lepton}_{jmult}"],
                         fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                     )
-                    hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+                    hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
 
                     #set_trace()
                     figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RelativeResolutionBinWidth", "vs", xaxis_name, proc[0]])) if (args.binning == "Final") \
@@ -586,4 +647,83 @@ if (args.plots == "REL_RESO"):# or (args.plots == "All"):
                     #set_trace()
                     fig.savefig(figname)
                     print(f"{figname} written")
-                    plt.close()
+                    plt.close(fig)
+
+                    # make plots for combined categories
+                proc_histo = hslice.integrate("process")
+                rel_res_array = np.zeros(mtt_edges.size-1)
+                rel_fwhm_array = np.zeros(mtt_edges.size-1)
+                    # loop over mtt bin values and calculate mean, stdev of relative resolution
+                #set_trace()
+                for idx in range(mtt_edges.size-1):
+                    mtt_low, mtt_hi = mtt_edges[idx], mtt_edges[idx+1]
+                    rel_res_vals = proc_histo[mtt_low:mtt_hi, :].integrate("mtt").values()[()]
+
+                    if np.sum(rel_res_vals) > 0:
+                        bin_mean = np.average(rel_res_bin_centers, weights=rel_res_vals)
+                        bin_stdev = np.sqrt(np.average((rel_res_bin_centers-bin_mean)**2, weights=rel_res_vals))
+                        rel_res_array[idx] = bin_stdev
+
+                            # find FWHM of distribution
+                        peak = np.array([np.argmax(rel_res_vals)])
+                        results_half_width, results_half_height, results_half_leftpos, results_half_rightpos = peak_widths(rel_res_vals, peak, rel_height=0.5)
+                        #if results_half_height.size != 1: raise ValueError(f"{results_half_height.size} peaks have been found")
+                                # interpolate bin widths into bin values
+                        interp_bin_minval, interp_bin_maxval = np.interp(results_half_leftpos, rel_res_bin_numbers, rel_res_bin_edges), np.interp(results_half_rightpos, rel_res_bin_numbers, rel_res_bin_edges)
+                        interp_fwhm = abs(interp_bin_maxval- interp_bin_minval)[0]
+                        rel_fwhm_array[idx] = interp_fwhm
+ 
+                    else:
+                        rel_res_array[idx] = np.nan
+
+                # plot total l+jets result in comparison figure
+                #Plotter.plot_1D(rel_res_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax_comp, label=f"{plt_tools.get_label('ttJetsSL', hstyles)}"+" $m_{t\\bar{t}}$ resolution", color="g")
+                Plotter.plot_1D(rel_fwhm_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax_comp, label=f"{plt_tools.get_label('ttJetsSL', hstyles)} FWHM", color="r")
+                Plotter.plot_1D(rel_mtt_bin_widths, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax_comp, label="Relative bin width", color="k")
+                        
+                ax_comp.legend(loc="upper right")#, title=plt_tools.get_label("ttJetsSL", hstyles))
+                ax_comp.set_ylim(0, ax_comp.get_ylim()[1]*1.15)
+    
+                    # add lepton/jet multiplicity label
+                ax_comp.text(
+                    0.02, 0.92, cfeatures.channel_labels[f"{args.lepton}_{jmult}"],
+                    fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax_comp.transAxes
+                )
+                hep.cms.label(ax=ax_comp, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+
+                #set_trace()
+                #figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RelativeResolutionBinWidth", "vs", xaxis_name, "CorrectVSttJetsSL_FWHMvsSigma_Comp"])) if (args.binning == "Final") \
+                #    else os.path.join(pltdir, "_".join([jmult, args.lepton, "RelativeResolutionBinWidth", "vs", xaxis_name, "CorrectVSttJetsSL_Comp"]))
+                figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RelativeResolutionBinWidth", "vs", xaxis_name, "CorrectVSttJetsSL_Comp"])) if (args.binning == "Final") \
+                    else os.path.join(pltdir, "_".join([jmult, args.lepton, "RelativeResolutionBinWidth", "vs", xaxis_name, "CorrectVSttJetsSL_Comp"]))
+                #set_trace()
+                fig_comp.savefig(figname)
+                print(f"{figname} written")
+                plt.close(fig_comp)
+
+
+                #set_trace()
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(hspace=.07)
+  
+                Plotter.plot_1D(rel_res_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="$m_{t\\bar{t}}$ resolution", color="r")
+                Plotter.plot_1D(rel_fwhm_array, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="$m_{t\\bar{t}}$ FWHM", color="b")
+                Plotter.plot_1D(rel_mtt_bin_widths, mtt_edges, xlimits=x_lims, xlabel=xtitle, ylabel="a.u.", ax=ax, label="Relative bin width", color="k")
+                        
+                ax.legend(loc="upper right", title=plt_tools.get_label("ttJetsSL", hstyles))
+                ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+    
+                    # add lepton/jet multiplicity label
+                ax.text(
+                    0.02, 0.92, cfeatures.channel_labels[f"{args.lepton}_{jmult}"],
+                    fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                )
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(data_lumi_year[f"{args.lepton}s"]/1000., 1))
+
+                #set_trace()
+                figname = os.path.join(pltdir, "_".join([jmult, args.lepton, "FinalBinning", "RelativeResolutionBinWidth", "vs", xaxis_name, "ttJetsSL"])) if (args.binning == "Final") \
+                    else os.path.join(pltdir, "_".join([jmult, args.lepton, "RelativeResolutionBinWidth", "vs", xaxis_name, "ttJetsSL"]))
+                #set_trace()
+                fig.savefig(figname)
+                print(f"{figname} written")
+                plt.close(fig)
