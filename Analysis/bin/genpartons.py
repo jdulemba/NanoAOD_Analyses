@@ -21,7 +21,7 @@ base_jobid = os.environ["base_jobid"]
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("fset", type=str, help="Fileset dictionary (in string form) to be used for the processor")
-parser.add_argument("year", choices=["2016", "2017", "2018"] if base_jobid == "NanoAODv6" else ["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("outfname", type=str, help="Specify output filename, including directory and file extension")
 parser.add_argument("opts", type=str, help="Fileset dictionary (in string form) to be used for the processor")
 args = parser.parse_args()
@@ -34,7 +34,7 @@ if len(fileset.keys()) > 1:
     raise ValueError("Only one topology run at a time in order to determine which corrections and systematics to run")
 samplename = list(fileset.keys())[0]
 
-isTTbar_ = ["ttJets_PS", "ttJets"] if ((args.year == "2016") and (base_jobid == "NanoAODv6")) else ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]
+isTTbar_ = ["ttJetsSL", "ttJetsHad", "ttJetsDiLep"]
 isSignal_ = (samplename.startswith("AtoTT") or samplename.startswith("HtoTT"))
 isInt_ = isSignal_ and ("Int" in samplename)
 if (samplename not in isTTbar_) and (not isSignal_):
