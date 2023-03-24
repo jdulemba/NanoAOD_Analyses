@@ -23,10 +23,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('year', choices=['2016', '2017', '2018'], help='What year is the ntuple from.')
 parser.add_argument('lepton', choices=['Electron', 'Muon'], help='Choose which lepton to make plots for')
-
 args = parser.parse_args()
-
-sys_to_name = systematics.sys_to_name[args.year]
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
