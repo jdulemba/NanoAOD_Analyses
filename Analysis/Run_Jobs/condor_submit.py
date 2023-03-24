@@ -29,6 +29,7 @@ opts_dict["evt_sys"] = opts_dict.get("evt_sys", "NONE")
 opts_dict["rewt_sys"] = opts_dict.get("rewt_sys", "NONE")
 opts_dict["only_sys"] = opts_dict.get("only_sys", "False")
 opts_dict["debug"] = opts_dict.get("debug", "False")
+opts_dict["jobid"] = opts_dict.get("jobid", os.environ["jobid"])
 opts_dict["allowed_masses"] = opts_dict.get("allowed_masses", "All")
 opts_dict["allowed_widths"] = opts_dict.get("allowed_widths", "All")
 sample = opts_dict.get("sample", None)
@@ -36,8 +37,10 @@ if sample: opts_dict.pop("sample")
 opts_dict["isCondor"] = "True"
 
 proj_dir = os.environ["PROJECT_DIR"]
-jobid = os.environ["jobid"]
-base_jobid = os.environ["base_jobid"]
+jobid, base_jobid = opts_dict["jobid"], os.environ["base_jobid"]
+#jobid, base_jobid = opts_dict["jobid"], opts_dict["base_jobid"]
+#jobid = os.environ["jobid"]
+#base_jobid = os.environ["base_jobid"]
 analyzer=args.analyzer
 proxy_path = "/afs/cern.ch/work/j/jdulemba/private/x509up_u81826"
 
@@ -60,7 +63,8 @@ export X509_USER_PROXY=$1
 EXE="${{@:2}}"
 echo "Executing python Run_Jobs/run_analyzer.py " $EXE from within singularity
 
-singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Run_Jobs/run_analyzer.py $EXE"
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh {JOBID} && python /scratch/Run_Jobs/run_analyzer.py $EXE"
+#singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Run_Jobs/run_analyzer.py $EXE"
 
 outfname_arg="${{@: -1}}"
 IFS='='
@@ -70,7 +74,7 @@ outfname=${{strarr[1]}}
 echo "Copying " $oufname "to {EOSDIR}"
 xrdcp $outfname root://eosuser.cern.ch/{EOSDIR}
 rm $outfname
-""".format(PROJECTDIR=proj_dir, BATCHDIR=os.path.join(proj_dir, jobdir, sample_name), EOSDIR=eos_batch_dir)
+""".format(PROJECTDIR=proj_dir, BATCHDIR=os.path.join(proj_dir, jobdir, sample_name), EOSDIR=eos_batch_dir, JOBID=jobid)
 
     return batch_job
 
