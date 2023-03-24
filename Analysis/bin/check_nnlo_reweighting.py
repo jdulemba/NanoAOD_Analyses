@@ -11,7 +11,8 @@ ak.behavior.update(vector.behavior)
 
 from pdb import set_trace
 import os
-import python.GenParticleSelector as genpsel
+import python.MCWeights as mcweights
+#import python.GenParticleSelector as genpsel
 from coffea.util import load, save
 import numpy as np
 import Utilities.make_variables as make_vars
@@ -50,6 +51,31 @@ opts_dict = prettyjson.loads(odict)
     ## set config options passed through argparse
 import ast
 to_debug = ast.literal_eval(opts_dict.get("debug", "False"))
+
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        from subprocess import check_output, STDOUT
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=1200, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=600, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
+
 
 
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
@@ -121,14 +147,23 @@ class Analyzer(processor.ProcessorABC):
 
         genWeights = events["genWeight"] # only select semilep evts
         mtt_vs_top_ctstar_weights = self.reweighting["mtt_vs_top_ctstar"](ak.flatten(mtt, axis=None), ak.flatten(top_ctstar, axis=None))
+        #set_trace()
+        toppt_weights = ak.flatten(mcweights.get_TopPt_weights(events), axis=None)
 
+        genweights_dict = {
+            "Nominal" : ak.copy(genWeights),
+            "mtt_vs_top_ctstar" : ak.copy(genWeights)*ak.copy(mtt_vs_top_ctstar_weights),
+            "top_pt" : ak.copy(genWeights)*ak.copy(toppt_weights),
+        }
             # fill hists
-        for rewt_type in ["Nominal", "mtt_vs_top_ctstar"]:
-            #set_trace()
-            if rewt_type == "mtt_vs_top_ctstar":
-                evt_wts = ak.copy(genWeights)*ak.copy(mtt_vs_top_ctstar_weights)
-            else:
-                evt_wts = genWeights
+        for rewt_type, evt_wts in genweights_dict.items():
+            #print(rewt_type)
+        #for rewt_type in ["Nominal", "mtt_vs_top_ctstar"]:
+        #    #set_trace()
+        #    if rewt_type == "mtt_vs_top_ctstar":
+        #        evt_wts = ak.copy(genWeights)*ak.copy(mtt_vs_top_ctstar_weights)
+        #    else:
+        #        evt_wts = genWeights
 
                     # top
             output["pt_top"].fill(dataset=self.sample_name, rewt=rewt_type, pt=ak.flatten(gen_tops.pt, axis=None), weight=evt_wts)
@@ -176,6 +211,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))
