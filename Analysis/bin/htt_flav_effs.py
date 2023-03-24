@@ -52,6 +52,31 @@ for fname in fileset.keys():
 samplename = list(fileset.keys())[0]
 isTTbar_ = samplename.startswith("ttJets")
 
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        from subprocess import check_output, STDOUT
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=None, stderr=STDOUT)
+                    output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=3600, stderr=STDOUT)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
+
+
 ## load corrections for event weights
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
@@ -167,26 +192,20 @@ class Htt_Flav_Effs(processor.ProcessorABC):
         output["cutflow"]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
         selection.add("jets_3", ak.num(events["SelectedJets"]) == 3)
 
+        #set_trace()
         ## apply lepton SFs to MC (only applicable to tight leptons)
         if "LeptonSF" in self.corrections.keys():
             tight_mu_cut = selection.require(tight_MU=True) # find events passing muon object selection with one tight muon
             tight_muons = events["Muon"][tight_mu_cut][(events["Muon"][tight_mu_cut]["TIGHTMU"] == True)]
-            muSFs_dict =  MCWeights.get_lepton_sf(lepton="Muons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]))
-            for source in muSFs_dict.keys():
-                tmp_wts = np.ones(len(events))
-                tmp_wts[tight_mu_cut] = muSFs_dict[source]["Central"]
-                mu_evt_weights.add(source, np.copy(tmp_wts))
+            muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
+                pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_cut, leptype="Muons")
+            mu_evt_weights.add("Lepton_SF", np.copy(muSFs_dict["central"]))
 
             tight_el_cut = selection.require(tight_EL=True) # find events passing electron object selection with one tight electron
             tight_electrons = events["Electron"][tight_el_cut][(events["Electron"][tight_el_cut]["TIGHTEL"] == True)]
-            elSFs_dict = MCWeights.get_lepton_sf(lepton="Electrons", corrections=self.corrections["LeptonSF"],
-                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]))
-            #set_trace()
-            for source in elSFs_dict.keys():
-                tmp_wts = np.ones(len(events))
-                tmp_wts[tight_el_cut] = elSFs_dict[source]["Central"]
-                el_evt_weights.add(source, np.copy(tmp_wts))
+            elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
+                pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_cut, leptype="Electrons")
+            el_evt_weights.add("Lepton_SF", np.copy(elSFs_dict["central"]))
 
         if isTTbar_:
             ## add 4+ jets categories for ttbar events
@@ -210,13 +229,13 @@ class Htt_Flav_Effs(processor.ProcessorABC):
                         # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                        #np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        #np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
                     el_evt_weights.add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                        #np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                        #np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                     )
 
 
@@ -275,6 +294,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))
