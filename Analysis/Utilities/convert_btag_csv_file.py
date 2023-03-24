@@ -63,10 +63,10 @@ def convert_btag_csv_file(csvFilePath):
         corr_list = [tuple(df_numpy[idx]) for idx in range(len(df_numpy))]
 
             # hardcoded
-        dtype_list = [('OperatingPoint', '<U1'), ('measurementType', '<U4'), ('sysType', '<U17'), ('jetFlavor', '<i8'), ('etaMin', '<f8'), ('etaMax', '<f8'), ('ptMin', '<f8'), ('ptMax', '<f8'), ('discrMin', '<f8'), ('discrMax', '<f8'), ('formula', '<U98')]
+        dtype_list = [('OperatingPoint', '<U1'), ('measurementType', '<U4'), ('sysType', '<U30'), ('jetFlavor', '<i8'), ('etaMin', '<f8'), ('etaMax', '<f8'), ('ptMin', '<f8'), ('ptMax', '<f8'), ('discrMin', '<f8'), ('discrMax', '<f8'), ('formula', '<U1000')]
         corrections = numpy.array(corr_list, dtype=dtype_list)
         
-
+    #set_trace()
     all_names = corrections[[columns[i] for i in range(4)]]
     labels = numpy.unique(corrections[[columns[i] for i in range(4)]])
     wrapped_up = {}
