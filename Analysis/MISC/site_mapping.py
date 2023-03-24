@@ -28,7 +28,7 @@ site_name_to_xrootd = {
     "T3_KR_KISTI" : "cms-xrdr.sdfarm.kr:1094//xrd",
     "T2_RU_IHEP" : "dp0015.m45.ihep.su:1094",
     "T2_IT_Bari" : "xrootd.ba.infn.it",
-    "T1_IT_CNAF_Disk" : "xrootd-cms.infn.it:1194",
+    #"T1_IT_CNAF_Disk" : "xrootd-cms.infn.it:1194",
     "NEED" : "xrootd-cms.infn.it",
     #"NEED" : "cmsxrootd.fnal.gov",
 }
