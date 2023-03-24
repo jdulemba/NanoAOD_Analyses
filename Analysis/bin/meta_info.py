@@ -43,6 +43,30 @@ isData_ = samplename.startswith("data")
 if isData_:
     lumiMask_path = os.path.join(proj_dir, "inputs", "data", base_jobid, "LumiMasks", f"{args.year}_GoldenJson_{base_jobid}.txt")
 
+
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        import subprocess
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    subprocess.run(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
+
+
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
     def __init__(self):
@@ -79,6 +103,7 @@ class Meta_Analyzer(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
 
+        #set_trace()
         event_nums = events.event
         self.sample_name = events.metadata["dataset"]
 
@@ -172,8 +197,17 @@ class Meta_Analyzer(processor.ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
-proc_executor = processor.iterative_executor if to_debug else processor.futures_executor
-proc_exec_args = {"schema": processor.NanoAODSchema} if to_debug else {"schema": processor.NanoAODSchema, "workers": 8}
+if to_debug:
+    proc_executor = processor.iterative_executor
+    proc_exec_args = {"schema": processor.NanoAODSchema}
+else:
+    proc_executor = processor.futures_executor
+    proc_exec_args = {
+        "schema": processor.NanoAODSchema,
+        "workers": 8,
+        "merging": True,
+    }
+
 output = processor.run_uproot_job(
     fileset,
     treename="Events",
@@ -185,6 +219,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))

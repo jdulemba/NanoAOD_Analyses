@@ -39,6 +39,7 @@ args = parser.parse_args()
 # convert input string of fileset dictionary to actual dictionary
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
+samplename = list(fileset.keys())[0]
 
 # convert input string of options dictionary to actual dictionary
 odict = (args.opts).replace("\'", "\"")
@@ -53,6 +54,31 @@ Nominal_ttJets = ["ttJetsSL"]
 isTTbar = np.array([(key in Nominal_ttJets) for key in fileset.keys()]).all()
 if not isTTbar:
     raise ValueError("This should only be run on nominal ttbar events!")
+
+
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        from subprocess import check_output, STDOUT
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=None, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=3600, stderr=STDOUT)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
 
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 ## load corrections for event weights
@@ -78,8 +104,9 @@ wps_to_use = list(set([jet_pars["permutations"]["tightb"],jet_pars["permutations
 if not( len(wps_to_use) == 1):
     raise ValueError("Only 1 unique btag working point supported now")
 btag_wp = btagger+wps_to_use[0]
-
+#set_trace()
 MTcut = jet_pars["MT"]
+
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class permProbComputer(processor.ProcessorABC):
@@ -433,6 +460,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))

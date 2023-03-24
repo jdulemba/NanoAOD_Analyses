@@ -27,6 +27,7 @@ jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "ttbar_alpha_reco"
 
+print(f"Jobid: {jobid}")
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("fset", type=str, help="Fileset dictionary (in string form) to be used for the processor")
@@ -38,6 +39,7 @@ args = parser.parse_args()
 # convert input string of fileset dictionary to actual dictionary
 fdict = (args.fset).replace("\'", "\"")
 fileset = prettyjson.loads(fdict)
+samplename = list(fileset.keys())[0]
 
 # convert input string of options dictionary to actual dictionary
 odict = (args.opts).replace("\'", "\"")
@@ -55,6 +57,30 @@ if not isTTbar:
 
 ## init tt probs for likelihoods
 ttpermutator.year_to_run(year=args.year)
+
+
+        # copy fileset root files to local condor node if running on condor
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        from subprocess import check_output, STDOUT
+        sites_to_try = ["root://xrootd-cms.infn.it/", "root://cmsxrootd.fnal.gov/"]
+        n_retries = len(sites_to_try) + 1
+        for idx, rfile in enumerate(fileset[samplename]):
+            cp_success = False
+            for cp_attempt in range(n_retries):
+                if cp_success: continue
+                cp_rfile = rfile if cp_attempt == 0 else "/".join([sites_to_try[cp_attempt-1], rfile.split("//")[-1]]) # replace whatever redirector is used to regional Bari one
+                print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
+                try:
+                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=600, stderr=STDOUT)
+                    output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
+                    cp_success = True
+                except:
+                    cp_success = False
+                    continue
+            if not cp_success:
+                raise ValueError(f"{cp_rfile} not found")
+            fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
 
 
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
@@ -76,17 +102,17 @@ corrections = {
 
     ## parameters for b-tagging
 jet_pars = cfg_pars["Jets"]
-btaggers = ["DeepCSV"]
+btaggers = [jet_pars["btagger"]]
 
 wps_to_use = list(set([jet_pars["permutations"]["tightb"],jet_pars["permutations"]["looseb"]]))
 if not( len(wps_to_use) == 1):
     raise IOError("Only 1 unique btag working point supported now")
-btag_wps = ["DeepCSVMedium"]
+btag_wp = btaggers[0]+wps_to_use[0]
 
 if corrections["BTagSF"] == True:
     sf_file = os.path.join(proj_dir, "Corrections", jobid, jet_pars["btagging"]["btagSF_file"])
     if not os.path.isfile(sf_file):
-        raise IOError("BTag SF file %s doesn't exist" % sf_file)
+        raise IOError(f"BTag SF file {sf_file} doesn't exist")
 
     btag_sfs = load(sf_file)
     corrections.update({"BTag_Constructors" : {}})
@@ -198,19 +224,19 @@ class ttbar_alpha_reco(processor.ProcessorABC):
         passing_jets = objsel.jets_selection(events, year=args.year)
         selection.add("passing_jets", passing_jets)
         selection.add("jets_3",  ak.num(events["SelectedJets"]) == 3)
-        selection.add("btag_pass", ak.sum(events["SelectedJets"][btag_wps[0]], axis=1) >= 2)
+        selection.add("btag_pass", ak.sum(events["SelectedJets"][btag_wp], axis=1) >= 2)
 
-        events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepB"], ascending=False)] if btaggers[0] == "DeepCSV" else events["SelectedJets"][ak.argsort(events["SelectedJets"]["btagDeepFlavB"], ascending=False)]
+        events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)]
 
         if self.corrections["BTagSF"] == True:
-            btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].schema_.keys()}
+            btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].schema_.keys()}
 
             threeJets_cut = selection.require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
-            deepcsv_3j_wts = self.corrections["BTag_Constructors"]["DeepCSV"]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut="DeepCSV"+wps_to_use[0])
+            btagger_3j_wts = self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut=btag_wp)
 
                 # fll dict of btag weights
-            for wt_name in deepcsv_3j_wts.keys():
-                btag_weights[wt_name][threeJets_cut] = np.copy(ak.prod(deepcsv_3j_wts[wt_name], axis=1))
+            for wt_name in btagger_3j_wts.keys():
+                btag_weights[wt_name][threeJets_cut] = np.copy(ak.prod(btagger_3j_wts[wt_name], axis=1))
 
 
             # find gen level particles for ttbar system
@@ -235,13 +261,17 @@ class ttbar_alpha_reco(processor.ProcessorABC):
                     # add Yukawa coupling variation
                 mu_evt_weights.add("Yukawa",  # really just varying value of Yt
                     np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
+                    #np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    #np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                 )
                 el_evt_weights.add("Yukawa",  # really just varying value of Yt
                     np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
-                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
+                    np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
+                    #np.copy(ewk_wts_dict["Rebinned_KFactor_1.1"]),
+                    #np.copy(ewk_wts_dict["Rebinned_KFactor_0.9"]),
                 )
 
         ## fill hists for each region
@@ -269,7 +299,7 @@ class ttbar_alpha_reco(processor.ProcessorABC):
                 mp = ttmatcher.best_match(gen_hyp=events["SL"][cut], jets=jets, leptons=leptons, met=met)
 
                     # find best permutations
-                best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wps[0])
+                best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wp)
                 valid_perms = ak.num(best_perms["TTbar"].pt) > 0
 
                     # compare matched per to best perm
@@ -329,6 +359,11 @@ output = processor.run_uproot_job(
 
 save(output, args.outfname)
 print(f"{args.outfname} has been written")
+
+if "isCondor" in opts_dict.keys():
+    if ast.literal_eval(opts_dict["isCondor"]):
+        print(f"Deleting files from /tmp")
+        os.system(f"rm {' '.join(fileset[samplename])}")
 
 toc = time.time()
 print("Total time: %.1f" % (toc - tic))
