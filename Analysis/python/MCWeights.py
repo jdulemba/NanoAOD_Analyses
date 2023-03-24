@@ -105,22 +105,22 @@ def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=Fa
             lheweights = events["LHEScaleWeight"]
             weights.add("AH_FACTOR",
                 np.ones(len(events)),
-                ak.copy(lheweights[:, 5]), # (muR=1, muF=2)
+                ak.copy(lheweights[:, 4]) if "W9p0" in events.metadata["dataset"] else ak.copy(lheweights[:, 5]), # (muR=1, muF=2)
                 ak.copy(lheweights[:, 3]), # (muR=1, muF=0.5)
             )
             weights.add("AH_RENORM",
                 np.ones(len(events)),
-                ak.copy(lheweights[:, 7]), # (muR=2, muF=1)
+                ak.copy(lheweights[:, 6]) if "W9p0" in events.metadata["dataset"] else ak.copy(lheweights[:, 7]), # (muR=2, muF=1)
                 ak.copy(lheweights[:, 1]), # (muR=0.5, muF=1)
             )
             weights.add("AH_RENORM_FACTOR_SAME",
                 np.ones(len(events)),
-                ak.copy(lheweights[:, 8]), # (muR=2, muF=2), RENORM_UP_FACTOR_UP
+                ak.copy(lheweights[:, 7]) if "W9p0" in events.metadata["dataset"] else ak.copy(lheweights[:, 8]), # (muR=2, muF=2), RENORM_UP_FACTOR_UP
                 ak.copy(lheweights[:, 0]), # (muR=0.5, muF=0.5), RENORM_DW_FACTOR_DW
             )
             weights.add("AH_RENORM_FACTOR_DIFF",
                 np.ones(len(events)),
-                ak.copy(lheweights[:, 6]), # (muR=2, muF=0.5), RENORM_UP_FACTOR_DW
+                ak.copy(lheweights[:, 5]) if "W9p0" in events.metadata["dataset"] else ak.copy(lheweights[:, 6]), # (muR=2, muF=0.5), RENORM_UP_FACTOR_DW
                 ak.copy(lheweights[:, 2]), # (muR=0.5, muF=2), RENORM_DW_FACTOR_UP
             )
 
@@ -132,7 +132,23 @@ def get_pdf_weights(df):
         raise ValueError("Differing number of PDF weights for events")
     pdfweights = ak.JaggedArray.fromcounts(df["nLHEPdfWeight"], df["LHEPdfWeight"])
     df["PDFWeights"] = pdfweights
-    
+
+
+def SF_pt(pt):
+    SF = 0.103 * np.exp(-0.0118*pt) - 0.000134*pt + 0.973
+    return SF
+
+def get_TopPt_weights(events):
+    # values and application of top pT reweighting taken from https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting#How_to_practically_apply_default
+    #set_trace()
+    genparts = events["GenPart"]
+    gen_tops = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == 6)]
+    gen_tbars = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == -6)]
+    SFtop = SF_pt(gen_tops.pt)
+    SFtbar = SF_pt(gen_tbars.pt)
+    SFtot = np.sqrt(SFtop * SFtbar)
+    return SFtot
+
 
 def get_nnlo_weights(correction, events):
     #set_trace()
@@ -314,7 +330,8 @@ def get_Otto_ewk_weights(correction, events):
     deltaQCD_wt = correction["DeltaQCD"](gen_mtt, gen_top_ctstar)
     ewk_wts_dict["DeltaQCD"] = ak.copy(deltaQCD_wt)
 
-    rewt_vals = ["0.0", "0.5", "0.9", "1.0", "1.1", "1.5", "2.0", "3.0", "4.0"]
+    rewt_vals = ["0.0", "0.5", "0.88", "0.9", "1.0", "1.1", "1.11", "1.5", "2.0", "3.0", "4.0"]
+    #rewt_vals = ["0.0", "0.5", "0.9", "1.0", "1.1", "1.5", "2.0", "3.0", "4.0"]
     for rewt_type in rewt_vals:
             # NLO EW kfactor weights
         ewk_wts_dict[f"KFactor_{rewt_type}"] = ak.copy(correction[f"EW_KFactor_{rewt_type}"](gen_mtt, gen_top_ctstar))
