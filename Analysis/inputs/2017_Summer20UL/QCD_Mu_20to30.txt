@@ -1,7 +1,6 @@
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/0A811EFA-63CA-F34B-9AB1-716A51658FEF.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/0C93377E-52D1-4241-BC45-D7FCD61E2C16.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/18ACD1C2-F40E-C347-AD83-2E4D5B5FBFCE.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/2787FD1D-4CE9-D842-85AC-C1885320ABD7.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/2E074D9A-B5D2-0F4F-BAB8-12BD0AE71D32.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/44740224-B769-8B43-9CE1-58E212CC8030.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/487196AD-9DC7-234B-9B11-EE7EB0B4DF92.root
@@ -10,7 +9,6 @@ root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To3
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/6B95D758-D654-5E4F-9D14-D19A1C5467B8.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/75BDC2BA-8D2A-394C-A1C9-5A38E0832A2E.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/843E67F8-57F6-1942-BF89-B6DF95D6795B.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/91BB083E-E163-9A45-8E95-06C145F351E0.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/A1E8CA4E-EBEC-B940-B7DF-F0357FD2EE1C.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/AF87B2BB-9DDD-9240-800A-EEB7D45F1407.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/B561DD87-99FD-BB47-8A08-4AC936D35460.root
@@ -18,15 +16,9 @@ root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To3
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/E6B73E75-B8C2-9B4C-A924-C98F830D024F.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/E951B615-3F70-4145-9761-7F5181C31961.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/F75B7E5E-B6D9-8F44-8007-66261894E3FF.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/9EF60472-35B2-674B-8FA5-5D026768850F.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/B985044F-58F9-5B47-A5B9-1105EF53FECF.root
-root://lcgsexrd.jinr.ru:1095//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/BD77A123-B7E9-5340-9930-05692117DE81.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2540000/09CE840C-B95A-0D41-AB02-7F7516E7EAA3.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/260000/3B19ADD4-6DF0-C84B-B97A-ABE52E79000E.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/260000/7AADCC84-277C-0E4B-B347-F17BE4F26061.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/260000/EA319221-B2FA-264F-BE92-A57758C21913.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/260000/FF5A6678-3987-C444-B09B-77CDBDD97D6A.root
-root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/91761A25-B4AB-C64C-AC4F-EAEFC99555B0.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/80000/F6626A7A-14E8-4A41-A4D1-E8629EB7BBE8.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/611168C9-470E-F345-8290-26D033D6A3C1.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/6DC0B9EE-7A8A-D24F-B9BA-5C56B50C29A1.root
@@ -35,8 +27,6 @@ root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnric
 root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/A48B936A-E611-2844-9B25-F33366563F82.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/F453CC14-0B9D-7B4D-927E-3BF333DE41DC.root
 root://eoscms.cern.ch//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/FB275E14-8932-C840-A0C9-FB3EFAD34E13.root
-root://ingrid-se08.cism.ucl.ac.be:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/22627406-F45B-EE4D-BE31-D5BEE17E7205.root
-root://ingrid-se08.cism.ucl.ac.be:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/A11E7BA4-F9BB-C845-B149-72A688E02107.root
 root://xrootd-cms.infn.it:1194//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/0A81FE03-715B-1441-93D2-05CB38AC64D5.root
 root://xrootd-cms.infn.it:1194//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/9CD00E12-F6DA-4F48-9F9C-36995452A314.root
 root://xrootd-cms.infn.it:1194//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/5C0E284C-9600-8743-8923-D3F3ED9CE54E.root
@@ -47,6 +37,16 @@ root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/821E4923-530B-CB46-83C8-C259654C1BC3.root
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/82404947-D255-1643-9001-D9B504A256C1.root
 root://xrootd-cmst1-door.pic.es:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/9D978D5E-FC6E-4A49-9EB5-7DAC22FFF8EC.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/2787FD1D-4CE9-D842-85AC-C1885320ABD7.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/91BB083E-E163-9A45-8E95-06C145F351E0.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/9EF60472-35B2-674B-8FA5-5D026768850F.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/B985044F-58F9-5B47-A5B9-1105EF53FECF.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/BD77A123-B7E9-5340-9930-05692117DE81.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2540000/09CE840C-B95A-0D41-AB02-7F7516E7EAA3.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/260000/7AADCC84-277C-0E4B-B347-F17BE4F26061.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/22627406-F45B-EE4D-BE31-D5BEE17E7205.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/91761A25-B4AB-C64C-AC4F-EAEFC99555B0.root
+root://xrootd.echo.stfc.ac.uk//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/A11E7BA4-F9BB-C845-B149-72A688E02107.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/2FCA883C-A7F8-4C46-9B34-C8B3121ED5DF.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2520000/5A264C83-0E8D-114C-A1B0-DF189ED6A31C.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL17NanoAODv2/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/2530000/CF6ADB81-655B-0243-86DB-3DE6485F6D84.root
