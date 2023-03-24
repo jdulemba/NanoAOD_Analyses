@@ -1,3 +1,3 @@
-root://dcache-cms-xrootd.desy.de:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/HpseudoToTTTo2L2Nu_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/270000/66AB41E6-5DED-D248-8AAC-33D54E331B7A.root
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/HpseudoToTTTo2L2Nu_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/270000/66AB41E6-5DED-D248-8AAC-33D54E331B7A.root
 root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/HpseudoToTTTo2L2Nu_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/280000/1E1E3E91-0051-DB4B-8622-0EEBE78AB847.root
 root://xrootd01.jinr-t1.ru:1094//store/mc/RunIISummer20UL16NanoAODAPVv2/HpseudoToTTTo2L2Nu_m400_w10p0_int_TuneCP5_13TeV-madgraph_pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/130000/997DD2AD-2F0B-DB4B-A7EA-F5F2D660CB92.root
