@@ -9,6 +9,7 @@ import re
 from pdb import set_trace
 import numpy as np
 import Utilities.systematics as systematics
+from scipy import stats
 
 ## make data and mc categories for data/MC plotting
 mc_samples = re.compile("(?!data*)")
@@ -25,7 +26,7 @@ bkg_mask = re.compile("(EWQCD*)")
 template_top_samples = re.compile(r"((?:%s))" % "|".join(["TT$", "TQ$", "TW$", "TB$"]))
 
 hstyles = styles.styles
-stack_fill_opts = {"alpha": 0.8, "edgecolor":(0,0,0,.5)}
+stack_fill_opts = {"alpha" : 0.8, "edgecolor" :( 0, 0, 0, .5), "linewidth" : 1.0}
 stack_error_opts = {"edgecolor":(0,0,0,.5)}
 
 def plot_stack1d(ax, rax, hdict, xlabel="", ylabel="", sys="nosys", xlimits=None, ylimits=None, **mc_opts):
@@ -47,6 +48,7 @@ def plot_stack1d(ax, rax, hdict, xlabel="", ylabel="", sys="nosys", xlimits=None
         mc_dict = hdict[mc_samples]
         data_dict = hdict[data_samples]
 
+    #set_trace()    
         ## plot MC and data
     plot.plot1d(mc_dict,
         overlay=mc_dict.axes()[0].name,
@@ -77,9 +79,9 @@ def plot_stack1d(ax, rax, hdict, xlabel="", ylabel="", sys="nosys", xlimits=None
     ax.set_xlabel(None)
     ax.set_xlim(xlimits)
 
-    #set_trace()    
         ## set legend and corresponding colors
     handles, labels = ax.get_legend_handles_labels()
+    #set_trace()    
     for idx, sample in enumerate(labels):
         if sample == "data" or sample == "Observed": continue
         if isinstance(handles[idx], matplotlib.lines.Line2D): continue
@@ -103,7 +105,7 @@ def plot_stack1d(ax, rax, hdict, xlabel="", ylabel="", sys="nosys", xlimits=None
             unc="num",
             overflow=overflow,
         )
-    rax.set_ylabel("data/MC")
+    rax.set_ylabel("$\dfrac{data}{Pred.}$")
     rax.set_ylim(0.5, 1.5)
     rax.set_xlim(xlimits)
     
@@ -167,7 +169,8 @@ def plot_sys_variations(ax, rax, nom, up, dw, xlabel="", ylabel="", xlimits=None
         unc="num", clear=False, ax=rax, guide_opts={},
         #unc="num", clear=False, ax=rax, denom_fill_opts={}, guide_opts={},
     )
-    rax.set_ylabel("data/MC")
+    #rax.set_ylabel("data/MC")
+    rax.set_ylabel("$\dfrac{data}{Pred.}$")
     rax.set_ylim(0.5, 1.5)
     rax.set_xlim(xlimits)
     rax.set_xlabel(xlabel)
@@ -375,11 +378,12 @@ def QCD_Est(sig_reg, iso_sb, btag_sb, double_sb, norm_type=None, shape_region=No
 
 
 
-def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False, isForTemplates=False):
-    #if not norm_type:
-    #    raise ValueError("Normalization type has to be specified for bkg estimation")
+#def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False, isForTemplates=False):
+def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", isForTemplates=False, uncs_percentage=None):
     #set_trace()
-    if norm_type != "SigMC":
+    allowed_norm_types = ["SigMC", "Sideband"]
+    #if norm_type != "SigMC":
+    if norm_type not in allowed_norm_types:
         raise ValueError("Only SigMC supported for normalization type for bkg estimation right now.")
 
     if sig_reg.sparse_dim() > 1:
@@ -422,16 +426,21 @@ def BKG_Est(sig_reg, sb_reg, norm_type=None, sys="nosys", ignore_uncs=False, isF
     """
     norm_sumw, norm_sumw2 = 0, 0
     if norm_type == "SigMC":
+        #set_trace()
         norm_sumw, norm_sumw2 = np.sum(bkg_dict["SIG"].values(overflow="all", sumw2=True)[()], axis=1)
-            # rescale yields and errors
-        bkg_est_sumw = bkg_norm_sumw*norm_sumw
-        bkg_est_sumw2 = np.zeros(bkg_norm_sumw.size) if ignore_uncs else bkg_norm_sumw*norm_sumw2
+    elif norm_type == "Sideband":
+        #set_trace()
+        norm_sumw, norm_sumw2 = np.sum(bkg_dict["SIG"].values(overflow="all", sumw2=True)[()], axis=1)/np.sum(bkg_dict["SB"].values(overflow="all", sumw2=True)[()], axis=1)*np.sum(dmt_dict["SB"].values(overflow="all", sumw2=True)[()], axis=1)
+
+        # rescale yields and errors
+    bkg_est_sumw = bkg_norm_sumw * norm_sumw
+    bkg_est_sumw2 = (bkg_est_sumw * (uncs_percentage/100))**2 if uncs_percentage else bkg_norm_sumw*norm_sumw2
+    #set_trace()
 
     output_bkg = sig_reg.copy()
         # substitute qcd_est array into original hist
-    for idx in range(len(bkg_est_sumw2)):
-        output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][0][idx] = bkg_est_sumw[idx]
-        output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][1][idx] = bkg_est_sumw2[idx]
+    output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][0][:] = bkg_est_sumw
+    output_bkg.values(overflow="all", sumw2=True)[("EWQCD",)][1][:] = bkg_est_sumw2
 
     return output_bkg
 
@@ -473,6 +482,22 @@ def get_qcd_shape(dmp_hist, overflow="all"):
     return norm_sumw, norm_sumw2
 
 
+
+def Divide(h1, h2):
+    set_trace()
+    val1, val2 = h1.values(), h2.values()
+    var1, var2 = h1.variances(), h2.variances()
+    ratio_val = val1/val2
+        # variance of 2 ratios estimated from Eq 4.12 assuming independent vars https://www.sagepub.com/sites/default/files/upm-binaries/6427_Chapter_4__Lee_(Analyzing)_I_PDF_6.pdf
+    ratio_var = ratio_val**2 * ( (var1/val1**2) + (var2/val2**2) )
+
+    hratio = h1.copy()
+    hratio.values()[:], hratio.variances()[:] = ratio_val, ratio_var
+
+    return hratio
+
+
+
 def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow="all", sys="nosys"):
     """
     Get the yield and relative fraction for each sample of MC, get data yield and compare data/MC
@@ -512,8 +537,8 @@ def get_samples_yield_and_frac(histo, lumi, promptmc=False, overflow="all", sys=
     rows += [("", "", "", "", "")]
     rows += [("", "data/SIM", "", "", "0." if mc_yield == 0. else format(data_yield/mc_yield, ".3f"))]
     if promptmc:
-        prompt_mc_yield = sum([process[1] for process in proc_yields_list if not ((process[0] == "data") or (process[0] == "QCD"))])
-        prompt_mc_err = np.sqrt(sum([process[2] for process in proc_yields_list if not ((process[0] == "data") or (process[0] == "QCD"))]))
+        prompt_mc_yield = sum([process[1] for process in proc_yields_list if not ((process[0] == "data") or (process[0] == "QCD") or (process[0] == "EWK"))])
+        prompt_mc_err = np.sqrt(sum([process[2] for process in proc_yields_list if not ((process[0] == "data") or (process[0] == "QCD") or (process[0] == "EWK"))]))
         rows += [("", "", "", "", "")]
         rows += [("", "Prompt MC", format(prompt_mc_yield, ".1f"), format(prompt_mc_err, ".1f"),  "")]
         rows += [("", "data-Prompt MC", format(data_yield-prompt_mc_yield, ".1f"), format(np.sqrt(data_err**2+prompt_mc_err**2), ".1f"), "")]
@@ -578,7 +603,7 @@ def linearize_hist(histo, overflow=False, no_transpose=False, debug=False):
     yaxis = histo.dense_axes()[1]
     nbinsy = len(yaxis.edges())-1
     nbins = nbinsx*nbinsy
-    #set_trace()
+    if debug: set_trace()
     output_hist = hist.Hist(
         "Events",
         *histo.sparse_axes(),
@@ -657,9 +682,9 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], dense_axes_
     output_histos = {}
     for var in vars:
         if not (var, "dense_lookup") in dict.keys():
-            raise ValueError("%s not found in dense_lookup_dict" % var)
+            raise ValueError(f"{var} not found in dense_lookup_dict")
         sumw = dict[(var, "dense_lookup")][0]
-        sumw2 = dict[("%s_error" % var, "dense_lookup")][0]
+        sumw2 = dict[(f"{var}_error", "dense_lookup")][0]
         #edges = dict[(var, "dense_lookup")][1][0]
         edges = dict[(var, "dense_lookup")][1]
 
@@ -677,12 +702,12 @@ def root_converters_dict_to_hist(dict, vars=[], sparse_axes_list=[], dense_axes_
             ## initialize output_hist to have empty bins
         output_hist.fill(**fill_dict)
 
+        #set_trace()
             ## fill bins
         for cat in output_hist.values().keys():
             if len(edges) == 1:
-                for xbin in range(len(edges)-1):
-                    output_hist.values(sumw2=True)[cat][0][xbin] = sumw[xbin]
-                    output_hist.values(sumw2=True)[cat][1][xbin] = sumw2[xbin]
+                output_hist.values(sumw2=True)[cat][0][:] = sumw
+                output_hist.values(sumw2=True)[cat][1][:] = sumw2
             elif len(edges) == 2:
                 for xbin in range(len(edges[0])-1):
                     output_hist.values(sumw2=True)[cat][0][xbin] = sumw.T[xbin] if transpose_da else sumw[xbin]
@@ -749,7 +774,7 @@ def get_ratio_and_uncertainty(a_val, a_err, b_val, b_err):
 
 
 
-def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=False, **fit_opts):
+def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=False, ratio=False, **fit_opts):
         # smoothing
     import statsmodels.nonparametric.smoothers_lowess as sm
     LOWESS = sm.lowess
@@ -774,11 +799,67 @@ def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=Fals
         # substitute smoothed array into copy of original hist
     #set_trace()
     if isinstance(systematic, np.ndarray):
-        smoothed_histo = (1+total_array)*nom_vals
+        if ratio: # save sys/nominal
+            smoothed_histo = 1+total_array
+        else:
+            smoothed_histo = (1+total_array)*nom_vals
     else:
         smoothed_histo = systematic.copy()
         for idx in range(nbinsx*nbinsy):
-            smoothed_histo.values()[()][idx] = (1+total_array[idx])*nom_vals[idx]
+            if ratio: # save sys/nominal
+                smoothed_histo.values()[()][idx] = 1+total_array[idx]
+            else:
+                smoothed_histo.values()[()][idx] = (1+total_array[idx])*nom_vals[idx]
+
+    if debug: set_trace()
+    return smoothed_histo
+
+
+def new_smoothing(nosys, systematic, mtt_bins, nbinsx, nbinsy, debug=False, ratio=False, systematic_sumw2=None, p_end=0.01, cutoff=3.0, num_pt_comp=5):
+        # smoothing
+    import smoothing_compiled.pysmoother as pysmoother
+    from coffea import hist
+    if not isinstance(systematic, hist.Hist):
+        if not isinstance(systematic_sumw2, np.ndarray):
+            raise ValueError("Systematic must be coffea hist object or input sumw2 values for systematic variation")
+
+    if debug: set_trace()
+        # np array of original bin values
+    nom_vals = nosys if isinstance(nosys, np.ndarray) else nosys.values()[()]
+    if systematic_sumw2:
+        sys_sumw = systematic.values()[()]
+        sys_sumw = systematic_sumw2
+    else:
+        sys_sumw, sys_sumw2 = systematic.values(sumw2=True)[()]
+
+        # get input arrays and values for py_smoothhist
+    y_sumw = sys_sumw/nom_vals
+    y_err = np.sqrt(sys_sumw2)/nom_vals
+    total_array = np.zeros(nbinsx*nbinsy)
+
+        # loop over each bin of cos theta
+    #set_trace()
+    for ybin in range(nbinsy):
+        filtered_y_sumw = calculate_zscore(y_sumw[ybin*nbinsx:(ybin+1)*nbinsx], cutoff=cutoff, num_pt_comp=num_pt_comp)
+        #set_trace()
+        pysmoother.py_smoothhist(mtt_bins, np.nan_to_num(filtered_y_sumw), np.nan_to_num(y_err[ybin*nbinsx:(ybin+1)*nbinsx]), p_end, total_array[ybin*nbinsx:(ybin+1)*nbinsx])
+        ##pysmoother.py_smoothhist(mtt_bins, np.nan_to_num(y_sumw[ybin*nbinsx:(ybin+1)*nbinsx]), np.nan_to_num(y_err[ybin*nbinsx:(ybin+1)*nbinsx]), p_end, total_array[ybin*nbinsx:(ybin+1)*nbinsx])
+
+    if debug: set_trace()
+        # substitute smoothed array into copy of original hist
+    #set_trace()
+    if isinstance(systematic, np.ndarray):
+        if ratio: # save sys/nominal
+            smoothed_histo = total_array
+        else:
+            smoothed_histo = total_array*nom_vals
+    else:
+        smoothed_histo = systematic.copy()
+        for idx in range(nbinsx*nbinsy):
+            if ratio: # save sys/nominal
+                smoothed_histo.values()[()][idx] = total_array[idx]
+            else:
+                smoothed_histo.values()[()][idx] = total_array[idx]*nom_vals[idx]
 
     if debug: set_trace()
     return smoothed_histo
@@ -787,7 +868,7 @@ def smoothing_mttbins(nosys, systematic, mtt_centers, nbinsx, nbinsy, debug=Fals
 
 
     # function that flattens systematic variations
-def flatten(nosys, systematic):
+def flatten(nosys, systematic, ratio=False):
         # np array of original bin values
     nom_vals = nosys.values()[()]
     systematic_vals = systematic.values()[()]
@@ -797,10 +878,51 @@ def flatten(nosys, systematic):
         # substitute flattened array into copy of original hist
     flattened_histo = systematic.copy()
     for idx in range(nom_vals.size):
-        flattened_histo.values()[()][idx] = flat_val*nom_vals[idx]
+        if ratio:
+            flattened_histo.values()[()][idx] = flat_val
+        else:
+            flattened_histo.values()[()][idx] = flat_val*nom_vals[idx]
 
         # save flat_val in overflow (in terms of relative deviation from nominal)
     flattened_histo.values(overflow="over")[()][-1] = flat_val - 1.0
 
     return flattened_histo
+
+
+
+def calculate_zscore(vals, cutoff=3.0, num_pt_comp=5):
+    #set_trace()
+    #num_pt_comp = 5 # number of points on either side of point to be used for finding mean, stdev
+    ##num_pt_comp = 3 # number of points on either side of point to be used for finding mean, stdev
+    #cutoff = 3.0
+    #cutoff = 4.0
+    #cutoff = 2.0
+    z_scores = -1*np.ones(vals.size)
+    filtered_vals = vals.copy()
+
+    for i in range(vals.size):
+        sel_val = vals[i] # get selected value to excluded from z-score calculation
+        if i < num_pt_comp: # indices on lower edge of values
+            if i == 0: continue
+            #if i == 0: # for first bin, only use half of specified num_pt_comp points instead of skipping
+            #    bracket = vals[:int(np.ceil(num_pt_comp/2))+1]
+            else:
+                bracket = vals[:num_pt_comp+1]
+        elif i >= vals.size - num_pt_comp: # indices on upper edge of values
+            if i == vals.size - 1: # for last bin only use half of specified num_pt_comp points
+                bracket = vals[-int(np.ceil(num_pt_comp/2))-1:]
+            else:
+                bracket = vals[-num_pt_comp-1:]
+        else: # indices in middle
+            bracket = vals[i-num_pt_comp:i+num_pt_comp+1]
+
+        excluded = bracket[bracket != sel_val] # remove value corresponding to current index
+        mean, std = excluded.mean(), excluded.std(ddof=1) #uses unbiased estimator for stdev
+        z_scores[i] = np.nan if abs((sel_val - mean)/std) == np.inf else abs((sel_val - mean)/std)
+
+        if z_scores[i] > cutoff:
+            filtered_vals[i] = mean
+    #set_trace()
+
+    return filtered_vals
 
