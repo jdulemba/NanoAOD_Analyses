@@ -46,8 +46,33 @@ def create_bkg_groups(mode):
             }
             for year in ["2016APV", "2016", "2017", "2018"]
         }
+    elif mode == "control_plots":
+            ## dataset groupings for making templates to be used in fit
+        groupings = {
+        #template_groups = {
+            year: {
+                "EWK" : ["[WZ][WZ]", "ZJets*", "WJets_HT*", "tt[WZ]*"],
+                "QCD" : ["QCD*"],
+                #"TT" : ["ttJets*"],
+                "ttJets_right" : ["ttJets*_right"],
+                "ttJets_matchable" : ["ttJets*_matchable"],
+                "ttJets_unmatchable" : ["ttJets*_unmatchable"],
+                "ttJets_sl_tau" : ["ttJets*_sl_tau"],
+                "ttJets_other" : ["ttJets*_other"],
+                #"QCD" : ["QCD*"],
+                #"VV" : ["[WZ][WZ]"],
+                #"TTV" : ["tt[WZ]*"],
+                #"W" : ["WJets_HT*"],
+                #"DY" : ["ZJets*"],
+                "TQ" : ["single*_tchannel*"],
+                "TW" : ["single*_tW*"],
+                "TB" : ["single*_schannel*"],
+                "data_obs" : ["data_Single*"],
+            }
+            for year in ["2016APV", "2016", "2017", "2018"]
+        }
     else:
-        raise ValueError("Can only choose between 'dataset' and 'templates' for background groupings options")
+        raise ValueError("Can only choose between 'dataset', 'templates', and 'control_plots' for background groupings options")
 
     return groupings
 
@@ -200,11 +225,11 @@ def get_group(sample, styles=create_bkg_groups("dataset")):
 
 def make_dataset_groups(lepton, year, samples=[], bkgdict="dataset", sigdict="MC_indiv"):
     proj_dir = os.environ["PROJECT_DIR"]
-    jobid = os.environ["jobid"]
+    #jobid = os.environ["jobid"]
 
     if not samples:
             ## get file that has names for all datasets to use
-        fpath = os.path.join(proj_dir, "inputs", "%s_%s" % (year, jobid), "analyzer_inputs.txt")
+        fpath = os.path.join(proj_dir, "inputs", f"{year}_{base_jobid}", "analyzer_inputs.txt")
         if not os.path.isfile(fpath):
             raise IOError(f"File {fpath} not found")
 
@@ -242,6 +267,41 @@ def add_coffea_files(input_files):
             raise ValueError("File %s (number %i) could not be added" % (input_files[idx], idx))
 
     return output_acc
+
+
+def add_dict(input_files):
+    import coffea.processor.accumulator as proc_acc
+    from coffea.util import load
+    from tqdm import tqdm
+
+    if len(input_files) < 2:
+        raise ValueError("Input file list must have at least 2 inputs")
+
+    first_acc = load(input_files[0]).copy()
+    second_acc = load(input_files[1]).copy()
+
+    tot_dists = 0
+    print("0:", len(first_acc["3Jets"]["Muon"].keys()))
+    tot_dists += len(first_acc["3Jets"]["Muon"].keys())
+    print("1:", len(second_acc["3Jets"]["Muon"].keys()))
+    tot_dists += len(second_acc["3Jets"]["Muon"].keys())
+
+    output_acc = proc_acc.add(first_acc, second_acc)
+    for idx in tqdm(range(len(input_files))):
+        if idx < 2:
+            continue
+        else:
+            try:
+                tmp_acc = load(input_files[idx]).copy()
+                print(f"{idx}:", len(tmp_acc["3Jets"]["Muon"].keys()))
+                tot_dists += len(tmp_acc["3Jets"]["Muon"].keys())
+                output_acc = proc_acc.add(output_acc, load(input_files[idx]).copy() )
+            except:
+                raise ValueError(f"File {input_files[idx]} (number {idx}) could not be added")
+    print("Final output:", len(output_acc["3Jets"]["Muon"].keys()))
+    print("Final expected:", tot_dists)
+    return output_acc
+
 
 def save_accumulator(accumulator, output_fname):
     from coffea.util import save
