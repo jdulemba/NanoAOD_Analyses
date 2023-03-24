@@ -1,5 +1,4 @@
 from Utilities.convert_btag_csv_file import convert_btag_csv_file
-#from coffea.lookup_tools.csv_converters import convert_btag_csv_file
 import numpy as np
 from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
 from collections import defaultdict
@@ -14,48 +13,36 @@ proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 
-if base_jobid == "NanoAODv6":
-    btag_csvFiles = {
-        "2016" : {
-            "DeepJet" : "DeepJet_2016LegacySF_V1_used.csv",
-            "DeepCSV" : "DeepCSV_2016LegacySF_V1_used.csv",
-        },
-        "2017" : {
-            "DeepJet" : "DeepJet_2017SF_V4_B_F_used.csv",
-            "DeepCSV" : "DeepCSV_2017SF_V5_B_F_used.csv",
-        },
-        "2018" : {
-            "DeepJet" : "DeepJet_2018SF_V1_used.csv",
-            "DeepCSV" : "DeepCSV_2018SF_V1_used.csv",
-        },
-    }
-else:
-    btag_csvFiles = {
-        "2016APV" : {
-            #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
-            #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
-            "DeepJet" : "DeepJet_106XUL16preVFPSF_v1_used.csv",
-            "DeepCSV" : "DeepCSV_106XUL16preVFPSF_v1_used.csv",
-        },
-        "2016" : {
-            #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
-            #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
-            "DeepJet" : "DeepJet_106XUL16postVFPSF_v2_used.csv",
-            "DeepCSV" : "DeepCSV_106XUL16postVFPSF_v2_used.csv",
-        },
-        "2017" : {
-            #"DeepJet" : "DeepJet_106XUL17SF_WPonly_V2p1_mujets_used.csv",
-            #"DeepCSV" : "DeepCSV_106XUL17SF_WPonly_V2p1_mujets_used.csv",
-            "DeepJet" : "wp_deepJet_106XUL17_v3_used.csv",
-            "DeepCSV" : "wp_deepCSV_106XUL17_v3_used.csv",
-        },
-        "2018" : {
-            #"DeepJet" : "DeepJet_106XUL18SF_WPonly_mujets_used.csv",
-            #"DeepCSV" : "DeepCSV_106XUL18SF_WPonly_mujets_used.csv",
-            "DeepJet" : "wp_deepJet_106XUL18_v2_used.csv",
-            "DeepCSV" : "wp_deepCSV_106XUL18_v2_used.csv",
-        },
-    }
+btag_csvFiles = {
+    "2016APV" : {
+        #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
+        #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
+        "DeepJet" : "hig22013_wp_deepJet_UL2016preVFP_used.csv",
+        #"DeepJet" : "DeepJet_106XUL16preVFPSF_v1_used.csv",
+        "DeepCSV" : "DeepCSV_106XUL16preVFPSF_v1_used.csv",
+    },
+    "2016" : {
+        #"DeepJet" : "DeepJet_106XUL16SF_mujets_used.csv",
+        #"DeepCSV" : "DeepCSV_106XUL16SF_mujets_used.csv",
+        "DeepJet" : "hig22013_wp_deepJet_UL2016postVFP_used.csv",
+        #"DeepJet" : "DeepJet_106XUL16postVFPSF_v2_used.csv",
+        "DeepCSV" : "DeepCSV_106XUL16postVFPSF_v2_used.csv",
+    },
+    "2017" : {
+        #"DeepJet" : "DeepJet_106XUL17SF_WPonly_V2p1_mujets_used.csv",
+        #"DeepCSV" : "DeepCSV_106XUL17SF_WPonly_V2p1_mujets_used.csv",
+        "DeepJet" : "hig22013_wp_deepJet_UL2017_used.csv",
+        #"DeepJet" : "wp_deepJet_106XUL17_v3_used.csv",
+        "DeepCSV" : "wp_deepCSV_106XUL17_v3_used.csv",
+    },
+    "2018" : {
+        #"DeepJet" : "DeepJet_106XUL18SF_WPonly_mujets_used.csv",
+        #"DeepCSV" : "DeepCSV_106XUL18SF_WPonly_mujets_used.csv",
+        "DeepJet" : "hig22013_wp_deepJet_UL2018_used.csv",
+        #"DeepJet" : "wp_deepJet_106XUL18_v2_used.csv",
+        "DeepCSV" : "wp_deepCSV_106XUL18_v2_used.csv",
+    },
+}
 
 wp_lookup_dict = {
     "L" : "Loose",
@@ -151,6 +138,43 @@ class BTagSF(object):
             #"udsg_down" : ("UDSG_down", "C_central", "B_central"),
             #"udsg_down_correlated" : ("UDSG_down_correlated", "C_central", "B_central"),
             #"udsg_down_uncorrelated" : ("UDSG_down_uncorrelated", "C_central", "B_central"),
+            "bc_jes_up" : ("UDSG_central", "C_up_jes", "B_up_jes"),
+            "bc_pileup_up" : ("UDSG_central", "C_up_pileup", "B_up_pileup"),
+            "bc_statistic_up" : ("UDSG_central", "C_up_statistic", "B_up_statistic"),
+            "bc_bfragmentation_up" : ("UDSG_central", "C_up_bfragmentation", "B_up_bfragmentation"),
+            "bc_btempcorr_up" : ("UDSG_central", "C_up_btempcorr", "B_up_btempcorr"),
+            "bc_cb_up" : ("UDSG_central", "C_up_cb", "B_up_cb"),
+            "bc_cfragmentation_up" : ("UDSG_central", "C_up_cfragmentation", "B_up_cfragmentation"),
+            "bc_cjets_up" : ("UDSG_central", "C_up_cjets", "B_up_cjets"),
+            "bc_dmux_up" : ("UDSG_central", "C_up_dmux", "B_up_dmux"),
+            "bc_gluonsplitting_up" : ("UDSG_central", "C_up_gluonsplitting", "B_up_gluonsplitting"),
+            "bc_jetaway_up" : ("UDSG_central", "C_up_jetaway", "B_up_jetaway"),
+            "bc_ksl_up" : ("UDSG_central", "C_up_ksl", "B_up_ksl"),
+            "bc_l2c_up" : ("UDSG_central", "C_up_l2c", "B_up_l2c"),
+            "bc_ltothers_up" : ("UDSG_central", "C_up_ltothers", "B_up_ltothers"),
+            "bc_mudr_up" : ("UDSG_central", "C_up_mudr", "B_up_mudr"),
+            "bc_mupt_up" : ("UDSG_central", "C_up_mupt", "B_up_mupt"),
+            "bc_ptrel_up" : ("UDSG_central", "C_up_ptrel", "B_up_ptrel"),
+            #"bc_type3_up" : ("UDSG_central", "C_up_type3", "B_up_type3"),
+
+            "bc_jes_down" : ("UDSG_central", "C_down_jes", "B_down_jes"),
+            "bc_pileup_down" : ("UDSG_central", "C_down_pileup", "B_down_pileup"),
+            "bc_statistic_down" : ("UDSG_central", "C_down_statistic", "B_down_statistic"),
+            "bc_bfragmentation_down" : ("UDSG_central", "C_down_bfragmentation", "B_down_bfragmentation"),
+            "bc_btempcorr_down" : ("UDSG_central", "C_down_btempcorr", "B_down_btempcorr"),
+            "bc_cb_down" : ("UDSG_central", "C_down_cb", "B_down_cb"),
+            "bc_cfragmentation_down" : ("UDSG_central", "C_down_cfragmentation", "B_down_cfragmentation"),
+            "bc_cjets_down" : ("UDSG_central", "C_down_cjets", "B_down_cjets"),
+            "bc_dmux_down" : ("UDSG_central", "C_down_dmux", "B_down_dmux"),
+            "bc_gluonsplitting_down" : ("UDSG_central", "C_down_gluonsplitting", "B_down_gluonsplitting"),
+            "bc_jetaway_down" : ("UDSG_central", "C_down_jetaway", "B_down_jetaway"),
+            "bc_ksl_down" : ("UDSG_central", "C_down_ksl", "B_down_ksl"),
+            "bc_l2c_down" : ("UDSG_central", "C_down_l2c", "B_down_l2c"),
+            "bc_ltothers_down" : ("UDSG_central", "C_down_ltothers", "B_down_ltothers"),
+            "bc_mudr_down" : ("UDSG_central", "C_down_mudr", "B_down_mudr"),
+            "bc_mupt_down" : ("UDSG_central", "C_down_mupt", "B_down_mupt"),
+            "bc_ptrel_down" : ("UDSG_central", "C_down_ptrel", "B_down_ptrel"),
+            #"bc_type3_down" : ("UDSG_central", "C_down_type3", "B_down_type3"),
             }
 
         self.eff_ = {
