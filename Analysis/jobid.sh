@@ -17,18 +17,6 @@
 #export jobid=Summer20UL_OttoEWCorr_newBTagSFs
 #export jobid=Summer20UL_regroupedJECs
 #export jobid=Summer20UL_new_lepSFs
-export jobid=Summer20UL_POG_lepSFs
-
+#export jobid=Summer20UL_POG_lepSFs
+export jobid=Summer20UL_DeepJet
 #export jobid=ULnanoAODv9
-
-if [[ $jobid == *"NanoAODv6"* ]]; then
-    export base_jobid=NanoAODv6
-elif [[ $jobid == *"Summer20UL"* ]]; then
-    export base_jobid=Summer20UL
-elif [[ $jobid == *"ULnanoAODv9"* ]]; then
-    export base_jobid=ULnanoAODv9
-#elif [[ $jobid == *"ULnanoAOD"* ]]; then
-#    export base_jobid=ULnanoAOD
-else
-    echo "base_jobid NOT SET"
-fi
