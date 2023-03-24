@@ -7,7 +7,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 from Utilities.Plotter import plot_1D
@@ -22,24 +22,25 @@ import numpy as np
 
 proj_dir = os.environ["PROJECT_DIR"]
 base_jobid = os.environ["base_jobid"]
+eos_dir = os.environ["eos_dir"]
+plot_outdir = os.environ["plots_dir"]
 analyzer = "meta_info"
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("data_mc", choices=["Data", "MC", "All"], help="Make plots for MC (MC), make meta.json files for Data (Data), or both (All).")
-
 args = parser.parse_args()
 
-input_dir = os.path.join(proj_dir, "results", f"{args.year}_{base_jobid}", analyzer)
+input_dir = os.path.join(eos_dir, "results", f"{args.year}_{base_jobid}", analyzer)
 f_ext = "TOT.coffea"
-outdir = os.path.join(proj_dir, "plots", f"{args.year}_{base_jobid}", analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
 fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 #set_trace()
+
+outdir = os.path.join(plot_outdir, f"{args.year}_{base_jobid}", analyzer)
+if not os.path.isdir(outdir):
+    os.makedirs(outdir)
 
 isSample = lambda x: ("runs_to_lumis" not in x) and ("PU_nTrueInt" not in x) and ("PU_nPU" not in x)
 samples = sorted([key for key in hdict.keys() if isSample(key)])
