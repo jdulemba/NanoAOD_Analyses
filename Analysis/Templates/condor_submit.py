@@ -18,6 +18,7 @@ parser.add_argument("jobdir", help="Directory name to be created in nobackup are
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
 parser.add_argument("--opts", nargs="*", action=ParseKwargs, help="Options to pass to analyzers.")
+parser.add_argument("--MEopts", nargs="*", action=ParseKwargs, help="Options to pass for ME reweight sig.")
 parser.add_argument("--submit", action="store_true", help="Submit jobs")
 args = parser.parse_args()
 
@@ -27,28 +28,30 @@ def create_batch_job():
     batch_job="""#!/bin/bash
 
 EXE="$@"
+#EXE="${{@:2}}"
 echo "Executing python Templates/$EXE" from within singularity
 
-singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv -B /eos/user/j/jdulemba/NanoAOD_Analyses  /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
-#singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+#singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv -B /eos/user/j/jdulemba/NanoAOD_Analyses  /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
+singularity exec --bind /afs/cern.ch/work/j/jdulemba/private --bind {PROJECTDIR}:/scratch  --home $PWD:/srv   /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-base:latest   /bin/bash -c "source /scratch/environment.sh && python /scratch/Templates/$EXE"
 """.format(PROJECTDIR=proj_dir)
 
     return batch_job
 
-def condor_jdl(opts):
+def condor_jdl(opts, MEopts):
     condorfile = """universe = vanilla
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
 Executable = {BATCHDIR}/batch_job.sh
 +MaxRuntime = 43200
+Proxy_path = {PROXYPATH}
 Requirements = HasSingularity
 
 Output = con_0.stdout
 Error = con_0.stderr
 Log = con_0.log
-Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {TEMPLATES_TO_RUN} {OPTS}
+Arguments = $(Proxy_path) {ANALYZER}.py {YEAR} {TEMPLATES_TO_RUN} {OPTS} {ME_OPTS}
 Queue
-""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, TEMPLATES_TO_RUN=templates_to_run, OPTS=opts)
+""".format(BATCHDIR=batch_dir, ANALYZER=analyzer, YEAR=args.year, TEMPLATES_TO_RUN=templates_to_run, OPTS=opts, ME_OPTS=MEopts, PROXYPATH=proxy_path)
     return condorfile
 
 
@@ -99,6 +102,7 @@ if __name__ == "__main__":
     
     # define dictionary of options to pass
     opts_dict = {} if args.opts is None else args.opts
+    MEopts_dict = {} if args.MEopts is None else args.MEopts
 
     #set_trace()
     if analyzer == "convert_Otto_signal_to_combine":
@@ -126,6 +130,7 @@ if __name__ == "__main__":
     #set_trace()    
         # make list of options to pass to analyzers
     tmp_opts_dict = deepcopy(opts_dict)
+    tmp_MEopts_dict = deepcopy(MEopts_dict)
     if analyzer == "convert_Otto_signal_to_combine":
         opts_list = []
         for key, val in tmp_opts_dict.items():
@@ -135,12 +140,16 @@ if __name__ == "__main__":
     else:
         tmp_opts_dict["outfname"] = f"{jobdir}_{analyzer}_out_0.coffea"
         opts_list = []
+        MEopts_list = ["--MEreweight_opts"]
         for key, val in tmp_opts_dict.items():
             if val == "True": opts_list.append(f"--{key}")
+        for key, val in tmp_MEopts_dict.items():
+            MEopts_list.append(f"{key}={val}")
             
 
         ## make condor.jdl file
-    condor_cmd = rfile_condor_jdl(" ".join(opts_list)) if ((analyzer == "format_final_templates") or (analyzer == "convert_Otto_signal_to_combine")) else condor_jdl(" ".join(opts_list))
+    condor_cmd = rfile_condor_jdl(" ".join(opts_list)) if ((analyzer == "format_final_templates") or (analyzer == "convert_Otto_signal_to_combine")) else condor_jdl(" ".join(opts_list), " ".join(MEopts_list))
+    #condor_cmd = rfile_condor_jdl(" ".join(opts_list)) if ((analyzer == "format_final_templates") or (analyzer == "convert_Otto_signal_to_combine")) else condor_jdl(" ".join(opts_list))
     
     condor_conf = open(os.path.join(batch_dir, "condor.jdl"), "w")
     condor_conf.write(condor_cmd)
