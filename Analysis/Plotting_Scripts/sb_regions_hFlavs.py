@@ -35,7 +35,7 @@ parser.add_argument('--vary_shape', action='store_true', help='Make plots varyin
 parser.add_argument('--vary_shape_and_norm', action='store_true', help='Make plots varying shape and norm for ewk+qcd estimation.')
 args = parser.parse_args()
 
-sys_to_name = systematics.sys_to_name[args.year]
+sys_to_name = systematics.combine_template_sys_to_name[args.year]
 
 proj_dir = os.environ['PROJECT_DIR']
 jobid = os.environ['jobid']
