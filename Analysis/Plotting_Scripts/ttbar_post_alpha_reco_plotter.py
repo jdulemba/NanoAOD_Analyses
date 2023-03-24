@@ -5,7 +5,7 @@ plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
-rcParams["savefig.format"] = "png"
+rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
 
 from coffea.util import load
@@ -20,11 +20,14 @@ import numpy as np
 import fnmatch
 import Utilities.Plotter as Plotter
 from coffea.hist import plot
+import Utilities.common_features as cfeatures
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
 base_jobid = os.environ["base_jobid"]
 analyzer = "ttbar_post_alpha_reco"
+plot_outdir = os.environ["plots_dir"]
+eos_dir = os.environ["eos_dir"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,25 +35,14 @@ parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="W
 parser.add_argument("--plot", default="all", choices=["nosys", "uncs", "all"], help="Make plots for no systematics, variations of JES/JER systematics, or both.")
 args = parser.parse_args()
 
-input_dir = os.path.join(proj_dir, "results", f"{args.year}_{jobid}", analyzer)
+input_dir = os.path.join(eos_dir, "results", f"{args.year}_{jobid}", analyzer)
 f_ext = "TOT.coffea"
-outdir = os.path.join(proj_dir, "plots", f"{args.year}_{jobid}", analyzer)
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
-
 fnames = sorted(["%s/%s" % (input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith(f_ext)])
-
-#set_trace()
 hdict = plt_tools.add_coffea_files(fnames) if len(fnames) > 1 else load(fnames[0])
 
-jet_mults = {
-    "3Jets" : "3 jets",
-    "4Jets" : "4 jets",
-    "5PJets" : "5+ jets",
-}
-
-#blurb = "tight $e/\mu$+3 jets\n$n_{btags} \geq$ 2"
-blurb = "$e/\mu$+3 jets\n$n_{btags} \geq$ 2"
+outdir = os.path.join(plot_outdir, f"{args.year}_{jobid}", analyzer)
+if not os.path.isdir(outdir):
+    os.makedirs(outdir)
 
 alpha_corrections = {
     "E_All_1D" : ("$\\alpha_{E}$ All Lin.", "#377eb8", 2), ## blue
@@ -80,14 +72,14 @@ systematics = {
 
 variables = {
     ###"Reco_mtt": ("$m_{t\\bar{t}}$ [GeV]", 2, (200., 2000.)),
-    "Reco_mtt": ("$m_{t\\bar{t}}$ [GeV]", 2, (200., 1000.)),
-    "Reco_mthad": ("$m_{t_{h}}$ [GeV]", 2, (0., 250.)),
-    "Reco_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$)", 2, (-1., 1.)),
-    "Reco_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)|", 2, (0., 1.)),
+    "Reco_mtt": (cfeatures.variable_names_to_labels["mtt"], 2, (200., 1000.)),
+    "Reco_mthad": (cfeatures.variable_names_to_labels["mthad"], 2, (0., 250.)),
+    "Reco_thad_ctstar": (cfeatures.variable_names_to_labels["thad_ctstar"], 2, (-1., 1.)),
+    "Reco_thad_ctstar_abs": (cfeatures.variable_names_to_labels["thad_ctstar_abs"], 2, (0., 1.)),
     "Reso_mtt": ("$m_{t\\bar{t}}$ Resolution [GeV]", 5, (-300., 300.)),
     "Reso_mthad": ("$m_{t_{h}}$ Resolution [GeV]", 2, (-50., 150.)),
-    "Reso_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$) Resolution", 5, (-1., 1.)),
-    "Reso_thad_ctstar_abs": ("|cos($\\theta^{*}_{t_{h}}$)| Resolution", 5, (-1., 1.)),
+    "Reso_thad_ctstar": ("$\cos(\\theta^{*}_{t_{h}})$ Resolution", 5, (-1., 1.)),
+    "Reso_thad_ctstar_abs": ("|$\cos(\\theta^{*}_{t_{h}})$| Resolution", 5, (-1., 1.)),
     ##"Reso_mtt": ("$m_{t\\bar{t}}$ Resolution [GeV]", 1, (-300., 300.)),
     ##"Reso_mthad": ("$m_{t_{h}}$ Resolution [GeV]", 2, (-200., 200.)),
     ##"Reso_thad_ctstar": ("cos($\\theta^{*}_{t_{h}}$) Resolution", 2, (-1., 1.)),
@@ -157,11 +149,8 @@ for hname in variables.keys():
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(hspace=.07)
     
-                plot.plot1d(hslice,
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    line_opts={"linestyle" : "-"},
+                plot.plot1d(hslice, overlay=hslice.axes()[0].name,
+                    ax=ax, clear=False, line_opts={"linestyle" : "-"},
                 )
                 ax.autoscale()
                 ax.set_ylim(0, ax.get_ylim()[1]*1.15)
@@ -176,16 +165,15 @@ for hname in variables.keys():
                     handles[idx].set_color(alpha_corrections[label][1])
                     handles[idx].set_linewidth(alpha_corrections[label][2])
                 # call ax.legend() with the new values
-                ax.legend(handles,labels, loc="upper right")
+                ax.legend(handles,labels, loc="upper right", ncol=2)
     
                     # add perm category 
                 #set_trace()
                 ax.text(
-                    0.02, 0.84, "$e/\mu$, %s\n$n_{btags} \geq$ 2\n%s" % (jet_mults[jmult], hstyles[cat]["name"]),
-                    #0.02, 0.85, "tight $e/\mu$, %s\n%s" % (jet_mults[jmult], hstyles[cat]["name"]),
+                    0.02, 0.90, f"{cfeatures.channel_labels[f'Lepton_{jmult}']}\n{hstyles[cat]['name']}",
                     horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                 )
-                hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1))
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(lumi_to_use, 1))
     
                 figname = os.path.join(pltdir, "_".join([args.year, jobid, jmult, cat, hname]))
                 fig.savefig(figname)
@@ -212,11 +200,8 @@ for hname in variables.keys():
                     hslice = hslice[comp_3j_mask]
 
                     # yields 
-                plot.plot1d(hslice,
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    line_opts={"linestyle" : "-"},
+                plot.plot1d(hslice, overlay=hslice.axes()[0].name,
+                    ax=ax, clear=False, line_opts={"linestyle" : "-"},
                 )
 
                     # norm
@@ -229,15 +214,15 @@ for hname in variables.keys():
             handles, labels = ax.get_legend_handles_labels()
             for idx, label in enumerate(labels):
                 if label == "4Jets":
-                    labels[idx] = jet_mults[label]
+                    labels[idx] = cfeatures.channel_labels[f"Lepton_{label}"]
                     handles[idx].set_color("b")
                     handles[idx].set_linewidth(2)
                 elif label == "5PJets":
-                    labels[idx] = jet_mults[label]
+                    labels[idx] = cfeatures.channel_labels[f"Lepton_{label}"]
                     handles[idx].set_color("g")
                     handles[idx].set_linewidth(2)
                 else:
-                    labels[idx] = "3 jets, %s" % alpha_corrections_mask[label][0]
+                    labels[idx] = f"{cfeatures.channel_labels['Lepton_3Jets']}, {alpha_corrections_mask[label][0]}"
                     handles[idx].set_color(alpha_corrections_mask[label][1])
                     handles[idx].set_linewidth(alpha_corrections_mask[label][2])
 
@@ -247,15 +232,14 @@ for hname in variables.keys():
             ax.set_xlabel(xtitle)
             ax.set_xlim(x_lims)
                 
-            ax.legend(handles,labels, loc="upper right")
+            ax.legend(handles,labels, loc="upper right", ncol=2)
     
                 # add perm category 
             ax.text(
-                0.02, 0.84, "$e/\mu$\n$n_{btags} \geq$ 2\n%s" % hstyles[cat]["name"],
-                #0.02, 0.85, "tight $e/\mu$\n%s" % hstyles[cat]["name"],
+                0.02, 0.93, hstyles[cat]["name"],
                 horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
             )
-            hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1))
+            hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(lumi_to_use, 1))
 
             figname = os.path.join(pltdir, "_".join([args.year, jobid, "Comp_JMults", cat, hname]))
             fig.savefig(figname)
@@ -266,15 +250,15 @@ for hname in variables.keys():
             handles, labels = ax_norm.get_legend_handles_labels()
             for idx, label in enumerate(labels):
                 if label == "4Jets":
-                    labels[idx] = jet_mults[label]
+                    labels[idx] = cfeatures.channel_labels[f"Lepton_{label}"]
                     handles[idx].set_color("b")
                     handles[idx].set_linewidth(2)
                 elif label == "5PJets":
-                    labels[idx] = jet_mults[label]
+                    labels[idx] = cfeatures.channel_labels[f"Lepton_{label}"]
                     handles[idx].set_color("g")
                     handles[idx].set_linewidth(2)
                 else:
-                    labels[idx] = "3 jets, %s" % alpha_corrections_mask[label][0]
+                    labels[idx] = f"{cfeatures.channel_labels['Lepton_3Jets']}, {alpha_corrections_mask[label][0]}"
                     handles[idx].set_color(alpha_corrections_mask[label][1])
                     handles[idx].set_linewidth(alpha_corrections_mask[label][2])
 
@@ -285,15 +269,14 @@ for hname in variables.keys():
             ax_norm.set_ylabel("Probability Density")
             ax_norm.set_xlim(x_lims)
                 
-            ax_norm.legend(handles,labels, loc="upper right")
+            ax_norm.legend(handles,labels, loc="upper right", ncol=2)
     
                 # add perm category 
             ax_norm.text(
-                0.02, 0.84, "$e/\mu$\n$n_{btags} \geq$ 2\n%s" % hstyles[cat]["name"],
-                #0.02, 0.85, "tight $e/\mu$\n%s\n" % hstyles[cat]["name"],
+                0.02, 0.93, hstyles[cat]["name"],
                 horizontalalignment="left", verticalalignment="bottom", transform=ax_norm.transAxes
             )
-            hep.cms.label(ax=ax_norm, data=False, year=args.year, lumi=round(lumi_to_use, 1))
+            hep.cms.label(ax=ax_norm, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(lumi_to_use, 1))
             #set_trace()
     
             figname_norm = os.path.join(pltdir, "_".join([args.year, jobid, "Comp_JMults", cat, hname, "Norm"]))
@@ -322,11 +305,8 @@ for hname in variables.keys():
                 fig.subplots_adjust(hspace=.07)
     
                     # plot yields
-                plot.plot1d(hslice,
-                    overlay=hslice.axes()[0].name,
-                    ax=ax,
-                    clear=False,
-                    line_opts={"linestyle" : "-"},
+                plot.plot1d(hslice, overlay=hslice.axes()[0].name,
+                    ax=ax, clear=False, line_opts={"linestyle" : "-"},
                 )
                 ax.autoscale()
                 ax.set_ylim(0, ax.get_ylim()[1]*1.15)
@@ -357,18 +337,17 @@ for hname in variables.keys():
                     handles[idx].set_color(systematics[label][1])
                     handles[idx].set_linewidth(systematics[label][2])
                 # call ax.legend() with the new values
-                ax.legend(handles,labels, loc="upper right", title=alpha_corrections[corr][0])
+                ax.legend(handles,labels, loc="upper right", title=alpha_corrections[corr][0], ncol=2)
     
                     # add lepton/jet mult, and tt perm category 
                 ax.text(
-                    0.02, 0.80, "$e/\mu$, %s\n$n_{btags} \geq$ 2\n%s" % (jet_mults["3Jets"], hstyles[cat]["name"]),
-                    #0.02, 0.87, "tight $e/\mu$, %s\n%s" % (jet_mults["3Jets"], hstyles[cat]["name"]),
-                    fontsize=rcParams["font.size"]*0.9, horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
+                    0.02, 0.86, f"{cfeatures.channel_labels['Lepton_3Jets']}\n{hstyles[cat]['name']}",
+                    fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
                 )
-                hep.cms.label(ax=ax, data=False, year=args.year, lumi=round(lumi_to_use, 1), fontsize=rcParams["font.size"])
+                hep.cms.label(ax=ax, data=False, label="Preliminary", year=cfeatures.year_labels[args.year], lumi=round(lumi_to_use, 1))
     
                 #set_trace()
                 figname = os.path.join(pltdir, "_".join([args.year, jobid, "3Jets", cat, corr, hname, "Sys_Comp"]))
                 fig.savefig(figname)
                 print(f"{figname} written")
-                plt.close()
+                plt.close(fig)
