@@ -17,4 +17,6 @@ Analysis/inputs/*NanoAODv6*
 Analysis/inputs/*ULnanoAOD*
 Analysis/inputs/data/ULnanoAOD/
 Analysis/inputs/data/NanoAODv6/
+Analysis/inputs/data/Summer20UL/
 Analysis/my_env
+Analysis/*/*.root
