@@ -5,7 +5,6 @@ tic = time.time()
 
 # matplotlib
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import mplhep as hep
 plt.style.use(hep.cms.style.ROOT)
 plt.switch_backend("agg")
@@ -13,80 +12,72 @@ from matplotlib import rcParams
 rcParams["font.size"] = 20
 rcParams["savefig.format"] = "pdf"
 rcParams["savefig.bbox"] = "tight"
-#import matplotlib
-#import matplotlib.patches as mpatches
-#import matplotlib.lines as mlines
-#import matplotlib.ticker as ticker
 
 from pdb import set_trace
 import numpy as np
 import os
-import uproot
 from coffea.lookup_tools.dense_lookup import dense_lookup
 import Utilities.root_converters as root_conv
-from itertools import product
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
+parser.add_argument("--plot", choices=["LO", "KFactor", "All"], default="All", help="Choose which parity to compute limits for.")
 parser.add_argument("--parity", choices=["A", "H", "All"], default="All", help="Choose which parity to compute limits for.")
 args = parser.parse_args()
 
 
-def plot_ratios(lookup, boson, channel, sig_comp, sys, clear=True):
+def make_plots(lookup, boson, channel, sig_comp, sys, isKFactor=False, clear=True):
     #set_trace()
-    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_Ratios", f"{boson}toTT")
+    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_Ratios", "KFactors" if isKFactor else "LOratios", f"{boson}toTT")
     if not os.path.isdir(pltdir): os.makedirs(pltdir)
 
     fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
 
-    opts = {}
-    #opts = {"cmap" : "OrRd"}
+    zaxis_label = "k-factor" if isKFactor else "sushi/mg5"
+    zaxis_name = "NNLO_kfactor" if isKFactor else "LO_ratios"
+
     xedges, yedges = lookup._axes
     vals = lookup._values
-    pc = ax.pcolormesh(xedges, yedges, vals.T, **opts)
+    pc = ax.pcolormesh(xedges, yedges, vals.T, **{})
     ax.add_collection(pc)
     if clear:
-        fig.colorbar(pc, ax=ax, label=f"sushi/mg5: {sys_opts_dict[sys]['label']}, {sig_components[sig_comp]}, {channel}", pad=0.)
+        if channel:
+            zlabel = f"{zaxis_label}: {sys_opts_dict[sys]['label']}, {sig_components[sig_comp]}, {channel}"
+        else:
+            zlabel = f"{boson} {sig_components[sig_comp]} {zaxis_label}" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} {zaxis_label}: {sys_opts_dict[sys]['label']}"
+        fig.colorbar(pc, ax=ax, label=zlabel, pad=0.)
     ax.autoscale()
-    #ax.xaxis.set_major_formatter(mpl.ticker.ScalarFormatter())
-    #ax.xaxis.set_minor_formatter(mpl.ticker.ScalarFormatter())
-    #ax.ticklabel_format(style="plain", axis="x",useOffset=False)
 
         ## set axes labels and titles
     ax.set_xlabel("$m_{%s}$ [GeV]" % boson)
     ax.set_ylabel(r"$\Gamma_{%s}$/$m_{%s}$ [%%]" % (boson, boson))
 
-    #set_trace()
-    figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_LO_ratios")
+    figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{zaxis_name}" if channel else f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_{zaxis_name}")
     fig.savefig(figname)
     print(f"{figname} written")
     plt.close(fig)
+    #set_trace()
 
 
-def get_kfactor(sigpnt):
-    set_trace()
-    khist = {
-        syst : [
-            dense_lookup(*nom_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")),
-            dense_lookup(*nom_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")),
-        ] for syst in scale_choices
+def get_kfactor(parity):
+    # modeled after this https://github.com/afiqaize/CombineHarvester/blob/ahtt_run2ul_dev/ahtt/scripts/make_datacard.py#L30-L40
+    kfactors = {
+        syst : {
+            "Res" : dense_lookup(*nom_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")]),
+            "Int" : dense_lookup(*nom_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")]),
+        } for syst in scale_choices
     }
-        (kfile.Get(sigpnt[0] + "_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_" + syst),
-         kfile.Get(sigpnt[0] + "_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_" + syst))
-        for syst in scale_choices
-    ]
-    #kfile = uproot.open(kfactor_file_name)
-    ##kfile = TFile.Open(kfactor_file_name, "read")
-    #khist = [
-    #    (kfile.Get(sigpnt[0] + "_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_" + syst),
-    #     kfile.Get(sigpnt[0] + "_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_" + syst))
-    #    for syst in scale_choices
-    #]
-    #kvals = tuple([(syst[0].Interpolate(sigpnt[1], sigpnt[2]), syst[1].Interpolate(sigpnt[1], sigpnt[2])) for syst in khist])
-    #kfile.Close()
+    kfactors["mt_up"] = {
+            "Res" : dense_lookup(*mt_up_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
+            "Int" : dense_lookup(*mt_up_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
+    }
+    kfactors["mt_dw"] = {
+            "Res" : dense_lookup(*mt_dw_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
+            "Int" : dense_lookup(*mt_dw_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
+    }
+    return kfactors
 
-    return kvals
 
 def get_lo_ratio(parity, channel):
     # modeled after this https://github.com/afiqaize/CombineHarvester/blob/ahtt_run2ul_dev/ahtt/scripts/make_datacard.py#L42-L59
@@ -129,18 +120,12 @@ def get_lo_ratio(parity, channel):
 
 
 if __name__ == "__main__":	
-    #set_trace()
     base_jobid = os.environ["base_jobid"]
     plot_dir = os.environ["plots_dir"]
 
-    rfiles = {
-        "Nominal" : "root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_220129.root",
-        "Mt_1715" : "root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt171p5_230317.root",
-        "Mt_1735" : "root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt173p5_230317.root",
-    }
-    nom_tgraph = root_conv.convert_TGraph_root_file(rfiles["Nominal"])
-    mt_up_tgraph = root_conv.convert_TGraph_root_file(rfiles["Mt_1735"])
-    mt_dw_tgraph = root_conv.convert_TGraph_root_file(rfiles["Mt_1715"])
+    nom_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_220129.root")
+    mt_up_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt173p5_230317.root")
+    mt_dw_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt171p5_230317.root")
 
 
     masses = [365, 380, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000] # available mass points (GeV)
@@ -149,7 +134,7 @@ if __name__ == "__main__":
         "lj" : "SL",
         "ll" : "DiLep"
     }
-    sig_components = {"Res" : "resonant", "Int_neg" : "negative int.", "Int_pos" : "positive int."}
+    sig_components = {"Res" : "resonance", "Int_neg" : "negative int.", "Int_pos" : "positive int.", "Int" : "interference"}
 
     scale_choices = ["nominal", "uF_up", "uF_down", "uR_up", "uR_down"]
     sys_opts_dict = {
@@ -162,15 +147,29 @@ if __name__ == "__main__":
         "mt_dw" : {"label" : "$m_{t}$ down", "name" : "mt_down"},
     }
 
+    plots_to_make = ["LO", "KFactor"] if args.plot == "All" else [args.plot]
     parities_to_run = ["A", "H"] if args.parity == "All" else [args.parity]
-    #set_trace()
+
     for parity in parities_to_run:
-        for channel in channels_dict.keys():
-            LO_ratios = get_lo_ratio(parity, channel)
-            for sys in LO_ratios.keys():
-                if sys == "nominal": continue
-                for sig_comp in LO_ratios[sys].keys():
-                    plot_ratios(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys)
+        if "KFactor" in plots_to_make:
+            kfactors = get_kfactor(parity)
+            for sys in kfactors.keys():
+                for sig_comp in kfactors[sys].keys():
+                    make_plots(lookup=kfactors[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys, isKFactor=True)
+
+        if "LO" in plots_to_make:
+            for channel in channels_dict.keys():
+                LO_ratios = get_lo_ratio(parity, channel)
+                for sys in LO_ratios.keys():
+                    if sys == "nominal": continue
+                    for sig_comp in LO_ratios[sys].keys():
+                        if np.any(LO_ratios[sys][sig_comp]._values > 2.0):
+                            vals, edges = LO_ratios[sys][sig_comp]._values, LO_ratios[sys][sig_comp]._axes
+                            failing_mass_inds, failing_width_inds = np.where(vals > 2.)
+                            failing_points = [(masses[failing_mass_inds[idx]], widths[failing_width_inds[idx]]) for idx in range(len(failing_mass_inds))]
+                            print(f"{parity} {sig_comp} {channel} {sys}: {failing_points}\n")
+                            
+                        make_plots(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, isKFactor=False)
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
