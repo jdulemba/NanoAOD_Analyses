@@ -28,7 +28,7 @@ args = parser.parse_args()
 
 def make_plots(lookup, boson, channel, sig_comp, sys, isKFactor=False, clear=True):
     #set_trace()
-    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_Ratios", "KFactors" if isKFactor else "LOratios", f"{boson}toTT")
+    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_LOratios", "KFactors" if isKFactor else "LOratios", f"{boson}toTT")
     if not os.path.isdir(pltdir): os.makedirs(pltdir)
 
     fig, ax = plt.subplots()
