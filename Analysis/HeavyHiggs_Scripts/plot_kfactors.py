@@ -21,31 +21,44 @@ import Utilities.root_converters as root_conv
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("--plot", choices=["LO", "KFactor", "All"], default="All", help="Choose which parity to compute limits for.")
+parser.add_argument("--plot", choices=["LOratio", "KFactor", "FinalNorms", "FinalNormRatios", "All"], default="All", help="Choose which parity to compute limits for.")
 parser.add_argument("--parity", choices=["A", "H", "All"], default="All", help="Choose which parity to compute limits for.")
 args = parser.parse_args()
 
 
-def make_plots(lookup, boson, channel, sig_comp, sys, isKFactor=False, clear=True):
+def make_plots(lookup, boson, channel, sig_comp, sys, plot_type, clear=True):
     #set_trace()
-    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_LOratios", "KFactors" if isKFactor else "LOratios", f"{boson}toTT")
+    __allowed_types__ = ["KFactors", "LOratios", "FinalNorms", "FinalNormRatios"]
+    if plot_type not in __allowed_types__: raise ValueError(f"{plot_type} not supported, only {__allowed_types__} are")
+
+    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_LOratios", file_version, plot_type, f"{boson}toTT")
     if not os.path.isdir(pltdir): os.makedirs(pltdir)
 
     fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
 
-    zaxis_label = "k-factor" if isKFactor else "sushi/mg5"
-    zaxis_name = "NNLO_kfactor" if isKFactor else "LO_ratios"
+    if plot_type == "LOratios":
+        zlabel = f"sushi/mg5: {sys_opts_dict[sys]['label']}, {sig_components[sig_comp]}, {channel}"
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_LO_ratios")
+
+    if plot_type == "KFactors":
+        zlabel = f"{boson} {sig_components[sig_comp]} k-factor" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} k-factor: {sys_opts_dict[sys]['label']}"
+        figname = os.path.join(pltdir, f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_NNLO_kfactor")
+
+    if plot_type == "FinalNorms":
+        zlabel = f"{boson} {sig_components[sig_comp]} k-factor x sushi/mg5" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} k-factor x sushi/mg5: {sys_opts_dict[sys]['label']}"
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_Final_Norms")
+
+    if plot_type == "FinalNormRatios":
+        #set_trace()
+        zlabel = f"{boson} {sig_components[sig_comp]} {sys_opts_dict[sys]['label']}/nominal (k-factor x sushi/mg5)"
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_Final_Norm_Ratios")
 
     xedges, yedges = lookup._axes
     vals = lookup._values
     pc = ax.pcolormesh(xedges, yedges, vals.T, **{})
     ax.add_collection(pc)
     if clear:
-        if channel:
-            zlabel = f"{zaxis_label}: {sys_opts_dict[sys]['label']}, {sig_components[sig_comp]}, {channel}"
-        else:
-            zlabel = f"{boson} {sig_components[sig_comp]} {zaxis_label}" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} {zaxis_label}: {sys_opts_dict[sys]['label']}"
         fig.colorbar(pc, ax=ax, label=zlabel, pad=0.)
     ax.autoscale()
 
@@ -53,7 +66,6 @@ def make_plots(lookup, boson, channel, sig_comp, sys, isKFactor=False, clear=Tru
     ax.set_xlabel("$m_{%s}$ [GeV]" % boson)
     ax.set_ylabel(r"$\Gamma_{%s}$/$m_{%s}$ [%%]" % (boson, boson))
 
-    figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{zaxis_name}" if channel else f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_{zaxis_name}")
     fig.savefig(figname)
     print(f"{figname} written")
     plt.close(fig)
@@ -118,14 +130,34 @@ def get_lo_ratio(parity, channel):
     return lookups_ratios
 
 
+def get_final_norm(kfactors, lo_ratios):
+    #set_trace()
+        # kfactor * (LO ratio) for each systematic variation
+    final_norms = {
+        syst : {
+            "Res" : dense_lookup(*(kfactors[syst]["Res"]._values * lo_ratios[syst]["Res"]._values, kfactors[syst]["Res"]._axes)),
+            "Int_pos" : dense_lookup(*(kfactors[syst]["Int"]._values * lo_ratios[syst]["Int_pos"]._values, kfactors[syst]["Int"]._axes)),
+            "Int_neg" : dense_lookup(*(kfactors[syst]["Int"]._values * lo_ratios[syst]["Int_neg"]._values, kfactors[syst]["Int"]._axes)),
+        } for syst in lo_ratios.keys()
+    }
+
+        # (kfactor * (LO ratio))_sys / (kfactor * (LO ratio))_nominal for each systematic variation
+    final_norm_ratios = {
+        syst : {
+            sig_comp : dense_lookup(*(final_norms[syst][sig_comp]._values / final_norms["nominal"][sig_comp]._values, final_norms[syst][sig_comp]._axes)) for sig_comp in final_norms[syst].keys()
+        } for syst in final_norms.keys()
+    }
+    return final_norms, final_norm_ratios
 
 if __name__ == "__main__":	
     base_jobid = os.environ["base_jobid"]
     plot_dir = os.environ["plots_dir"]
 
+    #file_version = "230317"
+    file_version = "230329"
     nom_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_220129.root")
-    mt_up_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt173p5_230317.root")
-    mt_dw_tgraph = root_conv.convert_TGraph_root_file("root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt171p5_230317.root")
+    mt_up_tgraph = root_conv.convert_TGraph_root_file(f"root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt173p5_{file_version}.root")
+    mt_dw_tgraph = root_conv.convert_TGraph_root_file(f"root://eosuser.cern.ch//eos/cms/store/user/afiqaize/ahtt_kfactor_sushi/ulkfactor_final_mt171p5_{file_version}.root")
 
 
     masses = [365, 380, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000] # available mass points (GeV)
@@ -147,17 +179,29 @@ if __name__ == "__main__":
         "mt_dw" : {"label" : "$m_{t}$ down", "name" : "mt_down"},
     }
 
-    plots_to_make = ["LO", "KFactor"] if args.plot == "All" else [args.plot]
+    plots_to_make = ["LOratio", "KFactor", "FinalNorms", "FinalNormRatios"] if args.plot == "All" else [args.plot]
     parities_to_run = ["A", "H"] if args.parity == "All" else [args.parity]
 
     for parity in parities_to_run:
+            # kfactor * LO ratio
+        if ("FinalNorms" in plots_to_make) or ("FinalNormRatios" in plots_to_make):
+            kfactors = get_kfactor(parity)
+            for channel in channels_dict.keys():
+                LO_ratios = get_lo_ratio(parity, channel)
+                final_norms, final_norm_ratios = get_final_norm(kfactors, LO_ratios)
+                for sys in final_norms.keys():
+                    for sig_comp in final_norms[sys].keys():
+                        if "FinalNorms" in plots_to_make: make_plots(lookup=final_norms[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="FinalNorms")
+                        if (sys != "nominal") and ("FinalNormRatios" in plots_to_make):
+                            make_plots(lookup=final_norm_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="FinalNormRatios")
+
         if "KFactor" in plots_to_make:
             kfactors = get_kfactor(parity)
             for sys in kfactors.keys():
                 for sig_comp in kfactors[sys].keys():
-                    make_plots(lookup=kfactors[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys, isKFactor=True)
+                    make_plots(lookup=kfactors[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys, plot_type="KFactors")
 
-        if "LO" in plots_to_make:
+        if "LOratio" in plots_to_make:
             for channel in channels_dict.keys():
                 LO_ratios = get_lo_ratio(parity, channel)
                 for sys in LO_ratios.keys():
@@ -169,7 +213,7 @@ if __name__ == "__main__":
                             failing_points = [(masses[failing_mass_inds[idx]], widths[failing_width_inds[idx]]) for idx in range(len(failing_mass_inds))]
                             print(f"{parity} {sig_comp} {channel} {sys}: {failing_points}\n")
                             
-                        make_plots(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, isKFactor=False)
+                        make_plots(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="LOratios")
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
