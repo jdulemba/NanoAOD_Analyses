@@ -19,40 +19,55 @@ import os
 from coffea.lookup_tools.dense_lookup import dense_lookup
 import Utilities.root_converters as root_conv
 
+__allowed_types__ = ["LOvals", "LOratios", "KFactorVals", "KFactorRatios", "NNLOvals", "NNLOratios"]
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("--plot", choices=["LOratio", "KFactor", "FinalNorms", "FinalNormRatios", "All"], default="All", help="Choose which parity to compute limits for.")
+parser.add_argument("plot", choices=__allowed_types__, help="Choose which parity to compute limits for.")
 parser.add_argument("--parity", choices=["A", "H", "All"], default="All", help="Choose which parity to compute limits for.")
 args = parser.parse_args()
 
 
-def make_plots(lookup, boson, channel, sig_comp, sys, plot_type, clear=True):
+def make_plots(lookup, boson, channel, sig_comp, sys, clear=True):
     #set_trace()
-    __allowed_types__ = ["KFactors", "LOratios", "FinalNorms", "FinalNormRatios"]
-    if plot_type not in __allowed_types__: raise ValueError(f"{plot_type} not supported, only {__allowed_types__} are")
-
-    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_LOratios", file_version, plot_type, f"{boson}toTT")
+    pltdir = os.path.join(plot_dir, base_jobid, "KFactors_LOratios", file_version, args.plot, f"{boson}toTT")
     if not os.path.isdir(pltdir): os.makedirs(pltdir)
 
     fig, ax = plt.subplots()
     fig.subplots_adjust(hspace=.07)
 
-    if plot_type == "LOratios":
-        zlabel = f"sushi/mg5: {sys_opts_dict[sys]['label']}, {sig_components[sig_comp]}, {channel}"
-        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_LO_ratios")
+    if args.plot == "LOvals":
+        zlabel = f"{boson} {channel} {sig_components[sig_comp]}" + " $\\sigma$ [pb]"
+        if sys != "nominal": zlabel += f": {sys_opts_dict[sys]['label']}"
+        hep.label.lumitext(ax=ax, text="Madgraph LO QCD")
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
 
-    if plot_type == "KFactors":
-        zlabel = f"{boson} {sig_components[sig_comp]} k-factor" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} k-factor: {sys_opts_dict[sys]['label']}"
-        figname = os.path.join(pltdir, f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_NNLO_kfactor")
+    if args.plot == "LOratios":
+        zlabel = f"{boson} {channel} {sig_components[sig_comp]}" + " $\\sigma_{%s}$/$\\sigma_{nominal}$" % sys_opts_dict[sys]["label"].replace("$", "").replace(" ", "\ ")
+        hep.label.lumitext(ax=ax, text="Madgraph LO QCD")
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
 
-    if plot_type == "FinalNorms":
-        zlabel = f"{boson} {sig_components[sig_comp]} k-factor x sushi/mg5" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} k-factor x sushi/mg5: {sys_opts_dict[sys]['label']}"
-        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_Final_Norms")
+    if args.plot == "KFactorVals":
+        zlabel = f"{boson} {sig_components[sig_comp]} k-factor" if sys == "nominal" else f"{boson} {sig_components[sig_comp]} {sys_opts_dict[sys]['label']} k-factor"
+        hep.label.lumitext(ax=ax, text="Sushi NNLO / Madgraph LO")
+        figname = os.path.join(pltdir, f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
 
-    if plot_type == "FinalNormRatios":
-        #set_trace()
-        zlabel = f"{boson} {sig_components[sig_comp]} {sys_opts_dict[sys]['label']}/nominal (k-factor x sushi/mg5)"
-        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_Final_Norm_Ratios")
+    if args.plot == "KFactorRatios":
+        zlabel = f"{boson} {sig_components[sig_comp]} {sys_opts_dict[sys]['label']}/nominal k-factor ratios"
+        hep.label.lumitext(ax=ax, text="Sushi NNLO / Madgraph LO")
+        figname = os.path.join(pltdir, f"{boson}toTT_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
+
+    if args.plot == "NNLOvals":
+        zlabel = f"{boson} {channel} {sig_components[sig_comp]}" + " $\\sigma$ [pb]"
+        if sys != "nominal": zlabel += f": {sys_opts_dict[sys]['label']}"
+        hep.label.lumitext(ax=ax, text="Sushi NNLO")
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
+
+    if args.plot == "NNLOratios":
+        zlabel = f"{boson} {channel} {sig_components[sig_comp]}" + " $\\sigma_{%s}$/$\\sigma_{nominal}$" % sys_opts_dict[sys]["label"].replace("$", "").replace(" ", "\ ")
+        hep.label.lumitext(ax=ax, text="Sushi NNLO")
+        figname = os.path.join(pltdir, f"{boson}toTTJets{channels_dict[channel]}_{sig_comp}_{sys_opts_dict[sys]['name']}_{args.plot}")
+
 
     xedges, yedges = lookup._axes
     vals = lookup._values
@@ -74,26 +89,32 @@ def make_plots(lookup, boson, channel, sig_comp, sys, plot_type, clear=True):
 
 def get_kfactor(parity):
     # modeled after this https://github.com/afiqaize/CombineHarvester/blob/ahtt_run2ul_dev/ahtt/scripts/make_datacard.py#L30-L40
-    kfactors = {
+    kfactor_vals = {
         syst : {
             "Res" : dense_lookup(*nom_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")]),
             "Int" : dense_lookup(*nom_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_{syst}", "dense_lookup")]),
         } for syst in scale_choices
     }
-    kfactors["mt_up"] = {
+    kfactor_vals["mt_up"] = {
             "Res" : dense_lookup(*mt_up_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
             "Int" : dense_lookup(*mt_up_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
     }
-    kfactors["mt_dw"] = {
+    kfactor_vals["mt_dw"] = {
             "Res" : dense_lookup(*mt_dw_tgraph[(f"{parity}_res_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
             "Int" : dense_lookup(*mt_dw_tgraph[(f"{parity}_int_sushi_nnlo_mg5_lo_kfactor_pdf_325500_nominal", "dense_lookup")]),
     }
-    return kfactors
+        # syst/nominal values for signal components
+    kfactor_ratios = {
+        syst : {
+            sig_comp : dense_lookup(*(kfactor_vals[syst][sig_comp]._values / kfactor_vals["nominal"][sig_comp]._values, kfactor_vals[syst][sig_comp]._axes)) for sig_comp in kfactor_vals[syst].keys()
+        } for syst in kfactor_vals.keys()
+    }
+    return kfactor_vals, kfactor_ratios
 
 
-def get_lo_ratio(parity, channel):
+def get_lo(parity, channel):
     # modeled after this https://github.com/afiqaize/CombineHarvester/blob/ahtt_run2ul_dev/ahtt/scripts/make_datacard.py#L42-L59
-    xhist = { syst :
+    lo_dict = { syst :
         [
             dense_lookup(*nom_tgraph[(f"{parity}_res_mg5_pdf_325500_scale_dyn_0p5mtt_{syst}_xsec_{channel}", "dense_lookup")]),
             dense_lookup(*nom_tgraph[(f"{parity}_int_mg5_pdf_325500_scale_dyn_0p5mtt_{syst}_xabs_{channel}", "dense_lookup")]),
@@ -101,44 +122,43 @@ def get_lo_ratio(parity, channel):
          ] for syst in scale_choices
     }
         # add top mass variations
-    xhist["mt_up"] = [
+    lo_dict["mt_up"] = [
             dense_lookup(*mt_up_tgraph[(f"{parity}_res_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_xsec_{channel}", "dense_lookup")]),
             dense_lookup(*mt_up_tgraph[(f"{parity}_int_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_xabs_{channel}", "dense_lookup")]),
             dense_lookup(*mt_up_tgraph[(f"{parity}_int_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_positive_event_fraction_{channel}", "dense_lookup")])
     ]
-    xhist["mt_dw"] = [
+    lo_dict["mt_dw"] = [
             dense_lookup(*mt_dw_tgraph[(f"{parity}_res_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_xsec_{channel}", "dense_lookup")]),
             dense_lookup(*mt_dw_tgraph[(f"{parity}_int_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_xabs_{channel}", "dense_lookup")]),
             dense_lookup(*mt_dw_tgraph[(f"{parity}_int_mg5_pdf_325500_scale_dyn_0p5mtt_nominal_positive_event_fraction_{channel}", "dense_lookup")])
     ]
-    lookups = {
-        syst : [
-            dist[0],
-            dense_lookup(*(dist[1]._values * dist[2]._values, dist[0]._axes)),
-            dense_lookup(*(dist[1]._values * (1. - dist[2]._values), dist[0]._axes))
-        ] for syst, dist in xhist.items()
-    }
 
-        # syst/nominal values for [res, pos, neg] signal components
-    lookups_ratios = {
+        # sushi xsec values for [res, pos, neg] signal components
+    lo_vals = {
         syst : {
-            "Res" : dense_lookup(*(lookups[syst][0]._values / lookups["nominal"][0]._values, lookups[syst][0]._axes)),
-            "Int_pos" : dense_lookup(*(lookups[syst][1]._values / lookups["nominal"][1]._values, lookups[syst][0]._axes)),
-            "Int_neg" : dense_lookup(*(lookups[syst][2]._values / lookups["nominal"][2]._values, lookups[syst][0]._axes))
-        } for syst in lookups.keys()
+            "Res" : dist[0],
+            "Int_pos" : dense_lookup(*(dist[1]._values * dist[2]._values, dist[0]._axes)),
+            "Int_neg" : dense_lookup(*(dist[1]._values * (1. - dist[2]._values), dist[0]._axes))
+        } for syst, dist in lo_dict.items()
     }
-    return lookups_ratios
+        # syst/nominal values for [res, pos, neg] signal components
+    lo_ratios = {
+        syst : {
+            sig_comp : dense_lookup(*(lo_vals[syst][sig_comp]._values / lo_vals["nominal"][sig_comp]._values, lo_vals[syst][sig_comp]._axes)) for sig_comp in lo_vals[syst].keys()
+        } for syst in lo_vals.keys()
+    }
+    return lo_vals, lo_ratios
 
 
-def get_final_norm(kfactors, lo_ratios):
+def get_nnlo(kfactor_vals, lo_vals):
     #set_trace()
-        # kfactor * (LO ratio) for each systematic variation
+        # (NNLO kfactor) * (LO mg5 xsec) for each systematic variation
     final_norms = {
         syst : {
-            "Res" : dense_lookup(*(kfactors[syst]["Res"]._values * lo_ratios[syst]["Res"]._values, kfactors[syst]["Res"]._axes)),
-            "Int_pos" : dense_lookup(*(kfactors[syst]["Int"]._values * lo_ratios[syst]["Int_pos"]._values, kfactors[syst]["Int"]._axes)),
-            "Int_neg" : dense_lookup(*(kfactors[syst]["Int"]._values * lo_ratios[syst]["Int_neg"]._values, kfactors[syst]["Int"]._axes)),
-        } for syst in lo_ratios.keys()
+            "Res" : dense_lookup(*(kfactor_vals[syst]["Res"]._values * lo_vals[syst]["Res"]._values, kfactor_vals[syst]["Res"]._axes)),
+            "Int_pos" : dense_lookup(*(kfactor_vals[syst]["Int"]._values * lo_vals[syst]["Int_pos"]._values, kfactor_vals[syst]["Int"]._axes)),
+            "Int_neg" : dense_lookup(*(kfactor_vals[syst]["Int"]._values * lo_vals[syst]["Int_neg"]._values, kfactor_vals[syst]["Int"]._axes)),
+        } for syst in lo_vals.keys()
     }
 
         # (kfactor * (LO ratio))_sys / (kfactor * (LO ratio))_nominal for each systematic variation
@@ -179,41 +199,51 @@ if __name__ == "__main__":
         "mt_dw" : {"label" : "$m_{t}$ down", "name" : "mt_down"},
     }
 
-    plots_to_make = ["LOratio", "KFactor", "FinalNorms", "FinalNormRatios"] if args.plot == "All" else [args.plot]
     parities_to_run = ["A", "H"] if args.parity == "All" else [args.parity]
 
     for parity in parities_to_run:
-            # kfactor * LO ratio
-        if ("FinalNorms" in plots_to_make) or ("FinalNormRatios" in plots_to_make):
-            kfactors = get_kfactor(parity)
+            # (kfactor vals) * (LO vals) = (NNLO sushi vals)
+        if (args.plot == "NNLOvals") or (args.plot == "NNLOratios"):
+            kfactor_vals, kfactor_ratios = get_kfactor(parity)
             for channel in channels_dict.keys():
-                LO_ratios = get_lo_ratio(parity, channel)
-                final_norms, final_norm_ratios = get_final_norm(kfactors, LO_ratios)
-                for sys in final_norms.keys():
-                    for sig_comp in final_norms[sys].keys():
-                        if "FinalNorms" in plots_to_make: make_plots(lookup=final_norms[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="FinalNorms")
-                        if (sys != "nominal") and ("FinalNormRatios" in plots_to_make):
-                            make_plots(lookup=final_norm_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="FinalNormRatios")
+                lo_vals, lo_ratios = get_lo(parity, channel)
+                nnlo_vals, nnlo_ratios = get_nnlo(kfactor_vals, lo_vals)
+                for sys in nnlo_vals.keys():
+                    for sig_comp in nnlo_vals[sys].keys():
+                        if args.plot == "NNLOvals":
+                            make_plots(lookup=nnlo_vals[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys)
 
-        if "KFactor" in plots_to_make:
-            kfactors = get_kfactor(parity)
-            for sys in kfactors.keys():
-                for sig_comp in kfactors[sys].keys():
-                    make_plots(lookup=kfactors[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys, plot_type="KFactors")
+                        if (sys != "nominal") and (args.plot == "NNLOratios"):
+                            make_plots(lookup=nnlo_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys)
 
-        if "LOratio" in plots_to_make:
+
+        if (args.plot == "KFactorVals") or (args.plot == "KFactorRatios"):
+            kfactor_vals, kfactor_ratios = get_kfactor(parity)
+            for sys in kfactor_vals.keys():
+                for sig_comp in kfactor_vals[sys].keys():
+                    if args.plot == "KFactorVals":
+                        make_plots(lookup=kfactor_vals[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys)
+
+                    if (sys != "nominal") and (args.plot == "KFactorRatios"):
+                        make_plots(lookup=kfactor_ratios[sys][sig_comp], boson=parity, channel=None, sig_comp=sig_comp, sys=sys)
+
+
+        if (args.plot == "LOvals") or (args.plot == "LOratios"):
             for channel in channels_dict.keys():
-                LO_ratios = get_lo_ratio(parity, channel)
-                for sys in LO_ratios.keys():
-                    if sys == "nominal": continue
-                    for sig_comp in LO_ratios[sys].keys():
-                        if np.any(LO_ratios[sys][sig_comp]._values > 2.0):
-                            vals, edges = LO_ratios[sys][sig_comp]._values, LO_ratios[sys][sig_comp]._axes
-                            failing_mass_inds, failing_width_inds = np.where(vals > 2.)
-                            failing_points = [(masses[failing_mass_inds[idx]], widths[failing_width_inds[idx]]) for idx in range(len(failing_mass_inds))]
-                            print(f"{parity} {sig_comp} {channel} {sys}: {failing_points}\n")
-                            
-                        make_plots(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys, plot_type="LOratios")
+                LO_vals, LO_ratios = get_lo(parity, channel)
+                for sys in LO_vals.keys():
+                    for sig_comp in LO_vals[sys].keys():
+                        if args.plot == "LOvals":
+                            make_plots(lookup=LO_vals[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys)
+
+                        if (sys != "nominal") and (args.plot == "LOratios"):
+                            if np.any(LO_ratios[sys][sig_comp]._values > 2.0):
+                                vals, edges = LO_ratios[sys][sig_comp]._values, LO_ratios[sys][sig_comp]._axes
+                                failing_mass_inds, failing_width_inds = np.where(vals > 2.)
+                                failing_points = [(masses[failing_mass_inds[idx]], widths[failing_width_inds[idx]]) for idx in range(len(failing_mass_inds))]
+                                print(f"{parity} {sig_comp} {channel} {sys}: {failing_points}\n")
+                                
+                            make_plots(lookup=LO_ratios[sys][sig_comp], boson=parity, channel=channel, sig_comp=sig_comp, sys=sys)
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
