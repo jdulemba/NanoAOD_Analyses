@@ -558,6 +558,8 @@ sys_to_name = {
         "CR1" : "CR1",
         "CR2" : "CR2",
         "erdON" : "erdON",
+        "NLOshapeUp"   : "NLOshape_UP",
+        "NLOshapeDown" : "NLOshape_DW",
             # A/H signal systematics
         "AH_ISRUp" : "AH_ISR_UP",
         "AH_ISRDown" : "AH_ISR_DW",
@@ -779,12 +781,14 @@ combine_template_sys_to_name = {
         #"mtop1755" : "tmass_3GeV_TTUp",
         "mtop1695" : "tmass_TTDown",
         "mtop1755" : "tmass_TTUp",
-        "CR1Up" : "CR_QCD_TTUp",
+        "CR1Up"   : "CR_QCD_TTUp",
         "CR1Down" : "CR_QCD_TTDown",
-        "CR2Up" : "CR_Gluon_TTUp",
+        "CR2Up"   : "CR_Gluon_TTUp",
         "CR2Down" : "CR_Gluon_TTDown",
         "erdONUp" : "CR_ERD_TTUp",
         "erdONDown" : "CR_ERD_TTDown",
+        "NLOshapeUp"   : "NLOshape_TTUp",
+        "NLOshapeDown" : "NLOshape_TTDown",
             # A/H signal systematics
         "AH_FSRUp"   : "QCDscale_FSR_AHUp",
         "AH_FSRDown" : "QCDscale_FSR_AHDown",
@@ -907,6 +911,7 @@ sys_groups = {
         "CR1" : ["CR1", None],
         "CR2" : ["CR2", None],
         "erdON" : ["erdON", None],
+        "NLOshape" : ["NLOshapeUp", "NLOshapeDown"],
             # A/H signal systematics
         "AH_ISR" : ["AH_ISRUp", "AH_ISRDown"],
         "AH_FSR" : ["AH_FSRUp", "AH_FSRDown"],
@@ -1003,6 +1008,7 @@ final_systypes = {
         "CR1",
         "CR2",
         "erdON",
+        "NLOshape",
             # A/H signal systematics
         "AH_ISR",
         "AH_FSR",
