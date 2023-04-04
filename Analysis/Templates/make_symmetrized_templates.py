@@ -7,11 +7,9 @@ import os
 import numpy as np
 import coffea.processor as processor
 import Utilities.systematics as systematics
-#import Utilities.prettyjson as prettyjson
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
 parser.add_argument("channels_to_combine", type=str, help="Choose how to combine systematic templates (by lepton or eras), multiple options can be input as ':' separated strings.")
 parser.add_argument("sys_treatment", choices=["smoothed", "flattened"], help="Choose which systematic treatment to symmetrize.")
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
@@ -94,7 +92,8 @@ def symm_year_and_lepton_templates(fname, process):
                 histo_dict[jmult][f"{proc}_{dw_sysname}"] = symmetrized_histo_dw.copy()
 
     #set_trace()
-    coffea_out = os.path.join(input_dir, f"symmetrized_{args.sys_treatment}_combined_year_and_lepton_templates_lj_{process}_nomSMTTxsec_{jobid}.coffea" if args.nomSMTTxsec else f"symmetrized_{args.sys_treatment}_combined_year_and_lepton_templates_lj_{process}_{jobid}.coffea")
+    coffea_out = os.path.join(input_dir, f"symmetrized_{args.sys_treatment}_combined_year_and_lepton_templates_lj_{process}_nomSMTTxsec_{jobid}.coffea" if args.nomSMTTxsec \
+            else f"symmetrized_{args.sys_treatment}_combined_year_and_lepton_templates_lj_{process}_{jobid}.coffea")
     save(histo_dict, coffea_out)
     print(f"{coffea_out} written")
 
@@ -315,10 +314,6 @@ def symm_1D_year_and_lepton_templates(fname, process):
 
 
 if __name__ == "__main__":
-    allowed_template_options = ["bkg", "sig", "MEreweight_sig"]
-    templates_to_run = (args.templates_to_run).split(":")
-    templates_to_run = [template for template in templates_to_run if template in allowed_template_options]
-
     allowed_combination_options = ["lepton", "era_lepton", "indiv"]
     combinations_to_run = (args.channels_to_combine).split(":")
     combinations_to_run = [combination for combination in combinations_to_run if combination in allowed_combination_options]
@@ -331,26 +326,23 @@ if __name__ == "__main__":
     for combination in combinations_to_run:
         if combination == "era_lepton":
             systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON"]
-            #systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV"]
 
             #set_trace()
             input_dir = os.path.join(eos_dir, "results", jobid, f"Templates_{analyzer}")
             if not os.path.isdir(input_dir): raise ValueError("No directory found.")
 
-            if "bkg" in templates_to_run:
-                bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_combined_year_and_lepton_templates_lj_bkg_nomSMTTxsec_{jobid}.coffea" if args.nomSMTTxsec else f"{args.sys_treatment}_combined_year_and_lepton_templates_lj_bkg_{jobid}.coffea")
-                if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
-                print("Symmetrizing combined channels across years and leptons for background templates")
-                symm_year_and_lepton_templates(bkg_fname, "bkg")
+            bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_combined_year_and_lepton_templates_lj_bkg_nomSMTTxsec_{jobid}.coffea" if args.nomSMTTxsec else f"{args.sys_treatment}_combined_year_and_lepton_templates_lj_bkg_{jobid}.coffea")
+            if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
+            print("Symmetrizing combined channels across years and leptons for background templates")
+            symm_year_and_lepton_templates(bkg_fname, "bkg")
 
-                if args.sys_treatment == "smoothed":
-                    bkg_1d_fname = os.path.join(input_dir, f"{args.sys_treatment}_1D_combined_year_and_lepton_templates_lj_bkg_{jobid}.coffea")
-                    print("Symmetrizing combined channels across years and leptons for background templates")
-                    symm_1D_year_and_lepton_templates(bkg_1d_fname, "bkg")
+            if args.sys_treatment == "smoothed":
+                bkg_1d_fname = os.path.join(input_dir, f"{args.sys_treatment}_1D_combined_year_and_lepton_templates_lj_bkg_{jobid}.coffea")
+                print("Symmetrizing combined channels across years and leptons for background templates")
+                symm_1D_year_and_lepton_templates(bkg_1d_fname, "bkg")
 
 
         if combination == "lepton":
-            #for year in ["2016APV"]:
             for year in ["2016APV", "2016", "2017", "2018"]:
                 input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", f"Templates_{analyzer}")
                 if not os.path.isdir(input_dir): raise ValueError("No directory found.")
@@ -367,35 +359,24 @@ if __name__ == "__main__":
                     "JES_FlavorPureBottomOnlyBottomJets", "JES_FlavorPureCharmOnlyCharmJets", "JES_FlavorPureGluonOnlyGluonJets", "JES_FlavorPureQuarkOnlyQuarkJets",
                     "JES_RelativeBal", f"JES_RelativeSample_{year}", "MET", "JER", "SHAPE",
                 ]                
-                ##systypes = ["BTAG_BC_CORR", "BTAG_BC_UNCORR", "BTAG_L_CORR", "BTAG_L_UNCORR", "SHAPE", "JER",
-                #systypes = ["BTAG_BC_JES", "BTAG_BC_PILEUP", "BTAG_BC_STATISTIC", "BTAG_BC_TYPE3",
-                #"BTAG_BC_CORR", "BTAG_BC_UNCORR", "BTAG_L_CORR", "BTAG_L_UNCORR", "SHAPE", "JER",
-                #"JES_Absolute", f"JES_Absolute_{year}", "JES_BBEC1", f"JES_BBEC1_{year}",
-                #"JES_FlavorQCD", "JES_FlavorQCDOnlyLightJets", "JES_FlavorPureBottom", "JES_FlavorPureCharm", "JES_FlavorPureQuark", "JES_FlavorPureGluon",
-                #"JES_FlavorPureBottomOnlyBottomJets", "JES_FlavorPureCharmOnlyCharmJets", "JES_FlavorPureQuarkOnlyQuarkJets", "JES_FlavorPureGluonOnlyGluonJets",
-                #"JES_RelativeBal", f"JES_RelativeSample_{year}", "MET"]
-                #"JES_FlavorQCD", "JES_RelativeBal", f"JES_RelativeSample_{year}", "MET", "PILEUP"]
                 if year != "2018": systypes.append("PREFIRE")
 
-                if "bkg" in templates_to_run:
-                    bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_combined_lep_templates_lj_bkg_{year}_{jobid}.coffea")
-                    if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
-                    print(f"Symmetrizing e+mu channels in {year} for background templates")
-                    symm_lepton_templates(bkg_fname, "bkg")
+                bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_combined_lep_templates_lj_bkg_{year}_{jobid}.coffea")
+                if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
+                print(f"Symmetrizing e+mu channels in {year} for background templates")
+                symm_lepton_templates(bkg_fname, "bkg")
 
         if combination == "indiv":
-            #for year in ["2018"]:
             for year in ["2016APV", "2016", "2017", "2018"]:
                 input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", f"Templates_{analyzer}")
                 if not os.path.isdir(input_dir): raise ValueError("No directory found.")
                 
                 systypes = systematics.sys_groups[year].keys()
 
-                if "bkg" in templates_to_run:
-                    bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_templates_lj_bkg_{year}_{jobid}.coffea")
-                    if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
-                    print(f"Symmetrizing all channels in {year} for background templates")
-                    symm_indiv_templates(bkg_fname, "bkg")
+                bkg_fname = os.path.join(input_dir, f"{args.sys_treatment}_templates_lj_bkg_{year}_{jobid}.coffea")
+                if not os.path.isfile(bkg_fname): raise ValueError(f"{bkg_fname} not found.")
+                print(f"Symmetrizing all channels in {year} for background templates")
+                symm_indiv_templates(bkg_fname, "bkg")
 
     toc = time.time()
     print("Total time: %.1f" % (toc - tic))
