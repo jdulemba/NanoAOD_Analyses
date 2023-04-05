@@ -381,8 +381,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         #set_trace()
         mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
         el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
-        #mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
-        #el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isNominal_ttJets_, isSignal=isSignal_)
         #set_trace()
 
             ## initialize selections
@@ -405,22 +403,18 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             if isSM_Data_:
                         ## muons
                 {selection[sys].add("tight_MU", ak.sum(events["Muon"]["TIGHTMU"], axis=1) == 1) for sys in selection.keys()} # one muon passing TIGHT criteria
-                #{selection[sys].add("loose_MU", ak.sum(events["Muon"]["LOOSEMU"], axis=1) == 1) for sys in selection.keys()} # one muon passing LOOSE criteria
             if isSE_Data_:
                         ## electrons
                 {selection[sys].add("tight_EL", ak.sum(events["Electron"]["TIGHTEL"], axis=1) == 1) for sys in selection.keys()} # one electron passing TIGHT criteria
-                #{selection[sys].add("loose_EL", ak.sum(events["Electron"]["LOOSEEL"], axis=1) == 1) for sys in selection.keys()} # one electron passing LOOSE criteria
 
         else:
             ## add different selections
                     ## muons
             tight_mu_sel, loose_mu_sel = ak.sum(events["Muon"]["TIGHTMU"], axis=1) == 1, ak.sum(events["Muon"]["LOOSEMU"], axis=1) == 1
             {selection[sys].add("tight_MU", tight_mu_sel) for sys in selection.keys()} # one muon passing TIGHT criteria
-            #{selection[sys].add("loose_MU", loose_mu_sel) for sys in selection.keys()} # one muon passing LOOSE criteria
                     ## electrons
             tight_el_sel, loose_el_sel = ak.sum(events["Electron"]["TIGHTEL"], axis=1) == 1, ak.sum(events["Electron"]["LOOSEEL"], axis=1) == 1
             {selection[sys].add("tight_EL", tight_el_sel) for sys in selection.keys()} # one electron passing TIGHT criteria
-            #{selection[sys].add("loose_EL", loose_el_sel) for sys in selection.keys()} # one electron passing LOOSE criteria
 
             ### apply lepton SFs to MC (only applicable to tight leptons)
             if "LeptonSF" in corrections.keys():
