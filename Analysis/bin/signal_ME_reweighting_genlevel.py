@@ -18,7 +18,7 @@ import Utilities.make_variables as make_vars
 import python.GenParticleSelector as genpsel
 
 import uproot
-from heavy_higgs_reweighting.util import Scenario
+from Utilities.heavy_higgs_reweighting_util import Scenario
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]

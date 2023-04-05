@@ -25,7 +25,7 @@ from copy import deepcopy
 import Utilities.final_analysis_binning as final_binning
 
 import uproot
-from heavy_higgs_reweighting.util import Scenario
+from Utilities.heavy_higgs_reweighting_util import Scenario
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
@@ -83,7 +83,6 @@ else:
 
 
 possible_masses = [365, 380, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000]
-#possible_widths = [2.5, 3.0, 4.0, 5.0, 8.0, 10.0, 13.0, 15.0, 18.0, 21.0, 25.0]
 possible_widths = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0, 10.0, 13.0, 15.0, 18.0, 21.0, 25.0]
 possible_masses = [str(mass) for mass in possible_masses]
 possible_widths = [str(width) for width in possible_widths]

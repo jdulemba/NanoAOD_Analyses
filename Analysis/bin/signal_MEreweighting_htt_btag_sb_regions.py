@@ -25,7 +25,7 @@ from copy import deepcopy
 import Utilities.final_analysis_binning as final_binning
 
 import uproot
-from heavy_higgs_reweighting.util import Scenario
+from Utilities.heavy_higgs_reweighting_util import Scenario
 
 proj_dir = os.environ["PROJECT_DIR"]
 jobid = os.environ["jobid"]
