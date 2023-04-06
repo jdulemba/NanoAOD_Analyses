@@ -379,9 +379,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ## make event weights
                 # data or MC distinction made internally
         #set_trace()
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
-        #set_trace()
+        evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
 
             ## initialize selections
         selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
@@ -432,10 +430,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                mu_evt_weights.add("NNLOqcd",
-                    np.copy(nnlo_wts),
-                )
-                el_evt_weights.add("NNLOqcd",
+                evt_weights.add("NNLOqcd",
                     np.copy(nnlo_wts),
                 )
 
@@ -444,24 +439,14 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    mu_evt_weights.add("EWunc",
-                        np.ones(len(events)),
-                        np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
-                        shift=True
-                    )
-                    el_evt_weights.add("EWunc",
+                    evt_weights.add("EWunc",
                         np.ones(len(events)),
                         np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
                         shift=True
                     )
 
                         # add Yukawa coupling variation
-                    mu_evt_weights.add("Yukawa",  # really just varying value of Yt
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
-                        np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
-                    )
-                    el_evt_weights.add("Yukawa",  # really just varying value of Yt
+                    evt_weights.add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
@@ -494,17 +479,18 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                 ## apply btagging SFs to MC
             if (not isData_) and (corrections["BTagSF"] == True):
-                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].schema_.keys()}
-
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
-                btagger_3j_wts = self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut=btag_wp)
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
-                btagger_4pj_wts = self.corrections["BTag_Constructors"][btaggers[0]]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut=btag_wp)
 
-                    # fll dict of btag weights
-                for wt_name in btagger_3j_wts.keys():
-                    btag_weights[wt_name][threeJets_cut] = ak.prod(btagger_3j_wts[wt_name], axis=1)
-                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(btagger_4pj_wts[wt_name], axis=1)
+                evt_weights = MCWeights.compute_btagSF_weights(
+                    constructor=self.corrections["BTag_Constructors"][btaggers[0]],
+                    jets=events["SelectedJets"], wp=btag_wp, mask_3j=threeJets_cut, mask_4pj=fourplusJets_cut,
+                    sysnames=sorted(set([name.replace("btag_", "") for name in self.reweight_systematics_to_run if name.startswith("btag")])),
+                    evt_weights=evt_weights
+                )
+                #set_trace()
+
+
     
             elif (not isData_) and (corrections["BTagSF"] == False):
                 btag_weights = {"central" : np.ones(len(events))}
@@ -514,7 +500,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             #set_trace()
             ## fill hists for each region
             for lepton in self.regions[evt_sys].keys():
-                evt_weights = mu_evt_weights if lepton == "Muon" else el_evt_weights
                 if not isData_:
                     lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
                 for btagregion in self.regions[evt_sys][lepton].keys():
@@ -565,7 +550,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                             output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
 
                                 # fill hists for each systematic
-                            if to_debug: print(f"\t\tevt sys: {evt_sys}")
+                            if to_debug: print(f"\tevt sys: {evt_sys}")
                             if evt_sys == "nosys":
                                 for rewt_sys in self.reweight_systematics_to_run:
                                     #if to_debug: set_trace()
@@ -576,13 +561,13 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                                     #set_trace()
                                     if rewt_sys == "nosys":
-                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight() * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight() * lep_SFs["central"])[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("btag"):
-                                        wts = (evt_weights.weight() * btag_weights[rewt_sys.split("btag_")[-1]] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight(rewt_sys.replace("_up", "Up").replace("_down", "Down")) * lep_SFs["central"])[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("Lep"):
                                         #set_trace()
                                         if rewt_sys.split("_")[-1] in lep_SFs.keys():
-                                            wts = (evt_weights.weight() * btag_weights["central"] * lep_SFs[rewt_sys.split("_")[-1]])[cut][valid_perms][MTHigh]
+                                            wts = (evt_weights.weight() * lep_SFs[rewt_sys.split("_")[-1]])[cut][valid_perms][MTHigh]
                                         else:
                                             print(f"{rewt_sys.split('_')[-1]} not found in {lepton} SF dict. Skipping")
                                             continue
@@ -590,10 +575,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                         if rewt_sys not in evt_weights.variations:
                                             print(f"{rewt_sys} not option in event weights. Skipping")
                                             continue
-                                        wts = (evt_weights.weight(rewt_sys) * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights.weight(rewt_sys) * lep_SFs["central"])[cut][valid_perms][MTHigh]
 
                                     sysname = rewt_sys
-                                    #sysname = events.metadata["dataset"].split("_")[-1] if isTTShift_ else rewt_sys
 
                                         # fill hists for interference samples
                                     if isInt_:
@@ -615,7 +599,7 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                             else:
                                 if to_debug: print(f"\t\tsysname: {evt_sys}")
                                 #if to_debug: set_trace()
-                                wts = (evt_weights.weight() * btag_weights["central"] *lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                wts = (evt_weights.weight() * lep_SFs["central"])[cut][valid_perms][MTHigh]
 
                                         # fill hists for interference samples
                                 if isInt_:
