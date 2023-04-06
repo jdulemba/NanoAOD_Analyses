@@ -127,6 +127,32 @@ def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=Fa
     return weights    
 
 
+def compute_btagSF_weights(constructor, jets, wp, mask_3j, mask_4pj, sysnames, evt_weights):
+    btag_weights = {key : np.ones(len(jets)) for key in ["central"]+sysnames}
+
+    btagger_3j_wts = constructor["3Jets"].get_scale_factor(jets=jets[mask_3j], passing_cut=wp)
+    btagger_4pj_wts = constructor["4PJets"].get_scale_factor(jets=jets[mask_4pj], passing_cut=wp)
+
+        # fll dict of btag weights
+    for wt_name in btag_weights.keys():
+        btag_weights[wt_name][mask_3j]  = ak.prod(btagger_3j_wts[wt_name], axis=1)
+        btag_weights[wt_name][mask_4pj] = ak.prod(btagger_4pj_wts[wt_name], axis=1)
+
+    #set_trace()
+    btag_names = sorted(set([name.replace("_up", "") for name in sysnames if name.endswith("_up")] + [name.replace("_down", "") for name in sysnames if name.endswith("_down")]))
+
+    evt_weights.add_multivariation(
+        name="btag",
+        weight=np.copy(btag_weights["central"]),
+        modifierNames=btag_names,
+        weightsUp=[np.copy(btag_weights[f"{name}_up"]) for name in btag_names],
+        weightsDown=[np.copy(btag_weights[f"{name}_down"]) for name in btag_names],
+    )
+
+    return evt_weights
+    
+
+
 def get_pdf_weights(df):
     if len(sorted(set(df["nLHEPdfWeight"]))) > 1:
         raise ValueError("Differing number of PDF weights for events")
