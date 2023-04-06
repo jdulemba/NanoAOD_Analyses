@@ -1,9 +1,10 @@
 from pdb import set_trace
 import numpy as np
 from coffea.analysis_tools import Weights
-import Utilities.systematics as systematics
+from copy import deepcopy
 import awkward as ak
 import Utilities.make_variables as make_vars
+import fnmatch
 
 def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=False):
     weights = Weights(len(events), storeIndividual=True) # store individual variations
@@ -390,7 +391,7 @@ def get_comb_lepSF(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.
     return lepSFs
 
 
-def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
+def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype, sysnames, evt_weights):
     mu_schema = {
         "central" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Central"],
             # variations of ID
@@ -430,9 +431,15 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
         "RECOtotUp" : ["ID_Central", "TRIG_Central", "RECO_Error_totUp"],
         "RECOtotDown" : ["ID_Central", "TRIG_Central", "RECO_Error_totDown"],
     }
-    schema_to_use = mu_schema if leptype == "Muons" else el_schema
+    schema_to_use = deepcopy(mu_schema) if leptype == "Muons" else deepcopy(el_schema)
 
-    #set_trace()
+        # filter which sys variations to keep
+    schema_keys = sorted(schema_to_use.keys())
+    for name in schema_keys:
+        if not any([fnmatch.fnmatch(name, sys) for sys in sysnames+["central"]]):
+            del schema_to_use[name]
+    sfs_to_compute = sorted(set(sum([*schema_to_use.values()], []))) # flatten schema dict values
+
     indiv_SF_sources = {}
     for sf_type in sf_dict.keys():
         isAbsEta = sf_dict[sf_type]["isAbsEta"]
@@ -443,8 +450,10 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
                 if ((sf_var == "eta_ranges") or (sf_var == "isAbsEta")): continue
                 #print(leptype, sf_type, sf_var)
                 if sf_var == "Central":
+                    if f"{sf_type}_{sf_var}" not in sfs_to_compute: continue
                     cen_wts = np.ones(len(pt))
                 elif "Error" in sf_var:
+                    if (f"{sf_type}_{sf_var}Up" not in sfs_to_compute) and (f"{sf_type}_{sf_var}Down" not in sfs_to_compute): continue
                     errup_wts, errdw_wts = np.ones(len(pt)), np.ones(len(pt))
                 else:
                     set_trace()
@@ -467,6 +476,7 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
                 if sf_var == "isAbsEta": continue
                 #print(leptype, sf_type, sf_var)
                 if sf_var == "Central":
+                    if f"{sf_type}_{sf_var}" not in sfs_to_compute: continue
                     if sf_dict[sf_type][sf_var]._dimension == 1:
                         indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type][sf_var](eta)
                     elif sf_dict[sf_type][sf_var]._dimension == 2:
@@ -474,6 +484,7 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
                     else:
                         raise ValueError("Only 1D or 2D scale factors are supported!")
                 else:
+                    if (f"{sf_type}_{sf_var}Up" not in sfs_to_compute) and (f"{sf_type}_{sf_var}Down" not in sfs_to_compute): continue
                     if sf_dict[sf_type][sf_var]._dimension == 1:
                         indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta)) + sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) + sf_dict[sf_type][sf_var](eta)
                         indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta)) - sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) - sf_dict[sf_type][sf_var](eta)
@@ -493,4 +504,13 @@ def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype):
         evt_wts[tight_lep_mask] = np.prod(np.vstack(arrays_list), axis=0)
         output_SFs[key] = np.copy(evt_wts)
 
-    return output_SFs
+    lep_sysnames = sorted(set([key.replace("Up", "").replace("Down", "") for key in output_SFs.keys() if ("Up" in key) or ("Down" in key)]))
+    evt_weights.add_multivariation(
+        name="Lep",
+        weight=np.copy(output_SFs["central"]),
+        modifierNames=lep_sysnames,
+        weightsUp=[np.copy(output_SFs[f"{name}Up"]) for name in lep_sysnames],
+        weightsDown=[np.copy(output_SFs[f"{name}Down"]) for name in lep_sysnames],
+    )
+
+    return evt_weights

@@ -4,7 +4,7 @@ import time
 tic = time.time()
 
 from coffea import hist, processor
-from coffea.analysis_tools import PackedSelection
+from coffea.analysis_tools import PackedSelection, Weights
 import awkward as ak
 from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
@@ -94,8 +94,6 @@ if "isCondor" in opts_dict.keys():
                 print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
                 try:
                     output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=1200, stderr=STDOUT)
-                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=600, stderr=STDOUT)
-                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
                     cp_success = True
                 except:
                     cp_success = False
@@ -379,7 +377,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ## make event weights
                 # data or MC distinction made internally
         #set_trace()
-        evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
+        evt_weights = {evt_sys: MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_) for evt_sys in self.event_systematics_to_run}
+        lep_evt_weights = {lep : Weights(len(events), storeIndividual=True) for lep in ["Muon", "Electron"]}
 
             ## initialize selections
         selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
@@ -417,40 +416,43 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ### apply lepton SFs to MC (only applicable to tight leptons)
             if "LeptonSF" in corrections.keys():
                 #set_trace()
+                lep_sysnames = sorted(set([name.replace("Lep_", "") for name in self.reweight_systematics_to_run if name.startswith("Lep")]))
                 tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
-                muSFs_dict =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
-                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons")
+                lep_evt_weights["Muon"] =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
+                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons",
+                    sysnames=lep_sysnames, evt_weights=lep_evt_weights["Muon"]
+                )
     
                 tight_electrons = events["Electron"][tight_el_sel][(events["Electron"][tight_el_sel]["TIGHTEL"] == True)]
-                elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
-                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
+                lep_evt_weights["Electron"] = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
+                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons",
+                    sysnames=lep_sysnames, evt_weights=lep_evt_weights["Electron"]
+                )
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
-                evt_weights.add("NNLOqcd",
-                    np.copy(nnlo_wts),
-                )
+                {evt_weights[sys].add("NNLOqcd", np.copy(nnlo_wts)) for sys in evt_weights.keys()}
 
             if "EWK_Rewt" in self.corrections.keys():
                 #set_trace()
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
-                    evt_weights.add("EWunc",
+                    {evt_weights[sys].add("EWunc",
                         np.ones(len(events)),
                         np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
                         shift=True
-                    )
+                    ) for sys in evt_weights.keys()}
 
                         # add Yukawa coupling variation
-                    evt_weights.add("Yukawa",  # really just varying value of Yt
+                    {evt_weights[sys].add("Yukawa",  # really just varying value of Yt
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.0"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
-                    )
+                    ) for sys in evt_weights.keys()}
 
             if isTTSL_:
                 genpsel.select(events, mode="NORMAL")
@@ -482,26 +484,28 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 threeJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
                 fourplusJets_cut = selection[evt_sys].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
 
-                evt_weights = MCWeights.compute_btagSF_weights(
+                #set_trace()
+                btag_sysnames = [] if evt_sys != "nosys" else sorted(set([name.replace("btag_", "") for name in self.reweight_systematics_to_run if name.startswith("btag")]))
+                evt_weights[evt_sys] = MCWeights.compute_btagSF_weights(
                     constructor=self.corrections["BTag_Constructors"][btaggers[0]],
                     jets=events["SelectedJets"], wp=btag_wp, mask_3j=threeJets_cut, mask_4pj=fourplusJets_cut,
-                    sysnames=sorted(set([name.replace("btag_", "") for name in self.reweight_systematics_to_run if name.startswith("btag")])),
-                    evt_weights=evt_weights
+                    sysnames=btag_sysnames,
+                    evt_weights=evt_weights[evt_sys]
                 )
                 #set_trace()
-
-
     
             elif (not isData_) and (corrections["BTagSF"] == False):
-                btag_weights = {"central" : np.ones(len(events))}
+                evt_weights[evt_sys].add_multivariation(
+                    name="btag",
+                    weight=np.ones(len(events)),
+                    modifierNames=[], weightsUp=[], weightsDown=[],
+                )
                 print("BTag SFs not applied to MC")
                 #raise ValueError("BTag SFs not applied to MC")
 
             #set_trace()
             ## fill hists for each region
             for lepton in self.regions[evt_sys].keys():
-                if not isData_:
-                    lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
                 for btagregion in self.regions[evt_sys][lepton].keys():
                     for jmult in self.regions[evt_sys][lepton][btagregion].keys():
                         #set_trace()
@@ -561,21 +565,22 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
                                     #set_trace()
                                     if rewt_sys == "nosys":
-                                        wts = evt_weights.weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights.weight() * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        wts = evt_weights[evt_sys].weight()[cut][valid_perms][MTHigh] if isData_ else (evt_weights[evt_sys].weight() * lep_evt_weights[lepton].weight())[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("btag"):
-                                        wts = (evt_weights.weight(rewt_sys.replace("_up", "Up").replace("_down", "Down")) * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        #set_trace()
+                                        wts = (evt_weights[evt_sys].weight(rewt_sys.replace("_up", "Up").replace("_down", "Down")) * lep_evt_weights[lepton].weight())[cut][valid_perms][MTHigh]
                                     elif rewt_sys.startswith("Lep"):
                                         #set_trace()
-                                        if rewt_sys.split("_")[-1] in lep_SFs.keys():
-                                            wts = (evt_weights.weight() * lep_SFs[rewt_sys.split("_")[-1]])[cut][valid_perms][MTHigh]
+                                        if rewt_sys in lep_evt_weights[lepton].variations:
+                                            wts = (evt_weights[evt_sys].weight() * lep_evt_weights[lepton].weight(rewt_sys))[cut][valid_perms][MTHigh]
                                         else:
                                             print(f"{rewt_sys.split('_')[-1]} not found in {lepton} SF dict. Skipping")
                                             continue
                                     else:
-                                        if rewt_sys not in evt_weights.variations:
+                                        if rewt_sys not in evt_weights[evt_sys].variations:
                                             print(f"{rewt_sys} not option in event weights. Skipping")
                                             continue
-                                        wts = (evt_weights.weight(rewt_sys) * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                        wts = (evt_weights[evt_sys].weight(rewt_sys) * lep_evt_weights[lepton].weight())[cut][valid_perms][MTHigh]
 
                                     sysname = rewt_sys
 
@@ -597,9 +602,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                             perm=best_perms[valid_perms][MTHigh], jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
 
                             else:
-                                if to_debug: print(f"\t\tsysname: {evt_sys}")
+                                if to_debug: print(f"\tsysname: {evt_sys}")
                                 #if to_debug: set_trace()
-                                wts = (evt_weights.weight() * lep_SFs["central"])[cut][valid_perms][MTHigh]
+                                wts = (evt_weights[evt_sys].weight() * lep_evt_weights[lepton].weight())[cut][valid_perms][MTHigh]
 
                                         # fill hists for interference samples
                                 if isInt_:
