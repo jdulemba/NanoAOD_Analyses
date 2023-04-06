@@ -169,7 +169,7 @@
         },
         "btagging": {
             "htt_flavs" : "htt_3PJets_MEDIUM_flavour_efficiencies_Summer20UL_DeepJet.coffea",
-            "btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_Subsources_Summer20UL_DeepJet.coffea",
+            "btagSF_file" : "test_htt_3PJets_MEDIUM_btag_scalefactors_Subsources_Summer20UL_DeepJet.coffea",
             "old_btagSF_file" : "htt_3PJets_MEDIUM_btag_scalefactors_Summer20UL_DeepJet.coffea"
         }
     },
