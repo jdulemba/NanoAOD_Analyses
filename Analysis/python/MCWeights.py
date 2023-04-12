@@ -1,10 +1,8 @@
 from pdb import set_trace
 import numpy as np
 from coffea.analysis_tools import Weights
-from copy import deepcopy
 import awkward as ak
 import Utilities.make_variables as make_vars
-import fnmatch
 
 def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=False):
     weights = Weights(len(events), storeIndividual=True) # store individual variations
@@ -371,139 +369,11 @@ def get_Otto_ewk_weights(correction, events):
     return ewk_wts_dict
     
 
+def get_lepton_sf(constructor, pt, eta, tight_lep_mask, leptype, sysnames, evt_weights):
 
-def get_comb_lepSF(year: str, lepton: str, corrections, pt: np.ndarray, eta: np.ndarray, shift="Central"):
-    if not (shift == "Central" or shift == "Error"):
-        raise ValueError("Shift value %s not defined" % shift)
+    output_SFs = constructor.get_scale_factor(pt, eta, tight_lep_mask, leptype, sysnames)
     #set_trace()
-    sf_dict = corrections[lepton]
-    eta_ranges = sf_dict["eta_ranges"]
-    lepSFs = np.ones(pt.size)
-
-    for idx, eta_range in enumerate(eta_ranges):
-        mask = (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
-        if not mask.any(): continue # no values fall within eta range
-        #set_trace()
-        recoSF = sf_dict["Reco_ID"]["Central"]["eta_bin%i" % idx]
-        trigSF = sf_dict["Trig"]["Central"]["eta_bin%i" % idx]
-        lepSFs[mask] = recoSF(pt[mask])*trigSF(pt[mask])
-
-    return lepSFs
-
-
-def get_lepton_sf(sf_dict, pt, eta, tight_lep_mask, leptype, sysnames, evt_weights):
-    mu_schema = {
-        "central" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Central"],
-            # variations of ID
-        "IDtotUp" : ["ID_Error_totUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
-        "IDtotDown" : ["ID_Error_totDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
-        "IDstatUp" : ["ID_Error_statUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
-        "IDstatDown" : ["ID_Error_statDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
-        "IDsystUp" : ["ID_Error_systUp", "ISO_Central", "TRIG_Central", "RECO_Central"],
-        "IDsystDown" : ["ID_Error_systDown", "ISO_Central", "TRIG_Central", "RECO_Central"],
-            # variations of ISO
-        "ISOtotUp" : ["ID_Central", "ISO_Error_totUp", "TRIG_Central", "RECO_Central"],
-        "ISOtotDown" : ["ID_Central", "ISO_Error_totDown", "TRIG_Central", "RECO_Central"],
-        "ISOstatUp" : ["ID_Central", "ISO_Error_statUp", "TRIG_Central", "RECO_Central"],
-        "ISOstatDown" : ["ID_Central", "ISO_Error_statDown", "TRIG_Central", "RECO_Central"],
-        "ISOsystUp" : ["ID_Central", "ISO_Error_systUp", "TRIG_Central", "RECO_Central"],
-        "ISOsystDown" : ["ID_Central", "ISO_Error_systDown", "TRIG_Central", "RECO_Central"],
-            # variations of TRIG
-        "TRIGtotUp" : ["ID_Central", "ISO_Central", "TRIG_Error_totUp", "RECO_Central"],
-        "TRIGtotDown" : ["ID_Central", "ISO_Central", "TRIG_Error_totDown", "RECO_Central"],
-        "TRIGstatUp" : ["ID_Central", "ISO_Central", "TRIG_Error_statUp", "RECO_Central"],
-        "TRIGstatDown" : ["ID_Central", "ISO_Central", "TRIG_Error_statDown", "RECO_Central"],
-        "TRIGsystUp" : ["ID_Central", "ISO_Central", "TRIG_Error_systUp", "RECO_Central"],
-        "TRIGsystDown" : ["ID_Central", "ISO_Central", "TRIG_Error_systDown", "RECO_Central"],
-            # variations of RECO
-        "RECOtotUp" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Error_totUp"],
-        "RECOtotDown" : ["ID_Central", "ISO_Central", "TRIG_Central", "RECO_Error_totDown"],
-    }
-    el_schema = {
-        "central" : ["ID_Central", "TRIG_Central", "RECO_Central"],
-            # variations of ID
-        "IDtotUp" : ["ID_Error_totUp", "TRIG_Central", "RECO_Central"],
-        "IDtotDown" : ["ID_Error_totDown", "TRIG_Central", "RECO_Central"],
-            # variations of TRIG
-        "TRIGtotUp" : ["ID_Central", "TRIG_Error_totUp", "RECO_Central"],
-        "TRIGtotDown" : ["ID_Central", "TRIG_Error_totDown", "RECO_Central"],
-            # variations of RECO
-        "RECOtotUp" : ["ID_Central", "TRIG_Central", "RECO_Error_totUp"],
-        "RECOtotDown" : ["ID_Central", "TRIG_Central", "RECO_Error_totDown"],
-    }
-    schema_to_use = deepcopy(mu_schema) if leptype == "Muons" else deepcopy(el_schema)
-
-        # filter which sys variations to keep
-    schema_keys = sorted(schema_to_use.keys())
-    for name in schema_keys:
-        if not any([fnmatch.fnmatch(name, sys) for sys in sysnames+["central"]]):
-            del schema_to_use[name]
-    sfs_to_compute = sorted(set(sum([*schema_to_use.values()], []))) # flatten schema dict values
-
-    indiv_SF_sources = {}
-    for sf_type in sf_dict.keys():
-        isAbsEta = sf_dict[sf_type]["isAbsEta"]
-        if "eta_ranges" in sf_dict[sf_type].keys():
-            #if leptype == "Electrons" : set_trace()
-            eta_ranges = sf_dict[sf_type]["eta_ranges"]
-            for sf_var in sf_dict[sf_type].keys():
-                if ((sf_var == "eta_ranges") or (sf_var == "isAbsEta")): continue
-                #print(leptype, sf_type, sf_var)
-                if sf_var == "Central":
-                    if f"{sf_type}_{sf_var}" not in sfs_to_compute: continue
-                    cen_wts = np.ones(len(pt))
-                elif "Error" in sf_var:
-                    if (f"{sf_type}_{sf_var}Up" not in sfs_to_compute) and (f"{sf_type}_{sf_var}Down" not in sfs_to_compute): continue
-                    errup_wts, errdw_wts = np.ones(len(pt)), np.ones(len(pt))
-                else:
-                    set_trace()
-
-                for idx, eta_range in enumerate(eta_ranges):
-                    mask = (np.abs(eta) >= eta_range[0]) & (np.abs(eta) < eta_range[1]) if isAbsEta else (eta >= eta_range[0]) & (eta < eta_range[1]) # find inds that are within given eta range
-                    if not ak.any(mask): continue # no values fall within eta range
-                    if sf_var == "Central":
-                        cen_wts[mask] = sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
-                    else:
-                        errup_wts[mask] = sf_dict[sf_type]["Central"][f"eta_bin{idx}"](pt[mask]) + sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
-                        errdw_wts[mask] = sf_dict[sf_type]["Central"][f"eta_bin{idx}"](pt[mask]) - sf_dict[sf_type][sf_var][f"eta_bin{idx}"](pt[mask])
-                if sf_var == "Central":
-                    indiv_SF_sources[f"{sf_type}_{sf_var}"] = cen_wts
-                else:
-                    indiv_SF_sources[f"{sf_type}_{sf_var}Up"] = errup_wts
-                    indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = errdw_wts
-        else:
-            for sf_var in sf_dict[sf_type].keys():
-                if sf_var == "isAbsEta": continue
-                #print(leptype, sf_type, sf_var)
-                if sf_var == "Central":
-                    if f"{sf_type}_{sf_var}" not in sfs_to_compute: continue
-                    if sf_dict[sf_type][sf_var]._dimension == 1:
-                        indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type][sf_var](eta)
-                    elif sf_dict[sf_type][sf_var]._dimension == 2:
-                        indiv_SF_sources[f"{sf_type}_{sf_var}"] = sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type][sf_var](eta, pt)
-                    else:
-                        raise ValueError("Only 1D or 2D scale factors are supported!")
-                else:
-                    if (f"{sf_type}_{sf_var}Up" not in sfs_to_compute) and (f"{sf_type}_{sf_var}Down" not in sfs_to_compute): continue
-                    if sf_dict[sf_type][sf_var]._dimension == 1:
-                        indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta)) + sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) + sf_dict[sf_type][sf_var](eta)
-                        indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta)) - sf_dict[sf_type][sf_var](np.abs(eta)) if isAbsEta else sf_dict[sf_type]["Central"](eta) - sf_dict[sf_type][sf_var](eta)
-                    elif sf_dict[sf_type][sf_var]._dimension == 2:
-                        indiv_SF_sources[f"{sf_type}_{sf_var}Up"]   = sf_dict[sf_type]["Central"](np.abs(eta), pt) + sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) + sf_dict[sf_type][sf_var](eta, pt)
-                        indiv_SF_sources[f"{sf_type}_{sf_var}Down"] = sf_dict[sf_type]["Central"](np.abs(eta), pt) - sf_dict[sf_type][sf_var](np.abs(eta), pt) if isAbsEta else sf_dict[sf_type]["Central"](eta, pt) - sf_dict[sf_type][sf_var](eta, pt)
-                    else:
-                        raise ValueError("Only 1D or 2D scale factors are supported!")
-
-    output_SFs = {}
-    for key, sf_list in schema_to_use.items():
-            # initialize event weights to 1
-        evt_wts = np.ones(len(tight_lep_mask))
-            # make list of event weights from inidividual sources in sf_list
-        arrays_list = [ak.to_numpy(indiv_SF_sources[sf_source]) for sf_source in sf_list]
-            # set events that pass tight lepton mask equal to product of all event weights from inidividual sources in sf_list
-        evt_wts[tight_lep_mask] = np.prod(np.vstack(arrays_list), axis=0)
-        output_SFs[key] = np.copy(evt_wts)
-
+        
     lep_sysnames = sorted(set([key.replace("Up", "").replace("Down", "") for key in output_SFs.keys() if ("Up" in key) or ("Down" in key)]))
     evt_weights.add_multivariation(
         name="Lep",
