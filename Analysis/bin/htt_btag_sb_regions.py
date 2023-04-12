@@ -418,16 +418,17 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                 #set_trace()
                 lep_sysnames = sorted(set([name.replace("Lep_", "") for name in self.reweight_systematics_to_run if name.startswith("Lep")]))
                 tight_muons = events["Muon"][tight_mu_sel][(events["Muon"][tight_mu_sel]["TIGHTMU"] == True)]
-                lep_evt_weights["Muon"] =  MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Muons"],
-                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel, leptype="Muons",
-                    sysnames=lep_sysnames, evt_weights=lep_evt_weights["Muon"]
-                )
-    
                 tight_electrons = events["Electron"][tight_el_sel][(events["Electron"][tight_el_sel]["TIGHTEL"] == True)]
-                lep_evt_weights["Electron"] = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
-                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons",
-                    sysnames=lep_sysnames, evt_weights=lep_evt_weights["Electron"]
+
+                lep_evt_weights["Electron"] = MCWeights.get_lepton_sf(constructor=self.corrections["LeptonSF"],
+                    pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel,
+                    leptype="Electrons", sysnames=lep_sysnames, evt_weights=lep_evt_weights["Electron"]
                 )
+                lep_evt_weights["Muon"] =  MCWeights.get_lepton_sf(constructor=self.corrections["LeptonSF"],
+                    pt=ak.flatten(tight_muons["pt"]), eta=ak.flatten(tight_muons["eta"]), tight_lep_mask=tight_mu_sel,
+                    leptype="Muons", sysnames=lep_sysnames, evt_weights=lep_evt_weights["Muon"]
+                )
+                #set_trace()
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
