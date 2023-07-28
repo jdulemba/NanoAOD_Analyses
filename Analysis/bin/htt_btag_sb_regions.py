@@ -194,9 +194,14 @@ else: # MC samples
         for rewt_sys_to_run in rewt_systs_to_run.split(","):
             reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
 
+                ## check ME/PS systematics for single top events
+            if isSingleTop_:
+                reweight_systematics_to_run += [name for name in systematics.singletop_rewt_sys_opts.values() if fnmatch.fnmatch(name, rewt_sys_to_run)]
+
         ## check that systematics only related to ttbar events aren't used for non-ttbar events
     if not isTTbar_:
         reweight_systematics_to_run = [sys for sys in reweight_systematics_to_run if sys not in systematics.ttJets_sys.values()]
+
     
 print("Running with event systematics:", *sorted(set(event_systematics_to_run).difference(set(["nosys"]))), sep=", ") if "nosys" in event_systematics_to_run else print("Running with event systematics:", *sorted(event_systematics_to_run), sep=", ")
 print("\t\tand reweight systematics:", *sorted(reweight_systematics_to_run), sep=", ")
@@ -379,8 +384,10 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             ## make event weights
                 # data or MC distinction made internally
         #set_trace()
-        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
-        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
+        mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_, isSingleTop=isSingleTop_)
+        el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_, isSingleTop=isSingleTop_)
+        #mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
+        #el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
         #set_trace()
 
             ## initialize selections

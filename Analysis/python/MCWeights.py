@@ -5,7 +5,7 @@ import Utilities.systematics as systematics
 import awkward as ak
 import Utilities.make_variables as make_vars
 
-def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=False):
+def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=False, isSingleTop=False):
     weights = Weights(len(events), storeIndividual=True) # store individual variations
 
         ## only apply to MC
@@ -121,6 +121,46 @@ def get_event_weights(events, year: str, corrections, isTTbar=False, isSignal=Fa
             weights.add("AH_RENORM_FACTOR_DIFF",
                 np.ones(len(events)),
                 ak.copy(lheweights[:, 5]) if "W9p0" in events.metadata["dataset"] else ak.copy(lheweights[:, 6]), # (muR=2, muF=0.5), RENORM_UP_FACTOR_DW
+                ak.copy(lheweights[:, 2]), # (muR=0.5, muF=2), RENORM_DW_FACTOR_UP
+            )
+
+        ## PS and LHE weights for single top events
+        if isSingleTop:
+            ## PS Weight variations
+            # PSWeight definitions can be found here: https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_X/PhysicsTools/NanoAOD/plugins/GenWeightsTableProducer.cc#L543-L546
+            psweights = events["PSWeight"]
+            weights.add("ST_ISR",
+                np.ones(len(events)),
+                ak.copy(psweights[:, 0]), # (ISR=2, FSR=1)
+                ak.copy(psweights[:, 2]), # (ISR=0.5, FSR=1)
+            )
+            weights.add("ST_FSR",
+                np.ones(len(events)),
+                ak.copy(psweights[:, 1]), # (ISR=1, FSR=2)
+                ak.copy(psweights[:, 3]), # (ISR=1, FSR=0.5)
+            )
+
+            ## LHEScale Weight Variations
+            # LHEScaleWeight definitions can be found here: https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html#LHE
+            lheweights = events["LHEScaleWeight"]
+            weights.add("ST_FACTOR",
+                np.ones(len(events)),
+                ak.copy(lheweights[:, 5]), # (muR=1, muF=2)
+                ak.copy(lheweights[:, 3]), # (muR=1, muF=0.5)
+            )
+            weights.add("ST_RENORM",
+                np.ones(len(events)),
+                ak.copy(lheweights[:, 7]), # (muR=2, muF=1)
+                ak.copy(lheweights[:, 1]), # (muR=0.5, muF=1)
+            )
+            weights.add("ST_RENORM_FACTOR_SAME",
+                np.ones(len(events)),
+                ak.copy(lheweights[:, 8]), # (muR=2, muF=2), RENORM_UP_FACTOR_UP
+                ak.copy(lheweights[:, 0]), # (muR=0.5, muF=0.5), RENORM_DW_FACTOR_DW
+            )
+            weights.add("ST_RENORM_FACTOR_DIFF",
+                np.ones(len(events)),
+                ak.copy(lheweights[:, 6]), # (muR=2, muF=0.5), RENORM_UP_FACTOR_DW
                 ak.copy(lheweights[:, 2]), # (muR=0.5, muF=2), RENORM_DW_FACTOR_UP
             )
 
