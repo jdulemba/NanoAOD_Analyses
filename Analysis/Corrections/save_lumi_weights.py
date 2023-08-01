@@ -156,22 +156,22 @@ for year in years_to_run:
                 #xsec = dataset["xsection"]
                 #set_trace()
                 xsec = SM_xsecs[sample]
-                if sample.startswith("singlet"):
-                    #set_trace()
-                    # add LHE scale weights for single top processes
-                    for lhe_wt_name, idx in LHEScale_wts_dict.items():
-                        print(lhe_wt_name)
-                        lhe_wts = meta_json["sumLHEscaleWeights"][idx]
-                        lhe_wts_scale = xsec/lhe_wts
-                        for lep in ["Electrons", "Muons"]:
-                            lumi_weights[year][lep][f"{sample}_{lhe_wt_name}"] = data_lumi[year][lep]*lhe_wts_scale
+                #if sample.startswith("singlet"):
+                #    #set_trace()
+                #    # add LHE scale weights for single top processes
+                #    for lhe_wt_name, idx in LHEScale_wts_dict.items():
+                #        print(lhe_wt_name)
+                #        lhe_wts = meta_json["sumLHEscaleWeights"][idx]
+                #        lhe_wts_scale = xsec/lhe_wts
+                #        for lep in ["Electrons", "Muons"]:
+                #            lumi_weights[year][lep][f"{sample}_{lhe_wt_name}"] = data_lumi[year][lep]*lhe_wts_scale
 
-                    # add PS weights for single top processes
-                    for ps_wt_name, idx in PS_wts_dict.items():
-                        ps_wts = meta_json["sumPSWeights"][idx]
-                        ps_wts_scale = xsec/ps_wts
-                        for lep in ["Electrons", "Muons"]:
-                            lumi_weights[year][lep][f"{sample}_{ps_wt_name}"] = data_lumi[year][lep]*ps_wts_scale
+                #    # add PS weights for single top processes
+                #    for ps_wt_name, idx in PS_wts_dict.items():
+                #        ps_wts = meta_json["sumPSWeights"][idx]
+                #        ps_wts_scale = xsec/ps_wts
+                #        for lep in ["Electrons", "Muons"]:
+                #            lumi_weights[year][lep][f"{sample}_{ps_wt_name}"] = data_lumi[year][lep]*ps_wts_scale
 
                 if sample in nominal_ttJets:
                         # add LHE scale weights for nominal ttJets
