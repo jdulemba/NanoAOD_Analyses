@@ -114,6 +114,22 @@ ttJets_sys = {
     "erdON" : "erdON",
 }
 
+singletop_rewt_sys_opts = {
+    "ST_ISR_UP" : "ST_ISRUp",
+    "ST_ISR_DW" : "ST_ISRDown",
+    "ST_FSR_UP" : "ST_FSRUp",
+    "ST_FSR_DW" : "ST_FSRDown",
+    "ST_FACTOR_UP" : "ST_FACTORUp",
+    "ST_FACTOR_DW" : "ST_FACTORDown",
+    "ST_RENORM_UP" : "ST_RENORMUp",
+    "ST_RENORM_DW" : "ST_RENORMDown",
+    "ST_RENORM_FACTOR_UP" : "ST_RENORM_FACTOR_SAMEUp",
+    "ST_RENORM_FACTOR_DW" : "ST_RENORM_FACTOR_SAMEDown",
+    "ST_RENORM_UP_FACTOR_DW" : "ST_RENORM_FACTOR_DIFFUp",
+    "ST_RENORM_DW_FACTOR_UP" : "ST_RENORM_FACTOR_DIFFDown",
+}
+
+
 # dict of name_I_want : name_in_code
     # systematics that only change event weights, for nonsignal datasets
 reweight_sys_opts = {
@@ -212,6 +228,8 @@ reweight_sys_opts = {
         "RENORM_DW_FACTOR_UP" : "RENORM_FACTOR_DIFFDown",
         "deltaQCDdeltaEW_UP" : "EWuncUp",
         "deltaQCDdeltaEW_DW" : "EWuncDown",
+        "dQCD_UP" : "dQCDUp",
+        "dQCD_DW" : "dQCDDown",
         #"deltaQCDdeltaEW" : "EWcorrUp",
         "YUKAWA_UP" : "YukawaUp",
         "YUKAWA_DW" : "YukawaDown",
@@ -363,6 +381,8 @@ sys_to_name = {
         #"nosys" : "nosys",
         "EWuncUp" : "deltaQCDdeltaEW_UP",
         "EWuncDown" : "deltaQCDdeltaEW_DW",
+        "dQCDUp"   : "dQCD_DW",
+        "dQCDDown" : "dQCD_UP",
         #"EWcorrUp" : "deltaQCDdeltaEW",
         #"EWcorrUp" : "EW_CORR_UP",
         "YukawaUp" : "YUKAWA_UP",
@@ -756,6 +776,8 @@ combine_template_sys_to_name = {
             # TT systematics
         "EWuncUp"   : "EWK_schemeUp",
         "EWuncDown" : "EWK_schemeDown",
+        "dQCDUp" : "NNLO_dQCDUp",
+        "dQCDDown" : "NNLO_dQCDDown",
         #"EWcorrUp" : "EWK_scheme",
         "YukawaUp"   : "EWK_yukawaUp",
         "YukawaDown" : "EWK_yukawaDown",
@@ -813,6 +835,7 @@ sys_groups = {
     year : {
         #"nosys" : ["nosys"],
         "EWK_scheme" : ["EWuncUp", "EWuncDown"],
+        "NNLO_dQCD"  : ["dQCDUp", "dQCDDown"],
         #"deltaQCDdeltaEW" : ["EWuncUp", "EWuncDown"],
         "EWK_yukawa" : ["YukawaUp", "YukawaDown"],
         "SHAPE" : ["shapeUp", "shapeDown"],

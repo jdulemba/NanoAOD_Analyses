@@ -473,6 +473,17 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
                     )
+                        # add delta QCD variations
+                    mu_evt_weights.add("dQCD",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]),
+                        shift=True
+                    )
+                    el_evt_weights.add("dQCD",
+                        np.ones(len(events)),
+                        np.copy(ewk_wts_dict["DeltaQCD"]),
+                        shift=True
+                    )
 
             if isTTSL_:
                 genpsel.select(events, mode="NORMAL")
