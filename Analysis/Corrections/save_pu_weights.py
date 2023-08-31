@@ -17,6 +17,10 @@ outdir = os.path.join(proj_dir, "Corrections", base_jobid)
 if not os.path.isdir(outdir):
     os.makedirs(outdir)
 
+"""
+file paths are found here https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData#Centrally_produced_ROOT_histogra
+and then copied to inputs/data/{base_jobid}/Pileup
+"""
 pu_files = {
     "2016APV" : {
         "Down" : "PileupHistogram-goldenJSON-13tev-2016-preVFP-66000ub-99bins.root",
@@ -51,17 +55,17 @@ for year in years_to_run:
     fnames = [os.path.join(input_dir, fname) for fname in os.listdir(input_dir) if fname.endswith("TOT.coffea")]
 
         # get nominal distribution
-    data_pu_central = convert_histo_root_file(os.path.join(pu_path, year, pu_files[year]["Cen"]))
+    data_pu_central = convert_histo_root_file(os.path.join(pu_path, pu_files[year]["Cen"]))
     central_hist = dense_lookup(*data_pu_central[("pileup", "dense_lookup")])
     central_hist._values = central_hist._values/sum(central_hist._values) # normalize values
     data_pu_dists[year]["central"] = central_hist
         # get up variation
-    data_pu_up = convert_histo_root_file(os.path.join(pu_path, year, pu_files[year]["Up"]))
+    data_pu_up = convert_histo_root_file(os.path.join(pu_path, pu_files[year]["Up"]))
     up_hist = dense_lookup(*data_pu_up[("pileup", "dense_lookup")])
     up_hist._values = up_hist._values/sum(up_hist._values) # normalize values
     data_pu_dists[year]["up"] = up_hist
         # get down variation
-    data_pu_dw = convert_histo_root_file(os.path.join(pu_path, year, pu_files[year]["Down"]))
+    data_pu_dw = convert_histo_root_file(os.path.join(pu_path, pu_files[year]["Down"]))
     dw_hist = dense_lookup(*data_pu_dw[("pileup", "dense_lookup")])
     dw_hist._values = dw_hist._values/sum(dw_hist._values) # normalize values
     data_pu_dists[year]["down"] = dw_hist
