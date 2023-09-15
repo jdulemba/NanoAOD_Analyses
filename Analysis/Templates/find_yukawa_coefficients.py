@@ -1,9 +1,13 @@
+import time
+tic = time.time()
+
 import uproot
 import argparse
 import numpy as np
 from collections import defaultdict
 import hist
 from pdb import set_trace
+import Utilities.common_features as cfeatures
 
 parser = argparse.ArgumentParser()
 parser.add_argument("inputtemplates")
@@ -74,20 +78,20 @@ with uproot.open(args.inputtemplates) as rfile:
 
 """
 The yields for TTbar distributions at a given yt value are given by 
- TT(yt) = TT_NNLOqcd + TT_ewk(yt) == TT_NNLOqcd + C_ewk + A * (yt) + B * (yt)^2
+ TT(yt) = TT_NNLOqcd + TT_ewk(yt) == TT_NNLOqcd + b_0 + b_1 * (yt) + b_2 * (yt)^2
 where TT_NNLOqcd is the contribution from including NNLOqcd terms via the NNLO QCD correction and 
  TT_ewk(yt) is the contribution from the NLO EWK terms via the EWK corrections
 
- TT = TT_NNLOqcd + Cew + A * (yt_nom) + B * (yt_nom)^2
- TT_YukawaUp = TT_NNLOqcd + Cew + A * (yt_up) + B * (yt_up)^2
- TT_YukawaDown = TT_NNLOqcd + Cew + A * (yt_dw) + B * (yt_dw)^2
+ TT = TT_NNLOqcd + b_0 + b_1 * (yt_nom) + b_2 * (yt_nom)^2
+ TT_YukawaUp = TT_NNLOqcd + b_0 + b_1 * (yt_up) + b_2 * (yt_up)^2
+ TT_YukawaDown = TT_NNLOqcd + b_0 + b_1 * (yt_dw) + b_2 * (yt_dw)^2
 
 
-We can solve for Cew, A, and B through the matrices Ax = B
+We can solve for b_0, b_1, and b_2 through the matrices Ax = B
 
-   | 1.00   yt_nom   yt_nom^2 |   | Cew | = | TT            - TT_NNLOqcd |
-   | 1.00   yt_up    yt_up^2  |   | A    | = | TT_YukawaUp   - TT_NNLOqcd |
-   | 1.00   yt_dw    yt_dw^2  |   | B    | = | TT_YukawaDown - TT_NNLOqcd |
+   | 1.00   yt_nom   yt_nom^2 |   | b_0 | = | TT            - TT_NNLOqcd |
+   | 1.00   yt_up    yt_up^2  |   | b_1 | = | TT_YukawaUp   - TT_NNLOqcd |
+   | 1.00   yt_dw    yt_dw^2  |   | b_2 | = | TT_YukawaDown - TT_NNLOqcd |
 
 which is the following with numpy (per bin of each distribution)
 
@@ -121,14 +125,14 @@ for cat in templates.keys():
 
             # solve for EWK term coefficients
         try:
-            Cew, Aew, Bew = np.array([np.linalg.solve(coeffs_matrix, np.array(bin)) for bin in ewk_dists]).T # transpose to make resulting vector size (nbins x 3)
+            b0, b1, b2 = np.array([np.linalg.solve(coeffs_matrix, np.array(bin)) for bin in ewk_dists]).T # transpose to make resulting vector size (nbins x 3)
         except LinAlgError:
             raise ValueError("Unable to solve for coefficients!")
             #x = np.linalg.lstsq(coeffs_matrix, ewk_dists[bin])[0]
 
         # Check that this reproduces the input templates
         def predict_yukawa(yt):
-            return template_nnloqcd + Cew + Aew * yt + Bew * yt**2
+            return template_nnloqcd + b0 + b1 * yt + b2 * yt**2
 
         assert np.all(np.isclose(predict_yukawa(yt_nom), template_yukawa_nominal)) # nominal
         assert np.all(np.isclose(predict_yukawa(yt_up), template_yukawa_up)) # up
@@ -136,39 +140,39 @@ for cat in templates.keys():
 
         #set_trace()
 
-        Cew_pos = np.where(Cew>=0 , Cew, 0.)
-        Cew_neg = np.where(Cew<=0 , -Cew, 0.)
-        Aew_pos = np.where(Aew>=0 , Aew, 0.)
-        Aew_neg = np.where(Aew<=0 , -Aew, 0.)
-        Bew_pos = np.where(Bew>=0 , Bew, 0.)
-        Bew_neg = np.where(Bew<=0 , -Bew, 0.)
+        b0_pos = np.where(b0>=0 , b0, 0.)
+        b0_neg = np.where(b0<=0 , -b0, 0.)
+        b1_pos = np.where(b1>=0 , b1, 0.)
+        b1_neg = np.where(b1<=0 , -b1, 0.)
+        b2_pos = np.where(b2>=0 , b2, 0.)
+        b2_neg = np.where(b2<=0 , -b2, 0.)
 
         # Add bin edges so that uproot saves it as a TH1D
         bin_edges = np.arange(len(template_yukawa_nominal)+1)
 
         syskey = "" if sys == "nominal" else "_" + sys
 
-        variances = np.zeros_like(Cew)
+        variances = np.zeros_like(b0)
 
-        hist_Cew     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Cew, variances], axis=-1))
-        hist_Cew_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Cew_pos, variances], axis=-1))
-        hist_Cew_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Cew_neg, variances], axis=-1))
-        hist_Aew     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Aew, variances], axis=-1))
-        hist_Aew_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Aew_pos, variances], axis=-1))
-        hist_Aew_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Aew_neg, variances], axis=-1))
-        hist_Bew     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Bew, variances], axis=-1))
-        hist_Bew_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Bew_pos, variances], axis=-1))
-        hist_Bew_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([Bew_neg, variances], axis=-1))
+        hist_b0     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0, variances], axis=-1))
+        hist_b0_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_pos, variances], axis=-1))
+        hist_b0_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_neg, variances], axis=-1))
+        hist_b1     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1, variances], axis=-1))
+        hist_b1_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_pos, variances], axis=-1))
+        hist_b1_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_neg, variances], axis=-1))
+        hist_b2     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2, variances], axis=-1))
+        hist_b2_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_pos, variances], axis=-1))
+        hist_b2_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_neg, variances], axis=-1))
 
-        output_templates[cat + "/EWK_TT_const" + syskey]     = hist_Cew
-        output_templates[cat + "/EWK_TT_const_pos" + syskey] = hist_Cew_pos
-        output_templates[cat + "/EWK_TT_const_neg" + syskey] = hist_Cew_neg
-        output_templates[cat + "/EWK_TT_lin" + syskey]       = hist_Aew
-        output_templates[cat + "/EWK_TT_lin_pos" + syskey]   = hist_Aew_pos
-        output_templates[cat + "/EWK_TT_lin_neg" + syskey]   = hist_Aew_neg
-        output_templates[cat + "/EWK_TT_quad" + syskey]      = hist_Bew
-        output_templates[cat + "/EWK_TT_quad_pos" + syskey]  = hist_Bew_pos
-        output_templates[cat + "/EWK_TT_quad_neg" + syskey]  = hist_Bew_neg
+        output_templates[cat + "/EWK_TT_const" + syskey]     = hist_b0
+        output_templates[cat + "/EWK_TT_const_pos" + syskey] = hist_b0_pos
+        output_templates[cat + "/EWK_TT_const_neg" + syskey] = hist_b0_neg
+        output_templates[cat + "/EWK_TT_lin" + syskey]       = hist_b1
+        output_templates[cat + "/EWK_TT_lin_pos" + syskey]   = hist_b1_pos
+        output_templates[cat + "/EWK_TT_lin_neg" + syskey]   = hist_b1_neg
+        output_templates[cat + "/EWK_TT_quad" + syskey]      = hist_b2
+        output_templates[cat + "/EWK_TT_quad_pos" + syskey]  = hist_b2_pos
+        output_templates[cat + "/EWK_TT_quad_neg" + syskey]  = hist_b2_neg
 
 
 if args.plot:
@@ -210,14 +214,16 @@ if args.plot:
     x_lims = (0, (linearize_binning[1].size - 1)* (linearize_binning[0].size - 1))
 
     styles_dict = {
-        "EWK_TT_const" : {"label" : "$C_{EW}$"},
-        "EWK_TT_lin"   : {"label" : "$A_{EW}$"},
-        "EWK_TT_quad"  : {"label" : "$B_{EW}$"},
+        "EWK_TT_const" : {"label" : "$b_{0}$"},
+        "EWK_TT_lin"   : {"label" : "$b_{1}$"},
+        "EWK_TT_quad"  : {"label" : "$b_{2}$"},
     }
 
     for cat in templates.keys():
         #set_trace()
         channel, year =  cat.split("_")
+        lep = "Electron" if channel.startswith("e") else "Muon"
+        jmult = "3Jets" if "3" in channel else "4PJets"
         pltdir = os.path.join(outdir, cat.replace("_", "/"))
         if not os.path.isdir(pltdir):
             os.makedirs(pltdir)
@@ -232,11 +238,13 @@ if args.plot:
             ax.legend(loc="upper right", title="Coefficient", ncol=1)
             ax.axhline(0, **{"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1})
             ax.autoscale()
+            ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]*1.3)
             ax.set_xlabel("$m_{t\\bar{t}}$ [GeV]")
+            ax.set_xlim(0, output_templates[f"{cat}/{part}"].axes.centers[0].size)
 
                 # add lepton/jet multiplicity label
             ax.text(
-                0.02, 0.92, channel,
+                0.02, 0.92, cfeatures.channel_labels[f"{lep}_{jmult}"],
                 fontsize=rcParams["font.size"], horizontalalignment="left", verticalalignment="bottom", transform=ax.transAxes
             )
                 ## draw vertical lines for distinguishing different ctstar bins
@@ -245,7 +253,7 @@ if args.plot:
 
             for idx, label in enumerate(ctstar_binlabels):
                 ax.annotate(label, xy=(ctstar_bin_locs[idx], 0), xycoords=("data", "axes fraction"),
-                    xytext=(0, 25), textcoords="offset points", va="bottom", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
+                    xytext=(0, 250), textcoords="offset points", va="bottom", ha="center", fontsize=rcParams["font.size"]*0.70, rotation=0)
 
             ax.set_xticks(mtt_bin_inds_to_plot)
             ax.set_xticklabels(mtt_bins_to_plot)
@@ -256,8 +264,16 @@ if args.plot:
             print(f"{figname} written")
             plt.close(fig)
 
-with uproot.recreate(args.outputfile) as rfile:
+
+import time
+named_tuple = time.localtime() # get struct_time
+time_str = time.strftime("%d%m%Y", named_tuple)
+output_rname = "_".join([(args.outputfile).split(".root")[0], time_str])+".root" ## append date onto root filename
+with uproot.recreate(output_rname) as rfile:
     for key, hist in output_templates.items():
         rfile[key] = hist
 
-print(f"\n\nFinished writing {args.outputfile} to disk")
+print(f"\n\nFinished writing {output_rname} to disk")
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
