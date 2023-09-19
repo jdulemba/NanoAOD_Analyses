@@ -48,7 +48,8 @@ def smooth_year_and_lepton_templates(fname, process):
                         if sys not in systematics.combine_template_sys_to_name["2017"].keys(): continue
                         sysname = "_".join(systematics.combine_template_sys_to_name["2017"][sys].split("_")).replace("Down", "").replace("Up", "") # convert to name 
                     if sysname in bkg_smooth_pars.treatment["Combined_Era_Lep"][jmult].keys():
-                        p_end = bkg_smooth_pars.treatment["Combined_Era_Lep"][jmult][sysname]
+                        p_end = bkg_smooth_pars.treatment["Combined_Era_Lep"][jmult][sysname][proc] if isinstance(bkg_smooth_pars.treatment["Combined_Era_Lep"][jmult][sysname], dict) \
+                            else bkg_smooth_pars.treatment["Combined_Era_Lep"][jmult][sysname]
                     else:
                         continue
 
