@@ -186,6 +186,7 @@
             "filename": "NNLO_to_Tune_Ratios_Summer20UL_CombineYears.coffea"
         },
         "ewk": {"file": "EWK_Corrections.coffea", "wt": "Otto"},
+        "LOqcd": {"file": "LO_to_Powheg_Ratios_Summer20UL_CombineYears.coffea"},
         "jetmet": {
             "tot": "JetMETCorrections.coffea",
             "sources": "JetMETCorrections_UncSources.coffea",
