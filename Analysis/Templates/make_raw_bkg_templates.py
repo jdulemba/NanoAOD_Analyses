@@ -30,7 +30,6 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="What year is the ntuple from.")
 parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
-parser.add_argument("--maskData", action="store_false", help="Mask templates for data, default is True.")
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
 args = parser.parse_args()
 
@@ -350,12 +349,6 @@ if __name__ == "__main__":
         lumi_name += "_nomSMTTxsec"
     lumi_corr_dict = load(os.path.join(proj_dir, "Corrections", base_jobid, f"{lumi_name}.coffea"))
   
-    signal_LHEscale_wts_name_dict = {
-        "AH_FACTORDown" : "uF_down",
-        "AH_FACTORUp"   : "uF_up",
-        "AH_RENORMDown" : "uR_down",
-        "AH_RENORMUp"   : "uR_up",
-    }
     tt_LHEscale_wts_name_dict = {
         "FACTORDown" : "uF_down",
         "FACTORUp"   : "uF_up",
