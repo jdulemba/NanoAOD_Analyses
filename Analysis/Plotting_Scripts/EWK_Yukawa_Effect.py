@@ -33,7 +33,8 @@ eos_dir = os.environ["eos_dir"]
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
+parser.add_argument("year", choices=["2018"], help="Specify which year to run over")
+#parser.add_argument("year", choices=["2016APV", "2016", "2017", "2018"], help="Specify which year to run over")
 args = parser.parse_args()
 
 f_ext = "TOT.coffea"
