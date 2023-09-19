@@ -40,7 +40,8 @@ eos_dir = os.environ["eos_dir"]
 
 #set_trace()
 print("Choose version")
-version = "V29"
+version = "V31"
+#version = "V29"
 #version = "V27"
 
 outdir = os.path.join(plot_outdir, jobid, f"Templates_{analyzer}", version, args.year,  "FINAL", (args.process).upper(), args.lepton)
