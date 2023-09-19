@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import time
+tic = time.time()
+
 # matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -23,7 +26,7 @@ import Utilities.common_features as cfeatures
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("uncs", choices=["EW", "NNLO", "All"], help="Which EW uncertainty to calculate.")
+parser.add_argument("uncs", choices=["EW", "LO", "NNLO", "All"], help="Which EW uncertainty to calculate.")
 parser.add_argument("--save_ratios", action="store_true", help="Save NNLO/tune ratios for all years (default is to not save them).")
 args = parser.parse_args()
 
@@ -73,9 +76,9 @@ if (args.uncs == "EW") or (args.uncs == "All"):
     }
         
     #nameTOval = lambda val : str(val).replace('p', '.')
-    nlo_ewk_xsec_base_label = "$\\sigma_{LO\ QCD\ +\ NLO\ EW}$ [pb], $y^{t}/y^{t}_{SM}$ = YT"
-    kfactor_base_label = "$K^{YT}_{NLO\ EW} \\equiv \dfrac{\\sigma_{LO\ QCD\ +\ NLO\ EW}}{\\sigma_{LO\ QCD}}$, $y^{t}/y^{t}_{SM}$ = YT"
-    deltaEW_base_label = "$\\delta^{YT}_{EW} \\equiv \dfrac{\\sigma_{LO\ QCD\ +\ NLO\ EW} - \\sigma_{LO\ QCD}}{\\sigma_{LO\ QCD}}$, $y^{t}/y^{t}_{SM}$ = YT"
+    nlo_ewk_xsec_base_label = "$\\sigma_{LO\ QCD}\ +\ \\sigma_{NLO\ EW}$ [pb], $g_{t}/g_{t}^{SM}$ = YT"
+    kfactor_base_label = "$K^{YT}_{NLO\ EW} \\equiv \dfrac{\\sigma_{LO\ QCD}\ +\ \\sigma_{NLO\ EW}}{\\sigma_{LO\ QCD}}$, $g_{t}/g_{t}^{SM}$ = YT"
+    deltaEW_base_label = "$\\delta^{YT}_{EW} \\equiv \dfrac{\\sigma_{NLO\ EW}}{\\sigma_{LO\ QCD}}$, $g_{t}/g_{t}^{SM}$ = YT"
 
     yt1_nlo_ewk_xsec_base_label = "$\\sigma_{LO\ QCD\ +\ NLO\ EW}$ [pb]"
     yt1_kfactor_base_label = "$K_{NLO\ EW} \\equiv \dfrac{\\sigma_{LO\ QCD\ +\ NLO\ EW}}{\\sigma_{LO\ QCD}}$"
@@ -95,60 +98,6 @@ if (args.uncs == "EW") or (args.uncs == "All"):
     tiled_ctstar_binwidths = np.tile(ctstar_binwidths, (mtt_binwidths.size, 1))
     #set_trace()
 
-        ### plot original LO QCD hist
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(hspace=.07)
-    Plotter.plot_2d_norm(values=np.ma.masked_where(masked_lo_vals <= 0.0, masked_lo_vals), # mask nonzero probabilities for plotting
-        xbins=masked_tot_mtt_binning, ybins=tot_ctstar_binning,
-        xlimits=tot_mtt_lims, ylimits=tot_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
-        ax=ax, **{"cmap_label" : lo_ztitle})
-    ax.text(
-        0.98, 0.90, "$t\\bar{t}$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes, color="w",
-    )
-    hep.label.exp_label(ax=ax, exp="MADGRAPH", rlabel="")
-    figname = os.path.join(plots_dir, base_dir, f"LO_QCD_xsec_mtt_vs_ctstar")
-    fig.savefig(figname)
-    print(f"{figname} written")
-    plt.close(fig)
-    
-        # plot rebinneded LO QCD hist
-    fig_rebinned, ax_rebinned = plt.subplots()
-    fig_rebinned.subplots_adjust(hspace=.07)
-    Plotter.plot_2d_norm(values=np.ma.masked_where(masked_rebinned_lo_vals.T <= 0.0, masked_rebinned_lo_vals.T), # mask nonzero probabilities for plotting
-        xbins=masked_rebinned_mtt_binning, ybins=rebinned_ctstar_binning,
-        xlimits=rebinned_mtt_lims, ylimits=rebinned_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
-        ax=ax_rebinned, **{"cmap_label" : lo_ztitle})
-    ax_rebinned.text(
-        0.98, 0.90, "$t\\bar{t}$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_rebinned.transAxes, color="w",
-    )
-    hep.label.exp_label(ax=ax_rebinned, exp="MADGRAPH", rlabel="")
-    figname_rebinned = os.path.join(plots_dir, base_dir, f"LO_QCD_xsec_mtt_vs_ctstar_rebinned")
-    fig_rebinned.savefig(figname_rebinned)
-    print(f"{figname_rebinned} written")
-    plt.close(fig_rebinned)
-    
-        # plot rebinneded differential LO QCD hist (divide by bin width)
-    fig_rebinned_diff, ax_rebinned_diff = plt.subplots()
-    fig_rebinned_diff.subplots_adjust(hspace=.07)
-            # make values differential
-    diff_norm_vals = np.where(masked_rebinned_lo_vals.T < 1e-10, .0, masked_rebinned_lo_vals.T)
-    diff_norm_vals = diff_norm_vals/(tiled_ctstar_binwidths*tiled_mtt_binwidths)
-    Plotter.plot_2d_norm(values=np.ma.masked_where(diff_norm_vals <= 0.0, diff_norm_vals), # mask nonzero probabilities for plotting
-        xbins=masked_rebinned_mtt_binning, ybins=rebinned_ctstar_binning,
-        xlimits=rebinned_mtt_lims, ylimits=rebinned_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
-        ax=ax_rebinned_diff, **{"cmap_label" : lo_ztitle})
-    ax_rebinned_diff.text(
-        0.98, 0.90, "$t\\bar{t}$\nparton level",
-        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_rebinned_diff.transAxes, color="w",
-    )
-    hep.label.exp_label(ax=ax_rebinned_diff, exp="MADGRAPH", rlabel="")
-    figname_rebinned_diff = os.path.join(plots_dir, base_dir, f"LO_QCD_xsec_mtt_vs_ctstar_rebinned_Differential")
-    fig_rebinned_diff.savefig(figname_rebinned_diff)
-    print(f"{figname_rebinned_diff} written")
-    plt.close(fig_rebinned)
-    
     #set_trace()
     for yt_name, yt_val in yt_vals_dict.items():
             # original NLO EW dists
@@ -199,14 +148,9 @@ if (args.uncs == "EW") or (args.uncs == "All"):
     
         ############### Plot hists ################
                 # histo plotting params
-        if yt_val == 1.0:
-            nlo_ztitle = yt1_nlo_ewk_xsec_base_label
-            kfactor_ztitle = yt1_kfactor_base_label
-            deltaEW_ztitle = yt1_deltaEW_base_label
-        else:
-            nlo_ztitle = nlo_ewk_xsec_base_label.replace("YT", f"{yt_val}")
-            kfactor_ztitle = kfactor_base_label.replace("YT", f"{yt_val}")
-            deltaEW_ztitle = deltaEW_base_label.replace("YT", f"{yt_val}")
+        nlo_ztitle = nlo_ewk_xsec_base_label.replace("YT", f"{yt_val}")
+        kfactor_ztitle = kfactor_base_label.replace("YT", f"{yt_val}")
+        deltaEW_ztitle = deltaEW_base_label.replace("YT", f"{yt_val}")
 
                 # only get mtt values < 2000 GeV
         masked_DeltaEW_vals = DeltaEW_vals[np.where(mtt_binning <= max_mtt_val)[0][0]:np.where(mtt_binning <= max_mtt_val)[0][-1], :]
@@ -348,6 +292,79 @@ if (args.uncs == "EW") or (args.uncs == "All"):
         plt.close(fig_rebinned)
 
 
+if (args.uncs == "LO") or (args.uncs == "All"):
+    outdir = os.path.join(plots_dir, base_dir, "LO")
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+       
+            # only get mtt values < 2000 GeV
+    masked_lo_vals = lo_xsec_vals[np.where(tot_mtt_binning <= max_mtt_val)[0][0]:np.where(tot_mtt_binning <= max_mtt_val)[0][-1], :]
+    masked_tot_mtt_binning = tot_mtt_binning[np.where(tot_mtt_binning <= max_mtt_val)[0]]
+    masked_rebinned_lo_vals = rebinned_lo_xsec_vals[:, np.where(rebinned_mtt_binning <= max_mtt_val)[0][0]:np.where(rebinned_mtt_binning <= max_mtt_val)[0][-1]]
+    masked_rebinned_mtt_binning = rebinned_mtt_binning[np.where(rebinned_mtt_binning <= max_mtt_val)[0]]
+
+            # get binning for differential plots
+    max_mtt_val_bin = np.argwhere(masked_rebinned_mtt_binning == max_mtt_val)[0][0]
+    mtt_binwidths = np.array([masked_rebinned_mtt_binning[i+1] - masked_rebinned_mtt_binning[i] for i in range(max_mtt_val_bin)])
+    ctstar_binwidths = np.array([rebinned_ctstar_binning[i+1] - rebinned_ctstar_binning[i] for i in range(len(rebinned_ctstar_binning) - 1)])
+    tiled_mtt_binwidths = np.tile(mtt_binwidths, (ctstar_binwidths.size, 1)).T
+    tiled_ctstar_binwidths = np.tile(ctstar_binwidths, (mtt_binwidths.size, 1))
+    #set_trace()
+
+        ### plot original LO QCD hist
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(hspace=.07)
+    Plotter.plot_2d_norm(values=np.ma.masked_where(masked_lo_vals <= 0.0, masked_lo_vals), # mask nonzero probabilities for plotting
+        xbins=masked_tot_mtt_binning, ybins=tot_ctstar_binning,
+        xlimits=tot_mtt_lims, ylimits=tot_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
+        ax=ax, **{"cmap_label" : lo_ztitle})
+    ax.text(
+        0.98, 0.90, "$t\\bar{t}$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax.transAxes, color="w",
+    )
+    hep.label.exp_label(ax=ax, exp="MADGRAPH", rlabel="")
+    figname = os.path.join(outdir, f"LO_QCD_xsec_mtt_vs_ctstar")
+    fig.savefig(figname)
+    print(f"{figname} written")
+    plt.close(fig)
+    
+        # plot rebinneded LO QCD hist
+    fig_rebinned, ax_rebinned = plt.subplots()
+    fig_rebinned.subplots_adjust(hspace=.07)
+    Plotter.plot_2d_norm(values=np.ma.masked_where(masked_rebinned_lo_vals.T <= 0.0, masked_rebinned_lo_vals.T), # mask nonzero probabilities for plotting
+        xbins=masked_rebinned_mtt_binning, ybins=rebinned_ctstar_binning,
+        xlimits=rebinned_mtt_lims, ylimits=rebinned_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
+        ax=ax_rebinned, **{"cmap_label" : lo_ztitle})
+    ax_rebinned.text(
+        0.98, 0.90, "$t\\bar{t}$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_rebinned.transAxes, color="w",
+    )
+    hep.label.exp_label(ax=ax_rebinned, exp="MADGRAPH", rlabel="")
+    figname_rebinned = os.path.join(outdir, f"LO_QCD_xsec_mtt_vs_ctstar_rebinned")
+    fig_rebinned.savefig(figname_rebinned)
+    print(f"{figname_rebinned} written")
+    plt.close(fig_rebinned)
+    
+        # plot rebinneded differential LO QCD hist (divide by bin width)
+    fig_rebinned_diff, ax_rebinned_diff = plt.subplots()
+    fig_rebinned_diff.subplots_adjust(hspace=.07)
+            # make values differential
+    diff_norm_vals = np.where(masked_rebinned_lo_vals.T < 1e-10, .0, masked_rebinned_lo_vals.T)
+    diff_norm_vals = diff_norm_vals/(tiled_ctstar_binwidths*tiled_mtt_binwidths)
+    Plotter.plot_2d_norm(values=np.ma.masked_where(diff_norm_vals <= 0.0, diff_norm_vals), # mask nonzero probabilities for plotting
+        xbins=masked_rebinned_mtt_binning, ybins=rebinned_ctstar_binning,
+        xlimits=rebinned_mtt_lims, ylimits=rebinned_ctstar_lims, xlabel=mtt_title, ylabel=ctstar_title,
+        ax=ax_rebinned_diff, **{"cmap_label" : lo_ztitle})
+    ax_rebinned_diff.text(
+        0.98, 0.90, "$t\\bar{t}$\nparton level",
+        fontsize=rcParams["font.size"], horizontalalignment="right", verticalalignment="bottom", transform=ax_rebinned_diff.transAxes, color="w",
+    )
+    hep.label.exp_label(ax=ax_rebinned_diff, exp="MADGRAPH", rlabel="")
+    figname_rebinned_diff = os.path.join(outdir, f"LO_QCD_xsec_mtt_vs_ctstar_rebinned_Differential")
+    fig_rebinned_diff.savefig(figname_rebinned_diff)
+    print(f"{figname_rebinned_diff} written")
+    plt.close(fig_rebinned)
+    
 
 if (args.uncs == "NNLO") or (args.uncs == "All"):
     outdir = os.path.join(plots_dir, base_dir, "NNLO")
@@ -412,3 +429,6 @@ if (args.uncs == "All") or args.save_ratios:
     ratios_fname = os.path.join(proj_dir, "EWK_Uncs", f"EWK_Corrections.coffea")
     save(save_dict, ratios_fname)
     print(f"\n{ratios_fname} written")
+
+toc = time.time()
+print("Total time: %.1f" % (toc - tic))
