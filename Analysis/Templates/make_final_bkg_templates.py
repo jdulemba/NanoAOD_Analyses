@@ -28,7 +28,8 @@ parser.add_argument("--MEopts", nargs="*", action=ParseKwargs, help="Options to 
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
 args = parser.parse_args()
 
-version = "V31"
+version = "V33"
+#version = "V31"
 #version = "V30"
 #version = "V29"
 #version = "V27"
@@ -56,9 +57,9 @@ def final_bkg_templates(hdicts):
                         if "Combined_Era_Lep" in treatment:
                             if "Raw" in treatment:
                                 set_trace()
-                                ratio_hvals = hdicts[treatment][jmult][tname].values()[()]/hdicts[treatment][jmult][f"{proc}_nosys"].values()[()]
+                                ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]/(hdicts[treatment][jmult][f"{proc}_nosys"].copy()).values()[()]
                             else:
-                                ratio_hvals = hdicts[treatment][jmult][f"{tname}{variation}"].values()[()]
+                                ratio_hvals = (hdicts[treatment][jmult][f"{tname}{variation}"].copy()).values()[()]
                             hist_to_use = hdicts["Indiv_Raw"][jmult][lep][f"{proc}_nosys"].copy()
                             sys_vals = hist_to_use.values()[()] * ratio_hvals
                             hist_to_use.values()[()][:] = sys_vals
@@ -66,9 +67,9 @@ def final_bkg_templates(hdicts):
                         if "Combined_Lep" in treatment:
                             set_trace()
                             if "Raw" in treatment:
-                                ratio_hvals = hdicts[treatment][jmult][tname].values()[()]/hdicts[treatment][jmult][f"{proc}_nosys"].values()[()]
+                                ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]/(hdicts[treatment][jmult][f"{proc}_nosys"].copy()).values()[()]
                             else:
-                                ratio_hvals = hdicts[treatment][jmult][tname].values()[()]
+                                ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]
                             hist_to_use = hdicts["Indiv_Raw"][jmult][lep][f"{proc}_nosys"].copy()
                             sys_vals = hist_to_use.values()[()] * ratio_hvals
                             hist_to_use.values()[()][:] = sys_vals
@@ -96,18 +97,23 @@ def final_bkg_templates(hdicts):
 
                     if "Combined_Era_Lep" in treatment:
                         if "Raw" in treatment:
-                            ratio_hvals = hdicts[treatment][jmult][tname].values()[()]/hdicts[treatment][jmult][f"{proc}_nosys"].values()[()]
+                            ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]/(hdicts[treatment][jmult][f"{proc}_nosys"].copy()).values()[()]
                         else:
-                            ratio_hvals = hdicts[treatment][jmult][tname].values()[()]
+                            ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]
+
+                            ## add 0.5 to all ratio values for ME scale variations for single top s channel processes by hand! for some reason the weights are centered around 0.5 instead of 1.
+                        if ((sys.startswith("ST_RENORM")) or (sys.startswith("ST_FACTOR"))) and (proc == "TB"):
+                            ratio_hvals += 0.5
+
                         hist_to_use = hdicts["Indiv_Raw"][jmult][lep][f"{proc}_nosys"].copy()
                         sys_vals = hist_to_use.values()[()] * ratio_hvals
                         hist_to_use.values()[()][:] = sys_vals
 
                     if "Combined_Lep" in treatment:
                         if "Raw" in treatment:
-                            ratio_hvals = hdicts[treatment][jmult][tname].values()[()]/hdicts[treatment][jmult][f"{proc}_nosys"].values()[()]
+                            ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]/(hdicts[treatment][jmult][f"{proc}_nosys"].copy()).values()[()]
                         else:
-                            ratio_hvals = hdicts[treatment][jmult][tname].values()[()]
+                            ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]
                         hist_to_use = hdicts["Indiv_Raw"][jmult][lep][f"{proc}_nosys"].copy()
                         sys_vals = hist_to_use.values()[()] * ratio_hvals
                         hist_to_use.values()[()][:] = sys_vals
@@ -118,7 +124,6 @@ def final_bkg_templates(hdicts):
                         ## save template histos to coffea dict
                     histo_dict[jmult][lep][tname] = [hist_to_use.copy(), treatment]
 
-    #set_trace()
     coffea_out = os.path.join(outdir, f"final_templates_lj_bkg_nomSMTTxsec_{args.year}_{jobid}_{version}.coffea" if args.nomSMTTxsec else f"final_templates_lj_bkg_{args.year}_{jobid}_{version}.coffea")
     save(histo_dict, coffea_out)
     print(f"{coffea_out} written")
@@ -200,8 +205,6 @@ if __name__ == "__main__":
 
     njets_to_run = sorted(["3Jets", "4PJets"])
     leps_to_run = sorted(["Muon", "Electron"])
-    #njets_to_run = sorted(["3Jets"])
-    #leps_to_run = sorted(["Muon"])
 
     if "bkg" in templates_to_run:
         analyzer = "htt_btag_sb_regions"
