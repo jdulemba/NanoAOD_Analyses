@@ -57,6 +57,7 @@ isSingleTop_ = samplename.startswith("singlet")
 isTopSample_ = isTTbar_ or isSingleTop_ # ttbar or single top samples
 isSignal_ = (samplename.startswith("AtoTT") or samplename.startswith("HtoTT"))
 isInt_ = isSignal_ and ("Int" in samplename)
+isToponium_ = samplename.startswith("Toponium")
 isData_ = samplename.startswith("data")
 isSE_Data_ = samplename.startswith("data_SingleElectron")
 isSM_Data_ = samplename.startswith("data_SingleMuon")
@@ -107,23 +108,21 @@ if "isCondor" in opts_dict.keys():
 #set_trace()
 cfg_pars = prettyjson.loads(open(os.path.join(proj_dir, "cfg_files", f"cfg_pars_{jobid}.json")).read())
 ## load corrections for event weights
-pu_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year]
-lepSF_correction = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year]
-jet_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year]
-alpha_corrections = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]["E"]["All_2D"]
-nnlo_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))
-ewk_reweighting = load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"]))
 corrections = {
-    "Pileup" : pu_correction,
+    "Pileup" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["pu"]))[args.year],
     "Prefire" : True,
-    "LeptonSF" : lepSF_correction,
+    "LeptonSF" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["lepton"]))[args.year],
     #"BTagSF" : False,
     "BTagSF" : not isData_,
-    "JetCor" : jet_corrections,
-    "Alpha" : alpha_corrections,
-    "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : nnlo_reweighting[cfg_pars["corrections"]["nnlo"]["var"]]},
-    "EWK_Rewt" : {"Correction" : ewk_reweighting, "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
+    "JetCor" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["jetmet"][cfg_pars["corrections"]["jetmet"]["to_use"]]))[args.year],
+    "Alpha" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["alpha"]))[args.year]["E"]["All_2D"],
+    "NNLO_Rewt" : {"Var" : cfg_pars["corrections"]["nnlo"]["var"], "Correction" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["nnlo"]["filename"]))[cfg_pars["corrections"]["nnlo"]["var"]]},
+    "EWK_Rewt" : {"Correction" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["ewk"]["file"])), "wt" : cfg_pars["corrections"]["ewk"]["wt"]},
+    #"LOqcd_Rewt" : {"Correction" : load(os.path.join(proj_dir, "Corrections", base_jobid, cfg_pars["corrections"]["LOqcd"]["file"]))},
 }
+
+if ("LOqcd_Rewt" in corrections.keys()) and ("NNLO_Rewt" in corrections.keys()):
+    raise ValueError("Only the LO QCD weights should be applied OR the NNLO QCD ones!")
 
     ## parameters for b-tagging
 jet_pars = cfg_pars["Jets"]
@@ -208,7 +207,7 @@ print("\t\tand reweight systematics:", *sorted(reweight_systematics_to_run), sep
 #set_trace()
 
     # sideband regions are determined by dividing deepcsv medium wp values by 3 for each year
-btag_regions = {} if (isSignal_ or isTTShift_) else btag_sidebands.btag_sb_region_boundaries[args.year][btag_wp]
+btag_regions = {} if (isSignal_ or isTTShift_ or isToponium_) else btag_sidebands.btag_sb_region_boundaries[args.year][btag_wp]
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class htt_btag_sb_regions(processor.ProcessorABC):
@@ -386,8 +385,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         #set_trace()
         mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_, isSingleTop=isSingleTop_)
         el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_, isSingleTop=isSingleTop_)
-        #mu_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
-        #el_evt_weights = MCWeights.get_event_weights(events, year=args.year, corrections=self.corrections, isTTbar=isTTbar_, isSignal=isSignal_)
         #set_trace()
 
             ## initialize selections
@@ -436,6 +433,16 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
             # find gen level particles for ttbar system and other ttbar corrections
         if isTTbar_:
+            if "LOqcd_Rewt" in self.corrections.keys():
+                    # find gen level particles for ttbar system
+                lo_wts = MCWeights.get_loqcd_weights(self.corrections["LOqcd_Rewt"], events)
+                mu_evt_weights.add("LOqcd",
+                    np.copy(lo_wts),
+                )
+                el_evt_weights.add("LOqcd",
+                    np.copy(lo_wts),
+                )
+
             if "NNLO_Rewt" in self.corrections.keys():
                     # find gen level particles for ttbar system
                 nnlo_wts = MCWeights.get_nnlo_weights(self.corrections["NNLO_Rewt"], events)
@@ -451,6 +458,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                     ## NLO EW weights
                 if self.corrections["EWK_Rewt"]["wt"] == "Otto":
                     ewk_wts_dict = MCWeights.get_Otto_ewk_weights(self.corrections["EWK_Rewt"]["Correction"], events)
+
+                        # EWK scheme uncs
                     mu_evt_weights.add("EWunc",
                         np.ones(len(events)),
                         np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
@@ -461,6 +470,26 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
                         shift=True
                     )
+                    #mu_evt_weights.add("EWschemeYt0p88",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_0.88"]),
+                    #    shift=True
+                    #)
+                    #el_evt_weights.add("EWschemeYt0p88",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_0.88"]),
+                    #    shift=True
+                    #)
+                    #mu_evt_weights.add("EWschemeYt1p11",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.11"]),
+                    #    shift=True
+                    #)
+                    #el_evt_weights.add("EWschemeYt1p11",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["DeltaQCD"]*ewk_wts_dict["Rebinned_DeltaEW_1.11"]),
+                    #    shift=True
+                    #)
 
                         # add Yukawa coupling variation
                     mu_evt_weights.add("Yukawa",  # really just varying value of Yt
@@ -473,17 +502,41 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                         np.copy(ewk_wts_dict["Rebinned_KFactor_1.11"]),
                         np.copy(ewk_wts_dict["Rebinned_KFactor_0.88"]),
                     )
-                        # add delta QCD variations
+                        # add deltaQCD variations
                     mu_evt_weights.add("dQCD",
                         np.ones(len(events)),
                         np.copy(ewk_wts_dict["DeltaQCD"]),
-                        shift=True
                     )
                     el_evt_weights.add("dQCD",
                         np.ones(len(events)),
                         np.copy(ewk_wts_dict["DeltaQCD"]),
-                        shift=True
                     )
+                    #    # add deltaEW variations
+                    #mu_evt_weights.add("dEWyt1p0",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                    #)
+                    #el_evt_weights.add("dEWyt1p0",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_1.0"]),
+                    #)
+                    #mu_evt_weights.add("dEWyt0p88",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_0.88"]),
+                    #)
+                    #el_evt_weights.add("dEWyt0p88",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_0.88"]),
+                    #)
+                    #mu_evt_weights.add("dEWyt1p11",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_1.11"]),
+                    #)
+                    #el_evt_weights.add("dEWyt1p11",
+                    #    np.ones(len(events)),
+                    #    np.copy(ewk_wts_dict["Rebinned_DeltaEW_1.11"]),
+                    #)
+                    #set_trace()
 
             if isTTSL_:
                 genpsel.select(events, mode="NORMAL")
@@ -610,7 +663,8 @@ class htt_btag_sb_regions(processor.ProcessorABC):
                                             continue
                                         wts = (evt_weights.weight(rewt_sys) * btag_weights["central"] * lep_SFs["central"])[cut][valid_perms][MTHigh]
 
-                                    sysname = rewt_sys
+                                    sysname = "LOqcd" if "LOqcd_Rewt" in self.corrections.keys() else rewt_sys
+                                    #sysname = rewt_sys
                                     #sysname = events.metadata["dataset"].split("_")[-1] if isTTShift_ else rewt_sys
 
                                         # fill hists for interference samples
