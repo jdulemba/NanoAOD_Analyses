@@ -118,8 +118,8 @@ for idx, nplot in enumerate(nplots):
     hep.cms.label(ax=ax1, data=True, label="Preliminary", rlabel="")
     
     ## plot pulls and post-fit uncertainty
-    ax2.scatter(x=pulls[idx_min:idx_max][::-1], y=np.arange(0.3, len(pulls[idx_min:idx_max]), step=1.), s=100, color="b", marker="x", label="Pull")
-    ax2.errorbar(x=pf_mean[idx_min:idx_max][::-1], y=np.arange(0.5, len(pf_mean[idx_min:idx_max]), step=1.), xerr=[np.abs(pf_unc_dw)[idx_min:idx_max][::-1], np.abs(pf_unc_up)[idx_min:idx_max][::-1]],
+    ax2.scatter(x=pulls[idx_min:idx_max][::-1], y=np.arange(0.4, len(pulls[idx_min:idx_max]), step=1.), s=100, color="b", marker="x", label="Pull")
+    ax2.errorbar(x=pf_mean[idx_min:idx_max][::-1], y=np.arange(0.6, len(pf_mean[idx_min:idx_max]), step=1.), xerr=[np.abs(pf_unc_dw)[idx_min:idx_max][::-1], np.abs(pf_unc_up)[idx_min:idx_max][::-1]],
         fmt="ok", capsize=7, ecolor="k", label="Post-fit $\\hat{\\theta}$ and $\\hat{\\sigma}$"
     )
         ## add axis labels
