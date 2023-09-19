@@ -58,7 +58,7 @@ if args.process == "bkg":
     comb_lep_hdict = load(os.path.join(input_dir, f"raw_combined_lep_templates_lj_bkg_{args.year}_{jobid}.coffea"))
     comb_era_lep_hdict = load(os.path.join(eos_dir, "results", jobid, f"Templates_{analyzer}", f"raw_combined_year_and_lepton_templates_lj_bkg_{jobid}.coffea"))
 
-    era_lep_systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV"]
+    era_lep_systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "ST_FACTOR"]
     lep_systypes = [
         "JES_Absolute", f"JES_Absolute_{args.year}", "JES_BBEC1", f"JES_BBEC1_{args.year}",
         "JES_RelativeBal", f"JES_RelativeSample_{args.year}", "JES_FlavorQCD",
