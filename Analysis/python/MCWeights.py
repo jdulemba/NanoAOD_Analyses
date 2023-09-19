@@ -190,6 +190,41 @@ def get_TopPt_weights(events):
     return SFtot
 
 
+def get_loqcd_weights(correction, events):
+    dist = correction["Correction"]["Rebinned_LO_to_Powheg_KFactor"]
+
+    if "SL" in events.fields:
+        wts = np.ones(len(events))
+
+            # SL events
+        sl_evts = ak.num(events["SL"]) > 0
+        sl_top_ctstar, sl_tbar_ctstar = make_vars.ctstar(events["SL"][sl_evts]["Top"], events["SL"][sl_evts]["Tbar"])
+        sl_top_ctstar = ak.flatten(sl_top_ctstar, axis=None)
+        wts[sl_evts] = dist(ak.flatten(events["SL"][sl_evts]["TTbar"].mass, axis=None), sl_top_ctstar)
+
+            # DL events
+        dl_evts = ak.num(events["DL"]) > 0
+        dl_top_ctstar, dl_tbar_ctstar = make_vars.ctstar(events["DL"][dl_evts]["Top"], events["DL"][dl_evts]["Tbar"])
+        dl_top_ctstar = ak.flatten(dl_top_ctstar, axis=None)
+        wts[dl_evts] = dist(ak.flatten(events["DL"][dl_evts]["TTbar"].mass, axis=None), dl_top_ctstar)
+
+            # Had events
+        had_evts = ak.num(events["Had"]) > 0
+        had_top_ctstar, had_tbar_ctstar = make_vars.ctstar(events["Had"][had_evts]["Top"], events["Had"][had_evts]["Tbar"])
+        had_top_ctstar = ak.flatten(had_top_ctstar, axis=None)
+        wts[had_evts] = dist(ak.flatten(events["Had"][had_evts]["TTbar"].mass, axis=None), had_top_ctstar)
+    else:
+        genparts = events["GenPart"]
+        gen_tops = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == 6)]
+        gen_tbars = genparts[(genparts.hasFlags(["isLastCopy"])) & (genparts.pdgId == -6)]
+        top_ctstar, tbar_ctstar = make_vars.ctstar(gen_tops, gen_tbars)
+        mtt = (gen_tops+gen_tbars).mass
+        wts = dist(ak.flatten(mtt, axis=None), ak.flatten(top_ctstar, axis=None))
+
+    return wts
+
+    
+
 def get_nnlo_weights(correction, events):
     #set_trace()
     var = correction["Var"]
