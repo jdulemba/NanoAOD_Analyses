@@ -86,5 +86,7 @@
     "QCD_EM_80to120": 366500.0,
     "QCD_EM_120to170": 66490.0,
     "QCD_EM_170to300": 16480.0,
-    "QCD_EM_300toInf": 1099.0
+    "QCD_EM_300toInf": 1099.0,
+    "ToponiumSL" : 2.83923,
+    "ToponiumDiLep" : 0.7073
 }
