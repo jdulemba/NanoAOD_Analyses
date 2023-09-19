@@ -32,7 +32,6 @@ def symm_year_and_lepton_templates(fname, process):
 
             if not procs_sys: continue
 
-            #set_trace()
             for proc in procs_sys:
                     # skip this process/systematic if any of the variations or nominal name aren't found
                 if (up_sysname is not None) & (dw_sysname is not None):
@@ -325,7 +324,7 @@ if __name__ == "__main__":
 
     for combination in combinations_to_run:
         if combination == "era_lepton":
-            systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON"]
+            systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON", "dQCD", "ST_ISR", "ST_FSR", "ST_RENORM", "ST_FACTOR"]
 
             #set_trace()
             input_dir = os.path.join(eos_dir, "results", jobid, f"Templates_{analyzer}")
