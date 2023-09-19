@@ -83,6 +83,14 @@ for year in years_to_run:
                 for lep in ["Electrons", "Muons"]:
                     lumi_weights[year][lep][sample] = data_lumi[year][lep]/(sumGenWeights/xsec)
 
+                if "Toponium" in sample:
+                    #set_trace()
+                    sumGenWt_sysnames = [key for key in meta_json.keys() if "sumGenWeights_" in key]
+                    for sGenWt_sysname in sumGenWt_sysnames:
+                        sys = sGenWt_sysname.split("_")[-1]
+                        sumGenWts = meta_json[sGenWt_sysname]
+                        lumi_weights[year]["Muons"][f"{sample}_{sys}"], lumi_weights[year]["Electrons"][f"{sample}_{sys}"] = data_lumi[year]["Muons"]/(sumGenWts/xsec), data_lumi[year]["Electrons"]/(sumGenWts/xsec)
+
             else:
                 print(f"Dataset {sample} not present, will be skipped")
             continue
