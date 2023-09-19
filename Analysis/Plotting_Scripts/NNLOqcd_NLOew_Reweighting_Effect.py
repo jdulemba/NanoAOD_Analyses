@@ -49,9 +49,9 @@ if not os.path.isdir(outdir):
     
 rewt_style_dict = {
     "nosys" : {"label" : "Powheg", "color" : "k", "linestyle" : "-"},
-    "NLOewYt1" : {"label" : "Powheg x NLO EW ($y_t$=1)", "color" : "#e41a1c", "linestyle" : "-"}, ## red
+    "NLOewYt1" : {"label" : "Powheg x NLO EW ($Y_t$=1)", "color" : "#e41a1c", "linestyle" : "-"}, ## red
     "NNLOqcd" : {"label" : "Powheg x NNLO QCD", "color" : "#377eb8", "linestyle" : "-"}, ## blue
-    "NNLOqcd_NLOewYt1" : {"label" : "Powheg x NNLO QCD x NLO EW ($y_t$=1)", "color" : "#4daf4a", "linestyle" : "-"}, ## green
+    "NNLOqcd_NLOewYt1" : {"label" : "Powheg x NNLO QCD x NLO EW ($Y_t$=1)", "color" : "#4daf4a", "linestyle" : "-"}, ## green
 }
 #set_trace()
 if args.comp == "NNLOqcd":
