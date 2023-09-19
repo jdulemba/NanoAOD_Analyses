@@ -45,7 +45,6 @@ if not os.path.isdir(outdir):
 isSample = lambda x: ("runs_to_lumis" not in x) and ("PU_nTrueInt" not in x) and ("PU_nPU" not in x)
 samples = sorted([key for key in hdict.keys() if isSample(key)])
 
-
 if (args.data_mc == "MC") or (args.data_mc == "All"):
     # get hists
     PU_nTrueInt_histo = hdict["PU_nTrueInt"]
@@ -89,6 +88,35 @@ for sample in samples:
     else: 
         if not ((args.data_mc == "MC") or (args.data_mc == "All")): continue
         print(f"\t{sample} is being analyzed")
+
+        if "Toponium" in sample:
+                ## plot histograms for mass window variations
+            variations = [key[0] for key in PU_nTrueInt_histo.values().keys() if f"{sample}_" in key[0]] ## not including all events, which will be plotted below
+                    ## pileup nTrueInt distribution
+            for var in variations:
+                pu_nTrueInt_histo = PU_nTrueInt_histo[var].integrate("dataset")
+                pu_nTrueInt_bins = pu_nTrueInt_histo.axis("pu_nTrueInt").edges()
+                fig_nTrueInt, ax_nTrueInt = plt.subplots()
+                plot_1D(pu_nTrueInt_histo.values()[()], pu_nTrueInt_bins, xlimits=(0., 100.), xlabel=("$\mathsf{%s}$" % pu_nTrueInt_histo.axes()[-1].label), ax=ax_nTrueInt, label=var)
+                ax_nTrueInt.legend(loc="upper right")
+                hep.cms.label(ax=ax_nTrueInt, rlabel=args.year)
+                figname_nTrueInt = os.path.join(outdir, f"{var}_PU_nTrueInt")
+                fig_nTrueInt.savefig(figname_nTrueInt)
+                print(f"{figname_nTrueInt} written")
+                plt.close(fig_nTrueInt)
+
+                        ## pileup nPU distribution
+                pu_nPU_histo = PU_nPU_histo[var].integrate("dataset")
+                pu_nPU_bins = pu_nPU_histo.axis("pu_nPU").edges()
+                fig_nPU, ax_nPU = plt.subplots()
+                plot_1D(pu_nPU_histo.values()[()], pu_nPU_bins, xlimits=(0., 100.), xlabel=("$\mathsf{%s}$" % pu_nPU_histo.axes()[-1].label), ax=ax_nPU, label=var)
+                ax_nPU.legend(loc="upper right")
+                hep.cms.label(ax=ax_nPU, rlabel=args.year)
+                figname_nPU = os.path.join(outdir, f"{var}_PU_nPU")
+                fig_nPU.savefig(figname_nPU)
+                print(f"{figname_nPU} written")
+                plt.close(fig_nPU)
+
 
             ## write meta info to json
         meta_dict = {}

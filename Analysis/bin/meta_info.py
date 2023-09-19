@@ -66,6 +66,22 @@ if "isCondor" in opts_dict.keys():
                 raise ValueError(f"{cp_rfile} not found")
             fileset[samplename][idx] = f"/tmp/{rfile.split('/')[-1]}"
 
+if samplename.startswith("Toponium"):
+        ## cuts specific to toponium mass window
+    nominal_eta_mass = 343
+    def eta_mass_min(eta_mass):
+        return eta_mass - 6
+    def eta_mass_max(eta_mass):
+        return eta_mass + 6
+    
+    #set_trace()
+    toponium_variations = {
+        "nosys"             : [eta_mass_min(nominal_eta_mass),     eta_mass_max(nominal_eta_mass)    ],# f"{decay.split('_')[0]}_meta343_mtop172p5"],
+        "BindingEnergyUp"   : [eta_mass_min(nominal_eta_mass + 1), eta_mass_max(nominal_eta_mass + 1)],# f"{decay.split('_')[0]}_meta344_mtop172p5"],
+        "BindingEnergyDown" : [eta_mass_min(nominal_eta_mass - 1), eta_mass_max(nominal_eta_mass - 1)],# f"{decay.split('_')[0]}_meta342_mtop172p5"],
+        "TopMassUp"         : [eta_mass_min(nominal_eta_mass + 2), eta_mass_max(nominal_eta_mass + 2)],# f"{decay.split('_')[0]}_meta345_mtop173p5"],
+        "TopMassDown"       : [eta_mass_min(nominal_eta_mass - 2), eta_mass_max(nominal_eta_mass - 2)],# f"{decay.split('_')[0]}_meta341_mtop171p5"],
+    }
 
 # Look at ProcessorABC documentation to see the expected methods and what they are supposed to do
 class Meta_Analyzer(processor.ProcessorABC):
@@ -81,7 +97,6 @@ class Meta_Analyzer(processor.ProcessorABC):
         histo_dict["PU_nTrueInt"] = hist.Hist("PU_nTrueInt", self.dataset_axis, self.pu_nTrueInt_axis)
         histo_dict["PU_nPU"] = hist.Hist("PU_nPU", self.dataset_axis, self.pu_nPU_axis)
 
-        #set_trace()        
             ## construct dictionary of dictionaries to hold meta info for each sample
         for sample in fileset.keys():
             if "Int" in sample:
@@ -121,7 +136,6 @@ class Meta_Analyzer(processor.ProcessorABC):
                 output[f"{self.sample_name}_runs_to_lumis"].add(list(lumi_map.items()))
 
         else:
-            #set_trace()
             genWeights = events["genWeight"]
 
                 # split interference into pos/neg weighted events
@@ -166,6 +180,38 @@ class Meta_Analyzer(processor.ProcessorABC):
                     output[f"{self.sample_name}_neg"]["sumLHEscaleWeights"] += ak.to_numpy(sumLHEscaleWeights_neg)
 
             else:
+                if "Toponium" in self.sample_name: ## compute meta info for toponium events where the mass window cuts are different
+                        ## make LHE mass cute for eta_t at +/- 6 GeV
+                    lhepart = events["LHEPart"][events["LHEPart"]["status"] == 1]
+                    mWWbb = (lhepart[:,0] + lhepart[:,1] + lhepart[:,2] + lhepart[:,3] + lhepart[:,4] + lhepart[:,5]).mass
+                    for sys in toponium_variations.keys():
+                        mass_cut = (mWWbb >= toponium_variations[sys][0]) & (mWWbb <= toponium_variations[sys][1])
+
+                        output[self.sample_name][f"nEvents_{sys}"] += ak.size(event_nums[mass_cut])
+                        output[self.sample_name][f"sumGenWeights_{sys}"] += sum(genWeights[mass_cut])
+                        output[self.sample_name][f"sumSquaredGenWeights_{sys}"] += sum(np.square(genWeights[mass_cut]))
+
+                        output["PU_nTrueInt"].fill(dataset=f"{self.sample_name}_{sys}", pu_nTrueInt=events["Pileup"]["nTrueInt"][mass_cut], weight=genWeights[mass_cut])
+                        output["PU_nPU"].fill(dataset=f"{self.sample_name}_{sys}", pu_nPU=events["Pileup"]["nPU"][mass_cut], weight=genWeights[mass_cut])
+
+                        if "LHEPdfWeight" in events.fields:
+                            LHEpdfWeights = events["LHEPdfWeight"]
+                                ## get sum of each pdf weight over all events
+                            sumLHEpdfWeights = ak.sum((LHEpdfWeights*genWeights)[mass_cut], axis=0)
+                            output[self.sample_name][f"sumLHEpdfWeights_{sys}"] += ak.to_numpy(sumLHEpdfWeights)
+
+                        if "PSWeight" in events.fields:
+                            psweights = events["PSWeight"]
+                                ## get sum of each weight over all events
+                            sumPSweights = ak.sum((psweights*genWeights)[mass_cut], axis=0)
+                            output[self.sample_name][f"sumPSWeights_{sys}"] += ak.to_numpy(sumPSweights)
+
+                        if "LHEScaleWeight" in events.fields:
+                            lheweights = events["LHEScaleWeight"]
+                                ## get sum of each weight over all events
+                            sumLHEscaleWeights = ak.sum((lheweights*genWeights)[mass_cut], axis=0)
+                            output[self.sample_name][f"sumLHEscaleWeights_{sys}"] += ak.to_numpy(sumLHEscaleWeights)
+
                 output[self.sample_name]["nEvents"] += ak.size(event_nums)
                 output[self.sample_name]["sumGenWeights"] += sum(genWeights)
                 output[self.sample_name]["sumSquaredGenWeights"] += sum(np.square(genWeights))
