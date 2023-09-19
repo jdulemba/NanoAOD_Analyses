@@ -8,7 +8,6 @@ plt.switch_backend("agg")
 from matplotlib import rcParams
 rcParams["font.size"] = 20
 rcParams["savefig.format"] = "pdf"
-#rcParams["savefig.format"] = "png"
 rcParams["savefig.bbox"] = "tight"
 
 import Utilities.Plotter as Plotter
