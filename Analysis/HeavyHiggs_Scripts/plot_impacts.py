@@ -23,7 +23,7 @@ parser = ArgumentParser()
 parser.add_argument("parity", choices=["A", "H"], help="Choose which parity to make plots for")
 parser.add_argument("mass", choices=["400", "800"], help="Choose which mass to make plots for")
 parser.add_argument("width", choices=["5.0"], help="Choose which width to make plots for")
-parser.add_argument("--nvals", default=20, help="Choose the number of NPs to plot per figure")
+parser.add_argument("--nvals", default=30, help="Choose the number of NPs to plot per figure")
 parser.add_argument("--unblind", action="store_true", help="Make plots with best fit coupling value")
 args = parser.parse_args()
 
@@ -70,7 +70,7 @@ info_list = [[name, hup.values()[idx], hdown.values()[idx], hunccentral.values()
 sorted_info_list = sorted(info_list, key = lambda x:  max(abs(x[1]), abs(x[2])), reverse = True)
     # get impact names, up values, and down values
 impact_labels, impact_up, impact_dw = [val[0] for val in sorted_info_list], np.array([val[1] for val in sorted_info_list]), np.array([val[2] for val in sorted_info_list])
-impact_labels = [label.replace("UNCORR", "").replace("_CMS_", "_").replace("CMS_", "").replace("_13TeV_", "_").replace("13TeV_", "").replace("tmass_TT", "tmass_AHTT") for label in impact_labels]
+impact_labels = [label.replace("UNCORR", "").replace("_CMS_", "_").replace("CMS_", "").replace("_13TeV_", "_").replace("13TeV_", "").replace("_13TeV", "").replace("tmass_TT", "tmass_AHTT") for label in impact_labels]
 impact_labels = ["%s    (%i)" % (label, idx+1) for idx, label in enumerate(impact_labels)]
 
     ## calculate pulls
