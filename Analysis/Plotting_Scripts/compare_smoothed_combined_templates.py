@@ -92,7 +92,7 @@ if args.process == "bkg":
             systypes = ["FACTOR", "RENORM", "MTOP3GEV", "MTOP1GEV"]
             #systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON"]
         else:
-            systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON"]
+            systypes = ["EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE", "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON", "dQCD", "ST_ISR", "ST_FSR", "ST_RENORM", "ST_FACTOR"]
         year_use = "2017"
 
     if args.combination == "indiv":
@@ -322,6 +322,8 @@ else:
                         # there is at least one actual value
                     if np.any(~np.isnan(up_histo.values()[()])):
                         up_masked_vals, up_masked_bins = Plotter.get_ratio_arrays(num_vals=up_histo.values()[()], denom_vals=nominal.values()[()] if nominal else np.ones(up_histo.values()[()].size), input_bins=up_histo.dense_axes()[0].edges())
+                        if ((sys == "ST_RENORM") or (sys == "ST_FACTOR")) and (proc == "TB"):
+                            up_masked_vals += 0.5
                         ax.fill_between(up_masked_bins, up_masked_vals, y2=1., facecolor=up_style["color"], label=up_style["label"], step="post", alpha=0.5) if use_fill_between\
                             else ax.step(up_masked_bins, up_masked_vals, where="post", **up_style)
     
@@ -329,6 +331,8 @@ else:
                         # there is at least one actual value
                     if np.any(~np.isnan(dw_histo.values()[()])):
                         dw_masked_vals, dw_masked_bins = Plotter.get_ratio_arrays(num_vals=dw_histo.values()[()], denom_vals=nominal.values()[()] if nominal else np.ones(dw_histo.values()[()].size), input_bins=dw_histo.dense_axes()[0].edges())
+                        if ((sys == "ST_RENORM") or (sys == "ST_FACTOR")) and (proc == "TB"):
+                            dw_masked_vals += 0.5
                         ax.fill_between(dw_masked_bins, dw_masked_vals, y2=1., facecolor=dw_style["color"], label=dw_style["label"], step="post", alpha=0.5) if use_fill_between \
                             else ax.step(dw_masked_bins, dw_masked_vals, where="post", **dw_style)
     
@@ -341,7 +345,7 @@ else:
                 ax.set_xlim(x_lims)
                 ax.set_xlabel("$m_{t\\bar{t}}$ [GeV]")
                 ax.set_ylabel("Ratio to Nominal")
-                ax.set_ylim(max(ax.get_ylim()[0], 0.65), min(ax.get_ylim()[1], 1.25))
+                ax.set_ylim(max(ax.get_ylim()[0], 0.65), ax.get_ylim()[1]) if (combine_sysname == "NNLO_dQCD") else ax.set_ylim(max(ax.get_ylim()[0], 0.65), min(ax.get_ylim()[1], 1.25))
                 
                     # add lepton/jet multiplicity label
                 ax.text(
