@@ -22,11 +22,15 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("years_to_run", type=str, help="Choose which year to run, multiple options can be input as ':' separated strings.")
 parser.add_argument("templates_to_run", type=str, help="Choose which type of templates to run, multiple options can be input as ':' separated strings.")
-parser.add_argument("--maskData", action="store_false", help="Mask templates for data, default is True.")
+parser.add_argument("--unblind", action="store_true", help="Include unblinded data in templates, default is False.")
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
 args = parser.parse_args()
 
-version = "V31"
+output_version = "V33"
+input_version = "V33"
+#output_version = "V32"
+#input_version = "V31"
+#version = "V31"
 #version = "V30"
 #version = "V29"
 #version = "V27"
@@ -40,22 +44,21 @@ def final_bkg_templates(years_to_run):
     #set_trace()
     if len(years_to_run) == 4:
         outdir = global_outdir
-        rname = os.path.join(outdir, f"final_templates_lj_bkg_nomSMTTxsec_{jobid}_{version}.root" if args.nomSMTTxsec else f"final_templates_lj_bkg_{jobid}_{version}.root")
+        rname = os.path.join(outdir, f"final_templates_lj_bkg_nomSMTTxsec_{jobid}_{output_version}.root" if args.nomSMTTxsec else f"final_templates_lj_bkg_{jobid}_{output_version}.root")
         upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
     for year in years_to_run:
         if len(years_to_run) < 4:
             outdir = os.path.join(eos_dir, "results", f"{year}_{jobid}", f"Templates_{analyzer}", "FINAL")
-            rname = os.path.join(outdir, f"final_templates_lj_bkg_nomSMTTxsec_{year}_{jobid}_{version}.root" if args.nomSMTTxsec else f"final_templates_lj_bkg_{year}_{jobid}_{version}.root")
+            rname = os.path.join(outdir, f"final_templates_lj_bkg_nomSMTTxsec_{year}_{jobid}_{output_version}.root" if args.nomSMTTxsec else f"final_templates_lj_bkg_{year}_{jobid}_{output_version}.root")
             upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
-        base_bkg_template_name = f"final_templates_lj_bkg_nomSMTTxsec_{year}_{jobid}_{version}.coffea" if args.nomSMTTxsec else f"final_templates_lj_bkg_{year}_{jobid}_{version}.coffea"
+        base_bkg_template_name = f"final_templates_lj_bkg_nomSMTTxsec_{year}_{jobid}_{input_version}.coffea" if args.nomSMTTxsec else f"final_templates_lj_bkg_{year}_{jobid}_{input_version}.coffea"
         input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", f"Templates_{analyzer}", "FINAL")
         bkg_fname = os.path.join(input_dir, base_bkg_template_name)
         if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
         hdict = load(bkg_fname)
 
-        #set_trace()
         for jmult in hdict.keys():
             for lep, histo in hdict[jmult].items():
                 orig_lepdir = "muNJETS" if lep == "Muon" else "eNJETS"
@@ -68,7 +71,6 @@ def final_bkg_templates(years_to_run):
 
                 upfout.mkdir(dirname)
 
-                #set_trace()
                 systypes = ["nosys"] + sorted(systematics.final_systypes[year])
                 for sys in systypes:
                     if (jobid == "Summer20UL_POG_lepSFs") or (jobid == "Summer20UL_DeepJet"):
@@ -91,6 +93,9 @@ def final_bkg_templates(years_to_run):
                         procs = sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(histo.keys()) if f"_{up_sysname}" in key])) if not dw_sysname \
                             else sorted(set([key.split(f"_{up_sysname}")[0] for key in sorted(histo.keys()) if f"_{up_sysname}" in key] + [key.split(f"_{dw_sysname}")[0] for key in sorted(histo.keys()) if f"_{dw_sysname}" in key]))
 
+                        ## make sure only 1 process is actually included in procs
+                    procs = [proc for proc in procs if (len(proc.split("_")) == 1) or (proc == "data_obs")]
+
                     if not procs: continue
 
                     for proc in procs:
@@ -100,7 +105,7 @@ def final_bkg_templates(years_to_run):
                             if np.any(np.isnan(template.values()[()])):
                                 print(f"\tSome bins contain nan values!")
                                 set_trace()
-                            if proc == "data_obs": template.clear()
+                            if (proc == "data_obs") and (not args.unblind): template.clear()
                             upfout[dirname][proc] = template.to_hist()
 
                         else:
@@ -114,12 +119,9 @@ def final_bkg_templates(years_to_run):
                             if "LEP" in dw_outhname: dw_outhname = dw_outhname.replace("LEP", lep[0].lower())
                             if "_tot" in dw_outhname: dw_outhname = dw_outhname.replace("_tot", "")
                             if (sys == "SHAPE") or (sys == "EWQCD_TTsub"):
-                            #if sys == "SHAPE":
-                                #set_trace()
                                 up_outhname = up_outhname.replace("CHAN", lepdir)
                                 dw_outhname = dw_outhname.replace("CHAN", lepdir)
 
-                            #set_trace()
                                 # replace '2016APV' with '2016pre' and '2016' with '2016post'
                             if (year == "2016APV") and ("2016APV" in up_outhname):
                                 #set_trace()
@@ -128,6 +130,11 @@ def final_bkg_templates(years_to_run):
                             if (year == "2016") and ("2016" in up_outhname):
                                 up_outhname = up_outhname.replace("2016", "2016post")
                                 dw_outhname = dw_outhname.replace("2016", "2016post")
+
+                                # replace 'ST' in single top ME/PS uncs with individual proc
+                            if sys.startswith("ST_"):
+                                up_outhname = up_outhname.replace("ST", proc)
+                                dw_outhname = dw_outhname.replace("ST", proc)
 
                             if np.any(np.isnan(up_template.values()[()])):
                                 print(f"\tSome bins in up_template contain nan values!")
@@ -151,7 +158,7 @@ def final_pdf_templates(years_to_run):
     #set_trace()
     if len(years_to_run) == 4:
         outdir = global_outdir
-        rname = os.path.join(outdir, f"final_pdf_templates_lj_bkg_{jobid}_{version}.root")
+        rname = os.path.join(outdir, f"final_pdf_templates_lj_bkg_{jobid}_{output_version}.root")
         upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
     for year in years_to_run:
@@ -160,7 +167,7 @@ def final_pdf_templates(years_to_run):
             rname = os.path.join(outdir, f"final_pdf_templates_lj_bkg_{year}_{jobid}.root")
             upfout = uproot.recreate(rname, compression=uproot.ZLIB(4)) if os.path.isfile(rname) else uproot.create(rname)
 
-        base_bkg_template_name = f"final_pdf_templates_lj_bkg_{year}_{jobid}_{version}.coffea"
+        base_bkg_template_name = f"final_pdf_templates_lj_bkg_{year}_{jobid}_{input_version}.coffea"
         input_dir = os.path.join(eos_dir, "results", f"{year}_{jobid}", f"Templates_{analyzer}", "FINAL")
         bkg_fname = os.path.join(input_dir, base_bkg_template_name)
         if not os.path.isfile(bkg_fname): raise ValueError("No background file found.")
@@ -177,11 +184,9 @@ def final_pdf_templates(years_to_run):
                 dirname = f"{lepdir}_{year_to_use}"
                 upfout.mkdir(dirname)
 
-                #set_trace()
                 systs = sorted(set(["_".join(key.split("_")[1:]) for key in histo.keys() if not ("data_obs" in key or len(key.split("_")) == 1 or "shape" in key)]))
                 for sys in systs:
                     if sys == "nosys": continue
-                    #set_trace()
                         # find histograms of associated systematics and their processes
                     procs = sorted(set([key.split(f"_{sys}")[0] for key in histo.keys() if sys in key]))
                     for proc in procs:
@@ -191,7 +196,6 @@ def final_pdf_templates(years_to_run):
                             upfout[dirname][proc] = template.to_hist()
 
                         else:
-                            #set_trace()
                             template, treatment = histo[f"{proc}_{sys}"]
                             if "alphaS" in sys:
                                 outhname = "_".join([proc, "CMS", "PDF", sys.split("_")[-1]])
