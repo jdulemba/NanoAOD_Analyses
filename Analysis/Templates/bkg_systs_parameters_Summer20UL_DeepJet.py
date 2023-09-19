@@ -46,6 +46,29 @@ treatment = {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
             #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
+        "dQCD" : {
+            "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_ISR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+        },
+        "ST_FSR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+        },
+        "ST_FACTOR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_RENORM" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
         "BTAG_BC_JES" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
@@ -540,6 +563,29 @@ treatment = {
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
             #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+        },
+        "dQCD" : {
+            "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_ISR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+        },
+        "ST_FSR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+        },
+        "ST_FACTOR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_RENORM" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
@@ -1037,6 +1083,29 @@ treatment = {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
             #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
+        "dQCD" : {
+            "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_ISR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+        },
+        "ST_FSR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+        },
+        "ST_FACTOR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_RENORM" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
         "BTAG_BC_JES" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
@@ -1523,6 +1592,29 @@ treatment = {
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
             #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+        },
+        "dQCD" : {
+            "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_ISR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+        },
+        "ST_FSR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
+        },
+        "ST_FACTOR" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
+        },
+        "ST_RENORM" : {
+            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},

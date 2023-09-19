@@ -13,7 +13,13 @@ treatment = {
             "QCDscale_MERen_TT" : 0.000000001,
             "hdamp_TT" : 2.0,
             "tmass_3GeV_TT" : 1.0,
+            "tmass_TT" : 1.0, # same as 3GeV
             "tmass_1GeV_TT" : 1.0,
+            "NNLO_dQCD" : 0.001,
+            "QCDscale_ISR_ST" : {"TB" : 0.02, "TQ" : 0.01, "TW" : 0.02},
+            "QCDscale_FSR_ST" : {"TB" : 0.2, "TQ" : 0.2, "TW" : 0.2},
+            "QCDscale_MEFac_ST" : {"TB" : 0.008, "TQ" : 0.001, "TW" : 0.001},
+            "QCDscale_MERen_ST" : {"TB" : 0.008, "TQ" : 0.01, "TW" : 0.001},
         },
         "4PJets" : {
             "CR_QCD_TT" : 1.2,
@@ -28,7 +34,13 @@ treatment = {
             "QCDscale_MERen_TT" : 0.001,
             "hdamp_TT" : 1.1,
             "tmass_3GeV_TT" : 1.2,
+            "tmass_TT" : 1.2, # same as 3GeV
             "tmass_1GeV_TT" : 1.0,
+            "NNLO_dQCD" : 0.001,
+            "QCDscale_ISR_ST" : {"TB" : 0.02, "TQ" : 0.02, "TW" : 0.02},
+            "QCDscale_FSR_ST" : {"TB" : 0.2, "TQ" : 0.2, "TW" : 0.2},
+            "QCDscale_MEFac_ST" : {"TB" : 0.01, "TQ" : 0.001, "TW" : 0.001},
+            "QCDscale_MERen_ST" : {"TB" : 0.002, "TQ" : 0.008, "TW" : 0.001},
         },
     },
     "2016APV" : {
