@@ -12,14 +12,17 @@ import Utilities.common_features as cfeatures
 parser = argparse.ArgumentParser()
 parser.add_argument("inputtemplates")
 parser.add_argument("outputfile")
+parser.add_argument("format", choices=["LJ", "LL"], help="Choose which formatting of output root file to make. One used to give to dilepton or one for Otto.")
 parser.add_argument("--plot", action="store_true", help="Make plots of sys uncs")
 args = parser.parse_args()
 
 proc = "TT"
 ewk_name = "EWK_yukawa"
 nnlo_name = "NNLOqcd"
+lo_name = "LOqcd"
 
-channels = ["em", "ee", "mm", "e3jets", "mu3jets", "e4pjets", "mu4pjets"]
+#channels = ["em", "ee", "mm", "e3jets", "mu3jets", "e4pjets", "mu4pjets"]
+channels = ["e3jets", "mu3jets", "e4pjets", "mu4pjets"]
 years = ["2016pre", "2016post", "2017", "2018"]
 
 # Weight-based systematics to copy to the EWK templates
@@ -29,22 +32,76 @@ years = ["2016pre", "2016post", "2017", "2018"]
 # Then, the same quadratic equation is solved for the systematic as for the nominal to get
 # the variation templates for the EWK signal.
 
-systs_to_copy = [
-    #"EWK_scheme",
-    #"CMS_eff_e_reco",
-    #"CMS_eff_e_id",
-    #"CMS_eff_m_id_stat",
-    #"CMS_eff_m_id_syst",
-    #"CMS_eff_m_iso_stat",
-    #"CMS_eff_m_iso_syst",
-    #"CMS_eff_trigger_ee",
-    #"CMS_eff_trigger_em",
-    #"CMS_eff_trigger_mm",
-    #"CMS_L1_prefire",
-    #"CMS_eff_trigger_m_syst",
-    #"CMS_eff_trigger_m_stat",
-    #"CMS_eff_trigger_e",
-]
+#set_trace()
+if args.format == "LJ": systs_to_copy = []
+else:
+    systs_to_copy = [
+        #"CMS_eff_b_13TeV_JEC",
+        #"CMS_eff_b_13TeV_Pileup",
+        #f"CMS_eff_b_13TeV_Statistic_{year}",
+        #"CMS_eff_b_13TeV_Type3",
+        #"CMS_eff_b_13TeV_BottomFragmentation",
+        #"CMS_eff_b_13TeV_BottomTemplateCorrection",
+        #"CMS_eff_b_13TeV_JPCorrection",
+        #"CMS_eff_b_13TeV_CharmFragmentation",
+        #"CMS_eff_b_13TeV_CharmTemplateCorrection",
+        #"CMS_eff_b_13TeV_CharmToMuonBR",
+        #"CMS_eff_b_13TeV_GluonSplitting",
+        #"CMS_eff_b_13TeV_AwayJetTag",
+        #"CMS_eff_b_13TeV_VzeroParticles",
+        #"CMS_eff_b_13TeV_LightCharmRatio",
+        #"CMS_eff_b_13TeV_LifetimeOthers",
+        #"CMS_eff_b_13TeV_MuonDeltaR",
+        #"CMS_eff_b_13TeV_MuonPt",
+        #"CMS_eff_b_13TeV_MuonRelativePt",
+        #"CMS_eff_b_13TeV",
+        #f"CMS_eff_b_13TeV_{year}",
+        #"CMS_fake_b_13TeV",
+        #f"CMS_fake_b_13TeV_{year}",
+        #"CMS_eff_LEP_id_tot",
+        #"CMS_eff_LEP_id_stat",
+        #"CMS_eff_LEP_id_syst",
+        #"CMS_eff_LEP_iso_tot",
+        #"CMS_eff_LEP_iso_stat",
+        #"CMS_eff_LEP_iso_syst",
+        #"CMS_eff_trigger_LEP_tot",
+        #"CMS_eff_trigger_LEP_stat",
+        #"CMS_eff_trigger_LEP_syst",
+        #"CMS_eff_LEP_reco_tot",
+        #"CMS_pileup",
+        #"CMS_L1_prefire",
+        #    # EWQCD systematics
+        #"CHAN_shape_EWQCD",
+        #"CHAN_TTsub_EWQCD",
+        #    # TT systematics
+        ##"NNLO_dQCD",
+        ##"NLO_dEWyt1p0",
+        ##"NLO_dEWyt0p88",
+        ##"NLO_dEWyt1p11",
+        ##"EWK_yukawa",
+        #"QCDscale_FSR_TT",
+        #"QCDscale_MERen_TT",
+        #"QCDscale_MEFac_TT",
+        #    # single top systematics
+        #"QCDscale_FSR_ST",
+        #"QCDscale_ISR_ST",
+        #"QCDscale_MERen_ST",
+        #"QCDscale_MEFac_ST",
+        "EWK_scheme",
+        "CMS_eff_e_reco",
+        "CMS_eff_e_id",
+        "CMS_eff_m_id_stat",
+        "CMS_eff_m_id_syst",
+        "CMS_eff_m_iso_stat",
+        "CMS_eff_m_iso_syst",
+        "CMS_eff_trigger_ee",
+        "CMS_eff_trigger_em",
+        "CMS_eff_trigger_mm",
+        "CMS_L1_prefire",
+        "CMS_eff_trigger_m_syst",
+        "CMS_eff_trigger_m_stat",
+        "CMS_eff_trigger_e",
+    ]
 
 dyt_up = 0.11
 dyt_dw = -0.12
@@ -57,6 +114,10 @@ templates = defaultdict(dict)
 templates_yukawa_up = {}
 templates_yukawa_down = {}
 templates_nnloqcd = {}
+templates_loqcd = {}
+
+templates_to_copy = defaultdict(dict) ## make dict to store variations which are just copied
+templates_to_ignore = ["TT_LOqcd", "TT_NNLO_dQCDUp", "TT_NNLO_dQCDDown"]
 
 #set_trace()
 with uproot.open(args.inputtemplates) as rfile:
@@ -70,12 +131,36 @@ with uproot.open(args.inputtemplates) as rfile:
                 templates_yukawa_up[cat] = rcat[proc + "_" + ewk_name + "Up"].values()
                 templates_yukawa_down[cat] = rcat[proc + "_" + ewk_name + "Down"].values()
                 templates_nnloqcd[cat] = rcat[proc + "_" + nnlo_name].values()
-                for sys in systs_to_copy:
-                    for sysdir in ["Up", "Down"]:
-                        syskey = proc + "_" + sys + sysdir
-                        if syskey in rcat:
-                            templates[cat][sys + sysdir] = rcat[syskey].values()
+                templates_loqcd[cat] = rcat[proc + "_" + lo_name].values()
 
+                if args.format == "LJ":
+                    for sys in systs_to_copy:
+                        for sysdir in ["Up", "Down"]:
+                            syskey = proc + "_" + sys + sysdir
+                            if syskey in rcat:
+                                templates[cat][sys + sysdir] = rcat[syskey].values()
+
+                if args.format == "LL":
+                    #set_trace()
+                    processes = sorted(set([key.split(";")[0].split("_")[0] for key in rcat.keys()]))
+                    processes = [process.replace("data", "data_obs") for process in processes]
+                    #processes = ["TT"]
+                        # loop over all processes
+                    for process in processes:
+                            # find all available distributions for each process
+                        proc_dists = sorted(set([key.split(";")[0] for key in rcat.keys() if key.startswith(process)]))
+                        for distname in proc_dists:
+                            if process == "TT":
+                                if distname == process: continue
+                                if distname.replace(f"{proc}_", "").replace("Up", "").replace("Down", "") in systs_to_copy:
+                                    templates[cat][distname.replace(f"{proc}_", "")] = rcat[distname].values()
+                                else:
+                                    templates_to_copy[cat][distname] = np.stack([np.copy(rcat[distname].values()), np.copy(rcat[distname].variances())], axis=-1)
+                            else:
+                                if (process == "EtaT") and (distname != "EtaT"): continue ## only include nominal toponium distribution
+                                templates_to_copy[cat][distname] = np.stack([np.copy(rcat[distname].values()), np.copy(rcat[distname].variances())], axis=-1)
+
+#set_trace()
 """
 The yields for TTbar distributions at a given yt value are given by 
  TT(yt) = TT_NNLOqcd + TT_ewk(yt) == TT_NNLOqcd + b_0 + b_1 * (yt) + b_2 * (yt)^2
@@ -110,13 +195,26 @@ output_templates = {}
 
 #set_trace()
 for cat in templates.keys():
+    template_nnloqcd        = np.copy(templates_nnloqcd[cat])
+    template_loqcd        = np.copy(templates_loqcd[cat])
+    deltaQCD = (template_nnloqcd - template_loqcd)/template_nnloqcd
+
+    # Add bin edges so that uproot saves it as a TH1D
+    bin_edges = np.arange(len(deltaQCD)+1)
+    variances = np.zeros_like(deltaQCD)
+
+    if args.format == "LJ":
+        hist_dQCD = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([deltaQCD, variances], axis=-1))
+        output_templates[cat + "/DeltaQCD"] = hist_dQCD
+
     for sys in templates[cat].keys():
         print("Calculating templates for " + cat + " " + sys)
+
+        syskey = "" if sys == "nominal" else "_" + sys
 
         template_yukawa_nominal = np.copy(templates[cat][sys])
         template_yukawa_up      = np.copy(templates_yukawa_up[cat] * templates[cat][sys] / templates[cat]["nominal"])
         template_yukawa_down    = np.copy(templates_yukawa_down[cat] * templates[cat][sys] / templates[cat]["nominal"])
-        template_nnloqcd        = np.copy(templates_nnloqcd[cat])
 
             ## find the terms that the ewk corrections are responsible for, dependent on yt (RHS of matrix equation)
         ewk_dists = [[template_yukawa_nominal[bin] - template_nnloqcd[bin], template_yukawa_up[bin] - template_nnloqcd[bin], template_yukawa_down[bin] - template_nnloqcd[bin]] 
@@ -138,42 +236,36 @@ for cat in templates.keys():
         assert np.all(np.isclose(predict_yukawa(yt_up), template_yukawa_up)) # up
         assert np.all(np.isclose(predict_yukawa(yt_dw), template_yukawa_down)) # down
 
+        if args.format == "LJ":
+            output_templates[cat + "/EWK_TT_const" + syskey]     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_lin" + syskey]       = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_quad" + syskey]      = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2, variances], axis=-1))
+
+        if args.format == "LL":
+            b0_pos = np.where( b0*deltaQCD >= 0.,  b0*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b0 >= 0.,  b0, 0. )
+            b0_neg = np.where( b0*deltaQCD <= 0., -b0*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b0 <= 0., -b0, 0. )
+            b1_pos = np.where( b1*deltaQCD >= 0.,  b1*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b1 >= 0.,  b1, 0. )
+            b1_neg = np.where( b1*deltaQCD <= 0., -b1*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b1 <= 0., -b1, 0. )
+            b2_pos = np.where( b2*deltaQCD >= 0.,  b2*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b2 >= 0.,  b2, 0. )
+            b2_neg = np.where( b2*deltaQCD <= 0., -b2*deltaQCD, 0. ) if ("EWK_scheme" in sys) else np.where( b2 <= 0., -b2, 0. )
+
+            output_templates[cat + "/EWK_TT_const_pos" + syskey] = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_pos, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_const_neg" + syskey] = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_neg, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_lin_pos" + syskey]   = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_pos, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_lin_neg" + syskey]   = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_neg, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_quad_pos" + syskey]  = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_pos, variances], axis=-1))
+            output_templates[cat + "/EWK_TT_quad_neg" + syskey]  = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_neg, variances], axis=-1))
+
+    if args.format == "LL":
         #set_trace()
-
-        b0_pos = np.where(b0>=0 , b0, 0.)
-        b0_neg = np.where(b0<=0 , -b0, 0.)
-        b1_pos = np.where(b1>=0 , b1, 0.)
-        b1_neg = np.where(b1<=0 , -b1, 0.)
-        b2_pos = np.where(b2>=0 , b2, 0.)
-        b2_neg = np.where(b2<=0 , -b2, 0.)
-
-        # Add bin edges so that uproot saves it as a TH1D
-        bin_edges = np.arange(len(template_yukawa_nominal)+1)
-
-        syskey = "" if sys == "nominal" else "_" + sys
-
-        variances = np.zeros_like(b0)
-
-        hist_b0     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0, variances], axis=-1))
-        hist_b0_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_pos, variances], axis=-1))
-        hist_b0_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b0_neg, variances], axis=-1))
-        hist_b1     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1, variances], axis=-1))
-        hist_b1_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_pos, variances], axis=-1))
-        hist_b1_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b1_neg, variances], axis=-1))
-        hist_b2     = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2, variances], axis=-1))
-        hist_b2_pos = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_pos, variances], axis=-1))
-        hist_b2_neg = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np.stack([b2_neg, variances], axis=-1))
-
-        output_templates[cat + "/EWK_TT_const" + syskey]     = hist_b0
-        output_templates[cat + "/EWK_TT_const_pos" + syskey] = hist_b0_pos
-        output_templates[cat + "/EWK_TT_const_neg" + syskey] = hist_b0_neg
-        output_templates[cat + "/EWK_TT_lin" + syskey]       = hist_b1
-        output_templates[cat + "/EWK_TT_lin_pos" + syskey]   = hist_b1_pos
-        output_templates[cat + "/EWK_TT_lin_neg" + syskey]   = hist_b1_neg
-        output_templates[cat + "/EWK_TT_quad" + syskey]      = hist_b2
-        output_templates[cat + "/EWK_TT_quad_pos" + syskey]  = hist_b2_pos
-        output_templates[cat + "/EWK_TT_quad_neg" + syskey]  = hist_b2_neg
-
+        for sys, np_stack in templates_to_copy[cat].items():
+            ## hard coded ignoring of some templates
+            if sys in templates_to_ignore: continue
+            print("Calculating templates for " + cat + " " + sys)
+            if sys == "TT_NNLOqcd":
+                output_templates[f"{cat}/TT"] = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np_stack)
+            else:
+                output_templates[f"{cat}/{sys}"] = hist.Hist(hist.axis.Variable(bin_edges), "Weight", data=np_stack)
 
 if args.plot:
     # matplotlib
@@ -268,7 +360,7 @@ if args.plot:
 import time
 named_tuple = time.localtime() # get struct_time
 time_str = time.strftime("%d%m%Y", named_tuple)
-output_rname = "_".join([(args.outputfile).split(".root")[0], time_str])+".root" ## append date onto root filename
+output_rname = "_".join([(args.outputfile).split(".root")[0], f"For{args.format}", time_str])+".root" ## append date onto root filename
 with uproot.recreate(output_rname) as rfile:
     for key, hist in output_templates.items():
         rfile[key] = hist
