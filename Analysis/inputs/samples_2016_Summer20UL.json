@@ -1019,6 +1019,15 @@
         "name": "AtoTTJetsDiLep_M900_W9p0_Res"
     },
 
+    {
+        "DBSName": "NOT PRESENT",
+        "name": "ToponiumSL"
+    },
+    {
+        "DBSName": "NOT PRESENT",
+        "name": "ToponiumDiLep"
+    },
+
 
     {
         "DBSName": "/SingleMuon/Run2016F-UL2016_MiniAODv1_NanoAODv2-v4/NANOAOD",
