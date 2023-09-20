@@ -157,8 +157,8 @@ with uproot.open(args.inputtemplates) as rfile:
                                 else:
                                     templates_to_copy[cat][distname] = np.stack([np.copy(rcat[distname].values()), np.copy(rcat[distname].variances())], axis=-1)
                             else:
-                                if (process == "EtaT") and (distname != "EtaT"): continue ## only include nominal toponium distribution
-                                templates_to_copy[cat][distname] = np.stack([np.copy(rcat[distname].values()), np.copy(rcat[distname].variances())], axis=-1)
+                                #if (process == "EtaT") and (distname != "EtaT"): continue ## only include nominal toponium distribution
+                                templates_to_copy[cat][distname.replace("Eb", "bindingEnergy_EtaT") if ((process == "EtaT") and ("Eb" in distname)) else distname] = np.stack([np.copy(rcat[distname].values()), np.copy(rcat[distname].variances())], axis=-1)
 
 #set_trace()
 """
