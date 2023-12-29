@@ -1,0 +1,16 @@
+python THESIS/plot_postfit_templates.py 2016APV A 400 5.0
+python THESIS/plot_postfit_templates.py 2016APV A 800 5.0
+python THESIS/plot_postfit_templates.py 2016APV H 400 5.0
+python THESIS/plot_postfit_templates.py 2016APV H 800 5.0
+python THESIS/plot_postfit_templates.py 2016 A 400 5.0
+python THESIS/plot_postfit_templates.py 2016 A 800 5.0
+python THESIS/plot_postfit_templates.py 2016 H 400 5.0
+python THESIS/plot_postfit_templates.py 2016 H 800 5.0
+python THESIS/plot_postfit_templates.py 2017 A 400 5.0
+python THESIS/plot_postfit_templates.py 2017 A 800 5.0
+python THESIS/plot_postfit_templates.py 2017 H 400 5.0
+python THESIS/plot_postfit_templates.py 2017 H 800 5.0
+python THESIS/plot_postfit_templates.py 2018 A 400 5.0
+python THESIS/plot_postfit_templates.py 2018 A 800 5.0
+python THESIS/plot_postfit_templates.py 2018 H 400 5.0
+python THESIS/plot_postfit_templates.py 2018 H 800 5.0
