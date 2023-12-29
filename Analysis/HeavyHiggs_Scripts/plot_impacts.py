@@ -20,9 +20,11 @@ import os
 import argparse
 from argparse import ArgumentParser
 parser = ArgumentParser()
+parser.add_argument("channel", choices=["comb", "lj", "ll"], help="Choose which channel to make plots for")
 parser.add_argument("parity", choices=["A", "H"], help="Choose which parity to make plots for")
 parser.add_argument("mass", choices=["400", "800"], help="Choose which mass to make plots for")
 parser.add_argument("width", choices=["5.0"], help="Choose which width to make plots for")
+parser.add_argument("EtaT", choices=["True", "False"], help="Choose to include toponium or not")
 parser.add_argument("--nvals", default=30, help="Choose the number of NPs to plot per figure")
 parser.add_argument("--unblind", action="store_true", help="Make plots with best fit coupling value")
 args = parser.parse_args()
@@ -31,17 +33,29 @@ jobid = os.environ["jobid"]
 proj_dir = os.environ["PROJECT_DIR"]
 plot_outdir = os.environ["plots_dir"]
 
-sig_label = "$%s(%s\ GeV, %s\%%)$" % (args.parity, args.mass, args.width)
+channel_titles = {
+    "comb" : "$\ell$x",
+    "lj" : "$\ell$j",
+    "ll" : "$\ell \ell$",
+}
+sig_label = "$%s(%s\ GeV, %s\%%)$, %s" % (args.parity, args.mass, args.width, channel_titles[args.channel])
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
+withEtaT_int = 2 if args.EtaT == "True" else 3
+EtaT_label = "withEtaT" if args.EtaT == "True" else "noEtaT"
 
-basedir = "root://cmseos.fnal.gov//store/user/jdulemba/HeavyHiggsFitter/Summer20UL_DeepJet_Unblinded_Toponium_v35"
-rname = f"IMPACTSv35_lj_data_1_{args.parity}_m{args.mass}_relw{args.width.replace('.', 'p')}_sig1.root"
+#set_trace()
+basedir = "root://cmseos.fnal.gov//store/user/jdulemba/HeavyHiggsFitter/Summer20UL_DeepJet_Unblinded_withEta_fullyt_allchannels_v35"
+rname = f"IMPACTSv35_{args.channel}_data_{withEtaT_int}_{args.parity}_m{args.mass}_relw{args.width.replace('.', 'p')}_sig1.root"
+#basedir = "root://cmseos.fnal.gov//store/user/jdulemba/HeavyHiggsFitter/Summer20UL_DeepJet_Unblinded_Toponium_v35"
+#rname = f"IMPACTSv35_lj_data_1_{args.parity}_m{args.mass}_relw{args.width.replace('.', 'p')}_sig1.root"
 rfile = uproot.open(os.path.join(basedir, rname))
+
+outfigname = f"IMPACTSv35_{args.channel}_data_{EtaT_label}_{args.parity}_m{args.mass}_relw{args.width.replace('.', 'p')}_sig1"
 
 outdir = os.path.join(plot_outdir, jobid, "Limits_htt_btag_sb_regions", os.path.basename(basedir).split(f"{jobid}_")[-1], f"{args.parity}_m{args.mass}_relw{args.width.replace('.', 'p')}")
 if not os.path.isdir(outdir):
@@ -82,6 +96,8 @@ for val in sorted_info_list:
         val[5] *= 3.
     pulls.append( val[3] / np.sqrt( 1. - 0.5 * ( np.square( val[4]) + np.square( val[5])) ) )
 pulls = np.array(pulls)
+    ## filter pulls that are too large to plot
+pulls = np.where(np.abs(pulls) > 5., np.nan, pulls)
 
     ## calculate post-fit values
 pf_mean, pf_unc_dw, pf_unc_up = np.array([val[3] for val in sorted_info_list]), np.array([val[4] for val in sorted_info_list]), np.array([val[5] for val in sorted_info_list])
@@ -137,10 +153,12 @@ for idx, nplot in enumerate(nplots):
     ax1_handles, ax1_labels = ax1.get_legend_handles_labels()
     ax2_handles, ax2_labels = ax2.get_legend_handles_labels()
     lgd = fig.legend(ax1_handles+ax2_handles, ax1_labels+ax2_labels, loc="lower center", ncol=2, bbox_to_anchor=(-0.05, 0.))
-    [hand.set_ec("k") for idx, hand in enumerate(lgd.legend_handles) if idx < 2] ## only set edgecolor for impacts
+    [hand.set_ec("k") for idx, hand in enumerate(lgd.legendHandles) if idx < 2] ## only set edgecolor for impacts
+    #[hand.set_ec("k") for idx, hand in enumerate(lgd.legend_handles) if idx < 2] ## only set edgecolor for impacts
 
 
-    outfname = os.path.join(outdir, f"{rname.replace('.root', '')}_{idx}")
+    #outfname = os.path.join(outdir, f"{rname.replace('.root', '')}_{idx}")
+    outfname = os.path.join(outdir, f"{outfigname}_{idx}")
     fig.savefig(outfname)
     print(f"{outfname} written")
     plt.close(fig)
