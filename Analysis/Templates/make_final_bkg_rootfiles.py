@@ -26,15 +26,8 @@ parser.add_argument("--unblind", action="store_true", help="Include unblinded da
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
 args = parser.parse_args()
 
-output_version = "V33"
-input_version = "V33"
-#output_version = "V32"
-#input_version = "V31"
-#version = "V31"
-#version = "V30"
-#version = "V29"
-#version = "V27"
-#version = "V26"
+output_version = "V36"
+input_version = "V36"
 
 def final_bkg_templates(years_to_run):
     """
