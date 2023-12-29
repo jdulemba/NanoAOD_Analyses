@@ -1,16 +1,6 @@
 ## for good colors search here http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=6
 
 styles = {
-#   "[WZ][WZ]" : {
-#      "legendstyle" : "f",
-#      "drawstyle" : "hist",
-#      "facecolor" : "#9fcc18",
-#      "linecolor" : "black",
-#            "linewidth" : 1,
-#      "name" : "VV",
-#      #"name" : "diboson",
-#      "fillstyle": "solid",
-#      },
     "ZJets" : {
         "facecolor" : "#984ea3", ## purple
         "name" : "Z+jets",
@@ -19,12 +9,6 @@ styles = {
         "facecolor" : "#ff7f00", ## orange
         "name" : "single top",
     },
-   #"data" : {
-   #   "legendstyle" : "p",
-   #   "drawstyle" : "E0 X0",
-   #   "markerstyle" : 20,
-   #   "name" : "Observed",
-   # },
    "WJets" : {
         "facecolor" : "#ff7f00", ## orange
         "name" : "W+jets",
@@ -37,16 +21,6 @@ styles = {
         "facecolor" : "#e41a1c", ## red
         "name" : "$t\\bar{t}$",
     },
-#   "tt[WZ]" : {
-#      "legendstyle" : "f",
-#      "drawstyle" : "hist",
-#      "facecolor" : "#cc8d18",
-#      #"facecolor" : ROOT.kOrange + 1,
-#      "linecolor" : "black",
-#            "linewidth" : 1,
-#      "name" : "ttV",
-#      "fillstyle": "solid",
-#      },
     "QCD" : {
         "facecolor" : "#377eb8", ## blue
         "name" : "QCD (Sim.)",
@@ -148,26 +122,20 @@ styles = {
         "elinewidth" : 1,
     },
     "3Jets" : {
-        #"name" : "3 jets",
         "marker": ".",
         "markersize": 10.,
-        #"linestyle" : "-",
         "color" : "#e41a1c", # red
         "elinewidth" : 1,
     },
     "4PJets" : {
-        #"name" : "4+ jets",
         "marker": ".",
         "markersize": 10.,
-        #"linestyle" : "-",
         "color" : "#377eb8", # blue
         "elinewidth" : 1,
     },
     "3PJets" : {
-        #"name" : "3+ jets",
         "marker": ".",
         "markersize": 10.,
-        #"linestyle" : "-",
         "color" : "#4daf4a", # green
         "elinewidth" : 1,
     },
@@ -259,12 +227,10 @@ styles = {
     "Up" : {
         "color" : "k",
         "linestyle" : "-",
-        #"color" : "#e41a1c", # red
         "label" : "Up",
     },
     "Down" : {
         "color" : "k", # blue
-        #"color" : "#377eb8", # blue
         "linestyle" : "--",
         "label" : "Down",
     },
@@ -393,11 +359,11 @@ for bundle in product(masses, [str(width).replace(".", "p") for width in sorted(
         # total signal res+int
     styles["AtoTT_M%d_W%s_Total" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$A_{%d\ GeV}^{%s\%%}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$A_{%d\ GeV}^{%s\%%}$" % (bundle[0], bundle[1].replace("p", ".")),
     }
     styles["HtoTT_M%d_W%s_Total" % bundle] = {
         "facecolor" : "#e41a1c",
-        "name" : "$H_{%d\ GeV}^{%s\%%}$, Total" % (bundle[0], bundle[1].replace("p", ".")),
+        "name" : "$H_{%d\ GeV}^{%s\%%}$" % (bundle[0], bundle[1].replace("p", ".")),
     }
 
     # DiLep events
