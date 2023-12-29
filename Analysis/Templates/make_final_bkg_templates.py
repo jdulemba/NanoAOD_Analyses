@@ -28,11 +28,7 @@ parser.add_argument("--MEopts", nargs="*", action=ParseKwargs, help="Options to 
 parser.add_argument("--nomSMTTxsec", action="store_true", help="Apply nominal SM cross sections to top mass and LHE scale weights")
 args = parser.parse_args()
 
-version = "V33"
-#version = "V31"
-#version = "V30"
-#version = "V29"
-#version = "V27"
+version = "V36"
 
 def final_bkg_templates(hdicts):
     histo_dict = processor.dict_accumulator({njets : {"Muon" : {}, "Electron" :{}} for njets in njets_to_run})
@@ -102,7 +98,8 @@ def final_bkg_templates(hdicts):
                             ratio_hvals = (hdicts[treatment][jmult][tname].copy()).values()[()]
 
                             ## add 0.5 to all ratio values for ME scale variations for single top s channel processes by hand! for some reason the weights are centered around 0.5 instead of 1.
-                        if ((sys.startswith("ST_RENORM")) or (sys.startswith("ST_FACTOR"))) and (proc == "TB"):
+                        if ((sys.startswith("ST_RENORM")) or (sys.startswith("ST_FACTOR"))) and (proc == "TB") and ("Symm" not in treatment):
+                            #set_trace()
                             ratio_hvals += 0.5
 
                         hist_to_use = hdicts["Indiv_Raw"][jmult][lep][f"{proc}_nosys"].copy()
