@@ -2,19 +2,15 @@ treatment = {
     "2016APV" : {
         "FACTOR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "FSR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "HDAMP" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            ##"TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ISR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "MTOP3GEV" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
@@ -36,23 +32,20 @@ treatment = {
         },
         "CR1" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "CR2" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "dQCD" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_ISR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ST_FSR" : {
             "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
@@ -60,13 +53,13 @@ treatment = {
             "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
         },
         "ST_FACTOR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_RENORM" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
@@ -191,14 +184,12 @@ treatment = {
         },
         "BTAG_L_CORR" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
         "BTAG_L_UNCORR" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
@@ -305,123 +296,8 @@ treatment = {
             "TQ" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
         },
-        #"JES_AbsoluteMPFBias" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteScale" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteStat" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Fragmentation" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpDataMC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #},
-        #"JES_PileUpPtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtRef" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeJEREC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeSample" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatEC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionECAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionHCAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_TimePtEta" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Total" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
         "LEP_IDtot" : {
             "TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Raw", "e4" : "Indiv_Raw"},
             "TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
             "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
             "TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -482,7 +358,6 @@ treatment = {
         },
         "MET" : {
             "TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TB" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
@@ -492,13 +367,6 @@ treatment = {
             "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-            #"TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
         "PREFIRE" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
@@ -508,7 +376,6 @@ treatment = {
         },
         "SHAPE" : {
             "EWQCD" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"EWQCD" : {"m3" : "Combined_Lep_Smooth", "m4" : "Combined_Lep_Smooth", "e3" : "Combined_Lep_Smooth", "e4" : "Combined_Lep_Smooth"},
         },
         "EWQCD_TTsub" : {
             "EWQCD" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -520,19 +387,15 @@ treatment = {
     "2016" : {
         "FACTOR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "FSR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "HDAMP" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            ##"TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ISR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "MTOP3GEV" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
@@ -554,23 +417,20 @@ treatment = {
         },
         "CR1" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "CR2" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "dQCD" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_ISR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ST_FSR" : {
             "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
@@ -578,13 +438,13 @@ treatment = {
             "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
         },
         "ST_FACTOR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_RENORM" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
@@ -714,7 +574,6 @@ treatment = {
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
         "BTAG_L_UNCORR" : {
-            #"TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
             "TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
@@ -822,123 +681,8 @@ treatment = {
             "TQ" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
         },
-        #"JES_AbsoluteMPFBias" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteScale" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteStat" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Fragmentation" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpDataMC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #},
-        #"JES_PileUpPtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtRef" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeJEREC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeSample" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatEC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionECAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionHCAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_TimePtEta" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Total" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
         "LEP_IDtot" : {
             "TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Raw", "e4" : "Indiv_Raw"},
             "TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
             "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
             "TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -965,7 +709,6 @@ treatment = {
             "TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw"},
             "TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth"},
             "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth"},
-            #"TQ" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw"},
             "TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth"},
         },
         "LEP_ISOsyst" : {
@@ -999,10 +742,8 @@ treatment = {
             "TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth"},
         },
         "MET" : {
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TT" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TB" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
-            #"TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
         },
@@ -1011,13 +752,6 @@ treatment = {
             "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-            #"TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            ##"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            ##"TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            ##"TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            ##"TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
         "PREFIRE" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
@@ -1027,7 +761,6 @@ treatment = {
         },
         "SHAPE" : {
             "EWQCD" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"EWQCD" : {"m3" : "Combined_Lep_Smooth", "m4" : "Combined_Lep_Smooth", "e3" : "Combined_Lep_Smooth", "e4" : "Combined_Lep_Smooth"},
         },
         "EWQCD_TTsub" : {
             "EWQCD" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -1039,19 +772,15 @@ treatment = {
     "2017" : {
         "FACTOR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "FSR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "HDAMP" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            ##"TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ISR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "MTOP3GEV" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
@@ -1073,23 +802,20 @@ treatment = {
         },
         "CR1" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "CR2" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "dQCD" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_ISR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ST_FSR" : {
             "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
@@ -1097,13 +823,13 @@ treatment = {
             "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
         },
         "ST_FACTOR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_RENORM" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
@@ -1340,120 +1066,6 @@ treatment = {
             "TQ" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
         },
-        #"JES_AbsoluteMPFBias" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteScale" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteStat" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Fragmentation" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpDataMC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #},
-        #"JES_PileUpPtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtRef" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeJEREC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeSample" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatEC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionECAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionHCAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_TimePtEta" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Total" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
         "LEP_IDtot" : {
             "TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Raw", "e4" : "Indiv_Raw"},
             "TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -1525,9 +1137,6 @@ treatment = {
             "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-            #"TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
         },
         "PREFIRE" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
@@ -1537,7 +1146,6 @@ treatment = {
         },
         "SHAPE" : {
             "EWQCD" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"EWQCD" : {"m3" : "Combined_Lep_Smooth", "m4" : "Combined_Lep_Smooth", "e3" : "Combined_Lep_Smooth", "e4" : "Combined_Lep_Smooth"},
         },
         "EWQCD_TTsub" : {
             "EWQCD" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -1549,19 +1157,15 @@ treatment = {
     "2018" : {
         "FACTOR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "FSR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "HDAMP" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            ##"TT" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ISR" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "MTOP3GEV" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
@@ -1583,23 +1187,20 @@ treatment = {
         },
         "CR1" : {
             "TT" : {"m3" : "Combined_Era_Lep_1D_Symm_Smooth", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_1D_Symm_Smooth", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "CR2" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "erdON" : {
             "TT" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_1D_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_1D_Symm_Smooth"},
-            #"TT" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "dQCD" : {
             "TT" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_ISR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TW" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TW" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
         },
         "ST_FSR" : {
             "TB" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
@@ -1607,13 +1208,13 @@ treatment = {
             "TW" : {"m3" : "Combined_Era_Lep_Symm_Flat", "m4" : "Combined_Era_Lep_Symm_Flat", "e3" : "Combined_Era_Lep_Symm_Flat", "e4" : "Combined_Era_Lep_Symm_Flat"},
         },
         "ST_FACTOR" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "ST_RENORM" : {
-            "TB" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
-            "TQ" : {"m3" : "Combined_Era_Lep_Smooth", "m4" : "Combined_Era_Lep_Smooth", "e3" : "Combined_Era_Lep_Smooth", "e4" : "Combined_Era_Lep_Smooth"},
+            "TB" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
+            "TQ" : {"m3" : "Combined_Era_Lep_Symm_Smooth", "m4" : "Combined_Era_Lep_Symm_Smooth", "e3" : "Combined_Era_Lep_Symm_Smooth", "e4" : "Combined_Era_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Era_Lep_Raw", "m4" : "Combined_Era_Lep_Raw", "e3" : "Combined_Era_Lep_Raw", "e4" : "Combined_Era_Lep_Raw"},
         },
         "BTAG_BC_JES" : {
@@ -1738,14 +1339,12 @@ treatment = {
         },
         "BTAG_L_CORR" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
         "BTAG_L_UNCORR" : {
             "TT" : {"m3" : "Combined_Lep_Raw", "m4" : "Combined_Lep_Raw", "e3" : "Combined_Lep_Raw", "e4" : "Combined_Lep_Raw"},
-            #"TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
@@ -1845,130 +1444,13 @@ treatment = {
             "TB" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"TW" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
         },
         "JES_RelativeSample_2018" : {
             "TT" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TB" : {"m3" : "Combined_Lep_Symm_Flat", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Flat", "e4" : "Combined_Lep_Symm_Flat"},
-            #"TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Flat", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Flat"},
-            #"TB" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TQ" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
             "TW" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
         },
-        #"JES_AbsoluteMPFBias" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteScale" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_AbsoluteStat" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Fragmentation" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpDataMC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #},
-        #"JES_PileUpPtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_PileUpPtRef" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeJEREC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtBB" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativePtEC1" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeSample" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatEC" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_RelativeStatFSR" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionECAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_SinglePionHCAL" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_TimePtEta" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
-        #"JES_Total" : {
-        #    "TT" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #    "TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-        #    "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-        #},
         "LEP_IDtot" : {
             "TT" : {"m3" : "Indiv_Raw", "m4" : "Indiv_Raw", "e3" : "Indiv_Raw", "e4" : "Indiv_Raw"},
             "TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
@@ -2040,13 +1522,9 @@ treatment = {
             "TB" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TQ" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
             "TW" : {"m3" : "Indiv_Symm_Flat", "m4" : "Indiv_Symm_Flat", "e3" : "Indiv_Symm_Flat", "e4" : "Indiv_Symm_Flat"},
-            #"TB" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TQ" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
-            #"TW" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
         },
         "SHAPE" : {
             "EWQCD" : {"m3" : "Combined_Lep_Symm_Smooth", "m4" : "Combined_Lep_Symm_Smooth", "e3" : "Combined_Lep_Symm_Smooth", "e4" : "Combined_Lep_Symm_Smooth"},
-            #"EWQCD" : {"m3" : "Combined_Lep_Smooth", "m4" : "Combined_Lep_Smooth", "e3" : "Combined_Lep_Smooth", "e4" : "Combined_Lep_Smooth"},
         },
         "EWQCD_TTsub" : {
             "EWQCD" : {"m3" : "Indiv_Symm_Smooth", "m4" : "Indiv_Symm_Smooth", "e3" : "Indiv_Symm_Smooth", "e4" : "Indiv_Symm_Smooth"},
