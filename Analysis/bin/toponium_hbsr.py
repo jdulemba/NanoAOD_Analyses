@@ -88,8 +88,6 @@ if "isCondor" in opts_dict.keys():
                 print(f"Attempt {cp_attempt+1} to copy {cp_rfile} to /tmp")
                 try:
                     output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=1200, stderr=STDOUT)
-                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=600, stderr=STDOUT)
-                    #output = check_output(["xrdcp", "-f", f"{cp_rfile}", "/tmp"], timeout=300, stderr=STDOUT)
                     cp_success = True
                 except:
                     cp_success = False
@@ -176,9 +174,29 @@ eta_variations = {
 }
 
 # get systematics to run
-#reweight_systematics_to_run = ["nosys"]
-event_systematics_to_run = eta_variations.keys()
-print("Running toponium systematics:", *eta_variations.keys(), sep=", ")
+evt_sys_to_run = opts_dict.get("evt_sys", "NONE").upper()
+rewt_systs_to_run = opts_dict.get("rewt_sys", "NONE")
+only_sys = ast.literal_eval(opts_dict.get("only_sys", "False"))
+import fnmatch
+if only_sys: # don't run 'nosys'
+    if (evt_sys_to_run == "NONE") and (rewt_systs_to_run == "NONE"):
+        raise ValueError("At least one systematic must be specified in order to run only on systematics!")
+
+    event_systematics_to_run = ["nosys"] if (rewt_systs_to_run != "NONE") else []
+    reweight_systematics_to_run = []
+
+else:
+    event_systematics_to_run = ["nosys"]
+    reweight_systematics_to_run = ["nosys"]
+
+event_systematics_to_run += [systematics.event_sys_opts[args.year][name] for name in systematics.event_sys_opts[args.year].keys() if fnmatch.fnmatch(name, evt_sys_to_run)]
+for rewt_sys_to_run in rewt_systs_to_run.split(","):
+    reweight_systematics_to_run += [systematics.reweight_sys_opts[args.year][name] for name in systematics.reweight_sys_opts[args.year].keys() if fnmatch.fnmatch(name, rewt_sys_to_run)]
+
+mass_window_systematics_to_run = eta_variations.keys()
+print("Running with event systematics:", *sorted(set(event_systematics_to_run).difference(set(["nosys"]))), sep=", ") if "nosys" in event_systematics_to_run else print("Running with event systematics:", *sorted(event_systematics_to_run), sep=", ")
+print("\t\treweight systematics:", *sorted(reweight_systematics_to_run), sep=", ")
+print("\t\tand mass window systematics:", *sorted(mass_window_systematics_to_run), sep=", ")
 #set_trace()
 
     # sideband regions are determined by dividing deepcsv medium wp values by 3 for each year
@@ -214,12 +232,9 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         self.nu_dist_axis = hist.Bin("nu_dist", r"$D_{\nu, min}$", np.around(np.linspace(0., 150., 151), decimals=0))
         self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 41), decimals=2))
         self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 21), decimals=2))
-        #self.ctstar_axis = hist.Bin("ctstar", "cos($\\theta^{*}$)", np.around(np.linspace(-1., 1., 201), decimals=2))
-        #self.ctstar_abs_axis = hist.Bin("ctstar_abs", "|cos($\\theta^{*}$)|", np.around(np.linspace(0., 1., 201), decimals=3))
 
             ## for toponium reweighting
         self.weights_rfiles_dict = topwts_rfiles_dict
-        #self.weights_rfiles_dict = topwts_fnames_dict
             ##
 
             ## make dictionary of hists
@@ -236,44 +251,51 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
         self.sample_name = ""
         self.corrections = corrections
-        #self.reweight_systematics_to_run = reweight_systematics_to_run
+        self.reweight_systematics_to_run = reweight_systematics_to_run
         self.event_systematics_to_run = event_systematics_to_run
+        self.mass_window_systematics_to_run = mass_window_systematics_to_run
 
             ## make dict of cutflow for each systematic variation
-        for sys in self.event_systematics_to_run:
+        for sys in sorted(set(list(self.event_systematics_to_run) + list(self.mass_window_systematics_to_run))):
             histo_dict[f"cutflow_{sys}"] = processor.defaultdict_accumulator(int)
     
         self._accumulator = processor.dict_accumulator(histo_dict)
 
             ## define regions depending on data or MC, systematic or nosys
         base_regions = {
-            "Muon" : {
-                "btagPass" : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+            "nosys" : {
+                "Muon" : {
+                    "btagPass" : {
+                        "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                        "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                    },
                 },
-            },
-            "Electron" : {
-                "btagPass" : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                "Electron" : {
+                    "btagPass" : {
+                        "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                        "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                    },
                 },
             },
         }
         self.regions = {sys:deepcopy(base_regions) for sys in self.event_systematics_to_run}
-            # add sideband regions for nosys
-        if "nosys" in self.event_systematics_to_run:
-            self.regions["nosys"]["Muon"].update({
-                key : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"{btaggers[0]}_{key}", "Eta_Mass_Window"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"{btaggers[0]}_{key}", "Eta_Mass_Window"},
-                } for key in btag_regions.keys()
-            })
-            self.regions["nosys"]["Electron"].update({
-                key : {
-                    "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"{btaggers[0]}_{key}", "Eta_Mass_Window"},
-                    "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"{btaggers[0]}_{key}", "Eta_Mass_Window"},
-                } for key in btag_regions.keys()
+            # add mass window regions for nosys event sys
+        if "nosys" in self.regions.keys():
+            self.regions["nosys"].update({
+                mass_window : {
+                    "Muon" : {
+                        "btagPass" : {
+                            "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                            "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_MU", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                        },
+                    },
+                    "Electron" : {
+                        "btagPass" : {
+                            "3Jets"  : {"lep_and_filter_pass", "passing_jets", "jets_3" , "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                            "4PJets" : {"lep_and_filter_pass", "passing_jets", "jets_4p", "tight_EL", f"{btaggers[0]}_pass", "Eta_Mass_Window"},
+                        },
+                    },
+                } for mass_window in self.mass_window_systematics_to_run if mass_window != "nosys"
             })
 
 
@@ -302,8 +324,6 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         histo_dict["Lep_iso"]   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.lepIso_axis)
         histo_dict["Lep_phi"]   = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.phi_axis)
         histo_dict["Lep_phi_vs_eta"] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.phi_2d_axis, self.eta_2d_axis)
-        ##histo_dict["Lep_etaSC"] = hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.eta_axis)
-        ##histo_dict["Lep_energy"]= hist.Hist("Events", self.dataset_axis, self.sys_axis, self.jetmult_axis, self.leptype_axis, self.btag_axis, self.energy_axis)
 
         return histo_dict
 
@@ -344,47 +364,20 @@ class htt_btag_sb_regions(processor.ProcessorABC):
         self.sample_name = events.metadata["dataset"]
 
         #set_trace()
-            ## make event weights
-        evt_weights = Weights(len(events), storeIndividual=True)
-        evt_weights.add("genweight", ak.copy(events["genWeight"])) ## Generator Weights
-            ## Prefire Corrections
-        if (args.year != "2018") and (self.corrections["Prefire"] == True) and ("L1PreFiringWeight" in events.fields):
-            evt_weights.add("Prefire", ak.copy(events["L1PreFiringWeight"]["Nom"]))
-
-            ## Pileup Reweighting
-        if "Pileup" in self.corrections.keys():
-            pu_wts_dict = {
-                key : ak.copy(self.corrections["Pileup"][f"{events.metadata['dataset']}_{key}"]["central"](events["Pileup"]["nTrueInt"]) ) for key in eta_variations.keys()
-            }
-
-            ## initialize selections
-        selection = {evt_sys: PackedSelection() for evt_sys in self.event_systematics_to_run}
-
-        #if to_debug: set_trace()
             ## make LHE mass cute for eta_t at +/- 6 GeV
         lhepart = events["LHEPart"][events["LHEPart"]["status"] == 1]
         mWWbb = (lhepart[:,0] + lhepart[:,1] + lhepart[:,2] + lhepart[:,3] + lhepart[:,4] + lhepart[:,5]).mass
-        {selection[sys].add("Eta_Mass_Window", (mWWbb >= eta_variations[sys][0]) & (mWWbb <= eta_variations[sys][1])) for sys in selection.keys()}
-            ## get event weights for the eta_tt variatons
+            ## get event weights for the eta_t variatons
         weightsfile = self.weights_rfiles_dict[events.metadata["filename"]]
-        weights_akarray = weightsfile.arrays([val.name for val in weightsfile.values()], entry_start=events.metadata["entrystart"], entry_stop=events.metadata["entrystop"])
-
 
             # get all passing leptons
         lep_and_filter_pass = objsel.select_leptons(events, year=args.year, hem_15_16=apply_hem)
-        output["cutflow_nosys"]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
-        {selection[sys].add("lep_and_filter_pass", lep_and_filter_pass) for sys in selection.keys()} # add passing leptons requirement to all systematics
 
             ## build corrected jets and MET
         events["CorrectedJets"], events["CorrectedMET"] = IDJet.process_jets(events, args.year, self.corrections["JetCor"])
 
-        ## add different selections
-                ## muons
-        tight_mu_sel, loose_mu_sel = ak.sum(events["Muon"]["TIGHTMU"], axis=1) == 1, ak.sum(events["Muon"]["LOOSEMU"], axis=1) == 1
-        {selection[sys].add("tight_MU", tight_mu_sel) for sys in selection.keys()} # one muon passing TIGHT criteria
-                ## electrons
-        tight_el_sel, loose_el_sel = ak.sum(events["Electron"]["TIGHTEL"], axis=1) == 1, ak.sum(events["Electron"]["LOOSEEL"], axis=1) == 1
-        {selection[sys].add("tight_EL", tight_el_sel) for sys in selection.keys()} # one electron passing TIGHT criteria
+        ## add different lepton selections
+        tight_mu_sel, tight_el_sel = ak.sum(events["Muon"]["TIGHTMU"], axis=1) == 1, ak.sum(events["Electron"]["TIGHTEL"], axis=1) == 1
 
         ### apply lepton SFs to MC (only applicable to tight leptons)
         if "LeptonSF" in self.corrections.keys():
@@ -397,93 +390,182 @@ class htt_btag_sb_regions(processor.ProcessorABC):
             elSFs_dict = MCWeights.get_lepton_sf(sf_dict=self.corrections["LeptonSF"]["Electrons"],
                 pt=ak.flatten(tight_electrons["pt"]), eta=ak.flatten(tight_electrons["etaSC"]), tight_lep_mask=tight_el_sel, leptype="Electrons")
 
+            ## loop over all event systematics
+        for evt_sys in self.regions.keys():
+            #if evt_sys != "nosys": set_trace()
+            ## make event weights
+            mass_window_weights_dict = {mass_window_sys: Weights(len(events), storeIndividual=True) for mass_window_sys in self.regions[evt_sys].keys()}
+                ## gen weights
+            {mass_window_weights_dict[mass_window_sys].add("genweight", ak.copy(events["genWeight"])) for mass_window_sys in mass_window_weights_dict.keys()}
+                ## Prefire Corrections
+            if (args.year != "2018") and (self.corrections["Prefire"] == True) and ("L1PreFiringWeight" in events.fields):
+                {mass_window_weights_dict[mass_window_sys].add("Prefire",
+                    ak.copy(events["L1PreFiringWeight"]["Nom"]),
+                    ak.copy(events["L1PreFiringWeight"]["Up"]),
+                    ak.copy(events["L1PreFiringWeight"]["Dn"])
+                ) for mass_window_sys in mass_window_weights_dict.keys()}
 
-        ## get jet and MET selection - nosys selection used for systematic since eta_mass_window cuts don't affect them
-            # jet selection
-        passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output["cutflow_nosys"], shift="nosys", hem_15_16=apply_hem, met_factory=self.corrections["JetCor"]["MC"]["METFactory"])
-        output["cutflow_nosys"]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
-        {selection[sys].add("passing_jets", passing_jets) for sys in selection.keys()}
-        {selection[sys].add("jets_3", ak.num(events["SelectedJets"]) == 3) for sys in selection.keys()}
-        {selection[sys].add("jets_4p", ak.num(events["SelectedJets"]) > 3) for sys in selection.keys()} # only for getting btag weights
-        {selection[sys].add(f"{btaggers[0]}_pass", ak.sum(events["SelectedJets"][btag_wp], axis=1) >= 2) for sys in selection.keys()}
+                ## Pileup Reweighting
+            if "Pileup" in self.corrections.keys():
+                {mass_window_weights_dict[mass_window_sys].add("Pileup",
+                    ak.copy(self.corrections["Pileup"][f"{events.metadata['dataset']}_{mass_window_sys}"]["central"](events["Pileup"]["nTrueInt"]) ),
+                    ak.copy(self.corrections["Pileup"][f"{events.metadata['dataset']}_{mass_window_sys}"]["up"](events["Pileup"]["nTrueInt"]) ),
+                    ak.copy(self.corrections["Pileup"][f"{events.metadata['dataset']}_{mass_window_sys}"]["down"](events["Pileup"]["nTrueInt"]) ),
+                ) for mass_window_sys in mass_window_weights_dict.keys()}
 
-        # sort jets by btag value
-        events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)]
-            # btag sidebands
-        btagger_sorted = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)][IDJet.btag_tagger_to_disc_name[btaggers[0]]]
-        for btag_reg, (low_bound, up_bound) in btag_regions.items():
-            {selection[sys].add(f"{btaggers[0]}_{btag_reg}", (ak.max(btagger_sorted, axis=1) > low_bound) & (ak.max(btagger_sorted, axis=1) <= up_bound)) for sys in selection.keys()}
+                ## initialize selections
+            selection = {mass_window_sys: PackedSelection() for mass_window_sys in self.regions[evt_sys].keys()}
 
-            ## apply btagging SFs to MC
-        if (self.corrections["BTagSF"] == True):
-            btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].schema_.keys()}
+            #if to_debug: set_trace()
+                ## make LHE mass cute for eta_t at +/- 6 GeV
+            {selection[sys].add("Eta_Mass_Window", (mWWbb >= eta_variations[sys][0]) & (mWWbb <= eta_variations[sys][1])) for sys in selection.keys()}
+                ## get event weights for the eta_t variatons
+            {mass_window_weights_dict[mass_window_sys].add("EtaT_Mass_Window", ak.copy(weightsfile[eta_variations[mass_window_sys][2]].array()) ) for mass_window_sys in mass_window_weights_dict.keys()} # add eta_t mass window variation weights
 
-            threeJets_cut = selection["nosys"].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
-            btagger_3j_wts = self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut=btag_wp)
-            fourplusJets_cut = selection["nosys"].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
-            btagger_4pj_wts = self.corrections["BTag_Constructors"][btaggers[0]]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut=btag_wp)
+                # get all passing leptons
+            output[f"cutflow_{evt_sys}"]["lep_and_filter_pass"] += ak.sum(lep_and_filter_pass)
+            {selection[sys].add("lep_and_filter_pass", lep_and_filter_pass) for sys in selection.keys()} # add passing leptons requirement to all systematics
+            {selection[sys].add("tight_MU", tight_mu_sel) for sys in selection.keys()} # one muon passing TIGHT criteria
+            {selection[sys].add("tight_EL", tight_el_sel) for sys in selection.keys()} # one electron passing TIGHT criteria
 
-                # fll dict of btag weights
-            for wt_name in btagger_3j_wts.keys():
-                btag_weights[wt_name][threeJets_cut] = ak.prod(btagger_3j_wts[wt_name], axis=1)
-                btag_weights[wt_name][fourplusJets_cut] = ak.prod(btagger_4pj_wts[wt_name], axis=1)
+            ## get jet and MET selection - nosys selection used for systematic since eta_mass_window cuts don't affect them
+                # jet selection
+            passing_jets = objsel.jets_selection(events, year=args.year, cutflow=output[f"cutflow_{evt_sys}"], shift=evt_sys, hem_15_16=apply_hem, met_factory=self.corrections["JetCor"]["MC"]["METFactory"])
+            output[f"cutflow_{evt_sys}"]["nEvts passing jet and lepton obj selection"] += ak.sum(passing_jets & lep_and_filter_pass)
+            {selection[sys].add("passing_jets", passing_jets) for sys in selection.keys()}
+            {selection[sys].add("jets_3", ak.num(events["SelectedJets"]) == 3) for sys in selection.keys()}
+            {selection[sys].add("jets_4p", ak.num(events["SelectedJets"]) > 3) for sys in selection.keys()} # only for getting btag weights
+            {selection[sys].add(f"{btaggers[0]}_pass", ak.sum(events["SelectedJets"][btag_wp], axis=1) >= 2) for sys in selection.keys()}
+
+            # sort jets by btag value
+            events["SelectedJets"] = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)]
+                # btag sidebands
+            btagger_sorted = events["SelectedJets"][ak.argsort(events["SelectedJets"][IDJet.btag_tagger_to_disc_name[btaggers[0]]], ascending=False)][IDJet.btag_tagger_to_disc_name[btaggers[0]]]
+            for btag_reg, (low_bound, up_bound) in btag_regions.items():
+                {selection[sys].add(f"{btaggers[0]}_{btag_reg}", (ak.max(btagger_sorted, axis=1) > low_bound) & (ak.max(btagger_sorted, axis=1) <= up_bound)) for sys in selection.keys()}
+
+                ## apply btagging SFs to MC
+            if (self.corrections["BTagSF"] == True):
+                btag_weights = {key : np.ones(len(events)) for key in self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].schema_.keys()}
+
+                threeJets_cut = selection["nosys"].require(lep_and_filter_pass=True, passing_jets=True, jets_3=True)
+                btagger_3j_wts = self.corrections["BTag_Constructors"][btaggers[0]]["3Jets"].get_scale_factor(jets=events["SelectedJets"][threeJets_cut], passing_cut=btag_wp)
+                fourplusJets_cut = selection["nosys"].require(lep_and_filter_pass=True, passing_jets=True, jets_4p=True)
+                btagger_4pj_wts = self.corrections["BTag_Constructors"][btaggers[0]]["4PJets"].get_scale_factor(jets=events["SelectedJets"][fourplusJets_cut], passing_cut=btag_wp)
+
+                #set_trace()
+                    # fll dict of btag weights
+                for wt_name in btagger_3j_wts.keys():
+                    btag_weights[wt_name][threeJets_cut] = ak.prod(btagger_3j_wts[wt_name], axis=1)
+                    btag_weights[wt_name][fourplusJets_cut] = ak.prod(btagger_4pj_wts[wt_name], axis=1)
+
+                #set_trace()
+                modNames = sorted(set([key.replace("_up", "_VAR").replace("_down", "_VAR") for key in btag_weights.keys() if "central" not in key]))
+                mass_window_weights_dict["nosys"].add_multivariation(
+                    name="btag",
+                    weight=ak.copy(btag_weights["central"]),
+                    modifierNames=modNames,
+                    weightsUp=[ak.copy(btag_weights[name.replace("_VAR", "_up")]) for name in modNames],
+                    weightsDown=[ak.copy(btag_weights[name.replace("_VAR", "_down")]) for name in modNames],
+                )
+                {mass_window_weights_dict[mass_window_sys].add("btag", ak.copy(btag_weights["central"])) for mass_window_sys in mass_window_weights_dict.keys() if mass_window_sys != "nosys"}
     
-        else:
-            btag_weights = {"central" : np.ones(len(events))}
-            print("BTag SFs not applied to MC")
+            else:
+                btag_weights = {"central" : np.ones(len(events))}
+                print("BTag SFs not applied to MC")
 
-            # run over systematics for eta_tt mass window
-        for evt_sys in self.event_systematics_to_run:
-            #set_trace()
-            ## fill hists for each region
-            for lepton in self.regions[evt_sys].keys():
-                lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
-                for btagregion in self.regions[evt_sys][lepton].keys():
-                    for jmult in self.regions[evt_sys][lepton][btagregion].keys():
-                            ## loop over different event selections based on mass windows for eta_t
-                        #set_trace()
-                        cut = selection[evt_sys].all(*self.regions[evt_sys][lepton][btagregion][jmult])
+                # run over systematics for eta_tt mass window
+            for mass_window_sys in self.regions[evt_sys].keys():
+                #set_trace()
+                ## fill hists for each region
+                for lepton in self.regions[evt_sys][mass_window_sys].keys():
+                    lep_SFs = muSFs_dict if lepton == "Muon" else elSFs_dict
+                    for btagregion in self.regions[evt_sys][mass_window_sys][lepton].keys():
+                        for jmult in self.regions[evt_sys][mass_window_sys][lepton][btagregion].keys():
+                                ## loop over different event selections based on mass windows for eta_t
+                            #set_trace()
+                            cut = selection[mass_window_sys].all(*self.regions[evt_sys][mass_window_sys][lepton][btagregion][jmult])
 
-                        output[f"cutflow_{evt_sys}"]["nEvts %s" % ", ".join([lepton, btagregion, jmult])] += cut.sum()
+                            output[f"cutflow_{mass_window_sys}"]["nEvts %s" % ", ".join([lepton, btagregion, jmult])] += cut.sum()
 
-                        if to_debug: print(lepton, btagregion, jmult)
-                        if cut.sum() > 0:
-                            ltype = "MU" if lepton == "Muon" else "EL"
-                            if f"loose_or_tight_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][((events[lepton][cut][f"TIGHT{ltype}"] == True) | (events[lepton][cut][f"LOOSE{ltype}"] == True))]
-                            elif f"tight_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][(events[lepton][cut][f"TIGHT{ltype}"] == True)]
-                            elif f"loose_{ltype}" in self.regions[evt_sys][lepton][btagregion][jmult]:
-                                leptons = events[lepton][cut][(events[lepton][cut][f"LOOSE{ltype}"] == True)]
-                            else:
-                                raise ValueError("Not sure what lepton type to choose for event")
+                            if to_debug: print(lepton, btagregion, jmult)
+                            if cut.sum() > 0:
+                                ltype = "MU" if lepton == "Muon" else "EL"
+                                if f"loose_or_tight_{ltype}" in self.regions[evt_sys][mass_window_sys][lepton][btagregion][jmult]:
+                                    leptons = events[lepton][cut][((events[lepton][cut][f"TIGHT{ltype}"] == True) | (events[lepton][cut][f"LOOSE{ltype}"] == True))]
+                                elif f"tight_{ltype}" in self.regions[evt_sys][mass_window_sys][lepton][btagregion][jmult]:
+                                    leptons = events[lepton][cut][(events[lepton][cut][f"TIGHT{ltype}"] == True)]
+                                elif f"loose_{ltype}" in self.regions[evt_sys][mass_window_sys][lepton][btagregion][jmult]:
+                                    leptons = events[lepton][cut][(events[lepton][cut][f"LOOSE{ltype}"] == True)]
+                                else:
+                                    raise ValueError("Not sure what lepton type to choose for event")
 
-                                # get jets and MET
-                            jets, met = events["SelectedJets"][cut], events["SelectedMET"][cut]
+                                    # get jets and MET
+                                jets, met = events["SelectedJets"][cut], events["SelectedMET"][cut]
 
-                                # find best permutations
-                            best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wp, btag_req=True if btagregion == "btagPass" else False)
-                            valid_perms = ak.num(best_perms["TTbar"].pt) > 0
-                            output[f"cutflow_{evt_sys}"]["nEvts %s: valid perms" % ", ".join([lepton, btagregion, jmult])] += ak.sum(valid_perms)
-                            bp_status = np.zeros(cut.size, dtype=int) # 0 == "" (no gen matching), 1 == "right", 2 == "matchable", 3 == "unmatchable", 4 == "sl_tau", 5 == "noslep"
+                                    # find best permutations
+                                best_perms = ttpermutator.find_best_permutations(jets=jets, leptons=leptons, MET=met, btagWP=btag_wp, btag_req=True if btagregion == "btagPass" else False)
+                                valid_perms = ak.num(best_perms["TTbar"].pt) > 0
+                                output[f"cutflow_{mass_window_sys}"]["nEvts %s: valid perms" % ", ".join([lepton, btagregion, jmult])] += ak.sum(valid_perms)
 
-                                ## create MT regions
-                            MT = make_vars.MT(leptons, met)
-                            MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
-                            output[f"cutflow_{evt_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
+                                    ## create MT regions
+                                MT = make_vars.MT(leptons, met)
+                                MTHigh = ak.flatten(MT[valid_perms] >= MTcut)
+                                output[f"cutflow_{mass_window_sys}"]["nEvts %s: pass MT cut" % ", ".join([lepton, btagregion, jmult])] += ak.sum(MTHigh)
 
-                                # fill hists for each systematic
-                            if to_debug: print(f"\t\tevt sys: {evt_sys}")
-                            #if to_debug: set_trace()
-                            wts = np.copy(evt_weights.weight() * btag_weights["central"] *lep_SFs["central"] * pu_wts_dict[evt_sys] * weights_akarray[eta_variations[evt_sys][2]])[cut][valid_perms][MTHigh]
+                                    # fill hists for each systematic
+                                if to_debug: print(f"\tevt sys: {evt_sys}")
+                                if evt_sys == "nosys":
+                                    if to_debug: print(f"\tmass window sys: {mass_window_sys}")
+                                    if mass_window_sys == "nosys":
+                                        for rewt_sys in self.reweight_systematics_to_run:
+                                            #if to_debug: set_trace()
+                                            if to_debug: print(f"\t\tsysname: {rewt_sys}")
 
-                                # fill hists
-                            output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, btagregion=btagregion, permarray=bp_status[cut][valid_perms][MTHigh],
-                                perm=best_perms[valid_perms][MTHigh], jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
+                                            if rewt_sys == "nosys":
+                                                wts = np.copy(mass_window_weights_dict[mass_window_sys].weight() * lep_SFs["central"] )[cut][valid_perms][MTHigh]
+
+                                            elif rewt_sys.startswith("btag"):
+                                                btag_name = f"{rewt_sys.replace('_up', '_VAR')}Up" if "_up" in rewt_sys else f"{rewt_sys.replace('_down', '_VAR')}Down"
+                                                if btag_name not in mass_window_weights_dict[mass_window_sys].variations:
+                                                    print(f"{rewt_sys} not option in event weights. Skipping")
+                                                    continue
+                                                wts = np.copy(mass_window_weights_dict[mass_window_sys].weight(btag_name) * lep_SFs["central"] )[cut][valid_perms][MTHigh]
+
+                                            elif rewt_sys.startswith("Lep"):
+                                                lep_name = rewt_sys.split("_")[-1]
+                                                if lep_name not in lep_SFs.keys():
+                                                    print(f"{lep_name} not found in {lepton} SF dict. Skipping")
+                                                    continue
+                                                wts = np.copy(mass_window_weights_dict[mass_window_sys].weight() * lep_SFs[lep_name] )[cut][valid_perms][MTHigh]
+
+                                            else:
+                                                if rewt_sys not in mass_window_weights_dict[mass_window_sys].variations:
+                                                    print(f"{rewt_sys} not option in event weights. Skipping")
+                                                    continue
+                                                wts = np.copy(mass_window_weights_dict[mass_window_sys].weight(rewt_sys) * lep_SFs["central"] )[cut][valid_perms][MTHigh]
+
+                                                # fill hists
+                                            output = self.fill_hists(acc=output, sys=rewt_sys, jetmult=jmult, leptype=lepton, btagregion=btagregion, perm=best_perms[valid_perms][MTHigh],
+                                                jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
+                                    else:
+                                        wts = np.copy(mass_window_weights_dict[mass_window_sys].weight() * lep_SFs["central"] )[cut][valid_perms][MTHigh]
+
+                                            # fill hists
+                                        output = self.fill_hists(acc=output, sys=mass_window_sys, jetmult=jmult, leptype=lepton, btagregion=btagregion, perm=best_perms[valid_perms][MTHigh],
+                                            jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
+
+                                else:
+                                   wts = np.copy(mass_window_weights_dict[mass_window_sys].weight() * lep_SFs["central"] )[cut][valid_perms][MTHigh]
+
+                                       # fill hists
+                                   output = self.fill_hists(acc=output, sys=evt_sys, jetmult=jmult, leptype=lepton, btagregion=btagregion, perm=best_perms[valid_perms][MTHigh],
+                                        jets=jets[valid_perms][MTHigh], leptons=leptons[valid_perms][MTHigh], MTvals=MT[valid_perms][MTHigh], evt_wts=wts)
 
         return output
 
-    def fill_hists(self, acc, sys, jetmult, leptype, btagregion, permarray, perm, jets, leptons, MTvals, evt_wts):
+
+    def fill_hists(self, acc, sys, jetmult, leptype, btagregion, perm, jets, leptons, MTvals, evt_wts):
             ## apply alpha correction for 3Jets
         if (jetmult == "3Jets") and ("Alpha" in self.corrections):
             alpha_corr = self.corrections["Alpha"](172.5/perm["THad"].mass)
@@ -494,60 +576,51 @@ class htt_btag_sb_regions(processor.ProcessorABC):
 
         pt_sorted_jets = jets[ak.argsort(jets.pt, ascending=False)]
 
-        #set_trace()
-        for permval in np.unique(permarray).tolist():
-            perm_inds = np.where(permarray == permval)
-            dataset_name = "%s_%s" % (self.sample_name, perm_cats[permval]) if permval != 0 else self.sample_name
+        acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=self.sample_name, sys=sys,  jmult=jetmult, leptype=leptype, btag=btagregion,
+            mtt=ak.flatten(perm["TTbar"].mass), ctstar_abs=np.abs(tlep_ctstar), weight=evt_wts)
+        acc["mtt"].fill(     dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtt=ak.flatten(perm["TTbar"].mass), weight=evt_wts)
+        acc["mthad"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtop=ak.flatten(perm["THad"].mass), weight=evt_wts)
+        acc["mWHad"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm["WHad"].mass), weight=evt_wts)
+        acc["mWLep"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm["WLep"].mass), weight=evt_wts)
+        acc["pt_thad"].fill( dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["THad"].pt), weight=evt_wts)
+        acc["pt_tlep"].fill( dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["TLep"].pt), weight=evt_wts)
+        acc["pt_tt"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["TTbar"].pt), weight=evt_wts)
+        acc["eta_thad"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["THad"].eta), weight=evt_wts)
+        acc["eta_tlep"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["TLep"].eta), weight=evt_wts)
+        acc["eta_tt"].fill(  dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["TTbar"].eta), weight=evt_wts)
 
-            acc["mtt_vs_tlep_ctstar_abs"].fill(dataset=dataset_name, sys=sys,  jmult=jetmult, leptype=leptype, btag=btagregion,
-                mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+        acc["tlep_ctstar"].fill(    dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, ctstar=tlep_ctstar, weight=evt_wts)
+        acc["tlep_ctstar_abs"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, ctstar_abs=np.abs(tlep_ctstar), weight=evt_wts)
 
-                # only fill 2D signal hist for systematics to save space and time
-            #if sys != "nosys": continue
+        acc["full_disc"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, prob=ak.flatten(perm["Prob"]), weight=evt_wts)
+        acc["mass_disc"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, massdisc=ak.flatten(perm["MassDiscr"]), weight=evt_wts)
+        acc["ns_disc"].fill(  dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, nsdisc=ak.flatten(perm["NuDiscr"]), weight=evt_wts)
+        acc["ns_dist"].fill(  dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, nu_dist=ak.flatten(np.sqrt(perm["Nu"].chi2)), weight=evt_wts)
 
-            acc["mtt"].fill(     dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtt=ak.flatten(perm["TTbar"].mass)[perm_inds], weight=evt_wts[perm_inds])
-            acc["mthad"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mtop=ak.flatten(perm["THad"].mass)[perm_inds], weight=evt_wts[perm_inds])
-            acc["mWHad"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm["WHad"].mass)[perm_inds], weight=evt_wts[perm_inds])
-            acc["mWLep"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, wmass=ak.flatten(perm["WLep"].mass)[perm_inds], weight=evt_wts[perm_inds])
-            acc["pt_thad"].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["THad"].pt)[perm_inds], weight=evt_wts[perm_inds])
-            acc["pt_tlep"].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["TLep"].pt)[perm_inds], weight=evt_wts[perm_inds])
-            acc["pt_tt"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["TTbar"].pt)[perm_inds], weight=evt_wts[perm_inds])
-            acc["eta_thad"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["THad"].eta)[perm_inds], weight=evt_wts[perm_inds])
-            acc["eta_tlep"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["TLep"].eta)[perm_inds], weight=evt_wts[perm_inds])
-            acc["eta_tt"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(perm["TTbar"].eta)[perm_inds], weight=evt_wts[perm_inds])
+        acc["MET_pt"].fill( dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["MET"].pt), weight=evt_wts)
+        acc["MET_phi"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(perm["MET"].phi), weight=evt_wts)
 
-            acc["tlep_ctstar"].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, ctstar=tlep_ctstar[perm_inds], weight=evt_wts[perm_inds])
-            acc["tlep_ctstar_abs"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, ctstar_abs=np.abs(tlep_ctstar[perm_inds]), weight=evt_wts[perm_inds])
+        acc["Jets_pt"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(jets.pt), weight=ak.flatten((ak.ones_like(jets.pt)*evt_wts)))
+        acc["Jets_eta"].fill(  dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(jets.eta), weight=ak.flatten((ak.ones_like(jets.eta)*evt_wts)))
+        acc["Jets_phi"].fill(  dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(jets.phi), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)))
+        acc["Jets_njets"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, njets=ak.num(jets), weight=evt_wts)
+        acc["Jets_phi_vs_eta"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
+            phi_2d=ak.flatten(jets.phi), eta_2d=ak.flatten(jets.eta), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)))
 
-            acc["full_disc"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, prob=ak.flatten(perm["Prob"])[perm_inds], weight=evt_wts[perm_inds])
-            acc["mass_disc"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, massdisc=ak.flatten(perm["MassDiscr"])[perm_inds], weight=evt_wts[perm_inds])
-            acc["ns_disc"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, nsdisc=ak.flatten(perm["NuDiscr"])[perm_inds], weight=evt_wts[perm_inds])
-            acc["ns_dist"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, nu_dist=ak.flatten(np.sqrt(perm["Nu"].chi2))[perm_inds], weight=evt_wts[perm_inds])
+        acc["Jets_LeadJet_pt"].fill( dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=pt_sorted_jets.pt[:, 0], weight=evt_wts)
+        acc["Jets_LeadJet_eta"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=pt_sorted_jets.eta[:, 0], weight=evt_wts)
+        acc[f"Jets_{btaggers[0]}_bDisc"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
+            bdisc=ak.flatten(jets[IDJet.btag_tagger_to_disc_name[btaggers[0]]]), weight=ak.flatten((ak.ones_like(jets.pt)*evt_wts)))
 
-            acc["MET_pt"].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(perm["MET"].pt)[perm_inds], weight=evt_wts[perm_inds])
-            acc["MET_phi"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(perm["MET"].phi)[perm_inds], weight=evt_wts[perm_inds])
+        acc["Lep_pt"].fill(    dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(leptons.pt), weight=evt_wts)
+        acc["Lep_eta"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(leptons.eta), weight=evt_wts)
+        acc["Lep_phi"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(leptons.phi), weight=evt_wts)
+        acc["Lep_iso"].fill(   dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
+            iso=ak.flatten(leptons["pfRelIso04_all"]) if leptype == "Muon" else ak.flatten(leptons["pfRelIso03_all"]), weight=evt_wts)
+        acc["Lep_phi_vs_eta"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
+            phi_2d=ak.flatten(leptons.phi), eta_2d=ak.flatten(leptons.eta), weight=evt_wts)
 
-            acc["Jets_pt"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(jets.pt[perm_inds]), weight=ak.flatten((ak.ones_like(jets.pt)*evt_wts)[perm_inds]))
-            acc["Jets_eta"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.eta)*evt_wts)[perm_inds]))
-            acc["Jets_phi"].fill(  dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(jets.phi[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
-            acc["Jets_njets"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, njets=ak.num(jets)[perm_inds], weight=evt_wts[perm_inds])
-            acc["Jets_phi_vs_eta"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
-                phi_2d=ak.flatten(jets.phi[perm_inds]), eta_2d=ak.flatten(jets.eta[perm_inds]), weight=ak.flatten((ak.ones_like(jets.phi)*evt_wts)[perm_inds]))
-
-            acc["Jets_LeadJet_pt"].fill( dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=pt_sorted_jets[perm_inds].pt[:, 0], weight=evt_wts[perm_inds])
-            acc["Jets_LeadJet_eta"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=pt_sorted_jets[perm_inds].eta[:, 0], weight=evt_wts[perm_inds])
-            acc[f"Jets_{btaggers[0]}_bDisc"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
-                bdisc=ak.flatten(jets[IDJet.btag_tagger_to_disc_name[btaggers[0]]][perm_inds]), weight=ak.flatten((ak.ones_like(jets.pt)*evt_wts)[perm_inds]))
-
-            acc["Lep_pt"].fill(    dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, pt=ak.flatten(leptons.pt[perm_inds]), weight=evt_wts[perm_inds])
-            acc["Lep_eta"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, eta=ak.flatten(leptons.eta[perm_inds]), weight=evt_wts[perm_inds])
-            acc["Lep_phi"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, phi=ak.flatten(leptons.phi[perm_inds]), weight=evt_wts[perm_inds])
-            acc["Lep_iso"].fill(   dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
-                iso=ak.flatten(leptons["pfRelIso04_all"][perm_inds]) if leptype == "Muon" else ak.flatten(leptons["pfRelIso03_all"][perm_inds]), weight=evt_wts[perm_inds])
-            acc["Lep_phi_vs_eta"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion,
-                phi_2d=ak.flatten(leptons.phi[perm_inds]), eta_2d=ak.flatten(leptons.eta[perm_inds]), weight=evt_wts[perm_inds])
-
-            acc["MT"].fill(dataset=dataset_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mt=ak.flatten(MTvals)[perm_inds], weight=evt_wts[perm_inds])
+        acc["MT"].fill(dataset=self.sample_name, sys=sys, jmult=jetmult, leptype=leptype, btag=btagregion, mt=ak.flatten(MTvals), weight=evt_wts)
 
         return acc        
 
