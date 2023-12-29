@@ -45,6 +45,12 @@ def symm_year_and_lepton_templates(fname, process):
                     up_ratio_vals = symmetrized_histo_up.values()[()]
                     dw_ratio_vals = symmetrized_histo_dw.values()[()]
 
+                        ## hard code offset of single top uR and uF uncs for TB
+                    if ((sys.startswith("ST_RENORM")) or (sys.startswith("ST_FACTOR"))) and (proc == "TB"):
+                        #set_trace()
+                        up_ratio_vals += 0.5
+                        dw_ratio_vals += 0.5
+
                         # find relative deviation from nominal vals
                     up_rel_vals = up_ratio_vals - 1.
                     dw_rel_vals = dw_ratio_vals - 1.
