@@ -2,6 +2,35 @@
 List of systematics
 """
 
+combined_era_lepton = [
+    "EWK_scheme", "EWK_yukawa", "ISR", "FSR", "FACTOR", "RENORM", "HDAMP", "UE",
+    "MTOP3GEV", "MTOP1GEV", "CR1", "CR2", "erdON", "ST_ISR", "ST_FSR", "ST_RENORM", "ST_FACTOR",
+    "AH_ISR", "AH_FSR", "AH_RENORM", "AH_FACTOR",
+    "BindingEnergy", "TopMass",
+]
+combined_lepton = {
+    year : [
+       "JES_Absolute", f"JES_Absolute_{year}",
+       "JES_BBEC1",
+       f"JES_BBEC1_{year}",
+       "JES_RelativeBal", f"JES_RelativeSample_{year}",
+       "JES_FlavorQCD",
+       "JES_FlavorQCDOnlyLightJets", "JES_FlavorPureBottomOnlyBottomJets", "JES_FlavorPureBottom",
+       "JES_FlavorPureCharmOnlyCharmJets", "JES_FlavorPureCharm", "JES_FlavorPureQuarkOnlyQuarkJets", "JES_FlavorPureQuark",
+       "JES_FlavorPureGluonOnlyGluonJets", "JES_FlavorPureGluon",
+       "JER", "MET", "SHAPE",
+       "PILEUP", "PREFIRE",
+       "BTAG_BC_JES", "BTAG_BC_PILEUP", "BTAG_BC_STATISTIC", "BTAG_BC_TYPE3",
+       "BTAG_BC_CORR", "BTAG_BC_UNCORR",
+       "BTAG_L_CORR",
+       "BTAG_L_UNCORR",
+       "BTAG_BC_BFRAGMENTATION", "BTAG_BC_BTEMPCORR", "BTAG_BC_CB", "BTAG_BC_CFRAGMENTATION",
+       "BTAG_BC_CJETS", "BTAG_BC_DMUX", "BTAG_BC_GLUONSPLITTING", "BTAG_BC_JETAWAY",
+       "BTAG_BC_KSL", "BTAG_BC_L2C", "BTAG_BC_LTOTHERS", "BTAG_BC_MUDR", "BTAG_BC_MUPT", "BTAG_BC_PTREL"
+    ] for year in ["2016APV", "2016", "2017", "2018"]
+}
+
+
 ind_jec_sys = {
     year : {
         #"JES_AbsoluteFlavMap",
@@ -62,20 +91,20 @@ ind_jec_sys = {
 
 regroup_jec_sys = {
     year : {
-        #"JES_Absolute",
-        #f"JES_Absolute_{year}",
-        #"JES_BBEC1",
-        #f"JES_BBEC1_{year}",
-        #"JES_FlavorQCD",
-        #"JES_RelativeBal",
-        #f"JES_RelativeSample_{year}",
+        "JES_Absolute",
+        f"JES_Absolute_{year}",
+        "JES_BBEC1",
+        f"JES_BBEC1_{year}",
+        "JES_FlavorQCD",
+        "JES_RelativeBal",
+        f"JES_RelativeSample_{year}",
         ##"JES_Total",
         "JES_FlavorQCDOnlyLightJets",
         #"JES_FlavorPureBottom",
         #"JES_FlavorPureCharm",
         #"JES_FlavorPureGluon",
         #"JES_FlavorPureQuark",
-        #"JES_FlavorPureBottomOnlyBottomJets",
+        "JES_FlavorPureBottomOnlyBottomJets",
         #"JES_FlavorPureCharmOnlyCharmJets",
         #"JES_FlavorPureGluonOnlyGluonJets",
         #"JES_FlavorPureQuarkOnlyQuarkJets",
@@ -395,9 +424,9 @@ sys_to_name = {
         #"nosys" : "nosys",
         "EWuncUp" : "deltaQCDdeltaEW_UP",
         "EWuncDown" : "deltaQCDdeltaEW_DW",
-        "dQCD"   : "dQCD",
-        #"dQCDUp"   : "dQCD_DW",
-        #"dQCDDown" : "dQCD_UP",
+        #"dQCD"   : "dQCD",
+        "dQCDUp"   : "dQCD_DW",
+        "dQCDDown" : "dQCD_UP",
         "dEWyt1p0Up"   : "dEWyt1p0_DW",
         "dEWyt1p0Down" : "dEWyt1p0_UP",
         "dEWyt0p88Up"   : "dEWyt0p88_DW",
@@ -625,6 +654,11 @@ sys_to_name = {
         "ST_RENORM_FACTOR_SAMEDown": "ST_RENORM_FACTOR_DW",
         "ST_RENORM_FACTOR_DIFFUp"  : "ST_RENORM_UP_FACTOR_DW",
         "ST_RENORM_FACTOR_DIFFDown": "ST_RENORM_DW_FACTOR_UP",
+            # Toponium systematics
+        "BindingEnergyUp"   : "BindingEnergyUp",
+        "BindingEnergyDown" : "BindingEnergyDown",
+        "TopMassUp"   : "TopMassUp",
+        "TopMassDown" : "TopMassDown",
     }
     for year in ["2016APV", "2016", "2017", "2018"]
 }
@@ -1094,11 +1128,11 @@ final_systypes = {
         "CR1",
         "CR2",
         "erdON",
-        "NLOshape",
-        "dQCD",
-        "dEWyt1p0",
-        "dEWyt0p88",
-        "dEWyt1p11",
+        #"NLOshape",
+        #"dQCD",
+        #"dEWyt1p0",
+        #"dEWyt0p88",
+        #"dEWyt1p11",
             # A/H signal systematics
         "AH_ISR",
         "AH_FSR",
